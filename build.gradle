@@ -1,5 +1,5 @@
 
-group "ch.unibas.dmi.dbis.polyphenydb-jdbc-driver"
+group "ch.unibas.dmi.dbis.polyphenydb"
 
 
 def versionMajor = 1
