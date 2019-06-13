@@ -110,8 +110,13 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier "javadoc"
     from javadoc.destinationDir
 }
+shadowJar {
+    classifier = ''
+}
+assemble.dependsOn shadowJar
 artifacts {
-    archives jar // regular jar containing only the compiled source
+    //archives jar // regular jar containing only the compiled source
+    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
