@@ -11,6 +11,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-public interface PolyphenyDbConnection extends java.sql.Connection {
+public interface PolyphenyDbJdbcDatabaseMetaData extends java.sql.DatabaseMetaData {
 
 }

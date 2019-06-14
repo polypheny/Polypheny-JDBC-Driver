@@ -11,6 +11,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-public interface PolyphenyDbStatement extends java.sql.Statement {
+public interface PolyphenyDbJdbcPreparedStatement extends java.sql.PreparedStatement {
 
 }

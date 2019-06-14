@@ -26,6 +26,43 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-public interface PolyphenyDbResultSet extends java.sql.ResultSet {
+import java.util.Properties;
+import org.apache.calcite.avatica.AvaticaConnection;
+import org.apache.calcite.avatica.AvaticaFactory;
+import org.apache.calcite.avatica.UnregisteredDriver;
+
+
+/**
+ * Extension of {@link org.apache.calcite.avatica.AvaticaFactory} for Polypheny-DB.
+ */
+public abstract class PolyphenyDbJdbcFactory implements AvaticaFactory {
+
+    private final int major;
+    private final int minor;
+
+
+    /**
+     * Creates a JDBC factory with given major/minor version number.
+     *
+     * @param major JDBC major version
+     * @param minor JDBC minor version
+     */
+    protected PolyphenyDbJdbcFactory( final int major, final int minor ) {
+        this.major = major;
+        this.minor = minor;
+    }
+
+
+    public int getJdbcMajorVersion() {
+        return major;
+    }
+
+
+    public int getJdbcMinorVersion() {
+        return minor;
+    }
+
+
+    public abstract AvaticaConnection newConnection( UnregisteredDriver driver, AvaticaFactory factory, String url, Properties info );
 
 }

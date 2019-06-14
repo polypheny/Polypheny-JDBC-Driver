@@ -11,6 +11,6 @@
 package ch.unibas.dmi.dbis.polyphenydb.jdbc;
 
 
-public interface PolyphenyDbResultSetMetaData extends java.sql.ResultSetMetaData {
+public interface PolyphenyDbJdbcStatement extends java.sql.Statement {
 
 }
