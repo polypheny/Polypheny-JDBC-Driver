@@ -26,6 +26,9 @@ buildscript {
 
 
 repositories {
+    flatDir {
+        dirs 'libs'
+    }
     maven {
         // DBIS Artifactory
         url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
@@ -50,15 +53,21 @@ tasks.withType(JavaCompile) {
 }
 
 
+configurations.all {
+    // check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
+}
+
 
 dependencies {
+    compile name: "avatica-1.16.0-POLYPHENYDB-shaded"
+    
     ////// APACHE CALCITE AVATICA
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: "1.13.0"  // License: Apache 2.0
+    // compile group: "org.apache.calcite.avatica", name: "avatica-core", version: "1.16.0-POLYPHENYDB"  // License: Apache 2.0
 
     ////// APACHE COMMONS LANG
     compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
-	
-    
+
 
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: "4.12"
@@ -120,8 +129,6 @@ artifacts {
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
-
 
 
 

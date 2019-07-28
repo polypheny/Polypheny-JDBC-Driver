@@ -214,6 +214,15 @@ class RemotePolyphenyDbMeta extends MetaImpl {
 
 
     @Override
+    public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        return connection.invokeWithRetries( () -> {
+            final Service.ResultSetResponse response = service.apply( new Service.PrimaryKeysRequest( ch.id, catalog, schema, table ) );
+            return toResultSet( MetaPrimaryKey.class, response );
+        } );
+    }
+
+
+    @Override
     public MetaResultSet getColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
         return connection.invokeWithRetries( () -> {
             final Service.ResultSetResponse response = service.apply( new Service.ColumnsRequest( ch.id, catalog, schemaPattern.s, tableNamePattern.s, columnNamePattern.s ) );
