@@ -223,6 +223,33 @@ class RemotePolyphenyDbMeta extends MetaImpl {
 
 
     @Override
+    public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        return connection.invokeWithRetries( () -> {
+            final Service.ResultSetResponse response = service.apply( new Service.ImportedKeysRequest( ch.id, catalog, schema, table ) );
+            return toResultSet( MetaImportedKey.class, response );
+        } );
+    }
+
+
+    @Override
+    public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        return connection.invokeWithRetries( () -> {
+            final Service.ResultSetResponse response = service.apply( new Service.ExportedKeysRequest( ch.id, catalog, schema, table ) );
+            return toResultSet( MetaExportedKey.class, response );
+        } );
+    }
+
+
+    @Override
+    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String catalog, final String schema, final String table, final boolean unique, final boolean approximate ) {
+        return connection.invokeWithRetries( () -> {
+            final Service.ResultSetResponse response = service.apply( new Service.IndexInfoRequest( ch.id, catalog, schema, table, unique, approximate ) );
+            return toResultSet( MetaIndexInfo.class, response );
+        } );
+    }
+
+
+    @Override
     public MetaResultSet getColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
         return connection.invokeWithRetries( () -> {
             final Service.ResultSetResponse response = service.apply( new Service.ColumnsRequest( ch.id, catalog, schemaPattern.s, tableNamePattern.s, columnNamePattern.s ) );
