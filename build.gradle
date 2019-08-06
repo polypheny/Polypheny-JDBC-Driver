@@ -31,7 +31,7 @@ repositories {
     }
     maven {
         // DBIS Artifactory
-        url "https://dbis-artifactory.dmi.unibas.ch/maven2/"
+        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
     maven {
         url "https://clojars.org/repo/"
@@ -60,10 +60,8 @@ configurations.all {
 
 
 dependencies {
-    compile name: "avatica-1.16.0-POLYPHENYDB-shaded"
-    
     ////// APACHE CALCITE AVATICA
-    // compile group: "org.apache.calcite.avatica", name: "avatica-core", version: "1.16.0-POLYPHENYDB"  // License: Apache 2.0
+    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: "1.16.0-POLYPHENYDB"  // License: Apache 2.0
 
     ////// APACHE COMMONS LANG
     compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
