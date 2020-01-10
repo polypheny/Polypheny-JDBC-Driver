@@ -59,20 +59,20 @@ import org.apache.calcite.avatica.remote.TypedValue;
 /**
  * see org.apache.calcite.avatica.remote.RemoteMeta
  */
-class RemotePolyphenyDbMeta extends MetaImpl {
+class RemotePolyphenyMeta extends MetaImpl {
 
     final Service service;
     final Map<String, ConnectionPropertiesImpl> propsMap = new HashMap<>();
     private Map<DatabaseProperty, Object> databaseProperties;
 
 
-    RemotePolyphenyDbMeta( AvaticaConnection connection ) {
+    RemotePolyphenyMeta( AvaticaConnection connection ) {
         super( connection );
         this.service = connection.getService();
     }
 
 
-    RemotePolyphenyDbMeta( AvaticaConnection connection, Service service ) {
+    RemotePolyphenyMeta( AvaticaConnection connection, Service service ) {
         super( connection );
         this.service = service;
     }

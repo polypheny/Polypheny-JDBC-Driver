@@ -52,12 +52,12 @@ import org.apache.calcite.avatica.UnregisteredDriver;
  * See also org.apache.calcite.avatica.AvaticaJdbc41Factory
  */
 @SuppressWarnings("unused")
-public class PolyphenyDbJdbc41Factory extends PolyphenyDbJdbcFactory {
+public class PolyphenyJdbc41Factory extends PolyphenyJdbcFactory {
 
     /**
      * Creates a factory for JDBC version 4.1.
      */
-    public PolyphenyDbJdbc41Factory() {
+    public PolyphenyJdbc41Factory() {
         this( 4, 1 );
     }
 
@@ -68,7 +68,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbJdbcFactory {
      * @param major JDBC major version
      * @param minor JDBC minor version
      */
-    protected PolyphenyDbJdbc41Factory( int major, int minor ) {
+    protected PolyphenyJdbc41Factory( int major, int minor ) {
         super( major, minor );
     }
 
@@ -113,7 +113,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbJdbcFactory {
     /**
      * See also org.apache.calcite.avatica.AvaticaJdbc41Factory.AvaticaJdbc41Connection
      */
-    protected static class PolyphenyDbJdbc41Connection extends AvaticaConnection implements PolyphenyDbJdbcConnection {
+    protected static class PolyphenyDbJdbc41Connection extends AvaticaConnection implements PolyphenyJdbcConnection {
 
         /**
          * @param driver Driver
@@ -130,7 +130,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbJdbcFactory {
     /**
      * See also org.apache.calcite.avatica.AvaticaJdbc41Factory.AvaticaJdbc41Statement
      */
-    protected static class PolyphenyDbJdbc41Statement extends AvaticaStatement implements PolyphenyDbJdbcStatement {
+    protected static class PolyphenyDbJdbc41Statement extends AvaticaStatement implements PolyphenyJdbcStatement {
 
         protected PolyphenyDbJdbc41Statement( AvaticaConnection connection, StatementHandle h, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
             super( connection, h, resultSetType, resultSetConcurrency, resultSetHoldability );
@@ -141,7 +141,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbJdbcFactory {
     /**
      * See also org.apache.calcite.avatica.AvaticaJdbc41Factory.AvaticaJdbc41PreparedStatement
      */
-    protected static class PolyphenyDbJdbc41PreparedStatement extends AvaticaPreparedStatement implements PolyphenyDbJdbcPreparedStatement {
+    protected static class PolyphenyDbJdbc41PreparedStatement extends AvaticaPreparedStatement implements PolyphenyJdbcPreparedStatement {
 
         /**
          * @param connection Connection
@@ -266,7 +266,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbJdbcFactory {
     }
 
 
-    protected static class PolyphenyDbJdbc41ResultSet extends AvaticaResultSet implements PolyphenyDbJdbcResultSet {
+    protected static class PolyphenyDbJdbc41ResultSet extends AvaticaResultSet implements PolyphenyJdbcResultSet {
 
         protected PolyphenyDbJdbc41ResultSet( AvaticaStatement statement, QueryState state, Signature signature, PolyphenyDbJdbc41ResultSetMetaData resultSetMetaData, TimeZone timeZone, Frame firstFrame ) throws SQLException {
             super( statement, state, signature, resultSetMetaData, timeZone, firstFrame );
@@ -274,7 +274,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbJdbcFactory {
     }
 
 
-    protected static class PolyphenyDbJdbc41DatabaseMetaData extends AvaticaDatabaseMetaData implements PolyphenyDbJdbcDatabaseMetaData {
+    protected static class PolyphenyDbJdbc41DatabaseMetaData extends AvaticaDatabaseMetaData implements PolyphenyJdbcDatabaseMetaData {
 
         protected PolyphenyDbJdbc41DatabaseMetaData( AvaticaConnection connection ) {
             super( connection );
@@ -282,7 +282,7 @@ public class PolyphenyDbJdbc41Factory extends PolyphenyDbJdbcFactory {
     }
 
 
-    protected static class PolyphenyDbJdbc41ResultSetMetaData extends AvaticaResultSetMetaData implements PolyphenyDbJdbcResultSetMetaData {
+    protected static class PolyphenyDbJdbc41ResultSetMetaData extends AvaticaResultSetMetaData implements PolyphenyJdbcResultSetMetaData {
 
         protected PolyphenyDbJdbc41ResultSetMetaData( AvaticaStatement statement, Signature signature ) {
             /*

@@ -26,6 +26,6 @@
 package org.polypheny.jdbc;
 
 
-public interface PolyphenyDbJdbcStatement extends java.sql.Statement {
+public interface PolyphenyJdbcConnection extends java.sql.Connection {
 
 }

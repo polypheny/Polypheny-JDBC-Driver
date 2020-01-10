@@ -124,7 +124,7 @@ public class Driver extends UnregisteredDriver {
         // Create a single Service and set it on the Connection instance
         final Service service = createService( connection, config );
         connection.setService( service );
-        return new RemotePolyphenyDbMeta( connection );
+        return new RemotePolyphenyMeta( connection );
     }
 
 
@@ -178,7 +178,7 @@ public class Driver extends UnregisteredDriver {
 
             case JDBC_41:
             default:
-                return "ch.unibas.dmi.dbis.polyphenydb.jdbc.PolyphenyDbJdbc41Factory";
+                return "org.polypheny.jdbc.PolyphenyJdbc41Factory";
         }
     }
 

@@ -26,6 +26,6 @@
 package org.polypheny.jdbc;
 
 
-public interface PolyphenyDbJdbcDatabaseMetaData extends java.sql.DatabaseMetaData {
+public interface PolyphenyJdbcResultSetMetaData extends java.sql.ResultSetMetaData {
 
 }

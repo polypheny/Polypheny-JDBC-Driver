@@ -26,6 +26,6 @@
 package org.polypheny.jdbc;
 
 
-public interface PolyphenyDbJdbcResultSet extends java.sql.ResultSet {
+public interface PolyphenyJdbcResultSet extends java.sql.ResultSet {
 
 }
