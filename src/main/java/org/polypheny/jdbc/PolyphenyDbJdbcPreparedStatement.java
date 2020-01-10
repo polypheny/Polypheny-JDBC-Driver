@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Copyright (c) 2020 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,9 @@
  *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.jdbc;
 
 
-public interface PolyphenyDbJdbcResultSet extends java.sql.ResultSet {
+public interface PolyphenyDbJdbcPreparedStatement extends java.sql.PreparedStatement {
 
 }

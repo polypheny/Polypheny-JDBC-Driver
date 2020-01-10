@@ -1,10 +1,10 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2018 Databases and Information Systems Research Group, University of Basel, Switzerland
+ * Copyright (c) 2020 Databases and Information Systems Research Group, University of Basel, Switzerland
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -20,9 +20,10 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package ch.unibas.dmi.dbis.polyphenydb.jdbc;
+package org.polypheny.jdbc;
 
 
 import java.io.UnsupportedEncodingException;
@@ -94,7 +95,7 @@ public class Driver extends UnregisteredDriver {
     protected DriverVersion createDriverVersion() {
         return DriverVersion.load(
                 Driver.class,
-                "ch-unibas-dmi-dbis-polyphenydb-jdbc.properties",
+                "org-polypheny-jdbc.properties",
                 "Polypheny-DB JDBC Driver",
                 "unknown version",
                 "Polypheny-DB",
@@ -271,7 +272,7 @@ public class Driver extends UnregisteredDriver {
         final int questionMarkPosition = url.indexOf( '?' );
         if ( questionMarkPosition != -1 ) {
             // we have some parameters
-            final String parameters = url.substring( questionMarkPosition + 1, url.length() );
+            final String parameters = url.substring( questionMarkPosition + 1 );
             url = url.substring( 0, questionMarkPosition );
 
             final StringTokenizer parameterTokens = new StringTokenizer( parameters, "&" );
@@ -286,7 +287,7 @@ public class Driver extends UnregisteredDriver {
                     parameterKey = parameter.substring( 0, equalPosition );
 
                     if ( equalPosition + 1 < parameter.length() ) {
-                        parameterValue = parameter.substring( equalPosition + 1, parameter.length() );
+                        parameterValue = parameter.substring( equalPosition + 1 );
                     }
                 }
 
@@ -322,7 +323,7 @@ public class Driver extends UnregisteredDriver {
         if ( atPosition != -1 ) {
             // we have username[:password]@...
             final String userPassword = url.substring( 0, atPosition );
-            url = url.substring( atPosition + 1, url.length() );
+            url = url.substring( atPosition + 1 );
 
             final int colonPosition = userPassword.indexOf( ':' );
             String username;
@@ -332,7 +333,7 @@ public class Driver extends UnregisteredDriver {
                 username = userPassword.substring( 0, colonPosition );
 
                 if ( colonPosition + 1 < userPassword.length() ) {
-                    password = userPassword.substring( colonPosition + 1, userPassword.length() );
+                    password = userPassword.substring( colonPosition + 1 );
                 }
             } else {
                 username = userPassword;
@@ -376,7 +377,7 @@ public class Driver extends UnregisteredDriver {
             }
 
             if ( colonPosition + 1 < hostPort.length() ) {
-                port = hostPort.substring( colonPosition + 1, hostPort.length() );
+                port = hostPort.substring( colonPosition + 1 );
             }
         }
 
