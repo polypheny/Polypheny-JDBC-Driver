@@ -185,14 +185,14 @@ public class DriverTest {
     @Test
     public void parseUrl_String_null__AcceptableUrl() throws Exception {
         final Properties expected = new Properties();
-        expected.setProperty( DRIVER.PROPERTY_USERNAME_KEY, "username" );
-        expected.setProperty( DRIVER.PROPERTY_PASSWORD_KEY, "password" );
-        expected.setProperty( DRIVER.PROPERTY_HOST_KEY, "localhost" );
-        expected.setProperty( DRIVER.PROPERTY_PORT_KEY, "20569" );
-        expected.setProperty( DRIVER.PROPERTY_DATABASE_KEY, "database" );
+        expected.setProperty( Driver.PROPERTY_USERNAME_KEY, "username" );
+        expected.setProperty( Driver.PROPERTY_PASSWORD_KEY, "password" );
+        expected.setProperty( Driver.PROPERTY_HOST_KEY, "localhost" );
+        expected.setProperty( Driver.PROPERTY_PORT_KEY, "20569" );
+        expected.setProperty( Driver.PROPERTY_DATABASE_KEY, "database" );
         expected.setProperty( "k1", "v1" );
         expected.setProperty( "k2", "v2" );
-        expected.setProperty( DRIVER.PROPERTY_URL_KEY, "http://localhost:20569/" );
+        expected.setProperty( Driver.PROPERTY_URL_KEY, "http://localhost:20569/" );
 
         final Properties actual = DRIVER.parseUrl( "jdbc:polypheny://username:password@localhost:20569/database?k1=v1&k2=v2", null );
 
@@ -205,7 +205,7 @@ public class DriverTest {
         final String expected = "localhost";
         final String actual = DRIVER
                 .parseUrl( "jdbc:polypheny://username:password@:20569/database?k1=v1&k2=v2", null )
-                .getProperty( DRIVER.PROPERTY_HOST_KEY );
+                .getProperty( Driver.PROPERTY_HOST_KEY );
 
         assertEquals( expected, actual );
     }
@@ -213,7 +213,7 @@ public class DriverTest {
 
     @Test
     public void parseUrl_String__AcceptableUrlNoPort() throws Exception {
-        final int expected = DRIVER.DEFAULT_PORT;
+        final int expected = Driver.DEFAULT_PORT;
         final Properties connectionProperties = DRIVER.parseUrl( "jdbc:polypheny://username:password@host/database?k1=v1&k2=v2", new Properties() );
         final int actual = Integer.parseInt( connectionProperties.getProperty( "port" ) );
 
@@ -225,11 +225,11 @@ public class DriverTest {
     public void parseUrl_String_Properties__AcceptableUrl_OverrideHost() throws Exception {
         final String expected = "someother-host";
         final Properties info = new Properties();
-        info.setProperty( DRIVER.PROPERTY_HOST_KEY, expected );
+        info.setProperty( Driver.PROPERTY_HOST_KEY, expected );
 
         final String actual = DRIVER
                 .parseUrl( "jdbc:polypheny://username:password@localhost:20569/database?k1=v1&k2=v2", info )
-                .getProperty( DRIVER.PROPERTY_HOST_KEY );
+                .getProperty( Driver.PROPERTY_HOST_KEY );
 
         assertEquals( expected, actual );
     }
@@ -238,16 +238,16 @@ public class DriverTest {
     @Test
     public void parseUrl_String_Properties__AcceptableUrl_SetViaUrlParam() throws Exception {
         final Properties expected = new Properties();
-        expected.setProperty( DRIVER.PROPERTY_USERNAME_KEY, "username" );
-        expected.setProperty( DRIVER.PROPERTY_PASSWORD_KEY, "secret" );
-        expected.setProperty( DRIVER.PROPERTY_HOST_KEY, "localhost" );
-        expected.setProperty( DRIVER.PROPERTY_PORT_KEY, "20569" );
-        expected.setProperty( DRIVER.PROPERTY_DATABASE_KEY, "database" );
+        expected.setProperty( Driver.PROPERTY_USERNAME_KEY, "username" );
+        expected.setProperty( Driver.PROPERTY_PASSWORD_KEY, "secret" );
+        expected.setProperty( Driver.PROPERTY_HOST_KEY, "localhost" );
+        expected.setProperty( Driver.PROPERTY_PORT_KEY, "20569" );
+        expected.setProperty( Driver.PROPERTY_DATABASE_KEY, "database" );
         expected.setProperty( "k1", "v1" );
         expected.setProperty( "k2", "v2" );
-        expected.setProperty( DRIVER.PROPERTY_URL_KEY, "http://localhost:20569/" );
+        expected.setProperty( Driver.PROPERTY_URL_KEY, "http://localhost:20569/" );
 
-        final Properties actual = DRIVER.parseUrl( "jdbc:polypheny://username@localhost:20569/database?k1=v1&k2=v2&" + DRIVER.PROPERTY_PASSWORD_KEY + "=secret", null );
+        final Properties actual = DRIVER.parseUrl( "jdbc:polypheny://username@localhost:20569/database?k1=v1&k2=v2&" + Driver.PROPERTY_PASSWORD_KEY + "=secret", null );
 
         assertEquals( expected, actual );
     }

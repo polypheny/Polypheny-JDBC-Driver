@@ -88,7 +88,8 @@ class RemotePolyphenyMeta extends MetaImpl {
                     clazz == null
                             ? Collections.emptyList()
                             : fieldMetaData( clazz ).columns;
-            signature0 = Signature.create( columns, "?", Collections.emptyList(), CursorFactory.ARRAY, Meta.StatementType.SELECT );
+
+            signature0 = Signature.create( columns, "?", Collections.emptyList(), response.signature.cursorFactory, Meta.StatementType.SELECT );
         }
         return MetaResultSet.create( response.connectionId, response.statementId, response.ownStatement, signature0, response.firstFrame );
     }

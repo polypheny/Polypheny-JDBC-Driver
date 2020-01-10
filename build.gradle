@@ -30,7 +30,7 @@ repositories {
         dirs 'libs'
     }
     maven {
-        // DBIS Artifactory
+        // DBIS Nexus
         url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
     maven {
