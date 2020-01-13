@@ -4,8 +4,8 @@ group "org.polypheny"
 
 def versionMajor = 1
 def versionMinor = 0
-def versionQualifier = "SNAPSHOT"
-version = versionMajor + "." + versionMinor + "-" + versionQualifier
+def versionQualifier = ""
+version = versionMajor + "." + versionMinor + versionQualifier
 
 
 buildscript {
