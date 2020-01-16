@@ -35,8 +35,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.ConnectionConfig;
 import org.apache.calcite.avatica.DriverVersion;
@@ -51,9 +50,8 @@ import org.apache.calcite.avatica.remote.Service.OpenConnectionRequest;
 import org.apache.calcite.avatica.remote.Service.OpenConnectionResponse;
 
 
+@Slf4j
 public class Driver extends UnregisteredDriver {
-
-    private static final Logger LOGGER = Logger.getLogger( Driver.class.getName() );
 
     public static final String DEFAULT_HOST = "localhost";
     public static final int DEFAULT_PORT = 20591;
@@ -73,14 +71,12 @@ public class Driver extends UnregisteredDriver {
 
     static {
         try {
-            if ( LOGGER.isLoggable( Level.FINE ) ) {
-                LOGGER.log( Level.FINE, "Registering a new Driver instance at the DriverManager." );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Registering a new Driver instance at the DriverManager." );
             }
             DriverManager.registerDriver( new Driver() );
         } catch ( SQLException ex ) {
-            if ( LOGGER.isLoggable( Level.SEVERE ) ) {
-                LOGGER.log( Level.SEVERE, "Registering failed!", ex );
-            }
+            log.error( "Registering failed!", ex );
             throw new RuntimeException( "Cannot register the JDBC driver! See 'cause' for details.", ex );
         }
     }
@@ -203,8 +199,8 @@ public class Driver extends UnregisteredDriver {
             connection = (AvaticaConnection) super.connect( url, info );
         } else {
             // Old style -- jdbc:polypheny://server.address/database&...
-            if ( LOGGER.isLoggable( Level.WARNING ) ) {
-                LOGGER.warning( "No transport scheme given. Falling back to http. This might change in future." );
+            if ( log.isInfoEnabled() ) {
+                log.info( "No transport scheme given. Falling back to http. This might change in future." );
             }
             info = parseUrl( url, info );
             if ( info == null ) {
@@ -265,8 +261,8 @@ public class Driver extends UnregisteredDriver {
             return null;
         }
 
-        if ( LOGGER.isLoggable( Level.FINE ) ) {
-            LOGGER.fine( "Parsing \"" + url + "\"" );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Parsing \"" + url + "\"" );
         }
 
         final int questionMarkPosition = url.indexOf( '?' );
@@ -295,8 +291,8 @@ public class Driver extends UnregisteredDriver {
                     try {
                         prop.setProperty( parameterKey, URLDecoder.decode( parameterValue, "UTF-8" ) );
                     } catch ( UnsupportedEncodingException | NoSuchMethodError e ) {
-                        if ( LOGGER.isLoggable( Level.FINE ) ) {
-                            LOGGER.log( Level.FINE, "Cannot use the decode method with UTF-8. Using the fallback (deprecated) method.", e );
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "Cannot use the decode method with UTF-8. Using the fallback (deprecated) method.", e );
                         }
                         //noinspection deprecation
                         prop.setProperty( parameterKey, URLDecoder.decode( parameterValue ) );
@@ -395,8 +391,8 @@ public class Driver extends UnregisteredDriver {
             }
         }
 
-        if ( LOGGER.isLoggable( Level.FINE ) ) {
-            LOGGER.fine( "Result of parsing: " + prop );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Result of parsing: {}", prop );
         }
 
         return prop;

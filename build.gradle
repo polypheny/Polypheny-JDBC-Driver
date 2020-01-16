@@ -67,6 +67,12 @@ dependencies {
     compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
 
 
+    ////// LOGGING
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26' // License: MIT
+    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.12.1' // License: Apache 2.0
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.1' // License: Apache 2.0
+
+
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: "4.12"
     testCompile group: "org.testng", name: "testng", version: "6.10"
