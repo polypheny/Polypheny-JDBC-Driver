@@ -69,8 +69,8 @@ dependencies {
 
     ////// LOGGING
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26' // License: MIT
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.12.1' // License: Apache 2.0
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.1' // License: Apache 2.0
+    //compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.12.1' // License: Apache 2.0
+    //compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.1' // License: Apache 2.0
 
 
     // --- Test Compile ---
