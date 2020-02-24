@@ -26,6 +26,7 @@ buildscript {
 
 
 repositories {
+    mavenLocal()
     flatDir {
         dirs 'libs'
     }
@@ -61,7 +62,7 @@ configurations.all {
 
 dependencies {
     ////// APACHE CALCITE AVATICA
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: "1.16.0-POLYPHENYDB"  // License: Apache 2.0
+    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: "1.16.0-POLYPHENY-SNAPSHOT"  // License: Apache 2.0
 
     ////// APACHE COMMONS LANG
     compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
