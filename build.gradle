@@ -40,7 +40,7 @@ repositories {
 
 
 apply plugin: "java"
-apply plugin: "maven"
+apply plugin: "maven-publish"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
 apply plugin: "com.github.johnrengelman.shadow"
@@ -129,6 +129,25 @@ artifacts {
     archives javadocJar // jar file containing the source files
 }
 
+publishing {
+    publications {
+        "${project.name}"(MavenPublication) {
+            from components.java
+            artifact jar
+            artifact source: sourcesJar, classifier: 'sources', extension: 'jar'
+            artifact source: javadocJar, classifier: 'javadoc', extension: 'jar'
+            pom {
+                licenses {
+                    license {
+                        name = 'Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0'
+                    }
+                }
+            }
+        }
+    }
+}
+task generatePom(group: 'publishing', dependsOn: "generatePomFileFor${project.name.capitalize()}Publication")
 
 
 /**
