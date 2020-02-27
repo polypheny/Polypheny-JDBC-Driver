@@ -26,6 +26,7 @@
 package org.polypheny.jdbc;
 
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -251,7 +252,12 @@ public class Driver extends UnregisteredDriver {
 
                 if ( (parameterKey != null && parameterKey.length() > 0) && (parameterValue != null && parameterValue.length() > 0) ) {
                     try {
-                        prop.setProperty( parameterKey, URLDecoder.decode( parameterValue, StandardCharsets.UTF_8 ) );
+                        try {
+                            prop.setProperty( parameterKey, URLDecoder.decode( parameterValue, StandardCharsets.UTF_8.name() ) );
+                        } catch ( UnsupportedEncodingException e ) {
+                            // not going to happen - value came from JDK's own StandardCharsets
+                            throw new RuntimeException( e );
+                        }
                     } catch ( NoSuchMethodError e ) {
                         log.debug( "Cannot use the decode method with UTF-8. Using the fallback (deprecated) method.", e );
                         //noinspection deprecation
