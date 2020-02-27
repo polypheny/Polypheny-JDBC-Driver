@@ -18,7 +18,7 @@ buildscript {
     }
     dependencies {
 		// Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
-        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
+        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.2.0"
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "4.1.6"
     }
@@ -50,6 +50,10 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
+compileJava   {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
 
 configurations.all {
     // check for updates every build
@@ -119,7 +123,9 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 shadowJar {
-    classifier = ''
+    archiveClassifier = ''
+    mergeServiceFiles() // merge the META-INF/services/java.sql.Driver files
+    exclude('META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'module-info.class', 'META-INF/services/com.fasterxml.jackson.core.*')
 }
 assemble.dependsOn shadowJar
 artifacts {

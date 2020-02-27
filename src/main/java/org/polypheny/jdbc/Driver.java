@@ -30,8 +30,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -70,20 +70,12 @@ public class Driver extends UnregisteredDriver {
 
 
     static {
-        try {
-            if ( log.isDebugEnabled() ) {
-                log.debug( "Registering a new Driver instance at the DriverManager." );
-            }
-            DriverManager.registerDriver( new Driver() );
-        } catch ( SQLException ex ) {
-            log.error( "Registering failed!", ex );
-            throw new RuntimeException( "Cannot register the JDBC driver! See 'cause' for details.", ex );
-        }
+        new Driver().register();
     }
 
 
     public Driver() {
-        // Making sure, that there is always the default constructor available
+        super();
     }
 
 
@@ -92,9 +84,9 @@ public class Driver extends UnregisteredDriver {
         return DriverVersion.load(
                 Driver.class,
                 "org-polypheny-jdbc.properties",
-                "Polypheny-DB JDBC Driver",
+                "Polypheny JDBC Driver",
                 "unknown version",
-                "Polypheny-DB",
+                "Polypheny",
                 "unknown version" );
     }
 
@@ -199,9 +191,7 @@ public class Driver extends UnregisteredDriver {
             connection = (AvaticaConnection) super.connect( url, info );
         } else {
             // Old style -- jdbc:polypheny://server.address/database&...
-            if ( log.isInfoEnabled() ) {
-                log.info( "No transport scheme given. Falling back to http. This might change in future." );
-            }
+            log.info( "No transport scheme given. Falling back to http. This might change in future." );
             info = parseUrl( url, info );
             if ( info == null ) {
                 // Something is wrong with the url
@@ -222,31 +212,6 @@ public class Driver extends UnregisteredDriver {
         if ( response == null ) {
             throw new SQLException( "Exception opening a connection. The response is `null`." );
         }
-/*
-        final StopWatch rtt = new StopWatch();
-        Executors.newSingleThreadScheduledExecutor( new ThreadFactory() {
-            @Override
-            public Thread newThread( Runnable r ) {
-                final Thread thread = new Thread( r );
-                thread.setDaemon( true );
-                return thread;
-            }
-        } ).scheduleAtFixedRate( () -> {
-            try {
-                //System.err.print( "Ping ... " );
-                rtt.start();
-                service.apply( new ConnectionSyncRequest( connection.id, new ConnectionPropertiesImpl( connection ) ) );
-                //System.err.println( "Ping ... Pong [RTT = " + rtt + "]");
-                rtt.reset();
-            } catch ( SQLException e ) {
-                e.printStackTrace();
-                try {
-                    connection.close();
-                } catch ( SQLException e1 ) {
-                    e1.printStackTrace();
-                }
-            }
-        }, TimeUnit.SECONDS.toMillis( 1 ), TimeUnit.SECONDS.toMillis( 1 ), TimeUnit.MILLISECONDS );*/
 
         return connection;
     }
@@ -261,9 +226,7 @@ public class Driver extends UnregisteredDriver {
             return null;
         }
 
-        if ( log.isDebugEnabled() ) {
-            log.debug( "Parsing \"" + url + "\"" );
-        }
+        log.debug( "Parsing \"" + url + "\"" );
 
         final int questionMarkPosition = url.indexOf( '?' );
         if ( questionMarkPosition != -1 ) {
@@ -289,11 +252,14 @@ public class Driver extends UnregisteredDriver {
 
                 if ( (parameterKey != null && parameterKey.length() > 0) && (parameterValue != null && parameterValue.length() > 0) ) {
                     try {
-                        prop.setProperty( parameterKey, URLDecoder.decode( parameterValue, "UTF-8" ) );
-                    } catch ( UnsupportedEncodingException | NoSuchMethodError e ) {
-                        if ( log.isDebugEnabled() ) {
-                            log.debug( "Cannot use the decode method with UTF-8. Using the fallback (deprecated) method.", e );
+                        try {
+                            prop.setProperty( parameterKey, URLDecoder.decode( parameterValue, StandardCharsets.UTF_8.name() ) );
+                        } catch ( UnsupportedEncodingException e ) {
+                            // not going to happen - value came from JDK's own StandardCharsets
+                            throw new RuntimeException( e );
                         }
+                    } catch ( NoSuchMethodError e ) {
+                        log.debug( "Cannot use the decode method with UTF-8. Using the fallback (deprecated) method.", e );
                         //noinspection deprecation
                         prop.setProperty( parameterKey, URLDecoder.decode( parameterValue ) );
                     }
@@ -391,9 +357,7 @@ public class Driver extends UnregisteredDriver {
             }
         }
 
-        if ( log.isDebugEnabled() ) {
-            log.debug( "Result of parsing: {}", prop );
-        }
+        log.debug( "Result of parsing: {}", prop );
 
         return prop;
     }
