@@ -18,4 +18,4 @@ This JDBC Driver is based on [Apache Avatica](https://calcite.apache.org/avatica
 
 
 ## License ##
-The MIT License (MIT)
+The Apache 2.0 License

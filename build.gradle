@@ -109,9 +109,9 @@ sourceSets {
  */
 jar {
     manifest {
-        attributes "Manifest-Version": "1.0"
-        attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
-        attributes "Version": "$version"
+        attributes 'Manifest-Version': '1.0'
+        attributes 'Copyright': 'The Polypheny Project'
+        attributes 'Version': "${project.version}"
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
