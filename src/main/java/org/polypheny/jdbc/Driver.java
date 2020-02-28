@@ -24,6 +24,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +35,10 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.UnregisteredDriver;
 import org.apache.calcite.avatica.remote.AvaticaHttpClient;
 import org.apache.calcite.avatica.remote.AvaticaHttpClientFactory;
+import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.remote.ProtobufTranslationImpl;
 import org.apache.calcite.avatica.remote.RemoteProtobufService;
+import org.apache.calcite.avatica.remote.RemoteService;
 import org.apache.calcite.avatica.remote.Service;
 import org.apache.calcite.avatica.remote.Service.OpenConnectionRequest;
 import org.apache.calcite.avatica.remote.Service.OpenConnectionResponse;
@@ -44,20 +47,27 @@ import org.apache.calcite.avatica.remote.Service.OpenConnectionResponse;
 @Slf4j
 public class Driver extends UnregisteredDriver {
 
+    public static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
+    @Deprecated
+    public static final String URL_SCHEMA = DRIVER_URL_SCHEMA;
+
     public static final String DEFAULT_HOST = "localhost";
     public static final int DEFAULT_PORT = 20591;
-    public static final String URL_SCHEMA = "jdbc:polypheny:";
-    static final String PROPERTY_USERNAME_KEY = "user";
+    public static final String DEFAULT_TRANSPORT_SCHEMA = "http:";
+    public static final String DEFAULT_SERIALIZATION = Serialization.PROTOBUF.name();
+
+    public static final String PROPERTY_USERNAME_KEY = "user";
     @java.lang.SuppressWarnings(
             "squid:S2068"
             // Credentials should not be hard-coded: 'password' detected
             // Justification: "password" is here the key to set the password in the connection parameters.
     )
-    static final String PROPERTY_PASSWORD_KEY = "password";
-    static final String PROPERTY_URL_KEY = "url";
-    static final String PROPERTY_HOST_KEY = "host";
-    static final String PROPERTY_PORT_KEY = "port";
-    static final String PROPERTY_DATABASE_KEY = "db";
+    public static final String PROPERTY_PASSWORD_KEY = "password";
+    public static final String PROPERTY_URL_KEY = "url";
+    public static final String PROPERTY_HOST_KEY = "host";
+    public static final String PROPERTY_PORT_KEY = "port";
+    public static final String PROPERTY_DATABASE_KEY = "db";
+    public static final String PROPERTY_SERIALIZATION = "serialization";
 
 
     static {
@@ -84,7 +94,7 @@ public class Driver extends UnregisteredDriver {
 
     @Override
     protected String getConnectStringPrefix() {
-        return URL_SCHEMA;
+        return DRIVER_URL_SCHEMA;
     }
 
 
@@ -113,12 +123,18 @@ public class Driver extends UnregisteredDriver {
         if ( metaFactory != null ) {
             service = metaFactory.create( connection );
         } else if ( config.url() != null ) {
-            // TODO: let the user chose between JSON and Google Protocol Buffers
-            //service = new RemoteService( getHttpClient( connection, config ) );
-            service = new RemoteProtobufService( getHttpClient( connection, config ), new ProtobufTranslationImpl() );
+            switch ( Serialization.valueOf( connection.config().serialization().toUpperCase() ) ) {
+                case JSON:
+                    service = new RemoteService( getHttpClient( connection, config ) );
+                    break;
+                case PROTOBUF:
+                    service = new RemoteProtobufService( getHttpClient( connection, config ), new ProtobufTranslationImpl() );
+                    break;
+                default:
+                    throw new RuntimeException( new IllegalArgumentException( "\"serialization\" is not one of " + Arrays.toString( Serialization.values() ) ) );
+            }
         } else {
             throw new RuntimeException( new NullPointerException( "config.url() == null" ) );
-            //service = new MockJsonService( Collections.<String, String>emptyMap() );
         }
         return service;
     }
@@ -242,13 +258,12 @@ public class Driver extends UnregisteredDriver {
                 }
 
                 if ( (parameterKey != null && parameterKey.length() > 0) && (parameterValue != null && parameterValue.length() > 0) ) {
+                    parameterKey = parameterKey.toLowerCase(); // our parameter keys are always lowercase
                     try {
-                        try {
-                            prop.setProperty( parameterKey, URLDecoder.decode( parameterValue, StandardCharsets.UTF_8.name() ) );
-                        } catch ( UnsupportedEncodingException e ) {
-                            // not going to happen - value came from JDK's own StandardCharsets
-                            throw new RuntimeException( e );
-                        }
+                        prop.setProperty( parameterKey, URLDecoder.decode( parameterValue, StandardCharsets.UTF_8.name() ) );
+                    } catch ( UnsupportedEncodingException e ) {
+                        // not going to happen - value came from JDK's own StandardCharsets
+                        throw new RuntimeException( e );
                     } catch ( NoSuchMethodError e ) {
                         log.debug( "Cannot use the decode method with UTF-8. Using the fallback (deprecated) method.", e );
                         //noinspection deprecation
@@ -325,19 +340,18 @@ public class Driver extends UnregisteredDriver {
         if ( colonPosition != -1 ) {
             host = hostPort.substring( 0, colonPosition );
 
-            if ( host.isEmpty() ) {
-                host = DEFAULT_HOST;
-            }
-
             if ( colonPosition + 1 < hostPort.length() ) {
                 port = hostPort.substring( colonPosition + 1 );
             }
         }
 
+        if ( host.isEmpty() ) {
+            host = DEFAULT_HOST;
+        }
+
         prop.setProperty( PROPERTY_HOST_KEY, host );
         prop.setProperty( PROPERTY_PORT_KEY, port );
-
-        prop.setProperty( PROPERTY_URL_KEY, (scheme.isEmpty() ? "http:" : scheme) + "//" + prop.getProperty( PROPERTY_HOST_KEY, DEFAULT_HOST ) + ":" + prop.getProperty( PROPERTY_PORT_KEY, Integer.toString( DEFAULT_PORT ) ) + "/" );
+        prop.setProperty( PROPERTY_URL_KEY, (scheme.isEmpty() ? DEFAULT_TRANSPORT_SCHEMA : scheme) + "//" + prop.getProperty( PROPERTY_HOST_KEY, DEFAULT_HOST ) + ":" + prop.getProperty( PROPERTY_PORT_KEY, Integer.toString( DEFAULT_PORT ) ) + "/" );
 
         // OVERRIDE URL BY DEFAULT
         if ( defaults != null ) {
@@ -346,6 +360,21 @@ public class Driver extends UnregisteredDriver {
                 final String value = defaults.getProperty( key );
                 prop.setProperty( key, value );
             }
+        }
+
+        // validate, fix, or set wire_protocol
+        switch ( prop.getProperty( PROPERTY_SERIALIZATION, DEFAULT_SERIALIZATION ).toUpperCase() ) {
+            case "JSON":
+                prop.setProperty( PROPERTY_SERIALIZATION, Serialization.JSON.name() );
+                break;
+            case "PROTOBUF":
+            case "PROTO":
+            case "PROTO3":
+                prop.setProperty( PROPERTY_SERIALIZATION, Serialization.PROTOBUF.name() );
+                break;
+            default:
+                prop.setProperty( PROPERTY_SERIALIZATION, prop.getProperty( PROPERTY_SERIALIZATION ).toUpperCase() );
+                break;
         }
 
         log.debug( "Result of parsing: {}", prop );

@@ -60,10 +60,11 @@ configurations.all {
     resolutionStrategy.cacheChangingModulesFor 0, "seconds"
 }
 
+def avaticaVersion = '1.16.0-POLYPHENY-SNAPSHOT'
 
 dependencies {
     ////// APACHE CALCITE AVATICA
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: "1.16.0-POLYPHENY-SNAPSHOT"  // License: Apache 2.0
+    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: avaticaVersion  // License: Apache 2.0
 
     ////// APACHE COMMONS LANG
     compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
@@ -75,6 +76,7 @@ dependencies {
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: "4.12"
     testCompile group: "org.testng", name: "testng", version: "6.10"
+    testCompile group: 'org.apache.calcite.avatica', name: 'avatica-server', version: avaticaVersion
 }
 
 
