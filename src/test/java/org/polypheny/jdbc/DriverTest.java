@@ -304,7 +304,7 @@ public class DriverTest {
 
 
     @Test
-    public void parseUrl_String_Properties__AcceptableUrl_SetViaUrlParam() throws Exception {
+    public void parseUrl_String_null__AcceptableUrl_SetViaUrlParam() throws Exception {
         final Properties expected = new Properties();
         expected.setProperty( Driver.PROPERTY_USERNAME_KEY, "username" );
         expected.setProperty( Driver.PROPERTY_PASSWORD_KEY, "secret" );
@@ -317,6 +317,60 @@ public class DriverTest {
         expected.setProperty( Driver.PROPERTY_SERIALIZATION, Driver.DEFAULT_SERIALIZATION );
 
         final Properties actual = DRIVER.parseUrl( "jdbc:polypheny://username@localhost:20569/database?k1=v1&k2=v2&" + Driver.PROPERTY_PASSWORD_KEY + "=secret", null );
+
+        assertEquals( expected, actual );
+    }
+
+
+    @Test
+    public void parseUrl_String_null__DeprecatedParameterKeys() throws Exception {
+        final Properties expected = new Properties();
+        expected.setProperty( Driver.PROPERTY_HOST_KEY, Driver.DEFAULT_HOST );
+        expected.setProperty( Driver.PROPERTY_PORT_KEY, Integer.toString( Driver.DEFAULT_PORT ) );
+        expected.setProperty( Driver.PROPERTY_URL_KEY, Driver.DEFAULT_URL );
+
+        expected.setProperty( "wire_protocol", "wire_protocol" );
+        expected.setProperty( Driver.PROPERTY_SERIALIZATION, "WIRE_PROTOCOL" );
+
+        final Properties actual = DRIVER.parseUrl( "jdbc:polypheny:///?"
+                        + "wire_protocol=wire_protocol"
+                , null );
+
+        assertEquals( expected, actual );
+    }
+
+
+    @Test
+    public void parseUrl_String_null__DeprecatedParameterKeysOverwrite() throws Exception {
+        final Properties expected = new Properties();
+        expected.setProperty( Driver.PROPERTY_HOST_KEY, Driver.DEFAULT_HOST );
+        expected.setProperty( Driver.PROPERTY_PORT_KEY, Integer.toString( Driver.DEFAULT_PORT ) );
+        expected.setProperty( Driver.PROPERTY_URL_KEY, Driver.DEFAULT_URL );
+
+        expected.setProperty( "wire_protocol", "wire_protocol" );
+        expected.setProperty( Driver.PROPERTY_SERIALIZATION, "SERIALIZATION" );
+
+        final Properties actual = DRIVER.parseUrl( "jdbc:polypheny:///?"
+                        + "wire_protocol=wire_protocol" + "&" + "serialization=serialization"
+                , null );
+
+        assertEquals( expected, actual );
+    }
+
+
+    @Test
+    public void parseUrl_String_null__DeprecatedParameterKeysOverwrite2() throws Exception {
+        final Properties expected = new Properties();
+        expected.setProperty( Driver.PROPERTY_HOST_KEY, Driver.DEFAULT_HOST );
+        expected.setProperty( Driver.PROPERTY_PORT_KEY, Integer.toString( Driver.DEFAULT_PORT ) );
+        expected.setProperty( Driver.PROPERTY_URL_KEY, Driver.DEFAULT_URL );
+
+        expected.setProperty( "wire_protocol", "wire_protocol" );
+        expected.setProperty( Driver.PROPERTY_SERIALIZATION, "SERIALIZATION" );
+
+        final Properties actual = DRIVER.parseUrl( "jdbc:polypheny:///?"
+                        + "serialization=serialization" + "&" + "wire_protocol=wire_protocol"
+                , null );
 
         assertEquals( expected, actual );
     }

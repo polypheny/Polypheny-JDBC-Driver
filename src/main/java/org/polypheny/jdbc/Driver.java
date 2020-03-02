@@ -25,6 +25,8 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +56,7 @@ public class Driver extends UnregisteredDriver {
     public static final String DEFAULT_HOST = "localhost";
     public static final int DEFAULT_PORT = 20591;
     public static final String DEFAULT_TRANSPORT_SCHEMA = "http:";
+    public static final String DEFAULT_URL = DEFAULT_TRANSPORT_SCHEMA + "//" + DEFAULT_HOST + ":" + DEFAULT_PORT + "/";
     public static final String DEFAULT_SERIALIZATION = Serialization.PROTOBUF.name();
 
     public static final String PROPERTY_USERNAME_KEY = "user";
@@ -68,6 +71,13 @@ public class Driver extends UnregisteredDriver {
     public static final String PROPERTY_PORT_KEY = "port";
     public static final String PROPERTY_DATABASE_KEY = "db";
     public static final String PROPERTY_SERIALIZATION = "serialization";
+
+    private static final Map<String, String> DEPRECATED_PROPERTY_KEYS = new HashMap<>();
+
+
+    static {
+        DEPRECATED_PROPERTY_KEYS.put( "wire_protocol", PROPERTY_SERIALIZATION );
+    }
 
 
     static {
@@ -259,15 +269,25 @@ public class Driver extends UnregisteredDriver {
 
                 if ( (parameterKey != null && parameterKey.length() > 0) && (parameterValue != null && parameterValue.length() > 0) ) {
                     parameterKey = parameterKey.toLowerCase(); // our parameter keys are always lowercase
+
                     try {
-                        prop.setProperty( parameterKey, URLDecoder.decode( parameterValue, StandardCharsets.UTF_8.name() ) );
+                        parameterValue = URLDecoder.decode( parameterValue, StandardCharsets.UTF_8.name() );
                     } catch ( UnsupportedEncodingException e ) {
                         // not going to happen - value came from JDK's own StandardCharsets
                         throw new RuntimeException( e );
                     } catch ( NoSuchMethodError e ) {
                         log.debug( "Cannot use the decode method with UTF-8. Using the fallback (deprecated) method.", e );
                         //noinspection deprecation
-                        prop.setProperty( parameterKey, URLDecoder.decode( parameterValue ) );
+                        parameterValue = URLDecoder.decode( parameterValue );
+                    }
+
+                    prop.setProperty( parameterKey, parameterValue );
+
+                    // Backwards Compatibility
+                    // Note: we do not overwrite the currently valid property, i.e., if the legacy and the current parameter have been set, the current wins.
+                    if ( DEPRECATED_PROPERTY_KEYS.containsKey( parameterKey ) ) {
+                        final String newParameterKey = DEPRECATED_PROPERTY_KEYS.get( parameterKey );
+                        prop.setProperty( newParameterKey, prop.getProperty( newParameterKey, parameterValue ) );
                     }
                 }
             }
@@ -362,7 +382,7 @@ public class Driver extends UnregisteredDriver {
             }
         }
 
-        // validate, fix, or set wire_protocol
+        // validate, fix, or set serialization
         switch ( prop.getProperty( PROPERTY_SERIALIZATION, DEFAULT_SERIALIZATION ).toUpperCase() ) {
             case "JSON":
                 prop.setProperty( PROPERTY_SERIALIZATION, Serialization.JSON.name() );
