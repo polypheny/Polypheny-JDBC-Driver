@@ -26,7 +26,6 @@ buildscript {
 
 
 repositories {
-    mavenLocal()
     maven {
         // DBIS Nexus
         url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
@@ -53,11 +52,6 @@ tasks.withType(JavaCompile) {
 compileJava   {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
-}
-
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
 }
 
 def avaticaVersion = '1.16.0-POLYPHENY-SNAPSHOT'
