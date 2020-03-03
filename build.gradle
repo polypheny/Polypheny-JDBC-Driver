@@ -1,4 +1,4 @@
-
+//
 group "org.polypheny"
 
 
@@ -17,7 +17,7 @@ buildscript {
         }
     }
     dependencies {
-		// Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
+        // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
         classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.2.0"
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "4.1.6"
@@ -26,7 +26,8 @@ buildscript {
 
 
 repositories {
-    mavenLocal()
+    mavenCentral()
+    jcenter()
     maven {
         // DBIS Nexus
         url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
@@ -34,8 +35,6 @@ repositories {
     maven {
         url "https://clojars.org/repo/"
     }
-    mavenCentral()
-    jcenter()
 }
 
 
@@ -50,20 +49,25 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-compileJava   {
+compileJava {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 }
 
+
 configurations.all {
     // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
+    resolutionStrategy{
+        cacheChangingModulesFor 0, 'seconds'
+    }
 }
 
 
+def avaticaVersion = '1.16.0-POLYPHENY-SNAPSHOT'
+
 dependencies {
     ////// APACHE CALCITE AVATICA
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: "1.16.0-POLYPHENY-SNAPSHOT"  // License: Apache 2.0
+    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: avaticaVersion  // License: Apache 2.0
 
     ////// APACHE COMMONS LANG
     compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
@@ -75,14 +79,14 @@ dependencies {
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: "4.12"
     testCompile group: "org.testng", name: "testng", version: "6.10"
+    testCompile group: 'org.apache.calcite.avatica', name: 'avatica-server', version: avaticaVersion
 }
-
 
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java","build/generated-sources"]
+            srcDirs = ["src/main/java", "build/generated-sources"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -101,7 +105,6 @@ sourceSets {
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
-
 
 
 /**
