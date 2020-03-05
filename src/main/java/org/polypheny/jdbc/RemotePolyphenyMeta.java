@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.avatica.AvaticaConnection;
-import org.apache.calcite.avatica.AvaticaConnection.CallableWithoutException;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ConnectionPropertiesImpl;
@@ -37,13 +36,9 @@ import org.apache.calcite.avatica.remote.Service;
 import org.apache.calcite.avatica.remote.Service.CloseConnectionRequest;
 import org.apache.calcite.avatica.remote.Service.CloseConnectionResponse;
 import org.apache.calcite.avatica.remote.Service.CloseStatementRequest;
-import org.apache.calcite.avatica.remote.Service.CloseStatementResponse;
 import org.apache.calcite.avatica.remote.Service.CommitRequest;
-import org.apache.calcite.avatica.remote.Service.CommitResponse;
 import org.apache.calcite.avatica.remote.Service.OpenConnectionRequest;
-import org.apache.calcite.avatica.remote.Service.OpenConnectionResponse;
 import org.apache.calcite.avatica.remote.Service.RollbackRequest;
-import org.apache.calcite.avatica.remote.Service.RollbackResponse;
 import org.apache.calcite.avatica.remote.TypedValue;
 
 
@@ -57,19 +52,19 @@ class RemotePolyphenyMeta extends MetaImpl {
     private Map<DatabaseProperty, Object> databaseProperties;
 
 
-    RemotePolyphenyMeta( AvaticaConnection connection ) {
+    RemotePolyphenyMeta( final AvaticaConnection connection ) {
         super( connection );
         this.service = connection.getService();
     }
 
 
-    RemotePolyphenyMeta( AvaticaConnection connection, Service service ) {
+    RemotePolyphenyMeta( final AvaticaConnection connection, final Service service ) {
         super( connection );
         this.service = service;
     }
 
 
-    private MetaResultSet toResultSet( Class clazz, Service.ResultSetResponse response ) {
+    private MetaResultSet toResultSet( final Class clazz, final Service.ResultSetResponse response ) {
         if ( response.updateCount != -1 ) {
             return MetaResultSet.count( response.connectionId, response.statementId, response.updateCount );
         }
@@ -87,11 +82,11 @@ class RemotePolyphenyMeta extends MetaImpl {
 
 
     @Override
-    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
+    public Map<DatabaseProperty, Object> getDatabaseProperties( final ConnectionHandle connectionHandle ) {
         synchronized ( this ) {
             // Compute map on first use, and cache
             if ( databaseProperties == null ) {
-                databaseProperties = service.apply( new Service.DatabasePropertyRequest( ch.id ) ).map;
+                databaseProperties = service.apply( new Service.DatabasePropertyRequest( connectionHandle.id ) ).map;
             }
             return databaseProperties;
         }
@@ -99,60 +94,54 @@ class RemotePolyphenyMeta extends MetaImpl {
 
 
     @Override
-    public StatementHandle createStatement( final ConnectionHandle ch ) {
+    public StatementHandle createStatement( final ConnectionHandle connectionHandle ) {
         return connection.invokeWithRetries( () -> {
             // sync connection state if necessary
-            connectionSync( ch, new ConnectionPropertiesImpl() );
-            final Service.CreateStatementResponse response = service.apply( new Service.CreateStatementRequest( ch.id ) );
+            connectionSync( connectionHandle, new ConnectionPropertiesImpl() );
+            final Service.CreateStatementResponse response = service.apply( new Service.CreateStatementRequest( connectionHandle.id ) );
             return new StatementHandle( response.connectionId, response.statementId, null );
         } );
     }
 
 
     @Override
-    public void closeStatement( final StatementHandle h ) {
-        connection.invokeWithRetries( (CallableWithoutException<Void>) () -> {
-            final CloseStatementResponse response = service.apply( new CloseStatementRequest( h.connectionId, h.id ) );
-            return null;
+    public void closeStatement( final StatementHandle statementHandle ) {
+        connection.invokeWithRetries( () -> service.apply( new CloseStatementRequest( statementHandle.connectionId, statementHandle.id ) ) );
+    }
+
+
+    @Override
+    public void openConnection( final ConnectionHandle connectionHandle, final Map<String, String> info ) {
+        connection.invokeWithRetries( () -> service.apply( new OpenConnectionRequest( connectionHandle.id, info ) ) );
+    }
+
+
+    @Override
+    public void closeConnection( final ConnectionHandle connectionHandle ) {
+        connection.invokeWithRetries( () -> {
+            final CloseConnectionResponse response = service.apply( new CloseConnectionRequest( connectionHandle.id ) );
+            propsMap.remove( connectionHandle.id );
+            return response;
         } );
     }
 
 
     @Override
-    public void openConnection( final ConnectionHandle ch, final Map<String, String> info ) {
-        connection.invokeWithRetries( (CallableWithoutException<Void>) () -> {
-            final OpenConnectionResponse response = service.apply( new OpenConnectionRequest( ch.id, info ) );
-            return null;
-        } );
-    }
-
-
-    @Override
-    public void closeConnection( final ConnectionHandle ch ) {
-        connection.invokeWithRetries( (CallableWithoutException<Void>) () -> {
-            final CloseConnectionResponse response = service.apply( new CloseConnectionRequest( ch.id ) );
-            propsMap.remove( ch.id );
-            return null;
-        } );
-    }
-
-
-    @Override
-    public ConnectionProperties connectionSync( final ConnectionHandle ch, final ConnectionProperties connProps ) {
+    public ConnectionProperties connectionSync( final ConnectionHandle connectionHandle, final ConnectionProperties connProps ) {
         return connection.invokeWithRetries(
                 () -> {
-                    ConnectionPropertiesImpl localProps = propsMap.get( ch.id );
+                    ConnectionPropertiesImpl localProps = propsMap.get( connectionHandle.id );
                     if ( localProps == null ) {
                         localProps = new ConnectionPropertiesImpl();
                         localProps.setDirty( true );
-                        propsMap.put( ch.id, localProps );
+                        propsMap.put( connectionHandle.id, localProps );
                     }
 
                     // Only make an RPC if necessary. RPC is necessary when we have local changes that need flushed to the server (be sure to introduce any new changes from connProps before
                     // checking AND when connProps.isEmpty() (meaning, this was a request for a value, not overriding a value). Otherwise, accumulate the change locally and return immediately.
                     if ( localProps.merge( connProps ).isDirty() && connProps.isEmpty() ) {
-                        final Service.ConnectionSyncResponse response = service.apply( new Service.ConnectionSyncRequest( ch.id, localProps ) );
-                        propsMap.put( ch.id, (ConnectionPropertiesImpl) response.connProps );
+                        final Service.ConnectionSyncResponse response = service.apply( new Service.ConnectionSyncRequest( connectionHandle.id, localProps ) );
+                        propsMap.put( connectionHandle.id, (ConnectionPropertiesImpl) response.connProps );
                         return response.connProps;
                     } else {
                         return localProps;
@@ -162,128 +151,128 @@ class RemotePolyphenyMeta extends MetaImpl {
 
 
     @Override
-    public MetaResultSet getCatalogs( final ConnectionHandle ch ) {
+    public MetaResultSet getCatalogs( final ConnectionHandle connectionHandle ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.CatalogsRequest( ch.id ) );
+            final Service.ResultSetResponse response = service.apply( new Service.CatalogsRequest( connectionHandle.id ) );
             return toResultSet( MetaCatalog.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getSchemas( final ConnectionHandle ch, final String catalog, final Pat schemaPattern ) {
+    public MetaResultSet getSchemas( final ConnectionHandle connectionHandle, final String catalog, final Pat schemaPattern ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.SchemasRequest( ch.id, catalog, schemaPattern.s ) );
+            final Service.ResultSetResponse response = service.apply( new Service.SchemasRequest( connectionHandle.id, catalog, schemaPattern.s ) );
             return toResultSet( MetaSchema.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final List<String> typeList ) {
+    public MetaResultSet getTables( final ConnectionHandle connectionHandle, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final List<String> typeList ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.TablesRequest( ch.id, catalog, schemaPattern.s, tableNamePattern.s, typeList ) );
+            final Service.ResultSetResponse response = service.apply( new Service.TablesRequest( connectionHandle.id, catalog, schemaPattern.s, tableNamePattern.s, typeList ) );
             return toResultSet( MetaTable.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getTableTypes( final ConnectionHandle ch ) {
+    public MetaResultSet getTableTypes( final ConnectionHandle connectionHandle ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.TableTypesRequest( ch.id ) );
+            final Service.ResultSetResponse response = service.apply( new Service.TableTypesRequest( connectionHandle.id ) );
             return toResultSet( MetaTableType.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getTypeInfo( final ConnectionHandle ch ) {
+    public MetaResultSet getTypeInfo( final ConnectionHandle connectionHandle ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.TypeInfoRequest( ch.id ) );
+            final Service.ResultSetResponse response = service.apply( new Service.TypeInfoRequest( connectionHandle.id ) );
             return toResultSet( MetaTypeInfo.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+    public MetaResultSet getPrimaryKeys( final ConnectionHandle connectionHandle, final String catalog, final String schema, final String table ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.PrimaryKeysRequest( ch.id, catalog, schema, table ) );
+            final Service.ResultSetResponse response = service.apply( new Service.PrimaryKeysRequest( connectionHandle.id, catalog, schema, table ) );
             return toResultSet( MetaPrimaryKey.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+    public MetaResultSet getImportedKeys( final ConnectionHandle connectionHandle, final String catalog, final String schema, final String table ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.ImportedKeysRequest( ch.id, catalog, schema, table ) );
+            final Service.ResultSetResponse response = service.apply( new Service.ImportedKeysRequest( connectionHandle.id, catalog, schema, table ) );
             return toResultSet( MetaImportedKey.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+    public MetaResultSet getExportedKeys( final ConnectionHandle connectionHandle, final String catalog, final String schema, final String table ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.ExportedKeysRequest( ch.id, catalog, schema, table ) );
+            final Service.ResultSetResponse response = service.apply( new Service.ExportedKeysRequest( connectionHandle.id, catalog, schema, table ) );
             return toResultSet( MetaExportedKey.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String catalog, final String schema, final String table, final boolean unique, final boolean approximate ) {
+    public MetaResultSet getIndexInfo( final ConnectionHandle connectionHandle, final String catalog, final String schema, final String table, final boolean unique, final boolean approximate ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.IndexInfoRequest( ch.id, catalog, schema, table, unique, approximate ) );
+            final Service.ResultSetResponse response = service.apply( new Service.IndexInfoRequest( connectionHandle.id, catalog, schema, table, unique, approximate ) );
             return toResultSet( MetaIndexInfo.class, response );
         } );
     }
 
 
     @Override
-    public MetaResultSet getColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
+    public MetaResultSet getColumns( final ConnectionHandle connectionHandle, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
         return connection.invokeWithRetries( () -> {
-            final Service.ResultSetResponse response = service.apply( new Service.ColumnsRequest( ch.id, catalog, schemaPattern.s, tableNamePattern.s, columnNamePattern.s ) );
+            final Service.ResultSetResponse response = service.apply( new Service.ColumnsRequest( connectionHandle.id, catalog, schemaPattern.s, tableNamePattern.s, columnNamePattern.s ) );
             return toResultSet( MetaColumn.class, response );
         } );
     }
 
 
     @Override
-    public StatementHandle prepare( final ConnectionHandle ch, final String sql, final long maxRowCount ) {
+    public StatementHandle prepare( final ConnectionHandle connectionHandle, final String sql, final long maxRowCount ) {
         return connection.invokeWithRetries( () -> {
-            connectionSync( ch, new ConnectionPropertiesImpl() ); // sync connection state if necessary
-            final Service.PrepareResponse response = service.apply( new Service.PrepareRequest( ch.id, sql, maxRowCount ) );
+            connectionSync( connectionHandle, new ConnectionPropertiesImpl() ); // sync connection state if necessary
+            final Service.PrepareResponse response = service.apply( new Service.PrepareRequest( connectionHandle.id, sql, maxRowCount ) );
             return response.statement;
         } );
     }
 
 
     @Override
-    public ExecuteResult prepareAndExecute( StatementHandle h, String sql, long maxRowCount, PrepareCallback callback ) throws NoSuchStatementException {
+    public ExecuteResult prepareAndExecute( final StatementHandle statementHandle, final String sql, final long maxRowCount, final PrepareCallback callback ) throws NoSuchStatementException {
         // The old semantics were that maxRowCount was also treated as the maximum number of elements in the first Frame of results. A value of -1 would also preserve this, but an
         // explicit (positive) number is easier to follow, IMO.
-        return prepareAndExecute( h, sql, maxRowCount, AvaticaUtils.toSaturatedInt( maxRowCount ), callback );
+        return prepareAndExecute( statementHandle, sql, maxRowCount, AvaticaUtils.toSaturatedInt( maxRowCount ), callback );
     }
 
 
     @Override
-    public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, int maxRowsInFirstFrame, final PrepareCallback callback ) throws NoSuchStatementException {
+    public ExecuteResult prepareAndExecute( final StatementHandle statementHandle, final String sql, final long maxRowCount, int maxRowsInFirstFrame, final PrepareCallback callback ) throws NoSuchStatementException {
         try {
             return connection.invokeWithRetries( () -> {
                 // sync connection state if necessary
-                connectionSync( new ConnectionHandle( h.connectionId ), new ConnectionPropertiesImpl() );
+                connectionSync( new ConnectionHandle( statementHandle.connectionId ), new ConnectionPropertiesImpl() );
                 final Service.ExecuteResponse response;
                 try {
                     synchronized ( callback.getMonitor() ) {
                         callback.clear();
-                        response = service.apply( new Service.PrepareAndExecuteRequest( h.connectionId, h.id, sql, maxRowCount ) );
+                        response = service.apply( new Service.PrepareAndExecuteRequest( statementHandle.connectionId, statementHandle.id, sql, maxRowCount ) );
                         if ( response.missingStatement ) {
-                            throw new RuntimeException( new NoSuchStatementException( h ) );
+                            throw new RuntimeException( new NoSuchStatementException( statementHandle ) ); //NOSONAR "squid:S00112" - Justification: The RuntimeException is an envelope for the NoSuchStatementException
                         }
-                        if ( response.results.size() > 0 ) {
+                        if ( !response.results.isEmpty() ) {
                             final Service.ResultSetResponse result = response.results.get( 0 );
                             callback.assign( result.signature, result.firstFrame, result.updateCount );
                         }
@@ -295,7 +284,7 @@ class RemotePolyphenyMeta extends MetaImpl {
                     }
                     return new ExecuteResult( metaResultSets );
                 } catch ( SQLException e ) {
-                    throw new RuntimeException( e );
+                    throw new RuntimeException( e ); //NOSONAR "squid:S00112" - Justification: The RuntimeException is an envelope for the SQLException
                 }
             } );
         } catch ( RuntimeException e ) {
@@ -309,15 +298,15 @@ class RemotePolyphenyMeta extends MetaImpl {
 
 
     @Override
-    public Frame fetch( final StatementHandle h, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException, MissingResultsException {
+    public Frame fetch( final StatementHandle statementHandle, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException, MissingResultsException {
         try {
             return connection.invokeWithRetries( () -> {
-                final Service.FetchResponse response = service.apply( new Service.FetchRequest( h.connectionId, h.id, offset, fetchMaxRowCount ) );
+                final Service.FetchResponse response = service.apply( new Service.FetchRequest( statementHandle.connectionId, statementHandle.id, offset, fetchMaxRowCount ) );
                 if ( response.missingStatement ) {
-                    throw new RuntimeException( new NoSuchStatementException( h ) );
+                    throw new RuntimeException( new NoSuchStatementException( statementHandle ) ); //NOSONAR "squid:S00112" - Justification: The RuntimeException is an envelope for the NoSuchStatementException
                 }
                 if ( response.missingResults ) {
-                    throw new RuntimeException( new MissingResultsException( h ) );
+                    throw new RuntimeException( new MissingResultsException( statementHandle ) ); //NOSONAR "squid:S00112" - Justification: The RuntimeException is an envelope for the MissingResultsException
                 }
                 return response.frame;
             } );
@@ -334,19 +323,19 @@ class RemotePolyphenyMeta extends MetaImpl {
 
 
     @Override
-    public ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, long maxRowCount ) throws NoSuchStatementException {
-        return execute( h, parameterValues, AvaticaUtils.toSaturatedInt( maxRowCount ) );
+    public ExecuteResult execute( final StatementHandle statementHandle, final List<TypedValue> parameterValues, final long maxRowCount ) throws NoSuchStatementException {
+        return execute( statementHandle, parameterValues, AvaticaUtils.toSaturatedInt( maxRowCount ) );
     }
 
 
     @Override
-    public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final int maxRowsInFirstFrame ) throws NoSuchStatementException {
+    public ExecuteResult execute( final StatementHandle statementHandle, final List<TypedValue> parameterValues, final int maxRowsInFirstFrame ) throws NoSuchStatementException {
         try {
             return connection.invokeWithRetries( () -> {
-                final Service.ExecuteResponse response = service.apply( new Service.ExecuteRequest( h, parameterValues, maxRowsInFirstFrame ) );
+                final Service.ExecuteResponse response = service.apply( new Service.ExecuteRequest( statementHandle, parameterValues, maxRowsInFirstFrame ) );
 
                 if ( response.missingStatement ) {
-                    throw new RuntimeException( new NoSuchStatementException( h ) );
+                    throw new RuntimeException( new NoSuchStatementException( statementHandle ) ); //NOSONAR "squid:S00112" - Justification: The RuntimeException is an envelope for the NoSuchStatementException
                 }
 
                 List<MetaResultSet> metaResultSets = new ArrayList<>();
@@ -367,12 +356,12 @@ class RemotePolyphenyMeta extends MetaImpl {
 
 
     @Override
-    public boolean syncResults( final StatementHandle h, final QueryState state, final long offset ) throws NoSuchStatementException {
+    public boolean syncResults( final StatementHandle statementHandle, final QueryState state, final long offset ) throws NoSuchStatementException {
         try {
             return connection.invokeWithRetries( () -> {
-                final Service.SyncResultsResponse response = service.apply( new Service.SyncResultsRequest( h.connectionId, h.id, state, offset ) );
+                final Service.SyncResultsResponse response = service.apply( new Service.SyncResultsRequest( statementHandle.connectionId, statementHandle.id, state, offset ) );
                 if ( response.missingStatement ) {
-                    throw new RuntimeException( new NoSuchStatementException( h ) );
+                    throw new RuntimeException( new NoSuchStatementException( statementHandle ) ); //NOSONAR "squid:S00112" - Justification: The RuntimeException is an envelope for the NoSuchStatementException
                 }
                 return response.moreResults;
             } );
@@ -387,36 +376,30 @@ class RemotePolyphenyMeta extends MetaImpl {
 
 
     @Override
-    public void commit( final ConnectionHandle ch ) {
-        connection.invokeWithRetries( (CallableWithoutException<Void>) () -> {
-            final CommitResponse response = service.apply( new CommitRequest( ch.id ) );
-            return null;
-        } );
+    public void commit( final ConnectionHandle connectionHandle ) {
+        connection.invokeWithRetries( () -> service.apply( new CommitRequest( connectionHandle.id ) ) );
     }
 
 
     @Override
-    public void rollback( final ConnectionHandle ch ) {
-        connection.invokeWithRetries( (CallableWithoutException<Void>) () -> {
-            final RollbackResponse response = service.apply( new RollbackRequest( ch.id ) );
-            return null;
-        } );
+    public void rollback( final ConnectionHandle connectionHandle ) {
+        connection.invokeWithRetries( () -> service.apply( new RollbackRequest( connectionHandle.id ) ) );
     }
 
 
     @Override
-    public ExecuteBatchResult prepareAndExecuteBatch( final StatementHandle h, final List<String> sqlCommands ) {
+    public ExecuteBatchResult prepareAndExecuteBatch( final StatementHandle statementHandle, final List<String> sqlCommands ) {
         return connection.invokeWithRetries( () -> {
-            Service.ExecuteBatchResponse response = service.apply( new Service.PrepareAndExecuteBatchRequest( h.connectionId, h.id, sqlCommands ) );
+            Service.ExecuteBatchResponse response = service.apply( new Service.PrepareAndExecuteBatchRequest( statementHandle.connectionId, statementHandle.id, sqlCommands ) );
             return new ExecuteBatchResult( response.updateCounts );
         } );
     }
 
 
     @Override
-    public ExecuteBatchResult executeBatch( final StatementHandle h, final List<List<TypedValue>> parameterValues ) {
+    public ExecuteBatchResult executeBatch( final StatementHandle statementHandle, final List<List<TypedValue>> parameterValues ) {
         return connection.invokeWithRetries( () -> {
-            Service.ExecuteBatchResponse response = service.apply( new Service.ExecuteBatchRequest( h.connectionId, h.id, parameterValues ) );
+            Service.ExecuteBatchResponse response = service.apply( new Service.ExecuteBatchRequest( statementHandle.connectionId, statementHandle.id, parameterValues ) );
             return new ExecuteBatchResult( response.updateCounts );
         } );
     }

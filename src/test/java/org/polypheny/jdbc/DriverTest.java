@@ -18,6 +18,7 @@ package org.polypheny.jdbc;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.sql.Connection;
@@ -433,6 +434,8 @@ public class DriverTest {
 
             final Connection actual = DRIVER.connect( "jdbc:polypheny://localhost:" + port + "/?" + Driver.PROPERTY_SERIALIZATION + "=" + "protobuf", null );
             actual.close();
+
+            assertTrue( true ); // No exception --> pass
         } finally {
             if ( server != null ) {
                 server.stop();
@@ -467,6 +470,8 @@ public class DriverTest {
 
             final Connection actual = DRIVER.connect( "jdbc:polypheny://localhost:" + port + "/?" + Driver.PROPERTY_SERIALIZATION + "=" + "json", null );
             actual.close();
+
+            assertTrue( true ); // No exception --> pass
         } finally {
             if ( server != null ) {
                 server.stop();
