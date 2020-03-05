@@ -50,8 +50,6 @@ import org.apache.calcite.avatica.remote.Service.OpenConnectionResponse;
 public class Driver extends UnregisteredDriver {
 
     public static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
-    @Deprecated
-    public static final String URL_SCHEMA = DRIVER_URL_SCHEMA;
 
     public static final String DEFAULT_HOST = "localhost";
     public static final int DEFAULT_PORT = 20591;
@@ -118,7 +116,7 @@ public class Driver extends UnregisteredDriver {
 
 
     @Override
-    public Meta createMeta( AvaticaConnection connection ) {
+    public Meta createMeta( final AvaticaConnection connection ) {
         final ConnectionConfig config = connection.config();
         // Create a single Service and set it on the Connection instance
         final Service service = createService( connection, config );
@@ -127,7 +125,7 @@ public class Driver extends UnregisteredDriver {
     }
 
 
-    protected Service createService( AvaticaConnection connection, ConnectionConfig config ) {
+    protected Service createService( final AvaticaConnection connection, final ConnectionConfig config ) {
         final Service.Factory metaFactory = config.factory();
         final Service service;
         if ( metaFactory != null ) {
@@ -141,10 +139,10 @@ public class Driver extends UnregisteredDriver {
                     service = new RemoteProtobufService( getHttpClient( connection, config ), new ProtobufTranslationImpl() );
                     break;
                 default:
-                    throw new RuntimeException( new IllegalArgumentException( "\"serialization\" is not one of " + Arrays.toString( Serialization.values() ) ) );
+                    throw new IllegalArgumentException( "\"serialization\" is not one of " + Arrays.toString( Serialization.values() ) );
             }
         } else {
-            throw new RuntimeException( new NullPointerException( "config.url() == null" ) );
+            throw new IllegalArgumentException( new NullPointerException( "config.url() == null" ) );
         }
         return service;
     }
@@ -157,12 +155,12 @@ public class Driver extends UnregisteredDriver {
      * @param config The configuration.
      * @return An {@link AvaticaHttpClient} implementation.
      */
-    protected AvaticaHttpClient getHttpClient( AvaticaConnection connection, ConnectionConfig config ) {
+    protected AvaticaHttpClient getHttpClient( final AvaticaConnection connection, final ConnectionConfig config ) {
         URL url;
         try {
             url = new URL( config.url() );
         } catch ( MalformedURLException e ) {
-            throw new RuntimeException( e );
+            throw new IllegalArgumentException( e );
         }
 
         AvaticaHttpClientFactory httpClientFactory = config.httpClientFactory();
@@ -189,7 +187,7 @@ public class Driver extends UnregisteredDriver {
 
 
     @Override
-    public Connection connect( String url, Properties info ) throws SQLException {
+    public Connection connect( final String url, Properties info ) throws SQLException {
         if ( url == null ) {
             throw new SQLException( new NullPointerException( "url == null" ) );
         }
@@ -235,7 +233,9 @@ public class Driver extends UnregisteredDriver {
 
 
     // packet-visible for testability
-    @SuppressWarnings("deprecated")
+    @SuppressWarnings({
+            "squid:S3776" // Cognitive Complexity
+    })
     final Properties parseUrl( String url, final Properties defaults ) {
         final Properties prop = (defaults == null) ? new Properties() : new Properties( defaults );
 
@@ -274,11 +274,10 @@ public class Driver extends UnregisteredDriver {
                         parameterValue = URLDecoder.decode( parameterValue, StandardCharsets.UTF_8.name() );
                     } catch ( UnsupportedEncodingException e ) {
                         // not going to happen - value came from JDK's own StandardCharsets
-                        throw new RuntimeException( e );
+                        throw new RuntimeException( e ); //NOSONAR "squid:S00112" - Justification: This is literally a problem with the runtime
                     } catch ( NoSuchMethodError e ) {
                         log.debug( "Cannot use the decode method with UTF-8. Using the fallback (deprecated) method.", e );
-                        //noinspection deprecation
-                        parameterValue = URLDecoder.decode( parameterValue );
+                        parameterValue = URLDecoder.decode( parameterValue ); //NOSONAR "squid:CallToDeprecatedMethod" - Justification: This is the fallback if the superseded method does not exist.
                     }
 
                     prop.setProperty( parameterKey, parameterValue );
