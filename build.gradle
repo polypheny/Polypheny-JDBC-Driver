@@ -76,7 +76,7 @@ dependencies {
     compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
 
     ////// LOGGING
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26' // License: MIT
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30' // License: MIT
 
 
     // --- Test Compile ---
