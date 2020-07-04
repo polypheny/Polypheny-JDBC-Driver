@@ -20,7 +20,7 @@ buildscript {
         // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
         classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.2.0"
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "4.1.6"
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: "5.0.1"
         // SonarQube (https://plugins.gradle.org/plugin/org.sonarqube, GNU LGPL 3)
         classpath group: 'org.sonarsource.scanner.gradle', name: 'sonarqube-gradle-plugin', version: '2.8'
     }
@@ -40,7 +40,7 @@ repositories {
 }
 
 
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "maven-publish"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
@@ -52,17 +52,16 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-compileJava {
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 
 configurations.all {
     // check for updates every build
-    resolutionStrategy{
-        cacheChangingModulesFor 0, 'seconds'
-    }
+    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
 }
 
 
@@ -70,19 +69,19 @@ def avaticaVersion = '1.16.1-POLYPHENY-SNAPSHOT'
 
 dependencies {
     ////// APACHE CALCITE AVATICA
-    compile group: "org.apache.calcite.avatica", name: "avatica-core", version: avaticaVersion  // License: Apache 2.0
+    implementation group: "org.apache.calcite.avatica", name: "avatica-core", version: avaticaVersion  // License: Apache 2.0
 
     ////// APACHE COMMONS LANG
-    compile group: "org.apache.commons", name: "commons-lang3", version: "3.7"
+    implementation group: "org.apache.commons", name: "commons-lang3", version: "3.7"
 
     ////// LOGGING
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30' // License: MIT
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30' // License: MIT
 
 
     // --- Test Compile ---
-    testCompile group: "junit", name: "junit", version: "4.12"
-    testCompile group: "org.testng", name: "testng", version: "6.10"
-    testCompile group: 'org.apache.calcite.avatica', name: 'avatica-server', version: avaticaVersion
+    testImplementation group: "junit", name: "junit", version: "4.12"
+    testImplementation group: "org.testng", name: "testng", version: "6.10"
+    testImplementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: avaticaVersion
 }
 
 
