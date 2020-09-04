@@ -129,6 +129,24 @@ public class DriverTest {
 
 
     @Test
+    public void acceptsURL_String__AcceptableUrl_NewUrlStyle() throws Exception {
+        final boolean expected = true;
+        final boolean actual = DRIVER.acceptsURL( "jdbc:polypheny:http://username:password@host:20569/database?k1=v1&k2=v2" );
+
+        assertEquals( expected, actual );
+    }
+
+
+    @Test
+    public void acceptsURL_String__AcceptableUrl_NewUrlStyleHttps() throws Exception {
+        final boolean expected = true;
+        final boolean actual = DRIVER.acceptsURL( "jdbc:polypheny:https://username:password@host:20569/database?k1=v1&k2=v2" );
+
+        assertEquals( expected, actual );
+    }
+
+
+    @Test
     public void acceptsURL_String__AcceptableUrlNoPassword() throws Exception {
         final boolean expected = true;
         final boolean actual = DRIVER.acceptsURL( "jdbc:polypheny://username@host:20569/database?k1=v1&k2=v2" );
@@ -214,6 +232,44 @@ public class DriverTest {
         expected.setProperty( Driver.PROPERTY_SERIALIZATION, Driver.DEFAULT_SERIALIZATION );
 
         final Properties actual = DRIVER.parseUrl( "jdbc:polypheny://username:password@localhost:20569/database?k1=v1&k2=v2", null );
+
+        assertEquals( expected, actual );
+    }
+
+
+    @Test
+    public void parseUrl_String_null__AcceptableUrlNewUrlStyleHttp() throws Exception {
+        final Properties expected = new Properties();
+        expected.setProperty( Driver.PROPERTY_USERNAME_KEY, "username" );
+        expected.setProperty( Driver.PROPERTY_PASSWORD_KEY, "password" );
+        expected.setProperty( Driver.PROPERTY_HOST_KEY, "localhost" );
+        expected.setProperty( Driver.PROPERTY_PORT_KEY, "20569" );
+        expected.setProperty( Driver.PROPERTY_DATABASE_KEY, "database" );
+        expected.setProperty( "k1", "v1" );
+        expected.setProperty( "k2", "v2" );
+        expected.setProperty( Driver.PROPERTY_URL_KEY, "http://localhost:20569/" );
+        expected.setProperty( Driver.PROPERTY_SERIALIZATION, Driver.DEFAULT_SERIALIZATION );
+
+        final Properties actual = DRIVER.parseUrl( "jdbc:polypheny:http://username:password@localhost:20569/database?k1=v1&k2=v2", null );
+
+        assertEquals( expected, actual );
+    }
+
+
+    @Test
+    public void parseUrl_String_null__AcceptableUrlNewUrlStyleHttps() throws Exception {
+        final Properties expected = new Properties();
+        expected.setProperty( Driver.PROPERTY_USERNAME_KEY, "username" );
+        expected.setProperty( Driver.PROPERTY_PASSWORD_KEY, "password" );
+        expected.setProperty( Driver.PROPERTY_HOST_KEY, "localhost" );
+        expected.setProperty( Driver.PROPERTY_PORT_KEY, "20569" );
+        expected.setProperty( Driver.PROPERTY_DATABASE_KEY, "database" );
+        expected.setProperty( "k1", "v1" );
+        expected.setProperty( "k2", "v2" );
+        expected.setProperty( Driver.PROPERTY_URL_KEY, "https://localhost:20569/" );
+        expected.setProperty( Driver.PROPERTY_SERIALIZATION, Driver.DEFAULT_SERIALIZATION );
+
+        final Properties actual = DRIVER.parseUrl( "jdbc:polypheny:https://username:password@localhost:20569/database?k1=v1&k2=v2", null );
 
         assertEquals( expected, actual );
     }

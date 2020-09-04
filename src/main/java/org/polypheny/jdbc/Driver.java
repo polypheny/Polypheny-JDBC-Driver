@@ -206,7 +206,7 @@ public class Driver extends UnregisteredDriver {
             connection = (AvaticaConnection) super.connect( url, info );
         } else {
             // Old style -- jdbc:polypheny://server.address/database&...
-            log.info( "No transport scheme given. Falling back to http. This might change in future." );
+            log.debug( "No transport scheme given; fall back to http." );
             info = parseUrl( url, info );
             if ( info == null ) {
                 // Something is wrong with the url
