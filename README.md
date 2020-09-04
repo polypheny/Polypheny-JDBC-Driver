@@ -6,7 +6,7 @@ This repository contains a standards-compliant JDBC driver for Polypheny-DB.
   ```
   Class.forName( "org.polypheny.jdbc.Driver" );
   ```
-- Use the connection URL `jdbc:polypheny://localhost/` to connect to [Polypheny-DB](https://github.com/polypheny/Polypheny-DB).
+- Use the connection URL `jdbc:polypheny:http://localhost/` to connect to [Polypheny-DB](https://github.com/polypheny/Polypheny-DB).
 
 ## Roadmap ##
 See the [open issues](https://github.com/polypheny/Polypheny-JDBC-Driver/issues) for a list of proposed features (and known issues).
