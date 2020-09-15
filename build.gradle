@@ -65,7 +65,7 @@ configurations.all {
 }
 
 
-def avaticaVersion = '1.16.1-POLYPHENY-SNAPSHOT'
+def avaticaVersion = '1.17.1-POLYPHENY-SNAPSHOT'
 
 dependencies {
     ////// APACHE CALCITE AVATICA
