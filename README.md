@@ -12,7 +12,7 @@ For authentification please use the default username `pa` with an empty password
 
 
 ## Roadmap ##
-See the [open issues](https://github.com/polypheny/Polypheny-JDBC-Driver/issues) for a list of proposed features (and known issues).
+See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).
 
 
 ## Contributing ##
