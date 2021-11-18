@@ -74,22 +74,18 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java", "build/generated-sources"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
         }
-        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
     test {
         java {
             srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
         }
         resources {
             srcDirs = ["src/test/resources"]
         }
-        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
 
