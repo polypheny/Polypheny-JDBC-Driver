@@ -50,11 +50,11 @@ configurations.all {
 }
 
 
-def avaticaVersion = '1.17.1-POLYPHENY-SNAPSHOT'
+def avaticaVersion = '1.17.2-POLYPHENY'
 
 dependencies {
     ////// APACHE CALCITE AVATICA
-    implementation group: "org.apache.calcite.avatica", name: "avatica-core", version: avaticaVersion  // License: Apache 2.0
+    implementation group: "org.polypheny.avatica", name: "avatica-core", version: avaticaVersion  // License: Apache 2.0
 
     ////// APACHE COMMONS LANG
     implementation group: "org.apache.commons", name: "commons-lang3", version: "3.7"
@@ -66,7 +66,7 @@ dependencies {
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: "4.12"
     testImplementation group: "org.testng", name: "testng", version: "6.10"
-    testImplementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: avaticaVersion
+    testImplementation group: "org.polypheny.avatica", name: "avatica-server", version: avaticaVersion
 }
 
 
