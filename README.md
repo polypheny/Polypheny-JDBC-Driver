@@ -1,3 +1,7 @@
+<a href="https://polypheny.org/">
+    <img align="right" width="200" height="200" src="https://polypheny.org/community/logo/logo.png" alt="Resume application project app icon">
+</a>
+
 # Polypheny JDBC Driver
 
 This repository contains a standards-compliant JDBC driver for Polypheny-DB.
