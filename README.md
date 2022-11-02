@@ -6,28 +6,28 @@
 
 This repository contains a standards-compliant JDBC driver for Polypheny-DB.
 
-- Load the driver `org.polypheny.jdbc.Driver`, for example via 
+## Getting Started
+
+- The driver is published to Maven Central. Make sure that you have added `mavenCentral()` to the repositories section in your gradle build file.
+- Add `implementation group: 'org.polypheny', name: 'polypheny-jdbc-driver', version: '1.5.2'` .
+- Load the driver `org.polypheny.jdbc.Driver`, for example via
   ```
   Class.forName( "org.polypheny.jdbc.Driver" );
   ```
 - Use the connection URL `jdbc:polypheny:http://localhost/` to connect to [Polypheny-DB](https://github.com/polypheny/Polypheny-DB).
 
-For authentification please use the default username `pa` with an empty password.
+> For authentication, please use the default username `pa` with an empty password.
 
-
-## Roadmap ##
+## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).
 
-
-## Contributing ##
+## Contributing
 We highly welcome your contributions to the _Polypheny JDBC Driver_. If you would like to contribute, please fork the repository and submit your changes as a pull request. Please consult our [Admin Repository](https://github.com/polypheny/Admin) for guidelines and additional information.
 
-Please note that we have a [code of conduct](https://github.com/polypheny/Admin/blob/master/CODE_OF_CONDUCT.md). Please follow it in all your interactions with the project. 
+Please note that we have a [code of conduct](https://github.com/polypheny/Admin/blob/master/CODE_OF_CONDUCT.md). Please follow it in all your interactions with the project.
 
-
-## Credits ##
+## Credits
 This JDBC Driver is based on [Apache Avatica](https://calcite.apache.org/avatica/), a framework for building database drivers. 
 
-
-## License ##
+## License
 The Apache 2.0 License
