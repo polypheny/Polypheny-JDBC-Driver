@@ -57,15 +57,15 @@ dependencies {
     implementation group: "org.polypheny.avatica", name: "avatica-core", version: avaticaVersion  // License: Apache 2.0
 
     ////// APACHE COMMONS LANG
-    implementation group: "org.apache.commons", name: "commons-lang3", version: "3.7"
+    implementation group: "org.apache.commons", name: "commons-lang3", version: "3.12.0"
 
     ////// LOGGING
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30' // License: MIT
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.3' // License: MIT
 
 
     // --- Test Compile ---
-    testImplementation group: "junit", name: "junit", version: "4.12"
-    testImplementation group: "org.testng", name: "testng", version: "6.10"
+    testImplementation group: "junit", name: "junit", version: '4.13.1'
+    testImplementation group: "org.testng", name: "testng", version: "6.14.3"
     testImplementation group: "org.polypheny.avatica", name: "avatica-server", version: avaticaVersion
 }
 
