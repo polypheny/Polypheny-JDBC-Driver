@@ -26,8 +26,8 @@ archivesBaseName = "polypheny-jdbc-driver"
 description = "A standards-compliant JDBC driver for Polypheny-DB."
 
 def versionMajor = 1
-def versionMinor = 6
-def versionQualifier = "-SNAPSHOT"
+def versionMinor = 5.3
+def versionQualifier = ""
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
