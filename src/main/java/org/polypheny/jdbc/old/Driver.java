@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.old;
 
 
 import java.io.UnsupportedEncodingException;

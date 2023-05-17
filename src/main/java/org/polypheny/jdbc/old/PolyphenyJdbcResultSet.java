@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.old;
 
 
-public interface PolyphenyJdbcConnection extends java.sql.Connection {
+public interface PolyphenyJdbcResultSet extends java.sql.ResultSet {
 
 }

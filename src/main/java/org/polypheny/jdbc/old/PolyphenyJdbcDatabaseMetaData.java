@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.old;
 
 
-public interface PolyphenyJdbcResultSetMetaData extends java.sql.ResultSetMetaData {
+public interface PolyphenyJdbcDatabaseMetaData extends java.sql.DatabaseMetaData {
 
 }
