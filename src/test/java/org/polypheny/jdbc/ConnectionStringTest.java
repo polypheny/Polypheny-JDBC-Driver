@@ -82,6 +82,47 @@ public class ConnectionStringTest {
     }
 
     @Test
+    public void connectionString_String__ColumnInPassword() throws Exception {
+        final HashMap<String, String> expected = new HashMap<>();
+        expected.put(PolyphenyDriver.PROPERTY_USERNAME_KEY, "username");
+        expected.put(PolyphenyDriver.PROPERTY_PASSWORD_KEY, "pass:word");
+        expected.put(PolyphenyDriver.PROPERTY_NAMESPACE_KEY, "namespace");
+        expected.put("k1", "v1");
+        expected.put("k2", "v2");
+        final String expectedTarget = "localhost:20569";
+
+        final String url = "jdbc:polypheny://username:pass:word@localhost:20569/namespace?k1=v1&k2=v2";
+        final ConnectionString cs = new ConnectionString(url);
+
+        assertEquals(expected, cs.getParameters());
+        assertEquals(expectedTarget, cs.getTarget());
+    }
+
+    @Test(expected = SQLException.class)
+    public void connectionString_String__MissingValue() throws Exception {
+        final String url = "jdbc:polypheny://username:pass:word@localhost:20569/namespace?k1=v1&k2";
+        final ConnectionString cs = new ConnectionString(url);
+
+        fail("No sql exception thrown");
+    }
+
+    @Test(expected = SQLException.class)
+    public void connectionString_String__MissplacedAt() throws Exception {
+        final String url = "jdbc:polypheny://username:password@localhost:20569/namespace?k1@v1&k2";
+        final ConnectionString cs = new ConnectionString(url);
+
+        fail("No sql exception thrown");
+    }
+
+    @Test(expected = SQLException.class)
+    public void connectionString_String__MissplacedAt2() throws Exception {
+        final String url = "jdbc:polypheny://username@password:localhost:20569/namespace?k1@v1&k2";
+        final ConnectionString cs = new ConnectionString(url);
+
+        fail("No sql exception thrown");
+    }
+
+    @Test
     public void connectionString_String__AcceptableNewStyleUrlHttp() throws SQLException {
         final HashMap<String, String> expected = new HashMap<>();
         expected.put(PolyphenyDriver.PROPERTY_USERNAME_KEY, "username");
