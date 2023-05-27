@@ -99,18 +99,17 @@ public class ConnectionString {
 
     private void parseUserInfo(String userInformation) throws SQLException {
         log.debug("Parsing user info: \"" + userInformation + "\"");
-        String[] usernameAndPassword = userInformation.split(":");
-        if (usernameAndPassword.length > 2) {
-            throw new SQLException("Invalid user information format.");
-        }
-        if (usernameAndPassword[0].isEmpty()) {
+        final int firstColumnPosition = userInformation.indexOf( ':' );
+        String username = substringBefore( firstColumnPosition, userInformation );
+        String password = substringAfter( firstColumnPosition, userInformation );
+        if (username.isEmpty()) {
             return;
         }
-        parameters.put(PolyphenyDriver.PROPERTY_USERNAME_KEY, usernameAndPassword[0]);
-        if (usernameAndPassword.length == 1 || usernameAndPassword[1].isEmpty()) {
+        parameters.put(PolyphenyDriver.PROPERTY_USERNAME_KEY, username);
+        if (password.isEmpty()) {
             return;
         }
-        parameters.put(PolyphenyDriver.PROPERTY_PASSWORD_KEY, usernameAndPassword[1]);
+        parameters.put(PolyphenyDriver.PROPERTY_PASSWORD_KEY, password);
     }
 
     private String substringBefore(int index, String string) {
