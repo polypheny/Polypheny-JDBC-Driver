@@ -89,6 +89,14 @@ public class PolyphenyDriverTest {
         assertEquals( expected, actual );
     }
 
+    @Test
+    public void acceptsURL_String__MissingCredentials() throws Exception {
+        final boolean expected = true;
+        final boolean actual = DRIVER.acceptsURL( "jdbc:polypheny://host:20569" );
+
+        assertEquals( expected, actual );
+    }
+
 
     @Test
     public void acceptsURL_String__AcceptableUrl_NewUrlStyle() throws Exception {
