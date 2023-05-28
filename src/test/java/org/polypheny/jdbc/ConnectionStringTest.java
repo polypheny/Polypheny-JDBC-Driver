@@ -65,6 +65,16 @@ public class ConnectionStringTest {
     }
 
     @Test
+    public void connectionString_String__MissingCredentials() throws Exception {
+        final String expectedTarget = "host:20590";
+
+        final String url = "jdbc:polypheny://host:20590";
+        final ConnectionString cs = new ConnectionString(url);
+
+        assertEquals( expectedTarget, cs.getTarget() );
+    }
+
+    @Test
     public void connectionString_String__AcceptableUrl() throws Exception {
         final HashMap<String, String> expected = new HashMap<>();
         expected.put(PolyphenyDriver.PROPERTY_USERNAME_KEY, "username");
