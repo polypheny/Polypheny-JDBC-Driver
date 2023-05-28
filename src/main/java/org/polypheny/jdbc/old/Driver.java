@@ -80,6 +80,7 @@ public class Driver extends UnregisteredDriver {
 
     static {
         new Driver().register();
+        System.out.println("NOOOOOOOOOOOOOOOOO");
     }
 
 
@@ -181,7 +182,7 @@ public class Driver extends UnregisteredDriver {
 
             case JDBC_41:
             default:
-                return "org.polypheny.jdbc.PolyphenyJdbc41Factory";
+                throw new IllegalArgumentException( "JDBC version not supported: " + jdbcVersion );
         }
     }
 
