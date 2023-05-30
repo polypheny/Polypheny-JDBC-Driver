@@ -1,4 +1,3 @@
-
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -9,9 +8,21 @@ plugins {
     id "com.google.protobuf" version "0.9.3"
 }
 
+group "org.polypheny"
+
+archivesBaseName = "polypheny-jdbc-driver"
+description = "A standards-compliant JDBC driver for Polypheny-DB."
+
+def versionMajor = 2
+def versionMinor = 0
+def versionQualifier = "-SNAPSHOT"
+version = versionMajor + "." + versionMinor + versionQualifier
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://plugins.gradle.org/m2/"
+    }
     maven {
         // DBIS Nexus
         url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
@@ -20,16 +31,6 @@ repositories {
         url "https://clojars.org/repo/"
     }
 }
-
-
-group "org.polypheny"
-archivesBaseName = "polypheny-jdbc-driver"
-description = "A standards-compliant JDBC driver for Polypheny-DB."
-
-def versionMajor = 1
-def versionMinor = 6
-def versionQualifier = "-SNAPSHOT"
-version = versionMajor + "." + versionMinor + versionQualifier
 
 
 tasks.withType(JavaCompile) {
@@ -57,6 +58,9 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.23.0'
 
+    // Google Protocol Buffers (https://github.com/google/protobuf-gradle-plugin)
+    implementation group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: "0.8.17"
+
     // https://mvnrepository.com/artifact/io.grpc/grpc-all
     implementation group: 'io.grpc', name: 'grpc-all', version: '1.55.1'
 
@@ -79,6 +83,14 @@ dependencies {
     testImplementation group: "org.polypheny.avatica", name: "avatica-server", version: avaticaVersion
 }
 
+apply plugin: "java"
+apply plugin: "idea"
+apply plugin: "io.freefair.lombok"
+apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: "com.google.protobuf"
+
+def generatedDirName = "${project.buildDir}/generated"
+
 protobuf {
     // Configure the protoc executable
     protoc {
@@ -95,13 +107,15 @@ protobuf {
             grpc {}
         }
     }
+    generatedFilesBaseDir = "${generatedDirName}/proto"
 }
 
 
 sourceSets {
     main {
         proto {
-            srcDirs = ['src/main/proto']
+            srcDir "${protobuf.generatedFilesBaseDir}/proto/main/grpc"
+            srcDir "${protobuf.generatedFilesBaseDir}/proto/main/java"
         }
         java {
             srcDirs = ["src/main/java", "build/generated-sources", 'build/generated/source/proto/main/grpc', 'build/generated/source/proto/main/java']
@@ -121,8 +135,7 @@ sourceSets {
 }
 
 /**
- * JARs
- */
+ * JARs*/
 jar {
     manifest {
         attributes 'Manifest-Version': '1.0'
@@ -154,7 +167,6 @@ artifacts {
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
 
 publishing {
     publications {
@@ -217,11 +229,8 @@ signing {
     sign publishing.publications.shadow
 }
 
-
-
 /**
- * IntelliJ
- */
+ * IntelliJ*/
 idea {
     module {
         downloadJavadoc = true
