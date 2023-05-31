@@ -90,6 +90,7 @@ apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
 def generatedDirName = "${project.buildDir}/generated"
+
 // compile protos on build
 build.dependsOn(generateProto)
 delombok.dependsOn(generateProto)

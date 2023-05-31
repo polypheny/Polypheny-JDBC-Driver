@@ -23,6 +23,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int executeUpdate(String sql) throws SQLException {
+        /*
         QueryResult result = connection.getProtoInterfaceClient().executeSimpleQuery(sql);
         if (result.getResultCase() == QueryResult.ResultCase.FRAME) {
             throw new SQLException("Statement produces a result set.");
@@ -31,6 +32,13 @@ public class PolyphenyStatement implements Statement {
             throw new SQLException("Row count to large for return type int.");
         }
         return result.getResultCase() == QueryResult.ResultCase.NORESULT ? 0 : result.getCount();
+        */
+        // saves time as exceptions don't have to be typed out by hand
+        String methodName = new Object() {}
+                .getClass()
+                .getEnclosingMethod()
+                .getName();
+        throw new SQLException("Feature " + methodName + " not implemented");
     }
 
     private void throwNotImplemented() throws SQLException {

@@ -32,7 +32,7 @@ public class ProtoInterfaceClient {
         ConnectionRequest connectionRequest = ConnectionRequest.newBuilder()
                 .setMajorApiVersion( MAJOR_API_VERSION )
                 .setMinorApiVersion( MINOR_API_VERSION )
-                .setClientUUID( clientUUID )
+                .setClientUuid( clientUUID )
                 .putAllConnectionProperties( properties )
                 .build();
         ConnectionReply connectionReply = blockingStub.connect( connectionRequest );
@@ -42,13 +42,15 @@ public class ProtoInterfaceClient {
         }
     }
 
-
+/*
     public QueryResult executeSimpleQuery( String sql ) {
         SimpleSqlQuery query = SimpleSqlQuery.newBuilder()
                 .setQuery( sql )
                 .build();
         return blockingStub.executeSimpleSqlQuery( query );
     }
+
+ */
 
 
     private String getServerApiVersionString( ConnectionReply connectionReply ) {
