@@ -90,6 +90,9 @@ apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
 def generatedDirName = "${project.buildDir}/generated"
+// compile protos on build
+build.dependsOn(generateProto)
+delombok.dependsOn(generateProto)
 
 protobuf {
     // Configure the protoc executable
@@ -219,7 +222,6 @@ publishing {
     }
 }
 //task generatePom(group: 'publishing', dependsOn: "generatePomFileFor${project.name.capitalize()}Publication")
-
 
 signing {
     required { gradle.taskGraph.hasTask("publish") }
