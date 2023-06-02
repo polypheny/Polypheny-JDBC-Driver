@@ -3,7 +3,6 @@ package org.polypheny.jdbc;
 import io.grpc.Channel;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
-import lombok.Getter;
 import org.polypheny.jdbc.proto.*;
 
 import java.util.Map;
@@ -45,6 +44,17 @@ public class ProtoInterfaceClient {
     }
 
 
+    public QueryResult executeUnparameterizedStatement( String statement, Map<String, String> statmentProperties ) {
+        UnparameterizedStatement.Builder statementBuilder = UnparameterizedStatement.newBuilder()
+                .setStatementLanguageName( SQL_LANGUAGE_NAME )
+                .setStatement( statement );
+        if (statmentProperties != null) {
+            statementBuilder.putAllStatementProperties( statmentProperties );
+        }
+        return blockingStub.executeUnparameterizedStatement( statementBuilder.build() );
+    }
+
+
     private String getServerApiVersionString( ConnectionReply connectionReply ) {
         return connectionReply.getMajorApiVersion() + "." + connectionReply.getMinorApiVersion();
 
@@ -53,11 +63,6 @@ public class ProtoInterfaceClient {
 
     private static String getClientApiVersionString() {
         return MAJOR_API_VERSION + "." + MINOR_API_VERSION;
-    }
-
-
-    private static String getSqlLanguageName() {
-        return SQL_LANGUAGE_NAME;
     }
 
 }
