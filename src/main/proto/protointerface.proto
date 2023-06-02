@@ -10,14 +10,11 @@ package polypheny.protointerface;
 // Functions provided by the proto interface
 service ProtoInterface {
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
-  // get names of all available languages
-  rpc GetAvailableLanguages(LanguageRequest) returns (AvailableLanguages) {}
-  // prepare and execute 1..n statements with the provided values
-  rpc ExecuteParameterizedStatements(ParameterizedStatementBatch) returns (QueryResult) {}
-  // prepare a single statement
+  rpc GetSupportedLanguages(LanguageRequest) returns (SupportedLanguages) {}
+  rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (QueryResult) {}
+  rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (QueryResult) {}
   rpc PrepareStatement(PreparedStatement) returns (QueryResult) {}
-  // execute a previously prepared statement with the values provided
-  rpc ExecutePreparedStatement(ValueMapBatch) returns (QueryResult) {}
+
 }
 
 message ConnectionRequest {
@@ -35,36 +32,27 @@ message ConnectionReply {
 
 message LanguageRequest {}
 
-message AvailableLanguages {
+message SupportedLanguages {
   repeated string language_names = 1;
 }
 
-message Value {
-
-}
-
-message ValueMap {
-  map<string, Value> value_map = 1;
-}
-
-message ValueMapBatch {
-  repeated ValueMap value_maps = 1;
+message UnparameterizedStatement {
+  string statement_language_name = 1;
+  string statement = 2;
+  map<string, string> statement_properties = 3;
 }
 
 message ParameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
   map<string, string> statement_properties = 3;
-  ValueMapBatch value_map_batch = 4;
-}
-
-message ParameterizedStatementBatch {
-  repeated ParameterizedStatement parameterized_statement = 1;
+  map<string, Value> values = 4;
 }
 
 message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
+  map<string, string> statement_properties = 3;
 }
 
 message QueryResult {
@@ -76,5 +64,13 @@ message QueryResult {
 }
 
 message Frame {
+  repeated Row rows = 1;
+}
+
+message Row {
+  repeated Value values = 1;
+}
+
+message Value {
 
 }
