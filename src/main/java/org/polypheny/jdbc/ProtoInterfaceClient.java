@@ -50,7 +50,7 @@ public class ProtoInterfaceClient {
                 .setStatement( statement );
         if (statmentProperties.isModified()) {
             statementBuilder.putAllStatementProperties( statmentProperties );
-            statmentProperties.resetIsModified();
+            statmentProperties.setCheckpoint();
         }
         return blockingStub.executeUnparameterizedStatement( statementBuilder.build() );
     }

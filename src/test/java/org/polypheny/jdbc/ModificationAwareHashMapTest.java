@@ -44,10 +44,16 @@ public class ModificationAwareHashMapTest {
 
 
     @Test
-    public void resetIsModified__notModified() {
+    public void setCheckpoint__notModified() {
         put_String_String__modified();
-        modificationAwareHashMap.resetIsModified();
+        modificationAwareHashMap.setCheckpoint();
         assertFalse( modificationAwareHashMap.isModified() );
+    }
+
+    @Test
+    public void revertedChange__notModified() {
+        modificationAwareHashMap.put( "k1", "v1" );
+        modificationAwareHashMap.remove( "k1");
     }
 
 
@@ -82,6 +88,7 @@ public class ModificationAwareHashMapTest {
     @Test
     public void clear_String_String__modified() {
         modificationAwareHashMap.put( "k1", "v1" );
+        modificationAwareHashMap.setCheckpoint();
         modificationAwareHashMap.clear();
         assertTrue( modificationAwareHashMap.isModified() );
     }
@@ -96,6 +103,8 @@ public class ModificationAwareHashMapTest {
 
     @Test
     public void replace_String_String__modified() {
+        modificationAwareHashMap.put( "k1", "v1" );
+        modificationAwareHashMap.setCheckpoint();
         modificationAwareHashMap.replace( "k1", "newV1" );
         assertTrue( modificationAwareHashMap.isModified() );
     }
@@ -103,6 +112,8 @@ public class ModificationAwareHashMapTest {
 
     @Test
     public void replace_String_String_String__modified() {
+        modificationAwareHashMap.put( "k1", "oldV1" );
+        modificationAwareHashMap.setCheckpoint();
         modificationAwareHashMap.replace( "k1", "oldV1", "newV1" );
         assertTrue( modificationAwareHashMap.isModified() );
     }

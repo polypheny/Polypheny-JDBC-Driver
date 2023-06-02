@@ -6,11 +6,11 @@ public class ModificationAwareHashMap<K, V> extends HashMap<K, V> {
     private HashMap<K,V> lastCheckpoint;
 
     public ModificationAwareHashMap() {
-        this.lastCheckpoint = new HashMap<>();
+        setCheckpoint();
     }
 
     public boolean isModified() {
-        return this.equals( lastCheckpoint );
+        return !this.equals( lastCheckpoint );
     }
 
     public void setCheckpoint() {
