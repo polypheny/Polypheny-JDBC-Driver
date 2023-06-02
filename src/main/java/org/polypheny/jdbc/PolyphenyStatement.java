@@ -1,38 +1,25 @@
 package org.polypheny.jdbc;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-
-import java.sql.*;
 import org.polypheny.jdbc.proto.QueryResult;
 import org.polypheny.jdbc.proto.QueryResult.ResultCase;
-import org.polypheny.jdbc.proto.UnparameterizedStatement;
 
 public class PolyphenyStatement implements Statement {
 
     private PolyphenyConnection connection;
-    private boolean propertiesUpToDate;
-    private Map<String, String> statementProperties;
+    private ModificationAwareHashMap<String, String> statementProperties;
     private ResultSet currentResult;
 
 
     public PolyphenyStatement( PolyphenyConnection connection ) {
         this.connection = connection;
-        this.statementProperties = new HashMap<>();
-        this.propertiesUpToDate = true;
-    }
-
-    public Map<String, String> getPropertiesIfChanged() {
-        if (propertiesUpToDate) {
-            return null;
-        }
-        return statementProperties;
-    }
-
-
-    private void setStatementProperty( String key, String value ) {
-        statementProperties.put( key, value );
-        propertiesUpToDate = false;
+        this.statementProperties = new ModificationAwareHashMap<>();
     }
 
 
@@ -73,56 +60,34 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int getMaxFieldSize() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        return Integer.parseInt( statementProperties.get( "maxFieldSize" ) );
     }
 
 
     @Override
-    public void setMaxFieldSize( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public void setMaxFieldSize( int maxFieldSize ) throws SQLException {
+        statementProperties.put( "maxFieldSize", String.valueOf( maxFieldSize ) );
     }
 
 
     @Override
     public int getMaxRows() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        return Integer.parseInt( statementProperties.get( "maxRows" ) );
     }
 
 
     @Override
-    public void setMaxRows( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public void setMaxRows( int maxRows ) throws SQLException {
+        statementProperties.put( "maxRows", String.valueOf( maxRows ) );
     }
 
 
     @Override
     public void setEscapeProcessing( boolean b ) throws SQLException {
+        /* TODO TH: local property that does not have to be sent to the server
+         * As the topic of escape replacement is all about jdbc this should not be sent to the server.
+         */
+
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -135,6 +100,8 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int getQueryTimeout() throws SQLException {
+        // TODO TH: local property that does not have to be sent to the server
+
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -148,6 +115,8 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void setQueryTimeout( int i ) throws SQLException {
+        // TODO TH: local property that does not have to be sent to the server
+
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -209,10 +178,10 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean execute( String statement ) throws SQLException {
-        QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, getPropertiesIfChanged() );
+        QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
         // returns false if result is update count or there are no results as those are the only options left
-        if (result.getResultCase() == ResultCase.FRAME) {
-            currentResult = new PolyphenyResultSet(result.getFrame());
+        if ( result.getResultCase() == ResultCase.FRAME ) {
+            currentResult = new PolyphenyResultSet( result.getFrame() );
             return true;
         }
         return false;
@@ -277,32 +246,21 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void setFetchSize( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public void setFetchSize( int fetchSize ) throws SQLException {
+        statementProperties.put( "fetchSize", String.valueOf( fetchSize ) );
     }
 
 
     @Override
     public int getFetchSize() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        return Integer.parseInt( statementProperties.get( "fetchSize" ) );
     }
 
 
     @Override
     public int getResultSetConcurrency() throws SQLException {
+        // TODO TH: local property that does not have to be sent to the server
+
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -476,6 +434,8 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int getResultSetHoldability() throws SQLException {
+        // TODO TH: local property that does not have to be sent to the server
+
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
