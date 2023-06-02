@@ -44,12 +44,13 @@ public class ProtoInterfaceClient {
     }
 
 
-    public QueryResult executeUnparameterizedStatement( String statement, Map<String, String> statmentProperties ) {
+    public QueryResult executeUnparameterizedStatement( String statement, ModificationAwareHashMap<String, String> statmentProperties ) {
         UnparameterizedStatement.Builder statementBuilder = UnparameterizedStatement.newBuilder()
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
                 .setStatement( statement );
-        if (statmentProperties != null) {
+        if (statmentProperties.isModified()) {
             statementBuilder.putAllStatementProperties( statmentProperties );
+            statmentProperties.resetIsModified();
         }
         return blockingStub.executeUnparameterizedStatement( statementBuilder.build() );
     }
