@@ -34,7 +34,7 @@ public class ProtoInterfaceClient {
                 .setMajorApiVersion( MAJOR_API_VERSION )
                 .setMinorApiVersion( MINOR_API_VERSION )
                 .setClientUuid( clientUUID )
-                .putAllConnectionProperties( properties )
+                .setConnectionProperties( buildStringMap( properties ) )
                 .build();
         ConnectionReply connectionReply = blockingStub.connect( connectionRequest );
         if ( !connectionReply.getIsCompatible() ) {
@@ -49,7 +49,7 @@ public class ProtoInterfaceClient {
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
                 .setStatement( statement );
         if (statmentProperties.isModified()) {
-            statementBuilder.putAllStatementProperties( statmentProperties );
+            statementBuilder.setProperties( buildStringMap( statmentProperties ) );
             statmentProperties.setCheckpoint();
         }
         return blockingStub.executeUnparameterizedStatement( statementBuilder.build() );
@@ -61,6 +61,9 @@ public class ProtoInterfaceClient {
 
     }
 
+    private StringMap buildStringMap(Map<String, String> map) {
+        return StringMap.newBuilder().putAllEntries( map ).build();
+    }
 
     private static String getClientApiVersionString() {
         return MAJOR_API_VERSION + "." + MINOR_API_VERSION;
