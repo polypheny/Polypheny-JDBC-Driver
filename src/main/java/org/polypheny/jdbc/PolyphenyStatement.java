@@ -16,6 +16,10 @@ public class PolyphenyStatement implements Statement {
     private ModificationAwareHashMap<String, String> statementProperties;
     private ResultSet currentResult;
 
+    private int currentUpdateCount;
+    // Value used to represent that no value is set for the update count according to JDBC.
+    private static final int NO_UPDATE_COUNT = -1;
+
 
     public PolyphenyStatement( PolyphenyConnection connection ) {
         this.connection = connection;
@@ -23,26 +27,45 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    @Override
-    public ResultSet executeQuery( String s ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    private int longToInt( long longNumber ) {
+        return Math.toIntExact( longNumber );
+    }
+
+
+    private void resetCurrentResults() {
+        currentResult = null;
+        currentUpdateCount = NO_UPDATE_COUNT;
     }
 
 
     @Override
-    public int executeUpdate( String sql ) throws SQLException {
-        String methodName = new Object() {
+    public ResultSet executeQuery( String statement ) throws SQLException {
+        // TODO TH: checking mechanism for statement to only produce single result set
+        QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
+        resetCurrentResults();
+        if ( result.getResultCase() != ResultCase.FRAME ) {
+            throw new SQLException( "Statement must produce a single ResultSet" );
         }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        currentResult = new PolyphenyResultSet( result.getFrame() );
+        return currentResult;
+    }
+
+
+    @Override
+    public int executeUpdate( String statement ) throws SQLException {
+        // TODO TH: checking if statement produces result before execution
+        QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
+        resetCurrentResults();
+        switch ( result.getResultCase() ) {
+            case FRAME:
+                throw new SQLException( "Statement must not produce a ResultSet" );
+            case ROW_COUNT:
+                return longToInt( result.getRowCount() );
+            case NO_RESULT:
+                return 0;
+            default:
+                throw new SQLException( "Received illegal result from database" );
+        }
     }
 
 
@@ -179,10 +202,16 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean execute( String statement ) throws SQLException {
         QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
-        // returns false if result is update count or there are no results as those are the only options left
-        if ( result.getResultCase() == ResultCase.FRAME ) {
-            currentResult = new PolyphenyResultSet( result.getFrame() );
-            return true;
+        resetCurrentResults();
+        switch ( result.getResultCase() ) {
+            case FRAME:
+                currentResult = new PolyphenyResultSet( result.getFrame() );
+                return true;
+            case ROW_COUNT:
+                currentUpdateCount = longToInt( result.getRowCount() );
+                return false;
+            case NO_RESULT:
+                return false;
         }
         return false;
     }
