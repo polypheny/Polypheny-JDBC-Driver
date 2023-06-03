@@ -57,10 +57,14 @@ message PreparedStatement {
 
 message QueryResult {
   oneof result {
-    bool no_result = 1;
+    int64 row_count = 1;
     Frame frame = 2;
-    int64 row_count = 4;
+    NoResult no_result = 3;
   }
+}
+
+message NoResult {
+
 }
 
 message Frame {
