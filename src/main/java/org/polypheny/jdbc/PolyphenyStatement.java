@@ -1,12 +1,11 @@
 package org.polypheny.jdbc;
 
+import io.grpc.StatusRuntimeException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
 import org.polypheny.jdbc.proto.QueryResult;
 import org.polypheny.jdbc.proto.QueryResult.ResultCase;
 
@@ -41,30 +40,38 @@ public class PolyphenyStatement implements Statement {
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
         // TODO TH: checking mechanism for statement to only produce single result set
-        QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
-        resetCurrentResults();
-        if ( result.getResultCase() != ResultCase.FRAME ) {
-            throw new SQLException( "Statement must produce a single ResultSet" );
+        try {
+            QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
+            resetCurrentResults();
+            if ( result.getResultCase() != ResultCase.FRAME ) {
+                throw new SQLException( "Statement must produce a single ResultSet" );
+            }
+            currentResult = new PolyphenyResultSet( result.getFrame() );
+            return currentResult;
+        } catch ( StatusRuntimeException e ) {
+            throw new SQLException( e.getMessage() );
         }
-        currentResult = new PolyphenyResultSet( result.getFrame() );
-        return currentResult;
     }
 
 
     @Override
     public int executeUpdate( String statement ) throws SQLException {
         // TODO TH: checking if statement produces result before execution
-        QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
-        resetCurrentResults();
-        switch ( result.getResultCase() ) {
-            case FRAME:
-                throw new SQLException( "Statement must not produce a ResultSet" );
-            case ROW_COUNT:
-                return longToInt( result.getRowCount() );
-            case NO_RESULT:
-                return 0;
-            default:
-                throw new SQLException( "Received illegal result from database" );
+        try {
+            QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
+            resetCurrentResults();
+            switch ( result.getResultCase() ) {
+                case FRAME:
+                    throw new SQLException( "Statement must not produce a ResultSet" );
+                case ROW_COUNT:
+                    return longToInt( result.getRowCount() );
+                case NO_RESULT:
+                    return 0;
+                default:
+                    throw new SQLException( "Received illegal result from database" );
+            }
+        } catch ( StatusRuntimeException e ) {
+            throw new SQLException( e.getMessage() );
         }
     }
 
@@ -201,19 +208,24 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean execute( String statement ) throws SQLException {
-        QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
-        resetCurrentResults();
-        switch ( result.getResultCase() ) {
-            case FRAME:
-                currentResult = new PolyphenyResultSet( result.getFrame() );
-                return true;
-            case ROW_COUNT:
-                currentUpdateCount = longToInt( result.getRowCount() );
-                return false;
-            case NO_RESULT:
-                return false;
+        try {
+            QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
+
+            resetCurrentResults();
+            switch ( result.getResultCase() ) {
+                case FRAME:
+                    currentResult = new PolyphenyResultSet( result.getFrame() );
+                    return true;
+                case ROW_COUNT:
+                    currentUpdateCount = longToInt( result.getRowCount() );
+                    return false;
+                case NO_RESULT:
+                    return false;
+            }
+            return false;
+        } catch ( StatusRuntimeException e ) {
+            throw new SQLException( e.getMessage() );
         }
-        return false;
     }
 
 
