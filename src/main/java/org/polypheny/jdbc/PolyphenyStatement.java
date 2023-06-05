@@ -23,6 +23,7 @@ public class PolyphenyStatement implements Statement {
     public PolyphenyStatement( PolyphenyConnection connection ) {
         this.connection = connection;
         this.statementProperties = new ModificationAwareHashMap<>();
+        this.currentUpdateCount = NO_UPDATE_COUNT;
     }
 
 
@@ -237,14 +238,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int getUpdateCount() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        return currentUpdateCount;
     }
 
 
