@@ -85,13 +85,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void close() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        connection.getProtoInterfaceClient().closeStatement( statementId );
     }
 
 

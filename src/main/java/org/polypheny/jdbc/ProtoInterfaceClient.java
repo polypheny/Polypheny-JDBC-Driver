@@ -55,6 +55,12 @@ public class ProtoInterfaceClient {
         return blockingStub.executeUnparameterizedStatement( statementBuilder.build() );
     }
 
+    public CloseStatementResponse closeStatement(int statementId) {
+        CloseStatementRequest request = CloseStatementRequest.newBuilder()
+                .setStatementId( statementId )
+                .build();
+        return blockingStub.closeStatement( request );
+    }
 
     private String getServerApiVersionString( ConnectionReply connectionReply ) {
         return connectionReply.getMajorApiVersion() + "." + connectionReply.getMinorApiVersion();
