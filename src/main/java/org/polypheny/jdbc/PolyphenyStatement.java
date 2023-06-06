@@ -15,15 +15,19 @@ public class PolyphenyStatement implements Statement {
     private ModificationAwareHashMap<String, String> statementProperties;
     private ResultSet currentResult;
 
+    private int statementId;
+
     private int currentUpdateCount;
     // Value used to represent that no value is set for the update count according to JDBC.
     private static final int NO_UPDATE_COUNT = -1;
+    private static final int NO_STATEMENT_ID = -1;
 
 
     public PolyphenyStatement( PolyphenyConnection connection ) {
         this.connection = connection;
         this.statementProperties = new ModificationAwareHashMap<>();
         this.currentUpdateCount = NO_UPDATE_COUNT;
+        this.statementId = NO_STATEMENT_ID;
     }
 
 
@@ -43,6 +47,7 @@ public class PolyphenyStatement implements Statement {
         // TODO TH: checking mechanism for statement to only produce single result set
         try {
             QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
+            statementId = result.getStatementId();
             resetCurrentResults();
             if ( result.getResultCase() != ResultCase.FRAME ) {
                 throw new SQLException( "Statement must produce a single ResultSet" );
@@ -60,6 +65,7 @@ public class PolyphenyStatement implements Statement {
         // TODO TH: checking if statement produces result before execution
         try {
             QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
+            statementId = result.getStatementId();
             resetCurrentResults();
             switch ( result.getResultCase() ) {
                 case FRAME:
@@ -211,7 +217,7 @@ public class PolyphenyStatement implements Statement {
     public boolean execute( String statement ) throws SQLException {
         try {
             QueryResult result = connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties );
-
+            statementId = result.getStatementId();
             resetCurrentResults();
             switch ( result.getResultCase() ) {
                 case FRAME:

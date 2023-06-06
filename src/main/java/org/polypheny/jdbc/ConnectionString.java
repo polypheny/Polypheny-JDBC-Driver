@@ -1,17 +1,14 @@
 package org.polypheny.jdbc;
 
-import io.opencensus.proto.trace.v1.Span.Tracestate.Entry;
-import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ConnectionString {
