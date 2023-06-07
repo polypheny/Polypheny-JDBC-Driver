@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.jdbc.proto";
+option java_outer_classname = "TestProto";
+option objc_class_prefix = "Test";
+
+package polypheny.test;
+
+// Functions provided by the proto interface
+// Functions provided by the proto interface
+service TestInterface {
+  rpc callA(RequestsA) returns (TResponse) {}
+  rpc callB(RequestsB) returns (TResponse) {}
+}
+
+message TResponse {
+  int32 answer = 1;
+}
+
+message RequestsA {
+}
+
+message RequestsB {
+}
