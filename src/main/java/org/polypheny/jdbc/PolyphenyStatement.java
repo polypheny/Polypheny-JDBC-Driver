@@ -6,8 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
-import org.polypheny.jdbc.proto.QueryResult;
-import org.polypheny.jdbc.proto.QueryResult.ResultCase;
 import org.polypheny.jdbc.proto.StatementResult.ResultCase;
 import org.polypheny.jdbc.proto.StatementStatus;
 import org.polypheny.jdbc.utils.StatementStatusQueue;
@@ -44,6 +42,7 @@ public class PolyphenyStatement implements Statement {
         currentUpdateCount = NO_UPDATE_COUNT;
     }
 
+
     private void resetStatementId() {
         statementId = NO_STATEMENT_ID;
     }
@@ -55,12 +54,13 @@ public class PolyphenyStatement implements Statement {
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
             connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
-            while (true) {
+            while ( true ) {
                 StatementStatus status = callback.take();
-                if (!status.hasResult() && statementId == NO_STATEMENT_ID) {
+                if ( !status.hasResult() && statementId == NO_STATEMENT_ID ) {
                     statementId = status.getStatementId();
                     continue;
                 }
+                callback.awaitCompletion();
                 resetCurrentResults();
                 if ( status.getResult().getResultCase() != ResultCase.FRAME ) {
                     throw new SQLException( "Statement must produce a single ResultSet" );
@@ -68,7 +68,7 @@ public class PolyphenyStatement implements Statement {
                 currentResult = new PolyphenyResultSet( status.getResult().getFrame() );
                 return currentResult;
             }
-        } catch ( StatusRuntimeException | InterruptedException e) {
+        } catch ( StatusRuntimeException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
         }
     }
@@ -80,17 +80,19 @@ public class PolyphenyStatement implements Statement {
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
             connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
-            while (true) {
+            while ( true ) {
                 StatementStatus status = callback.take();
-                if (!status.hasResult() && statementId == NO_STATEMENT_ID) {
+                if ( !status.hasResult() && statementId == NO_STATEMENT_ID ) {
                     statementId = status.getStatementId();
                     continue;
                 }
+                callback.awaitCompletion();
                 resetCurrentResults();
                 switch ( status.getResult().getResultCase() ) {
                     case FRAME:
                         throw new SQLException( "Statement must not produce a ResultSet" );
                     case ROW_COUNT:
+
                         return longToInt( status.getResult().getRowCount() );
                     case NO_RESULT:
                         return 0;
@@ -98,7 +100,7 @@ public class PolyphenyStatement implements Statement {
                         throw new SQLException( "Received illegal result from database" );
                 }
             }
-        } catch ( StatusRuntimeException | InterruptedException e) {
+        } catch ( StatusRuntimeException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
         }
     }
@@ -234,12 +236,13 @@ public class PolyphenyStatement implements Statement {
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
             connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
-            while (true) {
+            while ( true ) {
                 StatementStatus status = callback.take();
-                if (!status.hasResult() && statementId == NO_STATEMENT_ID) {
+                if ( !status.hasResult() && statementId == NO_STATEMENT_ID ) {
                     statementId = status.getStatementId();
                     continue;
                 }
+                callback.awaitCompletion();
                 resetCurrentResults();
                 switch ( status.getResult().getResultCase() ) {
                     case FRAME:
@@ -254,7 +257,7 @@ public class PolyphenyStatement implements Statement {
                         throw new SQLException( "Received illegal result from database" );
                 }
             }
-        } catch ( StatusRuntimeException | InterruptedException e) {
+        } catch ( StatusRuntimeException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
         }
     }
