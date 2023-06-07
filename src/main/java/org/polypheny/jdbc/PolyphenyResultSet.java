@@ -19,13 +19,23 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.polypheny.jdbc.proto.Frame;
+import org.polypheny.jdbc.proto.Row;
+import org.polypheny.jdbc.proto.Value;
+import org.polypheny.jdbc.utils.ProtoValueDeserializer;
 
 public class PolyphenyResultSet implements ResultSet {
 
     public PolyphenyResultSet( Frame frame ) {
+        List<Row> rows = frame.getRowsList();
+        List<List<Value>> valueRows = rows.stream().map(r -> new ArrayList<>( r.getValuesList() ) ).collect( Collectors.toList());
+
+
     }
 
 

@@ -7,6 +7,7 @@ import org.polypheny.jdbc.proto.*;
 
 import java.util.Map;
 import java.util.UUID;
+import org.polypheny.jdbc.utils.StatementStatusQueue;
 
 public class ProtoInterfaceClient {
 
@@ -44,7 +45,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public QueryResult executeUnparameterizedStatement( String statement, ModificationAwareHashMap<String, String> statmentProperties ) {
+    public void executeUnparameterizedStatement( String statement, ModificationAwareHashMap<String, String> statmentProperties, StatementStatusQueue updateCallback ) {
         UnparameterizedStatement.Builder statementBuilder = UnparameterizedStatement.newBuilder()
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
                 .setStatement( statement );
@@ -52,7 +53,7 @@ public class ProtoInterfaceClient {
             statementBuilder.setProperties( buildStringMap( statmentProperties ) );
             statmentProperties.setCheckpoint();
         }
-        return blockingStub.executeUnparameterizedStatement( statementBuilder.build() );
+        asyncStub.executeUnparameterizedStatement( statementBuilder.build(), updateCallback );
     }
 
     public CloseStatementResponse closeStatement(int statementId) {
