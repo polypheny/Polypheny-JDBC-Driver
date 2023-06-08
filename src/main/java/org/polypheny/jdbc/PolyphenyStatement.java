@@ -55,9 +55,11 @@ public class PolyphenyStatement implements Statement {
         try {
             connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
             while ( true ) {
-                StatementStatus status = callback.take();
-                if ( !status.hasResult() && statementId == NO_STATEMENT_ID ) {
+                StatementStatus status = callback.takeNext();
+                if ( statementId == NO_STATEMENT_ID ) {
                     statementId = status.getStatementId();
+                }
+                if ( !status.hasResult() ) {
                     continue;
                 }
                 callback.awaitCompletion();
@@ -81,9 +83,11 @@ public class PolyphenyStatement implements Statement {
         try {
             connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
             while ( true ) {
-                StatementStatus status = callback.take();
-                if ( !status.hasResult() && statementId == NO_STATEMENT_ID ) {
+                StatementStatus status = callback.takeNext();
+                if ( statementId == NO_STATEMENT_ID ) {
                     statementId = status.getStatementId();
+                }
+                if ( !status.hasResult() ) {
                     continue;
                 }
                 callback.awaitCompletion();
@@ -99,6 +103,7 @@ public class PolyphenyStatement implements Statement {
                         throw new SQLException( "Received illegal result from database" );
                 }
             }
+
         } catch ( StatusRuntimeException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
         }
@@ -236,28 +241,29 @@ public class PolyphenyStatement implements Statement {
         try {
             connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
             while ( true ) {
-                StatementStatus status = callback.take();
-                if (statementId == NO_STATEMENT_ID ) {
+                StatementStatus status = callback.takeNext();
+                if ( statementId == NO_STATEMENT_ID ) {
                     statementId = status.getStatementId();
                 }
-                if (status.hasResult()) {
-                    callback.awaitCompletion();
-                    resetCurrentResults();
-                    switch ( status.getResult().getResultCase() ) {
-                        case FRAME:
-                            currentResult = new PolyphenyResultSet( status.getResult().getFrame() );
-                            return true;
-                        case ROW_COUNT:
-                            currentUpdateCount = longToInt( status.getResult().getRowCount() );
-                            return false;
-                        case NO_RESULT:
-                            return false;
-                        default:
-                            throw new SQLException( "Received illegal result from database" );
-                    }
+                if ( !status.hasResult() ) {
+                    continue;
+                }
+                callback.awaitCompletion();
+                resetCurrentResults();
+                switch ( status.getResult().getResultCase() ) {
+                    case FRAME:
+                        currentResult = new PolyphenyResultSet( status.getResult().getFrame() );
+                        return true;
+                    case ROW_COUNT:
+                        currentUpdateCount = longToInt( status.getResult().getRowCount() );
+                        return false;
+                    case NO_RESULT:
+                        return false;
+                    default:
+                        throw new SQLException( "Received illegal result from database" );
                 }
             }
-        } catch ( StatusRuntimeException | InterruptedException e ) {
+        } catch ( ProtoInterfaceServiceException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
         }
     }
