@@ -92,7 +92,6 @@ public class PolyphenyStatement implements Statement {
                     case FRAME:
                         throw new SQLException( "Statement must not produce a ResultSet" );
                     case ROW_COUNT:
-
                         return longToInt( status.getResult().getRowCount() );
                     case NO_RESULT:
                         return 0;
@@ -238,23 +237,24 @@ public class PolyphenyStatement implements Statement {
             connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
             while ( true ) {
                 StatementStatus status = callback.take();
-                if ( !status.hasResult() && statementId == NO_STATEMENT_ID ) {
+                if (statementId == NO_STATEMENT_ID ) {
                     statementId = status.getStatementId();
-                    continue;
                 }
-                callback.awaitCompletion();
-                resetCurrentResults();
-                switch ( status.getResult().getResultCase() ) {
-                    case FRAME:
-                        currentResult = new PolyphenyResultSet( status.getResult().getFrame() );
-                        return true;
-                    case ROW_COUNT:
-                        currentUpdateCount = longToInt( status.getResult().getRowCount() );
-                        return false;
-                    case NO_RESULT:
-                        return false;
-                    default:
-                        throw new SQLException( "Received illegal result from database" );
+                if (status.hasResult()) {
+                    callback.awaitCompletion();
+                    resetCurrentResults();
+                    switch ( status.getResult().getResultCase() ) {
+                        case FRAME:
+                            currentResult = new PolyphenyResultSet( status.getResult().getFrame() );
+                            return true;
+                        case ROW_COUNT:
+                            currentUpdateCount = longToInt( status.getResult().getRowCount() );
+                            return false;
+                        case NO_RESULT:
+                            return false;
+                        default:
+                            throw new SQLException( "Received illegal result from database" );
+                    }
                 }
             }
         } catch ( StatusRuntimeException | InterruptedException e ) {

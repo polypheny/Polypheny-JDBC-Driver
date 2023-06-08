@@ -2,21 +2,23 @@ package org.polypheny.jdbc.utils;
 
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.LinkedBlockingQueue;
-import lombok.Getter;
 import org.polypheny.jdbc.proto.StatementStatus;
 
 public class StatementStatusQueue extends LinkedBlockingQueue<StatementStatus> implements StreamObserver<StatementStatus> {
+
     boolean isCompleted;
+
 
     public StatementStatusQueue() {
         super();
         this.isCompleted = false;
     }
 
+
     public void awaitCompletion() {
         try {
-            synchronized(this) {
-                while (!isCompleted) {
+            synchronized ( this ) {
+                while ( !isCompleted ) {
                     this.wait();
                 }
             }
