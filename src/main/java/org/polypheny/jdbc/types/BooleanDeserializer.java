@@ -10,15 +10,10 @@ public class BooleanDeserializer implements ValueDeserializer {
 
 
     @Override
-    public boolean deserializes( ProtoValue value ) {
-        return value.getValueCase() == TARGET_CASE;
-    }
-
-
-    @Override
     public Object deserilize( ProtoValue value ) {
         return deserializeToBoolean( value.getBoolean() );
     }
+
 
     private static boolean deserializeToBoolean( ProtoBoolean protoBoolean ) {
         return protoBoolean.getBoolean();

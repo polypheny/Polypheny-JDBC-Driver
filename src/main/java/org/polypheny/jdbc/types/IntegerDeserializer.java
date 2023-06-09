@@ -3,18 +3,8 @@ package org.polypheny.jdbc.types;
 import java.sql.Types;
 import org.polypheny.jdbc.proto.ProtoInteger;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.ProtoValue.ValueCase;
 
 public class IntegerDeserializer implements ValueDeserializer {
-
-    private static final ProtoValue.ValueCase TARGET_CASE = ValueCase.INTEGER;
-
-
-    @Override
-    public boolean deserializes( ProtoValue value ) {
-        return value.getValueCase() == TARGET_CASE;
-    }
-
 
     @Override
     public Object deserilize( ProtoValue value ) {
