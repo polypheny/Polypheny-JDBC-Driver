@@ -8,18 +8,19 @@ option objc_class_prefix = "PI";
 package polypheny.protointerface;
 
 message ProtoValue {
+  ProtoValueType type = 1;
   oneof value {
-    ProtoBoolean boolean = 1;
-    ProtoInteger integer = 2;
-    ProtoLong long = 3;
-    ProtoBinary binary = 4;
-    ProtoDate date = 5;
-    ProtoDouble double = 6;
-    ProtoFloat float = 7;
-    ProtoString string = 8;
-    ProtoTime time = 9;
-    ProtoTimeStamp time_stamp = 10;
-    ProtoNull null = 11;
+    ProtoBoolean boolean = 2;
+    ProtoInteger integer = 3;
+    ProtoLong long = 4;
+    ProtoBinary binary = 5;
+    ProtoDate date = 6;
+    ProtoDouble double = 7;
+    ProtoFloat float = 8;
+    ProtoString string = 9;
+    ProtoTime time = 10;
+    ProtoTimeStamp time_stamp = 11;
+    ProtoNull null = 12;
   }
 }
 
@@ -75,7 +76,7 @@ enum ProtoValueType {
   PROTO_VALUE_TYPE_JSON = 4;
   PROTO_VALUE_TYPE_DATE = 5;
   PROTO_VALUE_TYPE_TIME = 6;
-  PROTO_VALUE_TYPE_TIMESTA = 7;
+  PROTO_VALUE_TYPE_TIMESTAMP = 7;
   PROTO_VALUE_TYPE_NULL = 8;
   PROTO_VALUE_TYPE_DECIMAL = 9;
   PROTO_VALUE_TYPE_ANY = 10;
@@ -112,7 +113,7 @@ enum ProtoValueType {
   PROTO_VALUE_TYPE_DISTINCT = 41;
   PROTO_VALUE_TYPE_STRUCTURED = 42;
   PROTO_VALUE_TYPE_ROW = 43;
-  PROTO_VALUE_TYPE_CURSOR = 44;
+  //PROTO_VALUE_TYPE_CURSOR = 44;
   PROTO_VALUE_TYPE_COLUMN_LIST = 45;
 }
 
