@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ValueCase;
+import org.polypheny.jdbc.types.BigDecimalDeserializer;
 import org.polypheny.jdbc.types.BinaryDeserializer;
 import org.polypheny.jdbc.types.BooleanDeserializer;
 import org.polypheny.jdbc.types.DateDeserializer;
@@ -32,6 +33,7 @@ public class ProtoValueDeserializer {
                     .put( ValueCase.STRING, new StringDeserializer() )
                     .put( ValueCase.TIME, new TimeDeserializer() )
                     .put( ValueCase.TIME_STAMP, new TimeStampDeserializer() )
+                    .put( ValueCase.BIG_DECIMAL, new BigDecimalDeserializer() )
                     .build();
 
 
