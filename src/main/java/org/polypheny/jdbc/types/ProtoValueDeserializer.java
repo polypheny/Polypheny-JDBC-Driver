@@ -1,22 +1,9 @@
-package org.polypheny.jdbc.utils;
+package org.polypheny.jdbc.types;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ValueCase;
-import org.polypheny.jdbc.types.BigDecimalDeserializer;
-import org.polypheny.jdbc.types.BinaryDeserializer;
-import org.polypheny.jdbc.types.BooleanDeserializer;
-import org.polypheny.jdbc.types.DateDeserializer;
-import org.polypheny.jdbc.types.DoubleDeserializer;
-import org.polypheny.jdbc.types.FloatDeserializer;
-import org.polypheny.jdbc.types.IntegerDeserializer;
-import org.polypheny.jdbc.types.LongDeserializer;
-import org.polypheny.jdbc.types.NullDeserializer;
-import org.polypheny.jdbc.types.StringDeserializer;
-import org.polypheny.jdbc.types.TimeDeserializer;
-import org.polypheny.jdbc.types.TimeStampDeserializer;
-import org.polypheny.jdbc.types.ValueDeserializer;
 
 public class ProtoValueDeserializer {
 
@@ -38,7 +25,7 @@ public class ProtoValueDeserializer {
 
 
     public static Object deserialize( ProtoValue value ) {
-        return VALUE_DESERIALIZERS.get(value.getValueCase()).deserilize( value );
+        return VALUE_DESERIALIZERS.get( value.getValueCase() ).deserilize( value );
     }
 
 }
