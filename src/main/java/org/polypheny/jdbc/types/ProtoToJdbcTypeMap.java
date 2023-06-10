@@ -55,6 +55,7 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoValueType.PROTO_VALUE_TYPE_COLUMN_LIST, Types.OTHER + 2)
                     .build();
 
+
     public static int getJdbcTypeFromProto(ProtoValueType protoValueType) {
         Integer jdbcType = PROTO_TYPE_TO_JDBC.get( protoValueType );
         if (jdbcType == null) {
