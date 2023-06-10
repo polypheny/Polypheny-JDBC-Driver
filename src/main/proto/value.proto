@@ -21,6 +21,7 @@ message ProtoValue {
     ProtoTime time = 10;
     ProtoTimeStamp time_stamp = 11;
     ProtoNull null = 12;
+    ProtoBigDecimal big_decimal = 13;
   }
 }
 
@@ -66,6 +67,12 @@ message ProtoTime {
 
 message ProtoTimeStamp {
   int64 timeStamp = 1;
+}
+
+message ProtoBigDecimal {
+  uint32 scale = 1;
+  uint32 precision = 2;
+  bytes unscaled_value = 3;
 }
 
 enum ProtoValueType {
