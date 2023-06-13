@@ -6,16 +6,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import lombok.Getter;
 import org.polypheny.jdbc.proto.StatementResult.ResultCase;
 import org.polypheny.jdbc.proto.StatementStatus;
 import org.polypheny.jdbc.utils.StatementStatusQueue;
 
 public class PolyphenyStatement implements Statement {
 
-    private PolyphenyConnection connection;
+    private PolyphenyConnection polyphenyConnection;
     private ModificationAwareHashMap<String, String> statementProperties;
     private ResultSet currentResult;
-
+    @Getter
     private int statementId;
 
     private int currentUpdateCount;
@@ -25,10 +26,15 @@ public class PolyphenyStatement implements Statement {
 
 
     public PolyphenyStatement( PolyphenyConnection connection ) {
-        this.connection = connection;
+        this.polyphenyConnection = connection;
         this.statementProperties = new ModificationAwareHashMap<>();
         resetCurrentResults();
         resetStatementId();
+    }
+
+
+    ProtoInterfaceClient getClient() {
+        return polyphenyConnection.getProtoInterfaceClient();
     }
 
 
@@ -53,7 +59,7 @@ public class PolyphenyStatement implements Statement {
         resetStatementId();
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
-            connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
+            getClient().executeUnparameterizedStatement( statement, statementProperties, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -67,7 +73,7 @@ public class PolyphenyStatement implements Statement {
                 if ( status.getResult().getResultCase() != ResultCase.FRAME ) {
                     throw new SQLException( "Statement must produce a single ResultSet" );
                 }
-                currentResult = new PolyphenyResultSet( status.getResult().getFrame() );
+                currentResult = new PolyphenyResultSet( this, status.getResult().getFrame() );
                 return currentResult;
             }
         } catch ( StatusRuntimeException | InterruptedException e ) {
@@ -81,7 +87,7 @@ public class PolyphenyStatement implements Statement {
         resetStatementId();
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
-            connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
+            getClient().executeUnparameterizedStatement( statement, statementProperties, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -112,7 +118,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void close() throws SQLException {
-        connection.getProtoInterfaceClient().closeStatement( statementId );
+        getClient().closeStatement( statementId );
     }
 
 
@@ -239,7 +245,7 @@ public class PolyphenyStatement implements Statement {
         resetStatementId();
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
-            connection.getProtoInterfaceClient().executeUnparameterizedStatement( statement, statementProperties, callback );
+            getClient().executeUnparameterizedStatement( statement, statementProperties, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -252,7 +258,7 @@ public class PolyphenyStatement implements Statement {
                 resetCurrentResults();
                 switch ( status.getResult().getResultCase() ) {
                     case FRAME:
-                        currentResult = new PolyphenyResultSet( status.getResult().getFrame() );
+                        currentResult = new PolyphenyResultSet( this, status.getResult().getFrame() );
                         return true;
                     case ROW_COUNT:
                         currentUpdateCount = longToInt( status.getResult().getRowCount() );
@@ -398,7 +404,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public Connection getConnection() throws SQLException {
-        return connection;
+        return polyphenyConnection;
     }
 
 

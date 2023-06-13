@@ -63,6 +63,14 @@ public class ProtoInterfaceClient {
         return blockingStub.closeStatement( request );
     }
 
+    public Frame fetchResult(int statementId, long offset) {
+        FetchRequest fetchRequest = FetchRequest.newBuilder()
+                .setStatementId( statementId )
+                .setOffset( offset )
+                .build();
+        return blockingStub.fetchResult(fetchRequest);
+    }
+
     private String getServerApiVersionString( ConnectionReply connectionReply ) {
         return connectionReply.getMajorApiVersion() + "." + connectionReply.getMinorApiVersion();
 

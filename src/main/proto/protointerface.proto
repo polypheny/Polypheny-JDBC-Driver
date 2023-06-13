@@ -16,7 +16,7 @@ service ProtoInterface {
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
   rpc PrepareStatement(PreparedStatement) returns (stream StatementStatus) {}
-  rpc FetchResult(FetchRequest) returns (StatementResult) {}
+  rpc FetchResult(FetchRequest) returns (Frame) {}
   rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
 
 }
@@ -50,6 +50,8 @@ message StatementStatus {
 }
 
 message FetchRequest {
+  int32 statement_id = 1;
+  int64 offset = 2;
 }
 
 message UnparameterizedStatement {

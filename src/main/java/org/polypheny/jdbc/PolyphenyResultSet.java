@@ -29,8 +29,12 @@ import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class PolyphenyResultSet implements ResultSet {
 
+    private PolyphenyStatement statement;
+
     private PolyphenyResultSetMetadata metadata;
     private Cursor<ArrayList<TypedValue>> rowCursor;
+    private boolean isLastFrame;
+    private long nextOffset;
     private TypedValue lastRead;
     boolean isClosed;
     private int resultSetType;
@@ -39,12 +43,15 @@ public class PolyphenyResultSet implements ResultSet {
     private int concurrencyMode;
 
 
-    public PolyphenyResultSet( Frame frame ) {
+    public PolyphenyResultSet( PolyphenyStatement statement, Frame frame ) {
         this.metadata = new PolyphenyResultSetMetadata( frame.getColumnMetaList() );
         this.rowCursor = new Cursor<>( TypedValueUtils.buildRows( frame.getRowsList() ).iterator() );
         this.lastRead = null;
         this.isClosed = false;
+        this.isLastFrame = frame.getIsLast();
+        this.nextOffset = frame.getOffset() + frame.getRowsCount();
     }
+
 
     private void setDefaults() {
         this.resultSetType = ResultSet.TYPE_FORWARD_ONLY;
@@ -74,7 +81,22 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public boolean next() throws SQLException {
         throwIfClosed();
-        return rowCursor.next();
+        if ( rowCursor.next() ) {
+            return true;
+        } else if ( isLastFrame ) {
+            return false;
+        } else {
+            Frame next = getClient().fetchResult( statement.getStatementId(), nextOffset );
+            isLastFrame = next.getIsLast();
+            nextOffset = next.getOffset() + next.getRowsCount();
+            rowCursor = new Cursor<>( TypedValueUtils.buildRows( next.getRowsList() ).iterator() );
+            return true;
+        }
+    }
+
+
+    private ProtoInterfaceClient getClient() {
+        return statement.getClient();
     }
 
 
@@ -969,10 +991,8 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public Statement getStatement() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throwIfClosed();
+        return statement;
     }
 
 

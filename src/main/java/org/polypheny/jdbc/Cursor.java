@@ -21,7 +21,6 @@ public class Cursor<T> {
 
 
     private final Iterator<T> iterator;
-    private int frameOffset;
     private CursorPosition cursorPosition;
     private T currentElement;
 
@@ -29,16 +28,7 @@ public class Cursor<T> {
     public Cursor( Iterator<T> iterator ) {
         this.iterator = iterator;
         this.cursorPosition = CursorPosition.BEFORE_FIRST;
-        this.frameOffset = 0;
     }
-
-
-    public Cursor( Iterator<T> iterator, int frameOffset ) {
-        this.iterator = iterator;
-        this.cursorPosition = CursorPosition.BEFORE_FIRST;
-        this.frameOffset = frameOffset;
-    }
-
 
     public boolean next() {
         if ( !iterator.hasNext() ) {
