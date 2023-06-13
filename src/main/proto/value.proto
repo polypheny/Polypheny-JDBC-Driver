@@ -146,4 +146,3 @@ enum TimeUnit {
   TIME_UNIT_CENTURY = 18;
   TIME_UNIT_MILLENNIUM = 19;
 }
-
