@@ -17,7 +17,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
     public PolyphenyResultSetMetadata( List<ColumnMeta> columnMetas ) {
         this.columnMetas = ColumnMetaUtils.buildColumnMetas( columnMetas );
-        this.columnIndexes = columnMetas.stream().collect( Collectors.toMap( ColumnMeta::getColumnName, m -> m.getColumnIndex() + 1, ( m, n ) -> n ) );
+        this.columnIndexes = columnMetas.stream().collect( Collectors.toMap( ColumnMeta::getColumnLabel, m -> m.getColumnIndex() + 1, ( m, n ) -> n ) );
     }
 
 
@@ -27,6 +27,14 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
         } catch ( IndexOutOfBoundsException e ) {
             throw new SQLException( "Column index out of bounds" );
         }
+    }
+
+    public int getIndexFromLabel(String columnName) throws SQLException {
+        Integer columnIndex = columnIndexes.get( columnName );
+        if (columnIndex == null) {
+            throw new SQLException("Invalid column name: " + columnName);
+        }
+        return columnIndex;
     }
 
 
