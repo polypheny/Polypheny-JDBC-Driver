@@ -1,9 +1,13 @@
 package org.polypheny.jdbc.types;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.StringReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -16,7 +20,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Calendar;
-import java.util.Map;
 import lombok.Getter;
 import org.polypheny.jdbc.proto.ProtoValue;
 
@@ -39,105 +42,219 @@ public class TypedValue implements Convertible {
         return jdbcType == Types.NULL;
     }
 
+
     @Override
     public String asString() throws SQLException {
-        return null;
+        if ( isSqlNull() ) {
+            return null;
+        }
+        return value.toString();
     }
 
 
     @Override
     public boolean asBoolean() throws SQLException {
-        return false;
+        if ( isSqlNull() ) {
+            // jdbc4: if the value is SQL NULL, the value returned is false
+            return false;
+        }
+        switch ( jdbcType ) {
+            case Types.BOOLEAN:
+                return (Boolean) value;
+            case Types.TINYINT:
+                return (Byte) value != 0;
+            case Types.SMALLINT:
+                short sValue = (short) value;
+                switch ( sValue ) {
+                    case 0:
+                        return false;
+                    case 1:
+                        return true;
+                }
+                throw new SQLException( "Cast from SMALLINT " + sValue + " to boolean is not supported." );
+            case Types.INTEGER:
+                int iValue = (int) value;
+                switch ( iValue ) {
+                    case 0:
+                        return false;
+                    case 1:
+                        return true;
+                }
+                throw new SQLException( "Cast from INTEGER " + iValue + " to boolean is not supported." );
+            case Types.BIGINT:
+                long lValue = (long) value;
+                if ( lValue == 0 ) {
+                    return false;
+                }
+                if ( lValue == 1 ) {
+                    return true;
+                }
+                throw new SQLException( "Cast from BIGINT " + lValue + " to boolean is not supported." );
+            case Types.CHAR:
+                char cValue = (char) value;
+                if ( cValue == '0' ) {
+                    return false;
+                }
+                if ( cValue == '1' ) {
+                    return true;
+                }
+                throw new SQLException( "Cast from CHAR " + cValue + " to boolean is not supported." );
+            case Types.VARCHAR:
+                String strValue = (String) value;
+                if ( strValue.equals( "0" ) ) {
+                    return false;
+                }
+                if ( strValue.equals( "1" ) ) {
+                    return true;
+                }
+                throw new SQLException( "Cast from VARCHAR " + strValue + " to boolean is not supported." );
+        }
+        throw new SQLException( "Conversion to BOOLEAN is not supported." );
     }
 
 
     @Override
     public byte asByte() throws SQLException {
-        return 0;
+        if ( isSqlNull() ) {
+            return 0;
+        }
+        if ( jdbcType != Types.TINYINT ) {
+            throw new SQLException( "Conversion to byte is not supported." );
+        }
+        return (byte) value;
     }
 
 
     @Override
     public short asShort() throws SQLException {
-        return 0;
+        if ( isSqlNull() ) {
+            return 0;
+        }
+        if ( jdbcType != Types.SMALLINT ) {
+            throw new SQLException( "Conversion to short is not supported." );
+        }
+        return (short) value;
     }
 
 
     @Override
     public int asInt() throws SQLException {
-        return 0;
+        if ( isSqlNull() ) {
+            return 0;
+        }
+        if ( jdbcType != Types.INTEGER ) {
+            throw new SQLException( "Conversion to int is not supported." );
+        }
+        return (int) value;
     }
 
 
     @Override
     public long asLong() throws SQLException {
-        return 0;
+        if ( isSqlNull() ) {
+            return 0;
+        }
+        if ( jdbcType != Types.BIGINT ) {
+            throw new SQLException( "Conversion to long is not supported." );
+        }
+        return (long) value;
     }
 
 
     @Override
     public float asFloat() throws SQLException {
-        return 0;
+        if ( isSqlNull() ) {
+            return 0;
+        }
+        if ( jdbcType != Types.REAL ) {
+            throw new SQLException( "Conversion to float is not supported." );
+        }
+        return (float) value;
     }
 
 
     @Override
     public double asDouble() throws SQLException {
-        return 0;
+        if ( isSqlNull() ) {
+            return 0;
+        }
+        if ( jdbcType != Types.DOUBLE ) {
+            throw new SQLException( "Conversion to double is not supported." );
+        }
+        return (double) value;
     }
 
 
     @Override
     public BigDecimal asBigDecimal( int scale ) throws SQLException {
-        return null;
+        return asBigDecimal().setScale( scale, RoundingMode.HALF_EVEN );
     }
 
 
     @Override
     public BigDecimal asBigDecimal() throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        if ( jdbcType != Types.DECIMAL ) {
+            throw new SQLException( "Conversion to BigDecimal is not supported." );
+        }
+        return ((BigDecimal) value);
     }
 
 
     @Override
     public byte[] asBytes() throws SQLException {
-        return new byte[0];
+        //TODO TH: implement this
+        throw new SQLException( "Value retrieval as bytes is not supported yet." );
     }
 
 
     @Override
     public InputStream asAsciiStream() throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        return new ByteArrayInputStream( value.toString().getBytes( StandardCharsets.US_ASCII ) );
     }
 
 
     @Override
     public InputStream asUnicodeStream() throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        return new ByteArrayInputStream( value.toString().getBytes( StandardCharsets.UTF_8 ) );
     }
 
 
     @Override
     public InputStream asBinaryStream() throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        if ( jdbcType == Types.BINARY || jdbcType == Types.VARBINARY ) {
+            return new ByteArrayInputStream( (byte[]) value );
+        }
+        throw new SQLException( "Conversion to binary stream not supported." );
     }
 
 
     @Override
     public Object asObject() throws SQLException {
-        return null;
-    }
-
-
-    @Override
-    public Object asObject( Map<String, Class<?>> map ) throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        return value;
     }
 
 
     @Override
     public Reader asCharacterStream() throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        return new StringReader( value.toString() );
     }
 
 
@@ -173,49 +290,59 @@ public class TypedValue implements Convertible {
 
     @Override
     public Time asTime( Calendar calendar ) throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        if ( jdbcType != Types.TIME ) {
+            throw new SQLException( "Conversion to time not supported." );
+        }
+        long tValue = ((Time) value).getTime();
+        return new Time( tValue - calendar.getTimeZone().getOffset( tValue ) );
     }
 
 
     @Override
     public Timestamp asTimestamp( Calendar calendar ) throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        if ( jdbcType != Types.TIMESTAMP ) {
+            throw new SQLException( "Conversion to time not supported." );
+        }
+        long tsValue = ((Timestamp) value).getTime();
+        return new Timestamp( tsValue - calendar.getTimeZone().getOffset( tsValue ) );
     }
 
 
     @Override
     public URL asUrl() throws SQLException {
-        return null;
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        throw new SQLException( "Conversion to time not supported." );
     }
 
 
     @Override
     public NClob asNClob() throws SQLException {
-        return null;
+        throw new SQLException( "Conversion to time not supported." );
     }
 
 
     @Override
     public SQLXML asSQLXML() throws SQLException {
-        return null;
+        throw new SQLException( "Conversion to time not supported." );
     }
 
 
     @Override
     public String asNString() throws SQLException {
-        return null;
+        throw new SQLException( "Conversion to time not supported." );
     }
 
 
     @Override
     public Reader asNCharacterStream() throws SQLException {
-        return null;
+        throw new SQLException( "Conversion to time not supported." );
     }
-
-
-    @Override
-    public <T> T asObject( Class<T> type ) throws SQLException {
-        return null;
-    }
-
 }

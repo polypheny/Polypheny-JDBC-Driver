@@ -15,7 +15,6 @@ import java.sql.Struct;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
-import java.util.Map;
 
 public interface Convertible {
 
@@ -70,9 +69,6 @@ public interface Convertible {
     Reader asCharacterStream() throws SQLException;
 
 
-    Object asObject( Map<String, Class<?>> map ) throws SQLException;
-
-
     Blob asBlob() throws SQLException;
 
 
@@ -108,6 +104,4 @@ public interface Convertible {
 
     Reader asNCharacterStream() throws SQLException;
 
-
-    <T> T asObject( Class<T> type ) throws SQLException;
 }
