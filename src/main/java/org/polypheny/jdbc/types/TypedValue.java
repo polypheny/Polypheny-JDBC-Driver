@@ -1,10 +1,11 @@
 package org.polypheny.jdbc.types;
 
+import lombok.Getter;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.utils.ProtoValueDeserializer;
 
 public class TypedValue {
     private final int jdbcType;
+    @Getter
     private final Object value;
 
     public TypedValue( ProtoValue protoValue ) {
