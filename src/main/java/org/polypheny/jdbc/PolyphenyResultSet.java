@@ -23,52 +23,46 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.types.ProtoValueDeserializer;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class PolyphenyResultSet implements ResultSet {
 
-    private static final int NO_CURRENT_ROW = -1;
-    private static final int NO_LAST_COLUMN = -1;
     private PolyphenyResultSetMetadata metadata;
-    private ArrayList<ArrayList<TypedValue>> rows;
-    private int currentRowIndex;
-    private int lastColumnIndex;
+    private Cursor<ArrayList<TypedValue>> rowCursor;
+    private TypedValue lastRead;
+    boolean isClosed;
 
 
     public PolyphenyResultSet( Frame frame ) {
-
         this.metadata = new PolyphenyResultSetMetadata( frame.getColumnMetaList() );
-        this.rows = TypedValueUtils.buildRows( frame.getRowsList() );
-        this.currentRowIndex = NO_CURRENT_ROW;
+        this.rowCursor = new Cursor<>( TypedValueUtils.buildRows( frame.getRowsList() ).iterator() );
+        this.lastRead = null;
+        this.isClosed = false;
     }
 
 
-    private boolean hasNoCurrentRow() {
-        return currentRowIndex == NO_CURRENT_ROW || cursorIsAfterLastRow();
-    }
-
-
-    private boolean cursorIsAfterLastRow() {
-        return currentRowIndex == rows.size();
-    }
-
-    private Object getValue(int column) throws SQLException{
-        if (hasNoCurrentRow()) {
-            throw new SQLException("Current row required for this operation.");
+    private TypedValue accessValue( int column ) throws SQLException {
+        try {
+            lastRead = rowCursor.current().get( column - 1 );
+            return lastRead;
+        } catch ( IndexOutOfBoundsException e ) {
+            throw new SQLException( "Column index out of bounds." );
         }
-        return rows.get(currentRowIndex).get(column);
+    }
+
+
+    private void throwIfClosed() throws SQLException {
+        if ( isClosed ) {
+            throw new SQLException( "This operation cannot be applied to a closed result set." );
+        }
     }
 
 
     @Override
     public boolean next() throws SQLException {
-        if ( cursorIsAfterLastRow() ) {
-            return false;
-        }
-        currentRowIndex++;
-        return !cursorIsAfterLastRow();
+        throwIfClosed();
+        return rowCursor.next();
     }
 
 
@@ -83,18 +77,76 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public boolean wasNull() throws SQLException {
-        return getValue( lastColumnIndex ) == null;
+        throwIfClosed();
+        return lastRead.isSqlNull();
     }
 
 
     @Override
     public String getString( int columnIndex ) throws SQLException {
-        return (String)getValue( columnIndex );
+        throwIfClosed();
+        return accessValue( columnIndex ).asString();
     }
 
 
     @Override
-    public boolean getBoolean( int i ) throws SQLException {
+    public boolean getBoolean( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asBoolean();
+    }
+
+
+    @Override
+    public byte getByte( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asByte();
+    }
+
+
+    @Override
+    public short getShort( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asShort();
+    }
+
+
+    @Override
+    public int getInt( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asInt();
+    }
+
+
+    @Override
+    public long getLong( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asLong();
+    }
+
+
+    @Override
+    public float getFloat( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asFloat();
+    }
+
+
+    @Override
+    public double getDouble( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asDouble();
+    }
+
+
+    @Override
+    public BigDecimal getBigDecimal( int columnIndex, int scale ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asBigDecimal( scale );
+    }
+
+
+    @Override
+    public byte[] getBytes( int columnIndex ) throws SQLException {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
@@ -103,7 +155,36 @@ public class PolyphenyResultSet implements ResultSet {
 
 
     @Override
-    public byte getByte( int i ) throws SQLException {
+    public Date getDate( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        //TODO TH: how to get local calendar?
+        //return accessValue( columnIndex ).asDate(  );
+
+        String methodName = new Object() {
+        }.getClass().getEnclosingMethod().getName();
+        throw new SQLException( "Feature " + methodName + " not implemented" );
+    }
+
+
+    @Override
+    public Time getTime( int columnIndex) throws SQLException {
+        throwIfClosed();
+
+        //TODO TH: how to get local calendar?
+        //return accessValue( columnIndex ).asTime(  );
+
+        String methodName = new Object() {
+        }.getClass().getEnclosingMethod().getName();
+        throw new SQLException( "Feature " + methodName + " not implemented" );
+    }
+
+
+    @Override
+    public Timestamp getTimestamp( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        //TODO TH: how to get local calendar?
+        //return accessValue( columnIndex ).asTimestamp(  );
+
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
@@ -112,119 +193,23 @@ public class PolyphenyResultSet implements ResultSet {
 
 
     @Override
-    public short getShort( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public InputStream getAsciiStream( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asAsciiStream();
     }
 
 
     @Override
-    public int getInt( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public InputStream getUnicodeStream( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asUnicodeStream();
     }
 
 
     @Override
-    public long getLong( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public float getFloat( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public double getDouble( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public BigDecimal getBigDecimal( int i, int i1 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public byte[] getBytes( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public Date getDate( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public Time getTime( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public Timestamp getTimestamp( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public InputStream getAsciiStream( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public InputStream getUnicodeStream( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public InputStream getBinaryStream( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public InputStream getBinaryStream( int columnIndex ) throws SQLException {
+        throwIfClosed();
+        return accessValue( columnIndex ).asBinaryStream();
     }
 
 

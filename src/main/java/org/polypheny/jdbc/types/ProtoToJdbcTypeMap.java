@@ -6,7 +6,6 @@ import java.util.Map;
 import org.polypheny.jdbc.proto.ProtoValueType;
 
 public class ProtoToJdbcTypeMap {
-
     private static final Map<ProtoValueType, Integer> PROTO_TYPE_TO_JDBC =
             ImmutableMap.<ProtoValueType, Integer>builder()
                     .put( ProtoValueType.PROTO_VALUE_TYPE_BOOLEAN, Types.BOOLEAN)
@@ -63,6 +62,4 @@ public class ProtoToJdbcTypeMap {
         }
         return jdbcType;
     }
-
-
 }
