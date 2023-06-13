@@ -14,6 +14,7 @@ import java.sql.SQLXML;
 import java.sql.Struct;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.Map;
 import lombok.Getter;
@@ -35,7 +36,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public boolean isSqlNull() throws SQLException {
-        return false;
+        return jdbcType == Types.NULL;
     }
 
     @Override
