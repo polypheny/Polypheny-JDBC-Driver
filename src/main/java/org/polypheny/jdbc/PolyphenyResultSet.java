@@ -21,30 +21,54 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.proto.Row;
-import org.polypheny.jdbc.proto.Value;
-import org.polypheny.jdbc.utils.ProtoValueDeserializer;
+import org.polypheny.jdbc.types.ProtoValueDeserializer;
+import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class PolyphenyResultSet implements ResultSet {
 
+    private static final int NO_CURRENT_ROW = -1;
+    private static final int NO_LAST_COLUMN = -1;
+    private PolyphenyResultSetMetadata metadata;
+    private ArrayList<ArrayList<TypedValue>> rows;
+    private int currentRowIndex;
+    private int lastColumnIndex;
+
+
     public PolyphenyResultSet( Frame frame ) {
-        List<Row> rows = frame.getRowsList();
-        List<List<Value>> valueRows = rows.stream().map(r -> new ArrayList<>( r.getValuesList() ) ).collect( Collectors.toList());
+
+        this.metadata = new PolyphenyResultSetMetadata( frame.getColumnMetaList() );
+        this.rows = TypedValueUtils.buildRows( frame.getRowsList() );
+        this.currentRowIndex = NO_CURRENT_ROW;
+    }
 
 
+    private boolean hasNoCurrentRow() {
+        return currentRowIndex == NO_CURRENT_ROW || cursorIsAfterLastRow();
+    }
+
+
+    private boolean cursorIsAfterLastRow() {
+        return currentRowIndex == rows.size();
+    }
+
+    private Object getValue(int column) throws SQLException{
+        if (hasNoCurrentRow()) {
+            throw new SQLException("Current row required for this operation.");
+        }
+        return rows.get(currentRowIndex).get(column);
     }
 
 
     @Override
     public boolean next() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        if ( cursorIsAfterLastRow() ) {
+            return false;
+        }
+        currentRowIndex++;
+        return !cursorIsAfterLastRow();
     }
 
 
@@ -59,19 +83,13 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public boolean wasNull() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return getValue( lastColumnIndex ) == null;
     }
 
 
     @Override
-    public String getString( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public String getString( int columnIndex ) throws SQLException {
+        return (String)getValue( columnIndex );
     }
 
 
@@ -383,10 +401,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public ResultSetMetaData getMetaData() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return metadata;
     }
 
 
