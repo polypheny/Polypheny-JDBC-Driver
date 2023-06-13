@@ -21,14 +21,6 @@ public class PolyphenyConnection implements Connection {
         return new PolyphenyStatement(this);
     }
 
-    private void throwNotImplemented() throws SQLException {
-        String methodName = new Object() {}
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
-    }
-
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
         String methodName = new Object() {}
