@@ -35,6 +35,7 @@ public class ProtoInterfaceClient {
                 .setMajorApiVersion( MAJOR_API_VERSION )
                 .setMinorApiVersion( MINOR_API_VERSION )
                 .setClientUuid( clientUUID )
+                .putAllConnectionProperties( properties )
                 .build();
         ConnectionReply connectionReply = blockingStub.connect( connectionRequest );
         if ( !connectionReply.getIsCompatible() ) {
