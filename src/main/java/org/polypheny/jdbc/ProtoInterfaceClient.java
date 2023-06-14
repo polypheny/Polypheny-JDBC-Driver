@@ -35,7 +35,6 @@ public class ProtoInterfaceClient {
                 .setMajorApiVersion( MAJOR_API_VERSION )
                 .setMinorApiVersion( MINOR_API_VERSION )
                 .setClientUuid( clientUUID )
-                .setConnectionProperties( buildStringMap( properties ) )
                 .build();
         ConnectionReply connectionReply = blockingStub.connect( connectionRequest );
         if ( !connectionReply.getIsCompatible() ) {
@@ -70,10 +69,6 @@ public class ProtoInterfaceClient {
     private String getServerApiVersionString( ConnectionReply connectionReply ) {
         return connectionReply.getMajorApiVersion() + "." + connectionReply.getMinorApiVersion();
 
-    }
-
-    private StringMap buildStringMap(Map<String, String> map) {
-        return StringMap.newBuilder().putAllEntries( map ).build();
     }
 
     private static String getClientApiVersionString() {
