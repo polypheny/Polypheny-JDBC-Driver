@@ -49,10 +49,6 @@ public class ProtoInterfaceClient {
         UnparameterizedStatement.Builder statementBuilder = UnparameterizedStatement.newBuilder()
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
                 .setStatement( statement );
-        if (statmentProperties.isModified()) {
-            statementBuilder.setProperties( buildStringMap( statmentProperties ) );
-            statmentProperties.setCheckpoint();
-        }
         asyncStub.executeUnparameterizedStatement( statementBuilder.build(), updateCallback );
     }
 
