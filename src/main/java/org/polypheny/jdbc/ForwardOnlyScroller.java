@@ -1,12 +1,5 @@
 package org.polypheny.jdbc;
 
-/* Disclaimer:
- * This class ended up being basically the same as the IteratorCursor from Avatica.
- * Therefore, I want to express that the idea for this comes from the following link:
- * https://github.com/polypheny/Avatica/blob/polypheny/core/src/main/java/org/apache/calcite/avatica/util/IteratorCursor.java
- */
-
-
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
