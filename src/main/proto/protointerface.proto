@@ -1,6 +1,9 @@
 syntax = "proto3";
+
 import "value.proto";
-import "frame.proto";
+import "relational_frame.proto";
+import "graph_frame.proto";
+import "document_frame.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.jdbc.proto";
@@ -85,14 +88,18 @@ message PreparedStatement {
 }
 
 message StatementResult {
-  oneof result {
-    int64 row_count = 1;
-    Frame frame = 2;
-    NoResult no_result = 3;
-  }
+  int64 scalar = 1;
+  optional Frame frame = 2;
 }
 
-message NoResult {
+message Frame {
+  int64 offset = 1;
+  bool isLast = 2;
+  oneof result {
+    RelationalFrame relational_frame = 3;
+    GraphFrame graph_frame = 4;
+    DocumentFrame document_frame = 5;
+  }
 }
 
 message ValueMap {
