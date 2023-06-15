@@ -9,7 +9,7 @@ import org.polypheny.jdbc.proto.ProtoValue;
 public class TimeStampDeserializer implements ValueDeserializer {
 
     @Override
-    public Object deserilize( ProtoValue value ) {
+    public Object deserialize( ProtoValue value ) {
         switch ( ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() ) ) {
             case Types.TIME:
                 return deserializeToSqlTimeStamp( value.getTimeStamp() );

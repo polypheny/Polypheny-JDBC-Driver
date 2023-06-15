@@ -5,7 +5,7 @@ import org.polypheny.jdbc.proto.ProtoValue;
 public class DoubleDeserializer implements ValueDeserializer {
 
     @Override
-    public Object deserilize( ProtoValue value ) {
+    public Object deserialize( ProtoValue value ) {
         return null;
     }
 

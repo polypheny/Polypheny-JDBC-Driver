@@ -9,7 +9,7 @@ import org.polypheny.jdbc.proto.ProtoValue;
 public class BigDecimalDeserializer implements ValueDeserializer {
 
     @Override
-    public Object deserilize( ProtoValue value ) {
+    public Object deserialize( ProtoValue value ) {
         return deserializeToBigDecimal( value.getBigDecimal() );
     }
 

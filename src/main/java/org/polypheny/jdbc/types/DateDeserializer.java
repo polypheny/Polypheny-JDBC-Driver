@@ -7,7 +7,7 @@ import org.polypheny.jdbc.proto.ProtoValue;
 public class DateDeserializer implements ValueDeserializer {
 
     @Override
-    public Object deserilize( ProtoValue value ) {
+    public Object deserialize( ProtoValue value ) {
         return deserializeToSqlSate(value.getDate());
     }
 

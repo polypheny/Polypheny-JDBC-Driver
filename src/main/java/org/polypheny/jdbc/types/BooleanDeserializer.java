@@ -6,7 +6,7 @@ import org.polypheny.jdbc.proto.ProtoValue;
 public class BooleanDeserializer implements ValueDeserializer {
 
     @Override
-    public Object deserilize( ProtoValue value ) {
+    public Object deserialize( ProtoValue value ) {
         return deserializeToBoolean( value.getBoolean() );
     }
 

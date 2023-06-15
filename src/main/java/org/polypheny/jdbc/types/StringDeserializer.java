@@ -8,7 +8,7 @@ import org.polypheny.jdbc.proto.ProtoValue;
 public class StringDeserializer implements ValueDeserializer {
 
     @Override
-    public Object deserilize( ProtoValue value ) {
+    public Object deserialize( ProtoValue value ) {
         switch ( ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() ) ) {
             case Types.CHAR:
             case Types.VARCHAR:

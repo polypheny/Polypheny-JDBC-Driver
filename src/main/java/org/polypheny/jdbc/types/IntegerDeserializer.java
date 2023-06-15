@@ -7,7 +7,7 @@ import org.polypheny.jdbc.proto.ProtoValue;
 public class IntegerDeserializer implements ValueDeserializer {
 
     @Override
-    public Object deserilize( ProtoValue value ) {
+    public Object deserialize( ProtoValue value ) {
         switch ( ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() ) ) {
             case Types.TINYINT:
                 return deserializeToByte( value.getInteger() );
