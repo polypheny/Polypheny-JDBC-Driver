@@ -52,6 +52,7 @@ public class PolyphenyColumnMeta {
     private final String databaseTypeName;
 
 
+    //column = field
     public PolyphenyColumnMeta( ColumnMeta protoColumnMeta ) {
         this.ordinal = protoColumnMeta.getColumnIndex();
         this.autoIncrement = false;
@@ -60,14 +61,16 @@ public class PolyphenyColumnMeta {
         this.currency = false;
         //TODO TH: convert nullability
         this.nullable = protoColumnMeta.getIsNullable() ? ResultSetMetaData.columnNoNulls : ResultSetMetaData.columnNullable;
-        ;
         this.signed = false;
         this.displaySize = protoColumnMeta.getDisplaySize();
+        //field alias
         this.columnLabel = protoColumnMeta.getColumnLabel();
         this.columnName = protoColumnMeta.getColumnName();
+        //schema = namespace
         this.schemaName = "";
         this.precision = protoColumnMeta.getPrecision();
         this.scale = 1;
+        // table = entity
         this.tableName = protoColumnMeta.getTableName();
         this.catalogName = "";
         this.readOnly = false;
@@ -75,6 +78,7 @@ public class PolyphenyColumnMeta {
         this.definitelyWritable = false;
         this.columnClassName = "";
         this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( protoColumnMeta.getProtoValueType() );
+        //polyphenyFieldTypeName
         this.databaseTypeName = ProtoToPolyTypeNameMap.getPolyTypeNameFromProto( protoColumnMeta.getProtoValueType() );
     }
 }
