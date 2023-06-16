@@ -1,8 +1,10 @@
 package org.polypheny.jdbc;
 
+import java.sql.SQLException;
+
 public interface Scrollable<T> {
 
-    boolean next();
+    boolean next() throws InterruptedException, SQLException;
 
     T current();
 

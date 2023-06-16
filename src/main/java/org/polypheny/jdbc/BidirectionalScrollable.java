@@ -1,19 +1,13 @@
 package org.polypheny.jdbc;
 
+import java.sql.SQLException;
+
 public interface BidirectionalScrollable<T> extends Scrollable<T> {
 
-    boolean beforeFirst();
+    boolean absolute( int rowIndex ) throws SQLException;
 
-    boolean afterLast();
+    boolean relative( int offset ) throws SQLException;
 
-    boolean first();
-
-    boolean last();
-
-    boolean absolute( int rowIndex );
-
-    boolean relative( int offset );
-
-    boolean previous();
+    boolean previous() throws SQLException;
 
 }
