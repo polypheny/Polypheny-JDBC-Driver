@@ -44,11 +44,12 @@ public class PolyphenyResultSet implements ResultSet {
         if ( frame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new SQLException( "Invalid frame type " + frame.getResultCase().name() );
         }
+        this.lastRead = null;
+        this.isClosed = false;
+        this.statement = statement;
         setDefaults();
         this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
         this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), DEFAULT_FETCH_SIZE );
-        this.lastRead = null;
-        this.isClosed = false;
     }
 
 

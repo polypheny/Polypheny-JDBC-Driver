@@ -59,6 +59,9 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
         if ( resultFetcher.isLast() ) {
             return;
         }
+        if (fetcherThread != null) {
+            return;
+        }
         fetcherThread = new Thread( resultFetcher );
         fetcherThread.start();
     }

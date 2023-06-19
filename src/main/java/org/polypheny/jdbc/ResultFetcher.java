@@ -35,6 +35,7 @@ public class ResultFetcher implements Runnable {
     @Override
     public void run() {
         Frame nextFrame = client.fetchResult( statementId, offset + fetchSize );
+        System.out.println("Fetching offset: " + (offset + fetchSize));
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new ProtoInterfaceServiceException( "Illegal result type." );
         }

@@ -239,6 +239,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean execute( String statement ) throws SQLException {
         resetStatementId();
+        System.out.println("call to execute()");
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
             getClient().executeUnparameterizedStatement( statement, statementProperties, callback );
