@@ -12,11 +12,11 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
     private static final int INDEX_BEFORE_FIRST = -1;
     private static final int PREFETCH_DEFAULT = 20;
-    ArrayList<ArrayList<TypedValue>> values;
-    ArrayList<TypedValue> currentRow;
-    ResultFetcher resultFetcher;
-    private  int prefetch_count;
-    Thread fetcherThread;
+    private ArrayList<ArrayList<TypedValue>> values;
+    private ArrayList<TypedValue> currentRow;
+    private ResultFetcher resultFetcher;
+    private int prefetch_count;
+    private Thread fetcherThread;
     int currentIndex;
 
 
@@ -28,7 +28,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
         this.prefetch_count = PREFETCH_DEFAULT;
     }
 
-    private void setFetchSize(int fetchSize) {
+    public void setFetchSize(int fetchSize) {
         resultFetcher.setFetchSize( fetchSize );
         prefetch_count = min(PREFETCH_DEFAULT, fetchSize);
     }

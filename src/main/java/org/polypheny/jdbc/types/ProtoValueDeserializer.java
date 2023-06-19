@@ -27,6 +27,4 @@ public class ProtoValueDeserializer {
     public static Object deserialize( ProtoValue value ) {
         return VALUE_DESERIALIZERS.get( value.getValueCase() ).deserialize( value );
     }
-    //TODO TH: fix type in deser.
-
 }

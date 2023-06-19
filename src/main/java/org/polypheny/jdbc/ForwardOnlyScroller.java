@@ -1,5 +1,7 @@
 package org.polypheny.jdbc;
 
+import static java.lang.Math.min;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
@@ -9,14 +11,15 @@ import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
 
-    private static final int PREFETCH_COUNT = 20;
+    private static final int DEFAULT_PREFETCH_COUNT = 20;
     private static final int INDEX_BEFORE_FIRST = -1;
 
     LinkedList<ArrayList<TypedValue>> values;
     ArrayList<TypedValue> currentRow;
     ResultFetcher resultFetcher;
     Thread fetcherThread;
-    int baseIndex;
+    private int baseIndex;
+    private int prefetch_count;
 
 
     public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, int fetchSize ) {
@@ -24,6 +27,7 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
         this.resultFetcher = new ResultFetcher( client, statementId, fetchSize );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.baseIndex = INDEX_BEFORE_FIRST;
+        this.prefetch_count = DEFAULT_PREFETCH_COUNT;
     }
 
 
@@ -39,9 +43,17 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
         return true;
     }
 
+    public void setFetchSize(int fetchSize) {
+        resultFetcher.setFetchSize( fetchSize );
+        prefetch_count = min(DEFAULT_PREFETCH_COUNT, fetchSize);
+    }
+
+    public int getFetchSize() {
+        return resultFetcher.getFetchSize();
+    }
 
     private void considerPrefetch() {
-        if ( values.size() > PREFETCH_COUNT ) {
+        if ( values.size() > prefetch_count ) {
             return;
         }
         if ( resultFetcher.isLast() ) {

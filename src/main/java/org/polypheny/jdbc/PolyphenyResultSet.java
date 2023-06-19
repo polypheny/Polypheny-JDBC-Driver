@@ -20,50 +20,48 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 import org.polypheny.jdbc.proto.Frame;
+import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.types.TypedValue;
-import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class PolyphenyResultSet implements ResultSet {
+    private static final int DEFAULT_FETCH_SIZE = 100;
 
     private PolyphenyStatement statement;
 
-    private PolyphenyResultSetMetadata metadata;
-    private Cursor<ArrayList<TypedValue>> rowCursor;
-    private boolean isLastFrame;
-    private long nextOffset;
+    private final PolyphenyResultSetMetadata metadata;
+    private final ForwardOnlyScroller resultScroller;
     private TypedValue lastRead;
     boolean isClosed;
     private int resultSetType;
     private int fetchDirection;
-    private int fetchSize;
     private int concurrencyMode;
 
 
-    public PolyphenyResultSet( PolyphenyStatement statement, Frame frame ) {
-        this.metadata = new PolyphenyResultSetMetadata( frame.getColumnMetaList() );
-        this.rowCursor = new Cursor<>( TypedValueUtils.buildRows( frame.getRowsList() ).iterator() );
+    public PolyphenyResultSet( PolyphenyStatement statement, Frame frame ) throws SQLException {
+        if ( frame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
+            throw new SQLException( "Invalid frame type " + frame.getResultCase().name() );
+        }
+        setDefaults();
+        this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
+        this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), DEFAULT_FETCH_SIZE );
         this.lastRead = null;
         this.isClosed = false;
-        this.isLastFrame = frame.getIsLast();
-        this.nextOffset = frame.getOffset() + frame.getRowsCount();
     }
 
 
     private void setDefaults() {
         this.resultSetType = ResultSet.TYPE_FORWARD_ONLY;
         this.fetchDirection = ResultSet.FETCH_FORWARD;
-        this.fetchSize = 0;
         this.concurrencyMode = ResultSet.CONCUR_READ_ONLY;
     }
 
 
     private TypedValue accessValue( int column ) throws SQLException {
         try {
-            lastRead = rowCursor.current().get( column - 1 );
+            lastRead = resultScroller.current().get( column - 1 );
             return lastRead;
         } catch ( IndexOutOfBoundsException e ) {
             throw new SQLException( "Column index out of bounds." );
@@ -81,16 +79,10 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public boolean next() throws SQLException {
         throwIfClosed();
-        if ( rowCursor.next() ) {
-            return true;
-        } else if ( isLastFrame ) {
-            return false;
-        } else {
-            Frame next = getClient().fetchResult( statement.getStatementId(), nextOffset );
-            isLastFrame = next.getIsLast();
-            nextOffset = next.getOffset() + next.getRowsCount();
-            rowCursor = new Cursor<>( TypedValueUtils.buildRows( next.getRowsList() ).iterator() );
-            return true;
+        try {
+            return resultScroller.next();
+        } catch ( InterruptedException e ) {
+            throw new SQLException( e );
         }
     }
 
@@ -478,7 +470,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public int getRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException( "This feature is not supported." );
+        return resultScroller.getRow();
     }
 
 
@@ -532,14 +524,14 @@ public class PolyphenyResultSet implements ResultSet {
         if ( fetchSize < 0 ) {
             throw new SQLException( "Illegal value for fetch size. fetchSize >= 0 must hold." );
         }
-        this.fetchSize = fetchSize;
+        resultScroller.setFetchSize( fetchSize );
     }
 
 
     @Override
     public int getFetchSize() throws SQLException {
         throwIfClosed();
-        return fetchSize;
+        return resultScroller.getFetchSize();
     }
 
 

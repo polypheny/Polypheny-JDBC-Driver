@@ -8,10 +8,10 @@ import org.polypheny.jdbc.types.TypedValue;
 
 public class TypedValueUtils {
 
-    public static ArrayList<ArrayList<TypedValue>> buildRows( List<Row> rows ) {
+    public static List<ArrayList<TypedValue>> buildRows( List<Row> rows ) {
         return rows.stream()
                 .map( TypedValueUtils::buildRow )
-                .collect( Collectors.toCollection( ArrayList::new ) );
+                .collect( Collectors.toList() );
     }
 
 
