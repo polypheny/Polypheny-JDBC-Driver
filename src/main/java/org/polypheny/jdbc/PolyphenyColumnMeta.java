@@ -2,7 +2,9 @@ package org.polypheny.jdbc;
 
 import java.sql.ResultSetMetaData;
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.proto.ColumnMeta;
+import org.polypheny.jdbc.proto.ProtoValueType;
 import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 
@@ -29,7 +31,7 @@ public class PolyphenyColumnMeta {
     @Getter
     private final String columnName;
     @Getter
-    private final String schemaName;
+    private final String namespace;
     @Getter
     private final int precision;
     @Getter
@@ -49,7 +51,7 @@ public class PolyphenyColumnMeta {
     @Getter
     private final int sqlType;
     @Getter
-    private final String databaseTypeName;
+    private final String polyphenyFieldTypeName;
 
 
     //column = field
@@ -59,26 +61,26 @@ public class PolyphenyColumnMeta {
         this.caseSensitive = true;
         this.searchable = false;
         this.currency = false;
-        //TODO TH: convert nullability
         this.nullable = protoColumnMeta.getIsNullable() ? ResultSetMetaData.columnNoNulls : ResultSetMetaData.columnNullable;
         this.signed = false;
-        this.displaySize = protoColumnMeta.getDisplaySize();
-        //field alias
+        this.displaySize = protoColumnMeta.getLength();
         this.columnLabel = protoColumnMeta.getColumnLabel();
         this.columnName = protoColumnMeta.getColumnName();
-        //schema = namespace
-        this.schemaName = "";
+        this.namespace = protoColumnMeta.getNamespace();
         this.precision = protoColumnMeta.getPrecision();
         this.scale = 1;
         // table = entity
-        this.tableName = protoColumnMeta.getTableName();
+        this.tableName = protoColumnMeta.getEntityName();
         this.catalogName = "";
         this.readOnly = false;
         this.writable = false;
         this.definitelyWritable = false;
         this.columnClassName = "";
-        this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( protoColumnMeta.getProtoValueType() );
-        //polyphenyFieldTypeName
-        this.databaseTypeName = ProtoToPolyTypeNameMap.getPolyTypeNameFromProto( protoColumnMeta.getProtoValueType() );
+        if (protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED) {
+            throw new NotImplementedException("Struct types not implemented yet");
+        } else {
+            this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto(protoColumnMeta.getTypeMeta().getProtoValueType());
+        }
+        this.polyphenyFieldTypeName = ProtoToPolyTypeNameMap.getPolyTypeNameFromProto( protoColumnMeta.getTypeMeta().getProtoValueType() );
     }
 }

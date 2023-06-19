@@ -241,7 +241,7 @@ public class TypedValue implements Convertible {
 
 
     @Override
-    public Object asObject() throws SQLException {
+    public Object asObject() {
         if ( jdbcType == Types.NULL ) {
             return null;
         }

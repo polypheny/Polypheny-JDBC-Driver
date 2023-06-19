@@ -100,7 +100,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
     @Override
     public String getSchemaName( int columnIndex ) throws SQLException {
-        return getMeta( columnIndex ).getSchemaName();
+        return getMeta( columnIndex ).getNamespace();
     }
 
 
@@ -136,7 +136,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
     @Override
     public String getColumnTypeName( int columnIndex ) throws SQLException {
-        return getMeta( columnIndex ).getDatabaseTypeName();
+        return getMeta( columnIndex ).getPolyphenyFieldTypeName();
     }
 
 
