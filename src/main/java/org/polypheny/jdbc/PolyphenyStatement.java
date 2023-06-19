@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import lombok.Getter;
-import org.polypheny.jdbc.proto.StatementResult.ResultCase;
+import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.proto.StatementStatus;
 import org.polypheny.jdbc.utils.StatementStatusQueue;
 
@@ -70,8 +70,11 @@ public class PolyphenyStatement implements Statement {
                 }
                 callback.awaitCompletion();
                 resetCurrentResults();
-                if ( status.getResult().getResultCase() != ResultCase.FRAME ) {
+                if ( !status.getResult().hasFrame() ) {
                     throw new SQLException( "Statement must produce a single ResultSet" );
+                }
+                if ( status.getResult().getFrame().getResultCase() != ResultCase.RELATIONAL_FRAME ) {
+                    throw new SQLException( "Statement must produce a relational result" );
                 }
                 currentResult = new PolyphenyResultSet( this, status.getResult().getFrame() );
                 return currentResult;
@@ -98,18 +101,11 @@ public class PolyphenyStatement implements Statement {
                 }
                 callback.awaitCompletion();
                 resetCurrentResults();
-                switch ( status.getResult().getResultCase() ) {
-                    case FRAME:
-                        throw new SQLException( "Statement must not produce a ResultSet" );
-                    case ROW_COUNT:
-                        return longToInt( status.getResult().getRowCount() );
-                    case NO_RESULT:
-                        return 0;
-                    default:
-                        throw new SQLException( "Received illegal result from database" );
+                if ( status.getResult().hasFrame() ) {
+                    throw new SQLException( "Statement must not produce a ResultSet" );
                 }
+                return longToInt( status.getResult().getScalar() );
             }
-
         } catch ( StatusRuntimeException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
         }
@@ -256,18 +252,12 @@ public class PolyphenyStatement implements Statement {
                 }
                 callback.awaitCompletion();
                 resetCurrentResults();
-                switch ( status.getResult().getResultCase() ) {
-                    case FRAME:
-                        currentResult = new PolyphenyResultSet( this, status.getResult().getFrame() );
-                        return true;
-                    case ROW_COUNT:
-                        currentUpdateCount = longToInt( status.getResult().getRowCount() );
-                        return false;
-                    case NO_RESULT:
-                        return false;
-                    default:
-                        throw new SQLException( "Received illegal result from database" );
+                if ( status.getResult().hasFrame() ) {
+                    currentResult = new PolyphenyResultSet( this, status.getResult().getFrame() );
+                    return true;
                 }
+                currentUpdateCount = longToInt( status.getResult().getScalar() );
+                return false;
             }
         } catch ( ProtoInterfaceServiceException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
