@@ -25,7 +25,8 @@ public class PolyphenyStatement implements Statement {
     private static final int NO_STATEMENT_ID = -1;
 
 
-    public PolyphenyStatement( PolyphenyConnection connection ) {
+    public PolyphenyStatement( PolyphenyConnection connection, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
+        // TODO implement properties
         this.polyphenyConnection = connection;
         this.statementProperties = new ModificationAwareHashMap<>();
         resetCurrentResults();
