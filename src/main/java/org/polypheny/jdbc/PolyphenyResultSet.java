@@ -95,10 +95,6 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public void close() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
     }
 
 

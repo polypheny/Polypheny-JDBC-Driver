@@ -1,7 +1,6 @@
 package org.polypheny.jdbc;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +23,7 @@ public class ResultFetcher implements Runnable {
     @Getter
     private List<ArrayList<TypedValue>> fetchedValues;
 
+
     public ResultFetcher( ProtoInterfaceClient client, int statementId, int fetchSize ) {
         this.client = client;
         this.statementId = statementId;
@@ -32,10 +32,11 @@ public class ResultFetcher implements Runnable {
         this.isLast = false;
     }
 
+
     @Override
     public void run() {
         Frame nextFrame = client.fetchResult( statementId, offset + fetchSize );
-        System.out.println("Fetching offset: " + (offset + fetchSize));
+        System.out.println( "Fetching offset: " + (offset + fetchSize) );
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new ProtoInterfaceServiceException( "Illegal result type." );
         }
@@ -43,4 +44,5 @@ public class ResultFetcher implements Runnable {
         isLast = nextFrame.getIsLast();
         offset = nextFrame.getOffset();
     }
+
 }

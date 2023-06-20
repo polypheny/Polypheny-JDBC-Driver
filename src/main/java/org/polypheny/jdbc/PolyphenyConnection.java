@@ -72,11 +72,11 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public void commit() throws SQLException {
-        String methodName = new Object() {}
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            protoInterfaceClient.commitTransaction();
+        } catch (ProtoInterfaceServiceException e) {
+            throw new SQLException(e);
+        }
     }
 
     @Override

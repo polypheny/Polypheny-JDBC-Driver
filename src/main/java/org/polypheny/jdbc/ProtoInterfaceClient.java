@@ -3,10 +3,18 @@ package org.polypheny.jdbc;
 import io.grpc.Channel;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
-import org.polypheny.jdbc.proto.*;
-
 import java.util.Map;
 import java.util.UUID;
+import org.polypheny.jdbc.proto.CloseStatementRequest;
+import org.polypheny.jdbc.proto.CloseStatementResponse;
+import org.polypheny.jdbc.proto.CommitRequest;
+import org.polypheny.jdbc.proto.CommitResponse;
+import org.polypheny.jdbc.proto.ConnectionReply;
+import org.polypheny.jdbc.proto.ConnectionRequest;
+import org.polypheny.jdbc.proto.FetchRequest;
+import org.polypheny.jdbc.proto.Frame;
+import org.polypheny.jdbc.proto.ProtoInterfaceGrpc;
+import org.polypheny.jdbc.proto.UnparameterizedStatement;
 import org.polypheny.jdbc.utils.StatementStatusQueue;
 
 public class ProtoInterfaceClient {
@@ -52,25 +60,33 @@ public class ProtoInterfaceClient {
         asyncStub.executeUnparameterizedStatement( statementBuilder.build(), updateCallback );
     }
 
-    public CloseStatementResponse closeStatement(int statementId) {
+    public void commitTransaction() {
+        CommitRequest commitRequest = CommitRequest.newBuilder().build();
+        blockingStub.commitTransaction( commitRequest );
+    }
+
+    public CloseStatementResponse closeStatement( int statementId ) {
         CloseStatementRequest request = CloseStatementRequest.newBuilder()
                 .setStatementId( statementId )
                 .build();
         return blockingStub.closeStatement( request );
     }
 
-    public Frame fetchResult(int statementId, long offset) {
+
+    public Frame fetchResult( int statementId, long offset ) {
         FetchRequest fetchRequest = FetchRequest.newBuilder()
                 .setStatementId( statementId )
                 .setOffset( offset )
                 .build();
-        return blockingStub.fetchResult(fetchRequest);
+        return blockingStub.fetchResult( fetchRequest );
     }
+
 
     private String getServerApiVersionString( ConnectionReply connectionReply ) {
         return connectionReply.getMajorApiVersion() + "." + connectionReply.getMinorApiVersion();
 
     }
+
 
     private static String getClientApiVersionString() {
         return MAJOR_API_VERSION + "." + MINOR_API_VERSION;
