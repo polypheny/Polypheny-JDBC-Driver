@@ -27,6 +27,7 @@ import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class PolyphenyResultSet implements ResultSet {
+
     private static final int DEFAULT_FETCH_SIZE = 100;
 
     private PolyphenyStatement statement;
@@ -34,29 +35,26 @@ public class PolyphenyResultSet implements ResultSet {
     private final PolyphenyResultSetMetadata metadata;
     private final ForwardOnlyScroller resultScroller;
     private TypedValue lastRead;
-    boolean isClosed;
-    private int resultSetType;
-    private int fetchDirection;
-    private int concurrencyMode;
+    private boolean isClosed;
+    private boolean isClosedOnCompletion;
+
+    ResultSetProperties properties;
 
 
-    public PolyphenyResultSet( PolyphenyStatement statement, Frame frame ) throws SQLException {
+    public PolyphenyResultSet(
+            PolyphenyStatement statement,
+            Frame frame,
+            ResultSetProperties properties
+    ) throws SQLException {
         if ( frame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new SQLException( "Invalid frame type " + frame.getResultCase().name() );
         }
-        this.lastRead = null;
-        this.isClosed = false;
         this.statement = statement;
-        setDefaults();
         this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
         this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), DEFAULT_FETCH_SIZE );
-    }
-
-
-    private void setDefaults() {
-        this.resultSetType = ResultSet.TYPE_FORWARD_ONLY;
-        this.fetchDirection = ResultSet.FETCH_FORWARD;
-        this.concurrencyMode = ResultSet.CONCUR_READ_ONLY;
+        this.properties = properties;
+        this.lastRead = null;
+        this.isClosed = false;
     }
 
 
@@ -501,17 +499,17 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public void setFetchDirection( int fetchDirection ) throws SQLException {
         throwIfClosed();
-        if ( resultSetType == ResultSet.TYPE_FORWARD_ONLY && fetchDirection != ResultSet.FETCH_FORWARD ) {
+        if ( properties.getResultSetType() == ResultSet.TYPE_FORWARD_ONLY && fetchDirection != ResultSet.FETCH_FORWARD ) {
             throw new SQLException( "Illegal fetch direction for resultset of TYPE_FORWARD_ONLY." );
         }
-        this.fetchDirection = fetchDirection;
+        properties.setFetchDirection( fetchDirection );
     }
 
 
     @Override
     public int getFetchDirection() throws SQLException {
         throwIfClosed();
-        return fetchDirection;
+        return properties.getFetchDirection();
     }
 
 
@@ -521,6 +519,7 @@ public class PolyphenyResultSet implements ResultSet {
         if ( fetchSize < 0 ) {
             throw new SQLException( "Illegal value for fetch size. fetchSize >= 0 must hold." );
         }
+        properties.setFetchSize( fetchSize );
         resultScroller.setFetchSize( fetchSize );
     }
 
@@ -528,21 +527,21 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public int getFetchSize() throws SQLException {
         throwIfClosed();
-        return resultScroller.getFetchSize();
+        return properties.getFetchSize();
     }
 
 
     @Override
     public int getType() throws SQLException {
         throwIfClosed();
-        return resultSetType;
+        return properties.getResultSetType()
     }
 
 
     @Override
     public int getConcurrency() throws SQLException {
         throwIfClosed();
-        return concurrencyMode;
+        return properties.getResultSetConcurrency()
     }
 
 
@@ -1257,19 +1256,14 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public int getHoldability() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throwIfClosed();
+        return properties.getResultSetHoldability();
     }
 
 
     @Override
     public boolean isClosed() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return isClosed;
     }
 
 

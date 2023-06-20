@@ -6,6 +6,15 @@ import org.polypheny.jdbc.utils.DefaultPropertyValues;
 
 public class ConnectionProperties {
 
+    public ConnectionProperties() {
+        this.isAutoCommit = DefaultPropertyValues.isAUTOCOMMIT();
+        this.isReadOnly = DefaultPropertyValues.isREAD_ONLY();
+        this.resultSetHoldability = DefaultPropertyValues.getDEFAULT_RESULTSET_HOLDABILITY();
+        this.networkTimeout = DefaultPropertyValues.getDEFAULT_NETWORK_TIMEOUT();
+        this.transactionIsolation = DefaultPropertyValues.getDEFAULT_TRANSACTION_ISOLATION();
+    }
+
+
     @Getter
     @Setter
     private boolean isAutoCommit;
@@ -21,9 +30,6 @@ public class ConnectionProperties {
     @Getter
     @Setter
     private int transactionIsolation;
-    @Getter
-    @Setter
-    private boolean hasRunningTransaction;
 
 
     public StatementProperties toStatementProperties() {
@@ -35,11 +41,11 @@ public class ConnectionProperties {
 
 
     public StatementProperties toStatementProperties( int resultSetType, int resultSetConcurrency ) {
-        return toStatamentProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
+        return toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
     }
 
 
-    public StatementProperties toStatamentProperties( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
+    public StatementProperties toStatementProperties( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
         StatementProperties properties = new StatementProperties();
         properties.setQueryTimeoutSeconds( DefaultPropertyValues.getQUERY_TIMEOUT_SECONDS() );
         properties.setResultSetType( resultSetType );

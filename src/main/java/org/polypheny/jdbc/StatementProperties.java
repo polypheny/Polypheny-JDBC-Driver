@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class StatementProperties {
-
     @Getter
     @Setter
     private int queryTimeoutSeconds;
@@ -38,11 +37,17 @@ public class StatementProperties {
     @Getter
     @Setter
     private boolean isPoolable;
-    @Getter
-    @Setter
-    private boolean isClosed;
-    @Getter
-    @Setter
-    private boolean isClosedOnCompletion;
 
+    public ResultSetProperties toResultSetProperties() {
+        ResultSetProperties properties = new ResultSetProperties();
+        properties.setResultSetType( resultSetType );
+        properties.setResultSetConcurrency( resultSetConcurrency );
+        properties.setResultSetHoldability( resultSetHoldability );
+        properties.setFetchDirection( fetchDirection );
+        properties.setFetchSize( fetchSize );
+        properties.setMaxFieldSize( maxFieldSize );
+        properties.setMaxRows( maxRows );
+        properties.setLargeMaxRows( largeMaxRows );
+        return properties;
+    }
 }

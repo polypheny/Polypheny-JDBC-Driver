@@ -7,9 +7,9 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import lombok.Getter;
+import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.proto.StatementStatus;
-import org.polypheny.jdbc.utils.DefaultPropertyValues;
 import org.polypheny.jdbc.utils.StatementStatusQueue;
 import org.polypheny.jdbc.utils.ValidPropertyValues;
 
@@ -21,38 +21,19 @@ public class PolyphenyStatement implements Statement {
     @Getter
     private int statementId;
 
-    private int queryTimeoutSeconds;
-    private int resultSetType;
-    private int resultSetConcurrency;
-    private int resultSetHoldability;
-    private int fetchSize;
-    private int fetchDirection;
-    private int maxFieldSize;
-    private int maxRows;
-    private long largeMaxRows;
-    private boolean doesEscapeProcessing;
-    private boolean isPoolable;
     private boolean isClosed;
     private boolean isClosedOnCompletion;
+    StatementProperties properties;
 
     // Value used to represent that no value is set for the update count according to JDBC.
     private static final int NO_UPDATE_COUNT = -1;
     private static final int NO_STATEMENT_ID = -1;
 
 
-    public PolyphenyStatement( PolyphenyConnection connection, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
+    public PolyphenyStatement( PolyphenyConnection connection, StatementProperties properties ) {
         this.polyphenyConnection = connection;
-        this.resultSetType = resultSetType;
-        this.resultSetConcurrency = resultSetConcurrency;
-        this.resultSetHoldability = resultSetHoldability;
-        this.queryTimeoutSeconds = DefaultPropertyValues.getQUERY_TIMEOUT_SECONDS();
-        this.fetchSize = DefaultPropertyValues.getFETCH_SIZE();
-        this.fetchDirection = DefaultPropertyValues.getFETCH_DIRECTION();
-        this.maxFieldSize = DefaultPropertyValues.getMAX_FIELD_SIZE();
-        this.maxRows = DefaultPropertyValues.getMAX_ROWS();
-        this.largeMaxRows = DefaultPropertyValues.getLARGE_MAX_ROWS();
-        this.doesEscapeProcessing = DefaultPropertyValues.isDOING_ESCAPE_PROCESSING();
-        this.isPoolable = DefaultPropertyValues.isSTATEMENT_POOLABLE();
+        this.properties = properties;
+
         this.isClosed = false;
         this.isClosedOnCompletion = false;
         resetCurrentResults();
@@ -111,7 +92,8 @@ public class PolyphenyStatement implements Statement {
                 if ( status.getResult().getFrame().getResultCase() != ResultCase.RELATIONAL_FRAME ) {
                     throw new SQLException( "Statement must produce a relational result" );
                 }
-                currentResult = new PolyphenyResultSet( this, status.getResult().getFrame() );
+                Frame frame = status.getResult().getFrame();
+                currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
                 return currentResult;
             }
         } catch ( StatusRuntimeException | InterruptedException e ) {
@@ -157,7 +139,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public int getMaxFieldSize() throws SQLException {
         throwIfClosed();
-        return maxFieldSize;
+        return properties.getMaxFieldSize();
     }
 
 
@@ -167,14 +149,14 @@ public class PolyphenyStatement implements Statement {
         if ( max < 0 ) {
             throw new SQLException( "Illegal argument for max" );
         }
-        maxFieldSize = max;
+        properties.setMaxFieldSize( max );
     }
 
 
     @Override
     public int getMaxRows() throws SQLException {
         throwIfClosed();
-        return maxRows;
+        return properties.getMaxRows();
     }
 
 
@@ -184,20 +166,21 @@ public class PolyphenyStatement implements Statement {
         if ( max < 0 ) {
             throw new SQLException( "Illegal argument for max" );
         }
-        maxRows = max;
+        properties.setMaxRows( max );
     }
+
 
     @Override
     public void setEscapeProcessing( boolean enable ) throws SQLException {
         throwIfClosed();
-        doesEscapeProcessing = enable;
+        properties.setDoesEscapeProcessing( enable );
     }
 
 
     @Override
     public int getQueryTimeout() throws SQLException {
         throwIfClosed();
-        return queryTimeoutSeconds;
+        return properties.getQueryTimeoutSeconds();
     }
 
 
@@ -207,7 +190,7 @@ public class PolyphenyStatement implements Statement {
         if ( seconds < 0 ) {
             throw new SQLException( "Illegal argument for max" );
         }
-        queryTimeoutSeconds = seconds;
+        properties.setQueryTimeoutSeconds( seconds );
     }
 
 
@@ -274,8 +257,9 @@ public class PolyphenyStatement implements Statement {
                 }
                 callback.awaitCompletion();
                 resetCurrentResults();
+                Frame frame = status.getResult().getFrame();
                 if ( status.getResult().hasFrame() ) {
-                    currentResult = new PolyphenyResultSet( this, status.getResult().getFrame() );
+                    currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties());
                     return true;
                 }
                 currentUpdateCount = longToInt( status.getResult().getScalar() );
@@ -321,45 +305,45 @@ public class PolyphenyStatement implements Statement {
         if ( ValidPropertyValues.isInvalidFetchDdirection( direction ) ) {
             throw new SQLException( "Illegal argument for direction" );
         }
-        fetchDirection = direction;
+        properties.setFetchDirection( direction );
     }
 
 
     @Override
     public int getFetchDirection() throws SQLException {
         throwIfClosed();
-        return fetchDirection;
+        return properties.getFetchDirection();
     }
 
 
     @Override
     public void setFetchSize( int rows ) throws SQLException {
         throwIfClosed();
-        if ( fetchDirection < 0 ) {
+        if ( rows< 0 ) {
             throw new SQLException( "Illegal argument for max" );
         }
-        fetchSize = rows;
+        properties.setFetchSize( rows );
     }
 
 
     @Override
     public int getFetchSize() throws SQLException {
         throwIfClosed();
-        return fetchSize;
+        return properties.getFetchSize();
     }
 
 
     @Override
     public int getResultSetConcurrency() throws SQLException {
         throwIfClosed();
-        return resultSetConcurrency;
+        return properties.getResultSetConcurrency();
     }
 
 
     @Override
     public int getResultSetType() throws SQLException {
         throwIfClosed();
-        return resultSetType;
+        return properties.getResultSetType();
     }
 
 
@@ -525,7 +509,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public int getResultSetHoldability() throws SQLException {
         throwIfClosed();
-        return resultSetHoldability;
+        return properties.getResultSetHoldability();
     }
 
 
@@ -545,14 +529,14 @@ public class PolyphenyStatement implements Statement {
     @Override
     public void setPoolable( boolean poolable ) throws SQLException {
         throwIfClosed();
-        isPoolable = poolable;
+        properties.setPoolable( poolable );
     }
 
 
     @Override
     public boolean isPoolable() throws SQLException {
         throwIfClosed();
-        return isPoolable;
+        return properties.isPoolable();
     }
 
 

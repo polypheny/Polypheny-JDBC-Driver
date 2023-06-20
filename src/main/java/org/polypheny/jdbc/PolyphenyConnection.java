@@ -8,7 +8,6 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.NClob;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
@@ -26,12 +25,9 @@ public class PolyphenyConnection implements Connection {
 
     private ProtoInterfaceClient protoInterfaceClient;
 
-    private boolean isAutoCommit;
-    private boolean isReadOnly;
-    private int resultSetHoldability;
-    private int networkTimeout;
-    private int transactionIsolation;
+    private ConnectionProperties properties;
     private boolean isClosed;
+
     private boolean hasRunningTransaction;
 
 
@@ -41,11 +37,13 @@ public class PolyphenyConnection implements Connection {
         }
     }
 
+
     private void throwIfAutoCommit() throws SQLException {
         if ( isClosed ) {
             throw new SQLException( "Illegal operation on auto committing connection." );
         }
     }
+
 
     private void throwIfRunningTransaction() throws SQLException {
         if ( isClosed ) {
@@ -56,6 +54,7 @@ public class PolyphenyConnection implements Connection {
 
     public PolyphenyConnection( ProtoInterfaceClient protoInterfaceClient ) {
         this.protoInterfaceClient = protoInterfaceClient;
+        this.properties = new ConnectionProperties();
     }
 
 
@@ -67,7 +66,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public Statement createStatement() throws SQLException {
         throwIfClosed();
-        return new PolyphenyStatement( this, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, resultSetHoldability );
+        return new PolyphenyStatement( this, properties.toStatementProperties() );
     }
 
 
@@ -113,17 +112,17 @@ public class PolyphenyConnection implements Connection {
     @Override
     public void setAutoCommit( boolean autoCommit ) throws SQLException {
         throwIfClosed();
-        if (hasRunningTransaction) {
+        if ( hasRunningTransaction ) {
             commit();
         }
-        this.isAutoCommit = autoCommit;
+        properties.setAutoCommit( autoCommit );
     }
 
 
     @Override
     public boolean getAutoCommit() throws SQLException {
         throwIfClosed();
-        return isAutoCommit;
+        return properties.isAutoCommit();
 
     }
 
@@ -188,14 +187,14 @@ public class PolyphenyConnection implements Connection {
     public void setReadOnly( boolean readOnly ) throws SQLException {
         throwIfClosed();
         throwIfRunningTransaction();
-        isReadOnly = readOnly;
+        properties.setReadOnly( readOnly );
     }
 
 
     @Override
     public boolean isReadOnly() throws SQLException {
         throwIfClosed();
-        return isReadOnly;
+        return properties.isReadOnly();
 
     }
 
@@ -227,17 +226,17 @@ public class PolyphenyConnection implements Connection {
     @Override
     public void setTransactionIsolation( int level ) throws SQLException {
         throwIfClosed();
-        if (!ValidPropertyValues.isValidIsolationLevel( level )) {
-            throw new SQLException("Illeagal argument for transaciton isolation level");
+        if ( !ValidPropertyValues.isValidIsolationLevel( level ) ) {
+            throw new SQLException( "Illeagal argument for transaciton isolation level" );
         }
-        transactionIsolation = level;
+        properties.setTransactionIsolation( level );
     }
 
 
     @Override
     public int getTransactionIsolation() throws SQLException {
         throwIfClosed();
-        return transactionIsolation;
+        return properties.getTransactionIsolation();
 
     }
 
@@ -271,8 +270,8 @@ public class PolyphenyConnection implements Connection {
     public Statement createStatement( int resultSetType, int resultSetConcurrency ) throws SQLException {
         throwIfClosed();
         ValidPropertyValues.throwIfOneInvalid( resultSetType, resultSetConcurrency );
-        return new PolyphenyStatement( this, resultSetType, resultSetConcurrency, resultSetHoldability);
-
+        StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
+        return new PolyphenyStatement( this, statementProperties );
     }
 
 
@@ -334,16 +333,16 @@ public class PolyphenyConnection implements Connection {
     public void setHoldability( int holdability ) throws SQLException {
         throwIfClosed();
         if ( ValidPropertyValues.isInvalidResultSetHoldability( holdability ) ) {
-            throw new SQLException("Illegal argument for result set holdability");
+            throw new SQLException( "Illegal argument for result set holdability" );
         }
-        resultSetHoldability = holdability;
+        properties.setResultSetHoldability( holdability );
     }
 
 
     @Override
     public int getHoldability() throws SQLException {
         throwIfClosed();
-        return resultSetHoldability;
+        return properties.getResultSetHoldability();
 
     }
 
@@ -407,7 +406,8 @@ public class PolyphenyConnection implements Connection {
     public Statement createStatement( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         throwIfClosed();
         ValidPropertyValues.throwIfOneInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
-        return new PolyphenyStatement( this, resultSetType, resultSetConcurrency, resultSetHoldability );
+        StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
+        return new PolyphenyStatement( this, statementProperties );
     }
 
 
@@ -443,8 +443,8 @@ public class PolyphenyConnection implements Connection {
     @Override
     public PreparedStatement prepareStatement( String sql, int autoGeneratedKeys ) throws SQLException {
         throwIfClosed();
-        if (!ValidPropertyValues.isValidAutogeneratedKeys( autoGeneratedKeys )) {
-            throw new SQLException("Illegal argument for autogenerated keys");
+        if ( !ValidPropertyValues.isValidAutogeneratedKeys( autoGeneratedKeys ) ) {
+            throw new SQLException( "Illegal argument for autogenerated keys" );
         }
         String methodName = new Object() {
         }
@@ -532,8 +532,8 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public boolean isValid( int timeout ) throws SQLException {
-        if (timeout < 0) {
-            throw new SQLException("Illegal argument for timeout");
+        if ( timeout < 0 ) {
+            throw new SQLException( "Illegal argument for timeout" );
         }
         String methodName = new Object() {
         }
@@ -662,26 +662,20 @@ public class PolyphenyConnection implements Connection {
     @Override
     public void setNetworkTimeout( Executor executor, int milliseconds ) throws SQLException {
         throwIfClosed();
-        if (milliseconds < 0) {
-            throw new SQLException("Illegal argument for timeout");
+        if ( milliseconds < 0 ) {
+            throw new SQLException( "Illegal argument for timeout" );
         }
-        if (executor == null) {
-            throw new SQLException("Executor must not be null");
+        if ( executor == null ) {
+            throw new SQLException( "Executor must not be null" );
         }
-
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        properties.setNetworkTimeout( milliseconds );
     }
 
 
     @Override
     public int getNetworkTimeout() throws SQLException {
         throwIfClosed();
-        return networkTimeout;
+        return properties.getNetworkTimeout();
 
     }
 
