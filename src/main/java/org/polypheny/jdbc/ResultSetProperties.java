@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class ResultSetProperties {
+
     @Getter
     @Setter
     private int resultSetType;
@@ -28,4 +29,5 @@ public class ResultSetProperties {
     @Getter
     @Setter
     private long largeMaxRows;
+
 }

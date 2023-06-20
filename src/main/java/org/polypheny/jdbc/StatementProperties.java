@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class StatementProperties {
+
     @Getter
     @Setter
     private int queryTimeoutSeconds;

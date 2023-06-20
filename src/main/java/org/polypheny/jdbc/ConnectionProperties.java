@@ -1,12 +1,27 @@
 package org.polypheny.jdbc;
 
-public class ConnectionProperties {
-    private boolean isAutoCommit;
-    private boolean isReadOnly;
-    private int resultSetHoldability;
-    private int networkTimeout;
-    private int transactionIsolation;
+import lombok.Getter;
+import lombok.Setter;
 
+public class ConnectionProperties {
+
+    @Getter
+    @Setter
+    private boolean isAutoCommit;
+    @Getter
+    @Setter
+    private boolean isReadOnly;
+    @Getter
+    @Setter
+    private int resultSetHoldability;
+    @Getter
+    @Setter
+    private int networkTimeout;
+    @Getter
+    @Setter
+    private int transactionIsolation;
+    @Getter
+    @Setter
     private boolean hasRunningTransaction;
 
 }
