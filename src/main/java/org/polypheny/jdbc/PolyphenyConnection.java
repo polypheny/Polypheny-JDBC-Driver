@@ -333,7 +333,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public void setHoldability( int holdability ) throws SQLException {
         throwIfClosed();
-        if (!ValidPropertyValues.isValidResultSetHoldability( holdability )) {
+        if ( ValidPropertyValues.isInvalidResultSetHoldability( holdability ) ) {
             throw new SQLException("Illegal argument for result set holdability");
         }
         resultSetHoldability = holdability;

@@ -9,26 +9,52 @@ import java.sql.Statement;
 import lombok.Getter;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.proto.StatementStatus;
+import org.polypheny.jdbc.utils.DefaultPropertyValues;
 import org.polypheny.jdbc.utils.StatementStatusQueue;
+import org.polypheny.jdbc.utils.ValidPropertyValues;
 
 public class PolyphenyStatement implements Statement {
 
     private PolyphenyConnection polyphenyConnection;
-    private ModificationAwareHashMap<String, String> statementProperties;
     private ResultSet currentResult;
+    private int currentUpdateCount;
     @Getter
     private int statementId;
 
-    private int currentUpdateCount;
+    private int queryTimeoutSeconds;
+    private int resultSetType;
+    private int resultSetConcurrency;
+    private int resultSetHoldability;
+    private int fetchSize;
+    private int fetchDirection;
+    private int maxFieldSize;
+    private int maxRows;
+    private long largeMaxRows;
+    private boolean doesEscapeProcessing;
+    private boolean isPoolable;
+    private boolean isClosed;
+    private boolean isClosedOnCompletion;
+
     // Value used to represent that no value is set for the update count according to JDBC.
     private static final int NO_UPDATE_COUNT = -1;
     private static final int NO_STATEMENT_ID = -1;
 
 
     public PolyphenyStatement( PolyphenyConnection connection, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
-        // TODO implement properties
         this.polyphenyConnection = connection;
-        this.statementProperties = new ModificationAwareHashMap<>();
+        this.resultSetType = resultSetType;
+        this.resultSetConcurrency = resultSetConcurrency;
+        this.resultSetHoldability = resultSetHoldability;
+        this.queryTimeoutSeconds = DefaultPropertyValues.getQUERY_TIMEOUT_SECONDS();
+        this.fetchSize = DefaultPropertyValues.getFETCH_SIZE();
+        this.fetchDirection = DefaultPropertyValues.getFETCH_DIRECTION();
+        this.maxFieldSize = DefaultPropertyValues.getMAX_FIELD_SIZE();
+        this.maxRows = DefaultPropertyValues.getMAX_ROWS();
+        this.largeMaxRows = DefaultPropertyValues.getLARGE_MAX_ROWS();
+        this.doesEscapeProcessing = DefaultPropertyValues.isDOING_ESCAPE_PROCESSING();
+        this.isPoolable = DefaultPropertyValues.isSTATEMENT_POOLABLE();
+        this.isClosed = false;
+        this.isClosedOnCompletion = false;
         resetCurrentResults();
         resetStatementId();
     }
@@ -55,12 +81,19 @@ public class PolyphenyStatement implements Statement {
     }
 
 
+    private void throwIfClosed() throws SQLException {
+        if ( isClosed ) {
+            throw new SQLException( "Illegal operation for a closed statement" );
+        }
+    }
+
+
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
         resetStatementId();
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
-            getClient().executeUnparameterizedStatement( statement, statementProperties, callback );
+            getClient().executeUnparameterizedStatement( statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -91,7 +124,7 @@ public class PolyphenyStatement implements Statement {
         resetStatementId();
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
-            getClient().executeUnparameterizedStatement( statement, statementProperties, callback );
+            getClient().executeUnparameterizedStatement( statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -121,70 +154,58 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int getMaxFieldSize() throws SQLException {
-        return Integer.parseInt( statementProperties.get( "maxFieldSize" ) );
+        throwIfClosed();
+        return maxFieldSize;
     }
 
 
     @Override
-    public void setMaxFieldSize( int maxFieldSize ) throws SQLException {
-        statementProperties.put( "maxFieldSize", String.valueOf( maxFieldSize ) );
+    public void setMaxFieldSize( int max ) throws SQLException {
+        throwIfClosed();
+        if ( max < 0 ) {
+            throw new SQLException( "Illegal argument for max" );
+        }
+        maxFieldSize = max;
     }
 
 
     @Override
     public int getMaxRows() throws SQLException {
-        return Integer.parseInt( statementProperties.get( "maxRows" ) );
+        throwIfClosed();
+        return maxRows;
     }
 
 
     @Override
-    public void setMaxRows( int maxRows ) throws SQLException {
-        statementProperties.put( "maxRows", String.valueOf( maxRows ) );
-    }
-
-
-    @Override
-    public void setEscapeProcessing( boolean b ) throws SQLException {
-        /* TODO TH: local property that does not have to be sent to the server
-         * As the topic of escape replacement is all about jdbc this should not be sent to the server.
-         */
-
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
+    public void setMaxRows( int max ) throws SQLException {
+        throwIfClosed();
+        if ( max < 0 ) {
+            throw new SQLException( "Illegal argument for max" );
         }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        maxRows = max;
+    }
+
+    @Override
+    public void setEscapeProcessing( boolean enable ) throws SQLException {
+        throwIfClosed();
+        doesEscapeProcessing = enable;
     }
 
 
     @Override
     public int getQueryTimeout() throws SQLException {
-        // TODO TH: local property that does not have to be sent to the server
-
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throwIfClosed();
+        return queryTimeoutSeconds;
     }
 
 
     @Override
-    public void setQueryTimeout( int i ) throws SQLException {
-        // TODO TH: local property that does not have to be sent to the server
-
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
+    public void setQueryTimeout( int seconds ) throws SQLException {
+        throwIfClosed();
+        if ( seconds < 0 ) {
+            throw new SQLException( "Illegal argument for max" );
         }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        queryTimeoutSeconds = seconds;
     }
 
 
@@ -240,10 +261,10 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean execute( String statement ) throws SQLException {
         resetStatementId();
-        System.out.println("call to execute()");
+        System.out.println( "call to execute()" );
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
-            getClient().executeUnparameterizedStatement( statement, statementProperties, callback );
+            getClient().executeUnparameterizedStatement( statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -293,67 +314,50 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void setFetchDirection( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
+    public void setFetchDirection( int direction ) throws SQLException {
+        throwIfClosed();
+        if ( ValidPropertyValues.isInvalidFetchDdirection( direction ) ) {
+            throw new SQLException( "Illegal argument for direction" );
         }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        fetchDirection = direction;
     }
 
 
     @Override
     public int getFetchDirection() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throwIfClosed();
+        return fetchDirection;
     }
 
 
     @Override
-    public void setFetchSize( int fetchSize ) throws SQLException {
-        statementProperties.put( "fetchSize", String.valueOf( fetchSize ) );
+    public void setFetchSize( int rows ) throws SQLException {
+        throwIfClosed();
+        if ( fetchDirection < 0 ) {
+            throw new SQLException( "Illegal argument for max" );
+        }
+        fetchSize = rows;
     }
 
 
     @Override
     public int getFetchSize() throws SQLException {
-        return Integer.parseInt( statementProperties.get( "fetchSize" ) );
+        throwIfClosed();
+        return fetchSize;
     }
 
 
     @Override
     public int getResultSetConcurrency() throws SQLException {
-        // TODO TH: local property that does not have to be sent to the server
-
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throwIfClosed();
+        return resultSetConcurrency;
     }
 
 
     @Override
     public int getResultSetType() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throwIfClosed();
+        return resultSetType;
     }
 
 
@@ -506,16 +510,8 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int getResultSetHoldability() throws SQLException {
-        // TODO TH: local property that does not have to be sent to the server
-
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throwIfClosed();
+        return resultSetHoldability;
     }
 
 
@@ -533,52 +529,30 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void setPoolable( boolean b ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public void setPoolable( boolean poolable ) throws SQLException {
+        throwIfClosed();
+        isPoolable = poolable;
     }
 
 
     @Override
     public boolean isPoolable() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throwIfClosed();
+        return isPoolable;
     }
 
 
     @Override
     public void closeOnCompletion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throwIfClosed();
+        isClosedOnCompletion = true;
     }
 
 
     @Override
     public boolean isCloseOnCompletion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throwIfClosed();
+        return isClosedOnCompletion;
     }
 
 

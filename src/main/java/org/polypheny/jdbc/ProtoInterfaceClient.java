@@ -6,9 +6,7 @@ import io.grpc.InsecureChannelCredentials;
 import java.util.Map;
 import java.util.UUID;
 import org.polypheny.jdbc.proto.CloseStatementRequest;
-import org.polypheny.jdbc.proto.CloseStatementResponse;
 import org.polypheny.jdbc.proto.CommitRequest;
-import org.polypheny.jdbc.proto.CommitResponse;
 import org.polypheny.jdbc.proto.ConnectionReply;
 import org.polypheny.jdbc.proto.ConnectionRequest;
 import org.polypheny.jdbc.proto.FetchRequest;
@@ -53,7 +51,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void executeUnparameterizedStatement( String statement, ModificationAwareHashMap<String, String> statmentProperties, StatementStatusQueue updateCallback ) {
+    public void executeUnparameterizedStatement( String statement, StatementStatusQueue updateCallback ) {
         UnparameterizedStatement.Builder statementBuilder = UnparameterizedStatement.newBuilder()
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
                 .setStatement( statement );
@@ -65,11 +63,11 @@ public class ProtoInterfaceClient {
         blockingStub.commitTransaction( commitRequest );
     }
 
-    public CloseStatementResponse closeStatement( int statementId ) {
+    public void closeStatement( int statementId ) {
         CloseStatementRequest request = CloseStatementRequest.newBuilder()
                 .setStatementId( statementId )
                 .build();
-        return blockingStub.closeStatement( request );
+        blockingStub.closeStatement( request );
     }
 
 
