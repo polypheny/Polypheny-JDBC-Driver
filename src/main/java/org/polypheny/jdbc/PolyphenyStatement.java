@@ -90,6 +90,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
+        throwIfClosed();
         resetStatementId();
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
@@ -121,6 +122,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int executeUpdate( String statement ) throws SQLException {
+        throwIfClosed();
         resetStatementId();
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
@@ -211,13 +213,8 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void cancel() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throwIfClosed();
+        // TODO TH: implment cancelling
     }
 
 
@@ -236,6 +233,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void clearWarnings() throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -248,6 +246,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void setCursorName( String s ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -260,8 +259,8 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean execute( String statement ) throws SQLException {
+        throwIfClosed();
         resetStatementId();
-        System.out.println( "call to execute()" );
         StatementStatusQueue callback = new StatementStatusQueue();
         try {
             getClient().executeUnparameterizedStatement( statement, callback );
@@ -290,18 +289,21 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public ResultSet getResultSet() throws SQLException {
+        throwIfClosed();
         return currentResult;
     }
 
 
     @Override
     public int getUpdateCount() throws SQLException {
+        throwIfClosed();
         return currentUpdateCount;
     }
 
 
     @Override
     public boolean getMoreResults() throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -363,6 +365,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void addBatch( String s ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -375,6 +378,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void clearBatch() throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -387,6 +391,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int[] executeBatch() throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -400,12 +405,14 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public Connection getConnection() throws SQLException {
+        throwIfClosed();
         return polyphenyConnection;
     }
 
 
     @Override
     public boolean getMoreResults( int i ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -419,6 +426,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public ResultSet getGeneratedKeys() throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -432,6 +440,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int executeUpdate( String s, int i ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -445,6 +454,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int executeUpdate( String s, int[] ints ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -458,6 +468,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int executeUpdate( String s, String[] strings ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -471,6 +482,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean execute( String s, int i ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -484,6 +496,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean execute( String s, int[] ints ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
@@ -497,6 +510,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean execute( String s, String[] strings ) throws SQLException {
+        throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }
