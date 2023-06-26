@@ -10,4 +10,8 @@ public interface BidirectionalScrollable<T> extends Scrollable<T> {
 
     boolean previous() throws SQLException;
 
+    void beforeFirst() throws SQLException;
+
+    void afterLast();
+
 }

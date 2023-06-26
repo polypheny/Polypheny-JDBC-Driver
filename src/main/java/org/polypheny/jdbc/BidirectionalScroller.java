@@ -11,31 +11,23 @@ import org.polypheny.jdbc.utils.TypedValueUtils;
 public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<TypedValue>> {
 
     private static final int INDEX_BEFORE_FIRST = -1;
-    private static final int PREFETCH_DEFAULT = 20;
+    private static final int DEFAULT_PREFETCH_COUNT = 20;
     private ArrayList<ArrayList<TypedValue>> values;
     private ArrayList<TypedValue> currentRow;
     private ResultFetcher resultFetcher;
-    private int prefetch_count;
+    private ResultSetProperties properties;
     private Thread fetcherThread;
     int currentIndex;
 
 
-    public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, int fetchSize ) {
+    public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
-        this.resultFetcher = new ResultFetcher( client, statementId, fetchSize );
+        this.resultFetcher = new ResultFetcher( client, statementId, properties );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.currentIndex = INDEX_BEFORE_FIRST;
-        this.prefetch_count = PREFETCH_DEFAULT;
+        this.properties = properties;
     }
 
-    public void setFetchSize(int fetchSize) {
-        resultFetcher.setFetchSize( fetchSize );
-        prefetch_count = min(PREFETCH_DEFAULT, fetchSize);
-    }
-
-    private int getFethSize() {
-        return resultFetcher.getFetchSize();
-    }
 
     private boolean fetchUpTo( int rowIndex ) throws InterruptedException {
         while ( values.size() < rowIndex ) {
@@ -83,6 +75,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             if ( fetchUpTo( rowIndex ) ) {
                 currentIndex = rowToIndex( rowIndex );
                 currentRow = values.get( currentIndex );
+                considerPrefetch();
                 return true;
             }
             // Explanation: This is not an off by one error:
@@ -126,6 +119,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
                 if ( fetchUpTo( indexToRow( currentIndex + offset ) ) ) {
                     currentIndex += offset;
                     currentRow = values.get( currentIndex );
+                    considerPrefetch();
                     return true;
                 }
                 // Explanation: This is not an off by one error:
@@ -148,8 +142,60 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
 
     @Override
-    public boolean next() throws SQLException {
-        return relative( +1 );
+    public void beforeFirst() throws SQLException {
+        absolute(0);
+    }
+
+
+    @Override
+    public void afterLast() {
+        // Explanation: This is not an off by one error:
+        // An index equal to the array size is one position after the last element.
+        currentIndex = values.size();
+        currentRow = null;
+    }
+
+
+    @Override
+    public boolean next() throws SQLException, InterruptedException {
+        considerPrefetch();
+        syncFetch();
+        currentIndex++;
+        currentRow = values.get( currentIndex );
+        if ( currentRow == null ) {
+            return false;
+        }
+        return true;
+    }
+
+
+    private void considerPrefetch() {
+        int prefetch_count = min( DEFAULT_PREFETCH_COUNT, properties.getFetchSize() );
+        if ( values.size() > prefetch_count ) {
+            return;
+        }
+        if ( resultFetcher.isLast() ) {
+            return;
+        }
+        if ( fetcherThread != null ) {
+            return;
+        }
+        fetcherThread = new Thread( resultFetcher );
+        fetcherThread.start();
+    }
+
+
+    private void syncFetch() throws InterruptedException {
+        if ( fetcherThread == null ) {
+            return;
+        }
+        // currently not at last element thus we don't have to wait on next frame
+        if ( !(currentIndex == values.size() - 1) ) {
+            return;
+        }
+        fetcherThread.join();
+        fetcherThread = null;
+        values.addAll( resultFetcher.getFetchedValues() );
     }
 
 
@@ -193,4 +239,5 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
     public int getRow() {
         return indexToRow( currentIndex );
     }
+
 }
