@@ -14,20 +14,19 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
     private static final int DEFAULT_PREFETCH_COUNT = 20;
     private static final int INDEX_BEFORE_FIRST = -1;
 
-    LinkedList<ArrayList<TypedValue>> values;
-    ArrayList<TypedValue> currentRow;
-    ResultFetcher resultFetcher;
-    Thread fetcherThread;
+    private LinkedList<ArrayList<TypedValue>> values;
+    private ArrayList<TypedValue> currentRow;
+    private ResultFetcher resultFetcher;
+    private Thread fetcherThread;
+    private ResultSetProperties properties;
     private int baseIndex;
-    private int prefetch_count;
-
 
     public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties ) {
         this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
         this.resultFetcher = new ResultFetcher( client, statementId, properties);
         this.resultFetcher.setLast( frame.getIsLast() );
+        this.properties = properties;
         this.baseIndex = INDEX_BEFORE_FIRST;
-        this.prefetch_count = DEFAULT_PREFETCH_COUNT;
     }
 
 
@@ -43,16 +42,8 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
         return true;
     }
 
-    public void setFetchSize(int fetchSize) {
-        resultFetcher.setFetchSize( fetchSize );
-        prefetch_count = min(DEFAULT_PREFETCH_COUNT, fetchSize);
-    }
-
-    public int getFetchSize() {
-        return resultFetcher.getFetchSize();
-    }
-
     private void considerPrefetch() {
+        int prefetch_count = min(DEFAULT_PREFETCH_COUNT, properties.getFetchSize());
         if ( values.size() > prefetch_count ) {
             return;
         }
