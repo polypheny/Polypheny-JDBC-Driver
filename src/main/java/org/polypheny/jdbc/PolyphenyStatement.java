@@ -93,7 +93,7 @@ public class PolyphenyStatement implements Statement {
                     throw new SQLException( "Statement must produce a relational result" );
                 }
                 Frame frame = status.getResult().getFrame();
-                currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+                currentResult = new PolyphenyForwardResultSet( this, frame, properties.toResultSetProperties() );
                 return currentResult;
             }
         } catch ( StatusRuntimeException | InterruptedException e ) {
@@ -259,7 +259,7 @@ public class PolyphenyStatement implements Statement {
                 resetCurrentResults();
                 Frame frame = status.getResult().getFrame();
                 if ( status.getResult().hasFrame() ) {
-                    currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties());
+                    currentResult = new PolyphenyForwardResultSet( this, frame, properties.toResultSetProperties());
                     return true;
                 }
                 currentUpdateCount = longToInt( status.getResult().getScalar() );

@@ -26,7 +26,7 @@ import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.types.TypedValue;
 
-public class PolyphenyResultSet implements ResultSet {
+public class PolyphenyForwardResultSet implements ResultSet {
     private PolyphenyStatement statement;
 
     private final PolyphenyResultSetMetadata metadata;
@@ -38,7 +38,7 @@ public class PolyphenyResultSet implements ResultSet {
     ResultSetProperties properties;
 
 
-    public PolyphenyResultSet(
+    public PolyphenyForwardResultSet(
             PolyphenyStatement statement,
             Frame frame,
             ResultSetProperties properties
@@ -517,7 +517,6 @@ public class PolyphenyResultSet implements ResultSet {
             throw new SQLException( "Illegal value for fetch size. fetchSize >= 0 must hold." );
         }
         properties.setFetchSize( fetchSize );
-        resultScroller.setFetchSize( fetchSize );
     }
 
 
