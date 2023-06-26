@@ -17,11 +17,23 @@ service ProtoInterface {
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc FetchResult(FetchRequest) returns (Frame) {}
+
   rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
   rpc CommitTransaction(CommitRequest) returns (CommitResponse) {}
+  rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
 
   rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
   rpc PrepareStatement(PreparedStatement) returns (stream StatementStatus) {}
+  rpc StatementPropertyUpdate(StatementProperties) returns (StatementPropertyConfirmation) {}
+}
+
+message Property {
+  oneof value {
+    string string_value = 1;
+    int32 int_value = 2;
+    int64 long_value = 3;
+    bool boolean_value = 4;
+  }
 }
 
 message ConnectionRequest {
@@ -46,6 +58,9 @@ message LanguageResponse {
 message CommitRequest {}
 message CommitResponse{}
 
+message RollbackRequest {}
+message RollbackResponse{}
+
 message StatementStatus {
   int32 statementId = 1;
   optional StatementResult result = 2;
@@ -54,6 +69,7 @@ message StatementStatus {
 message FetchRequest {
   int32 statement_id = 1;
   int64 offset = 2;
+  optional int32 fetch_size = 3;
 }
 
 message UnparameterizedStatement {
@@ -69,15 +85,12 @@ message CloseStatementRequest {
 message CloseStatementResponse {
 }
 
-message PropertiesList{
-  repeated Property properties = 1;
-}
-message Property {
-  string key = 1;
-  string string = 2;
+message StatementProperties{
+  int32 statement_id = 1;
+  map<string, string> properties = 2;
 }
 
-message PropertyConfirmation {
+message StatementPropertyConfirmation {
 }
 
 message ParameterizedStatement {
