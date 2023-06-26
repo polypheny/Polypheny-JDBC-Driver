@@ -33,7 +33,6 @@ public class PolyphenyForwardResultSet implements ResultSet {
     private final ForwardOnlyScroller resultScroller;
     private TypedValue lastRead;
     private boolean isClosed;
-    private boolean isClosedOnCompletion;
 
     ResultSetProperties properties;
 
