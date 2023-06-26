@@ -22,9 +22,9 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
     private int prefetch_count;
 
 
-    public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, int fetchSize ) {
+    public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties ) {
         this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
-        this.resultFetcher = new ResultFetcher( client, statementId, fetchSize );
+        this.resultFetcher = new ResultFetcher( client, statementId, properties);
         this.resultFetcher.setLast( frame.getIsLast() );
         this.baseIndex = INDEX_BEFORE_FIRST;
         this.prefetch_count = DEFAULT_PREFETCH_COUNT;

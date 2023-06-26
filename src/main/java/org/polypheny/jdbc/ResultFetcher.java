@@ -15,7 +15,7 @@ public class ResultFetcher implements Runnable {
     private int statementId;
     @Setter
     @Getter
-    private int fetchSize;
+    private ResultSetProperties properties;
     private long offset;
     @Setter
     @Getter
@@ -24,10 +24,10 @@ public class ResultFetcher implements Runnable {
     private List<ArrayList<TypedValue>> fetchedValues;
 
 
-    public ResultFetcher( ProtoInterfaceClient client, int statementId, int fetchSize ) {
+    public ResultFetcher( ProtoInterfaceClient client, int statementId, ResultSetProperties properties ) {
         this.client = client;
         this.statementId = statementId;
-        this.fetchSize = fetchSize;
+        this.properties = properties;
         this.offset = 0;
         this.isLast = false;
     }
@@ -35,8 +35,8 @@ public class ResultFetcher implements Runnable {
 
     @Override
     public void run() {
-        Frame nextFrame = client.fetchResult( statementId, offset + fetchSize );
-        System.out.println( "Fetching offset: " + (offset + fetchSize) );
+        Frame nextFrame = client.fetchResult( statementId, offset + properties.getFetchSize() );
+        System.out.println( "Fetching offset: " + (offset + properties.getFetchSize()) );
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new ProtoInterfaceServiceException( "Illegal result type." );
         }

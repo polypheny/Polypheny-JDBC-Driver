@@ -27,9 +27,6 @@ import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class PolyphenyResultSet implements ResultSet {
-
-    private static final int DEFAULT_FETCH_SIZE = 100;
-
     private PolyphenyStatement statement;
 
     private final PolyphenyResultSetMetadata metadata;
@@ -51,7 +48,7 @@ public class PolyphenyResultSet implements ResultSet {
         }
         this.statement = statement;
         this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
-        this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), DEFAULT_FETCH_SIZE );
+        this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), properties);
         this.properties = properties;
         this.lastRead = null;
         this.isClosed = false;
@@ -534,14 +531,14 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public int getType() throws SQLException {
         throwIfClosed();
-        return properties.getResultSetType()
+        return properties.getResultSetType();
     }
 
 
     @Override
     public int getConcurrency() throws SQLException {
         throwIfClosed();
-        return properties.getResultSetConcurrency()
+        return properties.getResultSetConcurrency();
     }
 
 

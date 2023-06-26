@@ -2,10 +2,10 @@ package org.polypheny.jdbc.utils;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import javax.xml.transform.Result;
 import lombok.Getter;
 
 public class DefaultPropertyValues {
+
     @Getter
     private static final int DEFAULT_TRANSACTION_ISOLATION = Connection.TRANSACTION_READ_COMMITTED;
     @Getter
