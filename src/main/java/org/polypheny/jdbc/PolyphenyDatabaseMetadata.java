@@ -7,6 +7,10 @@ import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
+    String target;
+    public void setTarget(String target) {
+        this.target = target;
+    }
 
     @Override
     public boolean allProceduresAreCallable() throws SQLException {
@@ -28,10 +32,10 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getURL() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        if (target == null) {
+            return null;
+        }
+        return PolyphenyDriver.DRIVER_URL_SCHEMA + "//" + target;
     }
 
 
@@ -130,7 +134,11 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        try {
+            throw new SQLException( "Feature " + methodName + " not implemented" );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -139,7 +147,11 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        try {
+            throw new SQLException( "Feature " + methodName + " not implemented" );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -400,7 +412,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );return false;
+        throw new SQLException( "Feature " + methodName + " not implemented" );
     }
 
 

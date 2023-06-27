@@ -48,6 +48,8 @@ public class PolyphenyDriver implements java.sql.Driver {
         ConnectionString connectionString = new ConnectionString( url, properties );
         ProtoInterfaceClient protoInterfaceClient = new ProtoInterfaceClient( connectionString.getTarget() );
         protoInterfaceClient.connect( connectionString.getParameters() );
+        PolyphenyDatabaseMetadata metadata = new PolyphenyDatabaseMetadata();
+        metadata.setTarget(connectionString.getTarget());
         return new PolyphenyConnection( protoInterfaceClient );
     }
 
