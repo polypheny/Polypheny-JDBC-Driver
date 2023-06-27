@@ -41,6 +41,19 @@ public class PolyphenyStatement implements Statement {
     }
 
 
+    private ResultSet createResultSet( Frame frame ) throws SQLException {
+        switch ( properties.getResultSetType() ) {
+            case ResultSet.TYPE_FORWARD_ONLY:
+                return new PolyphenyForwardResultSet( this, frame, properties.toResultSetProperties() );
+            case ResultSet.TYPE_SCROLL_INSENSITIVE:
+            case ResultSet.TYPE_SCROLL_SENSITIVE:
+                return new PolyphenyBidirectionalResultSet( this, frame, properties.toResultSetProperties() );
+            default:
+                throw new SQLException( "Should never be thrown" );
+        }
+    }
+
+
     ProtoInterfaceClient getClient() {
         return polyphenyConnection.getProtoInterfaceClient();
     }
@@ -93,7 +106,7 @@ public class PolyphenyStatement implements Statement {
                     throw new SQLException( "Statement must produce a relational result" );
                 }
                 Frame frame = status.getResult().getFrame();
-                currentResult = new PolyphenyForwardResultSet( this, frame, properties.toResultSetProperties() );
+                currentResult = createResultSet( frame );
                 return currentResult;
             }
         } catch ( StatusRuntimeException | InterruptedException e ) {
@@ -259,7 +272,7 @@ public class PolyphenyStatement implements Statement {
                 resetCurrentResults();
                 Frame frame = status.getResult().getFrame();
                 if ( status.getResult().hasFrame() ) {
-                    currentResult = new PolyphenyForwardResultSet( this, frame, properties.toResultSetProperties());
+                    currentResult = createResultSet( frame );
                     return true;
                 }
                 currentUpdateCount = longToInt( status.getResult().getScalar() );
@@ -319,7 +332,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public void setFetchSize( int rows ) throws SQLException {
         throwIfClosed();
-        if ( rows< 0 ) {
+        if ( rows < 0 ) {
             throw new SQLException( "Illegal argument for max" );
         }
         properties.setFetchSize( rows );
