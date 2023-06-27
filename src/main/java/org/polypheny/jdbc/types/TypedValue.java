@@ -1,7 +1,10 @@
 package org.polypheny.jdbc.types;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
@@ -205,8 +208,14 @@ public class TypedValue implements Convertible {
 
     @Override
     public byte[] asBytes() throws SQLException {
-        //TODO TH: implement this
-        throw new SQLException( "Value retrieval as bytes is not supported yet." );
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream( byteArrayOutputStream );
+            objectOutputStream.writeObject( value );
+            return byteArrayOutputStream.toByteArray();
+        } catch ( IOException e ) {
+            throw new SQLException(e);
+        }
     }
 
 
@@ -345,4 +354,5 @@ public class TypedValue implements Convertible {
     public Reader asNCharacterStream() throws SQLException {
         throw new SQLException( "Conversion to time not supported." );
     }
+
 }
