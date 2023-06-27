@@ -49,7 +49,7 @@ public class PolyphenyForwardResultSet implements ResultSet {
         this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
         this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), properties);
         this.properties = properties;
-        this.lastRead = null;implement asBytes
+        this.lastRead = null;
         this.isClosed = false;
     }
 
