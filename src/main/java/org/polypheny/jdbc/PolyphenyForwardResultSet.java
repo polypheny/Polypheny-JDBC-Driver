@@ -49,7 +49,7 @@ public class PolyphenyForwardResultSet implements ResultSet {
         this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
         this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), properties);
         this.properties = properties;
-        this.lastRead = null;
+        this.lastRead = null;implement asBytes
         this.isClosed = false;
     }
 
@@ -164,10 +164,8 @@ public class PolyphenyForwardResultSet implements ResultSet {
 
     @Override
     public byte[] getBytes( int columnIndex ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throwIfClosed();
+        return accessValue( columnIndex ).asBytes();
     }
 
 

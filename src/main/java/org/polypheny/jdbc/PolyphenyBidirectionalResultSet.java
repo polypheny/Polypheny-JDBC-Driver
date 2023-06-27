@@ -164,10 +164,8 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
 
     @Override
     public byte[] getBytes( int columnIndex ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throwIfClosed();
+        return accessValue( columnIndex ).asBytes();
     }
 
 
