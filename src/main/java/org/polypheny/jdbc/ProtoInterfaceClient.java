@@ -71,10 +71,11 @@ public class ProtoInterfaceClient {
     }
 
 
-    public Frame fetchResult( int statementId, long offset ) {
+    public Frame fetchResult( int statementId, long offset, int fetchSize ) {
         FetchRequest fetchRequest = FetchRequest.newBuilder()
                 .setStatementId( statementId )
                 .setOffset( offset )
+                .setFetchSize( fetchSize )
                 .build();
         return blockingStub.fetchResult( fetchRequest );
     }
