@@ -3,8 +3,10 @@ package org.polypheny.jdbc;
 import io.grpc.Channel;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.polypheny.jdbc.proto.CloseStatementRequest;
 import org.polypheny.jdbc.proto.CommitRequest;
 import org.polypheny.jdbc.proto.ConnectionReply;
@@ -12,8 +14,11 @@ import org.polypheny.jdbc.proto.ConnectionRequest;
 import org.polypheny.jdbc.proto.FetchRequest;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.ProtoInterfaceGrpc;
+import org.polypheny.jdbc.proto.StatementBatchStatus;
+import org.polypheny.jdbc.proto.StatementStatus;
 import org.polypheny.jdbc.proto.UnparameterizedStatement;
-import org.polypheny.jdbc.utils.StatementStatusQueue;
+import org.polypheny.jdbc.proto.UnparameterizedStatementBatch;
+import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class ProtoInterfaceClient {
 
@@ -51,17 +56,33 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void executeUnparameterizedStatement( String statement, StatementStatusQueue updateCallback ) {
-        UnparameterizedStatement.Builder statementBuilder = UnparameterizedStatement.newBuilder()
+    public void executeUnparameterizedStatement( String statement, CallbackQueue<StatementStatus> updateCallback ) {
+        asyncStub.executeUnparameterizedStatement( buildUnparameterizedStatement( statement ), updateCallback );
+    }
+
+    public void executeUnparameterizedStatementBatch( List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback) {
+        List<UnparameterizedStatement> batch = statements.
+                stream()
+                .map( this::buildUnparameterizedStatement )
+                .collect( Collectors.toList());
+        UnparameterizedStatementBatch unparameterizedStatementBatch = UnparameterizedStatementBatch.newBuilder()
+                .addAllStatements( batch )
+                .build();
+        asyncStub.executeUnparameterizedStatementBatch( unparameterizedStatementBatch, updateCallback );
+    }
+
+    private UnparameterizedStatement buildUnparameterizedStatement(String statement) {
+        return UnparameterizedStatement.newBuilder()
+                .setStatement(statement)
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
-                .setStatement( statement );
-        asyncStub.executeUnparameterizedStatement( statementBuilder.build(), updateCallback );
+                .build();
     }
 
     public void commitTransaction() {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
         blockingStub.commitTransaction( commitRequest );
     }
+
 
     public void closeStatement( int statementId ) {
         CloseStatementRequest request = CloseStatementRequest.newBuilder()

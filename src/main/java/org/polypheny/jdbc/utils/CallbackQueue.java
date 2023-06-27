@@ -6,41 +6,40 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.proto.StatementStatus;
 
-public class StatementStatusQueue implements StreamObserver<StatementStatus> {
+public class CallbackQueue<T> implements StreamObserver<T> {
 
     private final Lock queueLock = new ReentrantLock();
     private final Condition hasNext = queueLock.newCondition();
     private final Condition isCompleted = queueLock.newCondition();
-    private LinkedList<StatementStatus> statusQueue;
+    private LinkedList<T> messageQueue;
     private Throwable propagatedException;
     private boolean bIsCompleted;
 
 
-    public StatementStatusQueue() {
-        this.statusQueue = new LinkedList<>();
+    public CallbackQueue() {
+        this.messageQueue = new LinkedList<>();
         this.bIsCompleted = false;
     }
 
 
     public void awaitCompletion() throws InterruptedException {
         queueLock.lock();
-        while (!bIsCompleted) {
+        while ( !bIsCompleted ) {
             isCompleted.await();
         }
     }
 
 
-    public StatementStatus takeNext() throws InterruptedException, ProtoInterfaceServiceException {
+    public T takeNext() throws InterruptedException, ProtoInterfaceServiceException {
         queueLock.lock();
-        while ( statusQueue.isEmpty() ) {
+        while ( messageQueue.isEmpty() ) {
             hasNext.await();
             throwReceivedException();
         }
-        StatementStatus status = statusQueue.remove();
+        T message = messageQueue.remove();
         queueLock.unlock();
-        return status;
+        return message;
     }
 
 
@@ -52,9 +51,9 @@ public class StatementStatusQueue implements StreamObserver<StatementStatus> {
 
 
     @Override
-    public void onNext( StatementStatus status ) {
+    public void onNext( T message ) {
         queueLock.lock();
-        statusQueue.add( status );
+        messageQueue.add( message );
         hasNext.signal();
         queueLock.unlock();
     }

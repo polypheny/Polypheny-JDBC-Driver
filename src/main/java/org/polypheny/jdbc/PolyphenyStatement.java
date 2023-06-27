@@ -6,11 +6,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.LinkedList;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
+import org.polypheny.jdbc.proto.StatementBatchStatus;
 import org.polypheny.jdbc.proto.StatementStatus;
-import org.polypheny.jdbc.utils.StatementStatusQueue;
+import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.jdbc.utils.ValidPropertyValues;
 
 public class PolyphenyStatement implements Statement {
@@ -29,6 +32,7 @@ public class PolyphenyStatement implements Statement {
     private static final int NO_UPDATE_COUNT = -1;
     private static final int NO_STATEMENT_ID = -1;
 
+    List<String> statementBatch;
 
     public PolyphenyStatement( PolyphenyConnection connection, StatementProperties properties ) {
         this.polyphenyConnection = connection;
@@ -36,6 +40,7 @@ public class PolyphenyStatement implements Statement {
 
         this.isClosed = false;
         this.isClosedOnCompletion = false;
+        this.statementBatch = new LinkedList<>();
         resetCurrentResults();
         resetStatementId();
     }
@@ -86,9 +91,9 @@ public class PolyphenyStatement implements Statement {
     public ResultSet executeQuery( String statement ) throws SQLException {
         throwIfClosed();
         resetStatementId();
-        StatementStatusQueue callback = new StatementStatusQueue();
+        CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback );
+            getClient().executeUnparameterizedStatement( statement, callback);
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -119,9 +124,9 @@ public class PolyphenyStatement implements Statement {
     public int executeUpdate( String statement ) throws SQLException {
         throwIfClosed();
         resetStatementId();
-        StatementStatusQueue callback = new StatementStatusQueue();
+        CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback );
+            getClient().executeUnparameterizedStatement( statement, callback);
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -257,9 +262,9 @@ public class PolyphenyStatement implements Statement {
     public boolean execute( String statement ) throws SQLException {
         throwIfClosed();
         resetStatementId();
-        StatementStatusQueue callback = new StatementStatusQueue();
+        CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback );
+            getClient().executeUnparameterizedStatement( statement, callback);
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -361,42 +366,45 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void addBatch( String s ) throws SQLException {
+    public void addBatch( String sql ) throws SQLException {
         throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        statementBatch.add( sql );
     }
 
 
     @Override
     public void clearBatch() throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        statementBatch.clear();
     }
 
 
     @Override
     public int[] executeBatch() throws SQLException {
         throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
+        resetStatementId();
+        CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
+        try {
+            getClient().executeUnparameterizedStatementBatch( statementBatch, callback );
+            while ( true ) {
+                StatementBatchStatus status = callback.takeNext();
+                if ( statementId == NO_STATEMENT_ID ) {
+                    statementId = status.getBatchId();
+                }
+                if ( !status.hasResults()) {
+                    continue;
+                }
+                callback.awaitCompletion();
+                resetCurrentResults();
+                List<Long> scalars = status.getResults().getScalarList();
+                int[] updateCounts = new int[scalars.size()];
+                for (int i = 0; i < scalars.size(); i++) {
+                    updateCounts[i] = longToInt( scalars.get( i ) );
+                }
+                return updateCounts;
+            }
+        } catch ( ProtoInterfaceServiceException | InterruptedException e ) {
+            throw new SQLException( e.getMessage() );
         }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
     }
 
 
