@@ -64,11 +64,7 @@ message RollbackResponse{}
 
 message StatementBatchStatus {
   int32 batchId = 1;
-  optional BatchResult results = 2;
-}
-
-message BatchResult {
-  repeated int64 scalar = 1;
+  repeated uint64 scalars = 2;
 }
 
 message StatementStatus {

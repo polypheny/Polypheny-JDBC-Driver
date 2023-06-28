@@ -390,12 +390,12 @@ public class PolyphenyStatement implements Statement {
                 if ( statementId == NO_STATEMENT_ID ) {
                     statementId = status.getBatchId();
                 }
-                if ( !status.hasResults()) {
+                if ( status.getScalarsCount() == 0) {
                     continue;
                 }
                 callback.awaitCompletion();
                 resetCurrentResults();
-                List<Long> scalars = status.getResults().getScalarList();
+                List<Long> scalars = status.getScalarsList();
                 int[] updateCounts = new int[scalars.size()];
                 for (int i = 0; i < scalars.size(); i++) {
                     updateCounts[i] = longToInt( scalars.get( i ) );
