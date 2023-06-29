@@ -3,6 +3,7 @@ package org.polypheny.jdbc.types;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.Map;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.proto.ProtoValueType;
 
 public class ProtoToPolyTypeNameMap {
@@ -32,6 +33,16 @@ public class ProtoToPolyTypeNameMap {
             throw new IllegalArgumentException( "Invalid proto value type." );
         }
         return polyTypeName;
+    }
+
+
+    public static ProtoValueType getProtoTypeFromPolyTypeName( String polyTypeName ) {
+        String protoTypeName = COMMON_NAME_PREFIX + polyTypeName;
+        try {
+            return ProtoValueType.valueOf( protoTypeName );
+        } catch ( IllegalArgumentException e ) {
+            throw new ProtoInterfaceServiceException( "Unknown parameter type " + polyTypeName );
+        }
     }
 
 }
