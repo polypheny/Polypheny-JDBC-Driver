@@ -13,12 +13,19 @@ import org.polypheny.jdbc.proto.ConnectionReply;
 import org.polypheny.jdbc.proto.ConnectionRequest;
 import org.polypheny.jdbc.proto.FetchRequest;
 import org.polypheny.jdbc.proto.Frame;
+import org.polypheny.jdbc.proto.ParameterSet;
+import org.polypheny.jdbc.proto.PreparedStatement;
+import org.polypheny.jdbc.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.proto.ProtoInterfaceGrpc;
 import org.polypheny.jdbc.proto.StatementBatchStatus;
+import org.polypheny.jdbc.proto.StatementResult;
 import org.polypheny.jdbc.proto.StatementStatus;
 import org.polypheny.jdbc.proto.UnparameterizedStatement;
 import org.polypheny.jdbc.proto.UnparameterizedStatementBatch;
+import org.polypheny.jdbc.types.ProtoValueSerializer;
+import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
+import org.polypheny.jdbc.utils.NamedParameterUtils;
 
 public class ProtoInterfaceClient {
 
@@ -60,23 +67,51 @@ public class ProtoInterfaceClient {
         asyncStub.executeUnparameterizedStatement( buildUnparameterizedStatement( statement ), updateCallback );
     }
 
-    public void executeUnparameterizedStatementBatch( List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback) {
+
+    public void executeUnparameterizedStatementBatch( List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback ) {
         List<UnparameterizedStatement> batch = statements.
                 stream()
                 .map( this::buildUnparameterizedStatement )
-                .collect( Collectors.toList());
+                .collect( Collectors.toList() );
         UnparameterizedStatementBatch unparameterizedStatementBatch = UnparameterizedStatementBatch.newBuilder()
                 .addAllStatements( batch )
                 .build();
         asyncStub.executeUnparameterizedStatementBatch( unparameterizedStatementBatch, updateCallback );
     }
 
-    private UnparameterizedStatement buildUnparameterizedStatement(String statement) {
+
+    private UnparameterizedStatement buildUnparameterizedStatement( String statement ) {
         return UnparameterizedStatement.newBuilder()
-                .setStatement(statement)
+                .setStatement( statement )
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
                 .build();
     }
+
+
+    public PreparedStatementSignature prepareStement( String statement ) {
+        PreparedStatement preparedStatement = PreparedStatement.newBuilder()
+                .setStatement( statement )
+                .setStatementLanguageName( SQL_LANGUAGE_NAME )
+                .build();
+        return blockingStub.prepareStatement( preparedStatement );
+
+    }
+
+
+    public StatementResult executePreparedStatement( int statementId, List<TypedValue> parameters ) {
+        Map<String, TypedValue> typedValueMap = NamedParameterUtils.convertToParameterMap( parameters );
+        return executePreparedStatement( statementId, typedValueMap );
+    }
+
+
+    public StatementResult executePreparedStatement( int statementId, Map<String, TypedValue> parameters ) {
+        ParameterSet parameterSet = ParameterSet.newBuilder()
+                .setStatementId( statementId )
+                .putAllValues( ProtoValueSerializer.serializeParameterMap( parameters ) )
+                .build();
+        return blockingStub.executePreparedStatement( parameterSet );
+    }
+
 
     public void commitTransaction() {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
