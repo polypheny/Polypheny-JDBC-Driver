@@ -88,6 +88,14 @@ public class PolyphenyStatement implements Statement {
     }
 
 
+    protected void throwIfNotRelational( Frame frame ) throws SQLException {
+        if ( frame.getResultCase() == ResultCase.RELATIONAL_FRAME ) {
+            return;
+        }
+        throw new SQLException( "Statement must produce a relational result" );
+    }
+
+
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
         throwIfClosed();
@@ -108,10 +116,8 @@ public class PolyphenyStatement implements Statement {
                 if ( !status.getResult().hasFrame() ) {
                     throw new SQLException( "Statement must produce a single ResultSet" );
                 }
-                if ( status.getResult().getFrame().getResultCase() != ResultCase.RELATIONAL_FRAME ) {
-                    throw new SQLException( "Statement must produce a relational result" );
-                }
                 Frame frame = status.getResult().getFrame();
+                throwIfNotRelational( frame );
                 currentResult = createResultSet( frame );
                 return currentResult;
             }
@@ -290,13 +296,15 @@ public class PolyphenyStatement implements Statement {
                 }
                 callback.awaitCompletion();
                 resetCurrentResults();
-                Frame frame = status.getResult().getFrame();
                 if ( status.getResult().hasFrame() ) {
-                    currentResult = createResultSet( frame );
-                    return true;
+                    currentUpdateCount = longToInt( status.getResult().getScalar() );
+                    return false;
                 }
-                currentUpdateCount = longToInt( status.getResult().getScalar() );
-                return false;
+                Frame frame = status.getResult().getFrame();
+                throwIfNotRelational( frame );
+                currentResult = createResultSet( frame );
+                return true;
+
             }
         } catch ( ProtoInterfaceServiceException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
