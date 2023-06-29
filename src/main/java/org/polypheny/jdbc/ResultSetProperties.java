@@ -25,9 +25,5 @@ public class ResultSetProperties {
     private int maxFieldSize;
     @Getter
     @Setter
-    private int maxRows;
-    @Getter
-    @Setter
     private long largeMaxRows;
-
 }

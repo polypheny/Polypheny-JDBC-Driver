@@ -27,9 +27,6 @@ public class StatementProperties {
     private int maxFieldSize;
     @Getter
     @Setter
-    private int maxRows;
-    @Getter
-    @Setter
     private long largeMaxRows;
     @Getter
     @Setter
@@ -46,7 +43,6 @@ public class StatementProperties {
         properties.setFetchDirection( fetchDirection );
         properties.setFetchSize( fetchSize );
         properties.setMaxFieldSize( maxFieldSize );
-        properties.setMaxRows( maxRows );
         properties.setLargeMaxRows( largeMaxRows );
         return properties;
     }

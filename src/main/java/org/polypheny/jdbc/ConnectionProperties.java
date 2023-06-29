@@ -54,7 +54,6 @@ public class ConnectionProperties {
         properties.setFetchSize( DefaultPropertyValues.getFETCH_SIZE() );
         properties.setFetchDirection( DefaultPropertyValues.getFETCH_DIRECTION() );
         properties.setMaxFieldSize( DefaultPropertyValues.getMAX_FIELD_SIZE() );
-        properties.setMaxRows( DefaultPropertyValues.getMAX_ROWS() );
         properties.setLargeMaxRows( DefaultPropertyValues.getLARGE_MAX_ROWS() );
         properties.setDoesEscapeProcessing( DefaultPropertyValues.isDOING_ESCAPE_PROCESSING() );
         properties.setPoolable( DefaultPropertyValues.isSTATEMENT_POOLABLE() );

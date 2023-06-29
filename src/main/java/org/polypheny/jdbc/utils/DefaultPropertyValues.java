@@ -23,8 +23,6 @@ public class DefaultPropertyValues {
     @Getter
     private static final int MAX_FIELD_SIZE = 0;
     @Getter
-    private static final int MAX_ROWS = 0;
-    @Getter
     private static final long LARGE_MAX_ROWS = 0;
     @Getter
     private static final boolean DOING_ESCAPE_PROCESSING = true;

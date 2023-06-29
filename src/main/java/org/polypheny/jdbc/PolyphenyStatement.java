@@ -20,7 +20,7 @@ public class PolyphenyStatement implements Statement {
 
     private PolyphenyConnection polyphenyConnection;
     private ResultSet currentResult;
-    private int currentUpdateCount;
+    private long currentUpdateCount;
     @Getter
     private int statementId;
 
@@ -33,6 +33,7 @@ public class PolyphenyStatement implements Statement {
     private static final int NO_STATEMENT_ID = -1;
 
     List<String> statementBatch;
+
 
     public PolyphenyStatement( PolyphenyConnection connection, StatementProperties properties ) {
         this.polyphenyConnection = connection;
@@ -93,7 +94,7 @@ public class PolyphenyStatement implements Statement {
         resetStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback);
+            getClient().executeUnparameterizedStatement( statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -126,7 +127,7 @@ public class PolyphenyStatement implements Statement {
         resetStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback);
+            getClient().executeUnparameterizedStatement( statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -172,19 +173,32 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
+    public long getLargeMaxRows() throws SQLException {
+        throwIfClosed();
+        return properties.getLargeMaxRows();
+    }
+
+
+    @Override
     public int getMaxRows() throws SQLException {
         throwIfClosed();
-        return properties.getMaxRows();
+        return longToInt( getLargeMaxRows() );
+    }
+
+
+    @Override
+    public void setLargeMaxRows( long max ) throws SQLException {
+        throwIfClosed();
+        if ( max < 0 ) {
+            throw new SQLException( "Illegal argument for max" );
+        }
+        properties.setLargeMaxRows( max );
     }
 
 
     @Override
     public void setMaxRows( int max ) throws SQLException {
-        throwIfClosed();
-        if ( max < 0 ) {
-            throw new SQLException( "Illegal argument for max" );
-        }
-        properties.setMaxRows( max );
+        setLargeMaxRows( max );
     }
 
 
@@ -264,7 +278,7 @@ public class PolyphenyStatement implements Statement {
         resetStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback);
+            getClient().executeUnparameterizedStatement( statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -297,9 +311,15 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public int getUpdateCount() throws SQLException {
+    public long getLargeUpdateCount() throws SQLException {
         throwIfClosed();
         return currentUpdateCount;
+    }
+
+
+    @Override
+    public int getUpdateCount() throws SQLException {
+        return longToInt( getLargeUpdateCount() );
     }
 
 
@@ -379,7 +399,28 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
+    public long[] executeLargeBatch() throws SQLException {
+        List<Long> scalars = executeBatchInternal();
+        long[] updateCounts = new long[scalars.size()];
+        for ( int i = 0; i < scalars.size(); i++ ) {
+            updateCounts[i] = scalars.get( i );
+        }
+        return updateCounts;
+    }
+
+
+    @Override
     public int[] executeBatch() throws SQLException {
+        List<Long> scalars = executeBatchInternal();
+        int[] updateCounts = new int[scalars.size()];
+        for ( int i = 0; i < scalars.size(); i++ ) {
+            updateCounts[i] = longToInt( scalars.get( i ) );
+        }
+        return updateCounts;
+    }
+
+
+    private List<Long> executeBatchInternal() throws SQLException {
         throwIfClosed();
         resetStatementId();
         CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
@@ -390,17 +431,12 @@ public class PolyphenyStatement implements Statement {
                 if ( statementId == NO_STATEMENT_ID ) {
                     statementId = status.getBatchId();
                 }
-                if ( status.getScalarsCount() == 0) {
+                if ( status.getScalarsCount() == 0 ) {
                     continue;
                 }
                 callback.awaitCompletion();
                 resetCurrentResults();
-                List<Long> scalars = status.getScalarsList();
-                int[] updateCounts = new int[scalars.size()];
-                for (int i = 0; i < scalars.size(); i++) {
-                    updateCounts[i] = longToInt( scalars.get( i ) );
-                }
-                return updateCounts;
+                return status.getScalarsList();
             }
         } catch ( ProtoInterfaceServiceException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
@@ -444,7 +480,26 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public int executeUpdate( String s, int i ) throws SQLException {
+    public long executeLargeUpdate( String sql, int autogeneratedKeys ) throws SQLException {
+        throwIfClosed();
+        // saves time as exceptions don't have to be typed out by hand
+        String methodName = new Object() {
+        }
+                .getClass()
+                .getEnclosingMethod()
+                .getName();
+        throw new SQLException( "Feature " + methodName + " not implemented" );
+    }
+
+
+    @Override
+    public int executeUpdate( String sql, int autogeneratedKeys ) throws SQLException {
+        return longToInt( executeLargeUpdate( sql, autogeneratedKeys ) );
+    }
+
+
+    @Override
+    public long executeLargeUpdate( String sql, int[] columnIndexes ) throws SQLException {
         throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
@@ -458,21 +513,13 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public int executeUpdate( String s, int[] ints ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+    public int executeUpdate( String sql, int[] columnIndexes ) throws SQLException {
+        return longToInt( executeLargeUpdate( sql, columnIndexes ) );
     }
 
 
     @Override
-    public int executeUpdate( String s, String[] strings ) throws SQLException {
+    public long executeLargeUpdate( String sql, String[] columnNames ) throws SQLException {
         throwIfClosed();
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
@@ -481,7 +528,12 @@ public class PolyphenyStatement implements Statement {
                 .getEnclosingMethod()
                 .getName();
         throw new SQLException( "Feature " + methodName + " not implemented" );
+    }
 
+
+    @Override
+    public int executeUpdate( String sql, String[] columnNames ) throws SQLException {
+        return longToInt( executeLargeUpdate( sql, columnNames ) );
     }
 
 
