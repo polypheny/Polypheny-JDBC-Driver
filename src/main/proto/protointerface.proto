@@ -24,7 +24,11 @@ service ProtoInterface {
   rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
 
   rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
-  rpc PrepareStatement(PreparedStatement) returns (stream StatementStatus) {}
+
+  rpc PrepareStatement(PreparedStatement) returns (PreparedStatementSignature) {}
+  rpc ExecutePreparedStatement(ParameterSet) returns (StatementResult){}
+  //rpc ExecutePreparedStatementBatch(Prepared)
+  //rpc ExecutePreparedStatement() returns (StatementResult) {}
   rpc StatementPropertyUpdate(StatementProperties) returns (StatementPropertyConfirmation) {}
 }
 
@@ -64,12 +68,17 @@ message RollbackResponse{}
 
 message StatementBatchStatus {
   int32 batchId = 1;
-  repeated uint64 scalars = 2;
+  repeated int64 scalars = 2;
 }
 
 message StatementStatus {
   int32 statementId = 1;
   optional StatementResult result = 2;
+}
+
+message PreparedStatementSignature{
+  int32 statementId = 1;
+  repeated ParameterMeta parameter_metas = 2;
 }
 
 message FetchRequest {
@@ -109,10 +118,28 @@ message ParameterizedStatement {
   bool expects_result = 4;
 }
 
+message ParameterMeta {
+  int32 precision = 1;
+  int32 scale = 2;
+  string type_name = 3;
+  string parameter_name = 4;
+  string name = 5;
+}
+
 message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
   bool expects_result = 3;
+}
+
+message ParameterSet {
+  int32 statementId = 1;
+  map<string, ProtoValue> values = 2;
+}
+
+message ParameterBatch {
+  int32 statementId = 1;
+  //repeated map<string, ProtoValue> valuesMaps = 2;
 }
 
 message StatementResult {
