@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.proto.ColumnMeta;
-import org.polypheny.jdbc.utils.ColumnMetaUtils;
+import org.polypheny.jdbc.utils.MetaUtils;
 
 public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
@@ -16,7 +16,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
 
     public PolyphenyResultSetMetadata( List<ColumnMeta> columnMetas ) {
-        this.columnMetas = ColumnMetaUtils.buildColumnMetas( columnMetas );
+        this.columnMetas = MetaUtils.buildColumnMetas( columnMetas );
         this.columnIndexes = columnMetas.stream().collect( Collectors.toMap( ColumnMeta::getColumnLabel, m -> m.getColumnIndex() + 1, ( m, n ) -> n ) );
     }
 
