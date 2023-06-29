@@ -19,20 +19,20 @@ import org.polypheny.jdbc.utils.ValidPropertyValues;
 public class PolyphenyStatement implements Statement {
 
     private PolyphenyConnection polyphenyConnection;
-    private ResultSet currentResult;
-    private long currentUpdateCount;
+    protected ResultSet currentResult;
+    protected long currentUpdateCount;
     @Getter
-    private int statementId;
+    protected int statementId;
 
     private boolean isClosed;
     private boolean isClosedOnCompletion;
-    StatementProperties properties;
+    protected StatementProperties properties;
 
     // Value used to represent that no value is set for the update count according to JDBC.
     private static final int NO_UPDATE_COUNT = -1;
     private static final int NO_STATEMENT_ID = -1;
 
-    List<String> statementBatch;
+    protected List<String> statementBatch;
 
 
     public PolyphenyStatement( PolyphenyConnection connection, StatementProperties properties ) {
@@ -47,7 +47,7 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    private ResultSet createResultSet( Frame frame ) throws SQLException {
+    protected ResultSet createResultSet( Frame frame ) throws SQLException {
         switch ( properties.getResultSetType() ) {
             case ResultSet.TYPE_FORWARD_ONLY:
                 return new PolyphenyForwardResultSet( this, frame, properties.toResultSetProperties() );
@@ -60,28 +60,28 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    ProtoInterfaceClient getClient() {
+    protected ProtoInterfaceClient getClient() {
         return polyphenyConnection.getProtoInterfaceClient();
     }
 
 
-    private int longToInt( long longNumber ) {
+    protected int longToInt( long longNumber ) {
         return Math.toIntExact( longNumber );
     }
 
 
-    private void resetCurrentResults() {
+    protected void resetCurrentResults() {
         currentResult = null;
         currentUpdateCount = NO_UPDATE_COUNT;
     }
 
 
-    private void resetStatementId() {
+    void resetStatementId() {
         statementId = NO_STATEMENT_ID;
     }
 
 
-    private void throwIfClosed() throws SQLException {
+    protected void throwIfClosed() throws SQLException {
         if ( isClosed ) {
             throw new SQLException( "Illegal operation for a closed statement" );
         }
@@ -141,7 +141,8 @@ public class PolyphenyStatement implements Statement {
                 if ( status.getResult().hasFrame() ) {
                     throw new SQLException( "Statement must not produce a ResultSet" );
                 }
-                return longToInt( status.getResult().getScalar() );
+                currentUpdateCount = status.getResult().getScalar();
+                return longToInt( currentUpdateCount );
             }
         } catch ( StatusRuntimeException | InterruptedException e ) {
             throw new SQLException( e.getMessage() );
