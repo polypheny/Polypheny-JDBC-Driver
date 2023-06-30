@@ -16,6 +16,8 @@ import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
 import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Struct;
@@ -23,6 +25,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Calendar;
+import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import lombok.Getter;
 import org.polypheny.jdbc.proto.ProtoValue;
 
@@ -40,6 +43,304 @@ public class TypedValue implements Convertible {
     }
 
 
+    private TypedValue( int jdbcType, Object value ) {
+        this.jdbcType = jdbcType;
+        this.value = value;
+    }
+
+
+    public static TypedValue fromBoolean( boolean value ) {
+        return new TypedValue( Types.BOOLEAN, value );
+    }
+
+
+    public static TypedValue fromByte( byte value ) {
+        return new TypedValue( Types.TINYINT, value );
+    }
+
+
+    public static TypedValue fromShort( short value ) {
+        return new TypedValue( Types.SMALLINT, value );
+    }
+
+
+    public static TypedValue fromInt( int value ) {
+        return new TypedValue( Types.INTEGER, value );
+    }
+
+
+    public static TypedValue fromLong( long value ) {
+        return new TypedValue( Types.BIGINT, value );
+    }
+
+
+    public static TypedValue fromFloat( float value ) {
+        return new TypedValue( Types.REAL, value );
+    }
+
+
+    public static TypedValue fromDouble( double value ) {
+        return new TypedValue( Types.DOUBLE, value );
+    }
+
+
+    public static TypedValue fromBigDecimal( BigDecimal value ) {
+        return new TypedValue( Types.NUMERIC, value );
+    }
+
+
+    public static TypedValue fromString( String value ) {
+        /* differentiation between VARCHAR and LONGVARCHAR can be ignored as value is converted to PolyString anyway */
+        return new TypedValue( Types.VARCHAR, value );
+    }
+
+
+    public static TypedValue fromBytes( byte[] bytes ) {
+        /* differentiation between VARBINARY and LONGVARBINARY can be ignored as value is converted to PolyBinary anyway */
+        return new TypedValue( Types.VARBINARY, bytes );
+    }
+
+
+    public static TypedValue fromDate( Date value ) {
+        return new TypedValue( Types.DATE, value );
+    }
+
+
+    public static TypedValue fromDate( Date value, Calendar calendar ) throws NotImplementedException {
+        //TODO TH handle date and calendar
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromTime( Time value ) {
+        return new TypedValue( Types.TIME, value );
+    }
+
+
+    public static TypedValue fromTime( Time value, Calendar calendar ) throws NotImplementedException {
+        //TODO TH handle time and calendar
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromTimestamp( Timestamp value ) {
+        return new TypedValue( Types.TIMESTAMP, value );
+    }
+
+
+    public static TypedValue fromTimestamp( Timestamp value, Calendar calendar ) throws NotImplementedException {
+        //TODO TH handle timestamp and calendar
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromAsciiStream( InputStream stream, int length ) throws IOException {
+        return fromAsciiStream( stream );
+    }
+
+
+    public static TypedValue fromAsciiStream( InputStream stream, long length ) throws IOException {
+        return fromAsciiStream( stream );
+    }
+
+
+    public static TypedValue fromAsciiStream( InputStream stream ) throws IOException {
+        byte[] bytes = collectByteStream( stream );
+        return fromString( new String( bytes, StandardCharsets.US_ASCII ) );
+    }
+
+
+    public static TypedValue fromUnicodeStream( InputStream stream, int length ) throws IOException {
+        byte[] bytes = collectByteStream( stream );
+        return fromString( new String( bytes, StandardCharsets.UTF_8 ) );
+    }
+
+
+    public static TypedValue fromBinaryStream( InputStream stream ) throws IOException {
+        byte[] bytes = collectByteStream( stream );
+        return fromBytes( bytes );
+    }
+
+
+    public static TypedValue fromBinaryStream( InputStream stream, int length ) throws IOException {
+        return fromBinaryStream( stream );
+    }
+
+
+    public static TypedValue fromBinaryStream( InputStream stream, long length ) throws IOException {
+        return fromBinaryStream( stream );
+    }
+
+
+    public static TypedValue fromCharacterStream( Reader reader ) throws IOException {
+        return TypedValue.fromString( collectCharacterStream( reader ) );
+    }
+
+
+    public static TypedValue fromCharacterStream( Reader reader, int length ) throws IOException {
+        return fromCharacterStream( reader );
+    }
+
+
+    public static TypedValue fromCharacterStream( Reader reader, long length ) throws IOException {
+        return fromCharacterStream( reader );
+    }
+
+
+    public static TypedValue fromRef( Ref value ) {
+        return new TypedValue( Types.REF, value );
+    }
+
+
+    public static TypedValue fromBlob( Blob value ) {
+        return new TypedValue( Types.BLOB, value );
+    }
+
+
+    public static TypedValue fromBlob( InputStream stream ) throws IOException, NotImplementedException {
+        byte[] bates = collectByteStream( stream );
+        // TODO build BLOB from bytes...
+        throw new NotImplementedException( "Not implemented yet..." );
+    }
+
+
+    public static TypedValue fromNull( int sqlType ) throws NotImplementedException {
+        throw new NotImplementedException( "Not implemented yet..." );
+    }
+
+
+    public static TypedValue fromNull( int sqlType, String typeName ) throws NotImplementedException {
+        throw new NotImplementedException( "Not implemented yet..." );
+    }
+
+
+    public static TypedValue fromClob( Clob value ) {
+        return new TypedValue( Types.CLOB, value );
+    }
+
+
+    public static TypedValue fromClob( Reader reader ) throws NotImplementedException {
+        //TODO TH build CLOB from string...
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromClob( Reader reader, long length ) throws NotImplementedException {
+        //TODO TH build CLOB from string...
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromArray( Array value ) {
+        return new TypedValue( Types.ARRAY, value );
+    }
+
+
+    public static TypedValue fromUrl( URL value ) {
+        return new TypedValue( Types.DATALINK, value );
+    }
+
+
+    public static TypedValue fromRowId( RowId value ) {
+        return new TypedValue( Types.ROWID, value );
+    }
+
+
+    public static TypedValue fromNString( String value ) {
+        /* differentiation between NVARCHAR and LONGNVARCHAR can be ignored as value is converted to PolyString anyway */
+        return new TypedValue( Types.NVARCHAR, value );
+    }
+
+
+    public static TypedValue fromNCharacterStream( Reader reader ) throws IOException {
+        /* differentiation between NVARCHAR and LONGNVARCHAR can be ignored as value is converted to PolyString anyway */
+        return new TypedValue( Types.NVARCHAR, collectNCharacterStream( reader ) );
+    }
+
+
+    public static TypedValue fromNCharacterStream( Reader reader, long length ) throws IOException {
+        return fromNCharacterStream( reader );
+    }
+
+
+    public static TypedValue fromNClob( NClob value ) {
+        return new TypedValue( Types.NCLOB, value );
+    }
+
+
+    public static TypedValue fromNClob( Reader reader ) throws NotImplementedException {
+        //TODO TH build NCLOB from string...
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromNClob( Reader reader, long length ) throws NotImplementedException {
+        return fromNClob( reader );
+    }
+
+
+    public static TypedValue setBlob( InputStream stream, long length ) throws NotImplementedException {
+        //TODO TH build BLOB from bytes...
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromSQLXML( SQLXML value ) {
+        return new TypedValue( Types.SQLXML, value );
+    }
+
+
+    public static TypedValue fromObject( Object value ) throws NotImplementedException {
+        //TODO TH: type conversion
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromObject( Object value, int targetSqlType ) throws NotImplementedException {
+        //TODO TH: type conversion
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromObject( Object value, int targetSqlType, int scaleOrLength ) throws NotImplementedException {
+        //TODO TH: type conversion
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    private static String collectCharacterStream( Reader reader ) throws IOException {
+        char[] readBuffer = new char[8 * 1024];
+        StringBuilder buffer = new StringBuilder();
+        int bufferIndex;
+        while ( (bufferIndex = reader.read( readBuffer, 0, readBuffer.length )) != -1 ) {
+            buffer.append( readBuffer, 0, bufferIndex );
+        }
+        reader.close();
+        return buffer.toString();
+    }
+
+
+    private static byte[] collectByteStream( InputStream stream ) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int frameLength;
+        byte[] frame = new byte[4];
+        while ( (frameLength = stream.read( frame, 0, frame.length )) != -1 ) {
+            buffer.write( frame, 0, frameLength );
+        }
+        buffer.flush();
+        return buffer.toByteArray();
+    }
+
+
+    private static String collectNCharacterStream( Reader reader ) throws IOException {
+        /*
+         * According to jdbc this should send the string to th dbms without changing the encoding to support utf-8 and utf-16.
+         * As polypheny is Java-based, utf8 and utf16 strings are supported anyway. No special handling required.
+         */
+        return collectCharacterStream( reader );
+    }
+
+
     @Override
     public boolean isSqlNull() throws SQLException {
         return jdbcType == Types.NULL;
@@ -48,9 +349,6 @@ public class TypedValue implements Convertible {
 
     @Override
     public String asString() throws SQLException {
-        if ( isSqlNull() ) {
-            return null;
-        }
         return value.toString();
     }
 
@@ -214,7 +512,7 @@ public class TypedValue implements Convertible {
             objectOutputStream.writeObject( value );
             return byteArrayOutputStream.toByteArray();
         } catch ( IOException e ) {
-            throw new SQLException(e);
+            throw new SQLException( e );
         }
     }
 
