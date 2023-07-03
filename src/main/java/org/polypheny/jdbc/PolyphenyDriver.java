@@ -14,16 +14,6 @@ public class PolyphenyDriver implements java.sql.Driver {
     public static final String DEFAULT_HOST = "localhost";
     public static final int DEFAULT_PORT = 20591;
 
-    public static final String PROPERTY_USERNAME_KEY = "user";
-    @java.lang.SuppressWarnings(
-            "squid:S2068"
-            // Credentials should not be hard-coded: 'password' detected
-            // Justification: "password" is here the key to set the password in the connection parameters.
-    )
-    public static final String PROPERTY_PASSWORD_KEY = "password";
-    public static final String PROPERTY_NAMESPACE_KEY = "namespace";
-
-
     static {
         new PolyphenyDriver().register();
     }

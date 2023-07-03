@@ -45,6 +45,14 @@ public class PropertyUtils {
 
     @Getter
     public static final String USERNAME_KEY = "user";
+    @Getter
+    @java.lang.SuppressWarnings(
+            "squid:S2068"
+            // Credentials should not be hard-coded: 'password' detected
+            // Justification: "password" is here the key to set the password in the connection parameters.
+    )
+    public static final String PASSWORD_KEY = "password";
+    public static final String NAMESPACE_KEY = "namespace";
 
     private static final Set<Integer> RESULT_SET_TYPES = ImmutableSet.<Integer>builder()
             .add( ResultSet.TYPE_FORWARD_ONLY )

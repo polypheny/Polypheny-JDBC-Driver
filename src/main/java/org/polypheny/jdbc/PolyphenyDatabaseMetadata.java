@@ -38,7 +38,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     }
 
     private void fetchDbmsVersionInfo() {
-        DbmsVersionResponse response = protoInterfaceClient.requestDbmsInfo();
+        DbmsVersionResponse response = protoInterfaceClient.getDbmsVersion();
         productName = response.getDbmsName();
         productVersion = response.getVersionName();
     }
@@ -124,10 +124,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getDriverName() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        PolyphenyDriver.
     }
 
 
