@@ -29,6 +29,7 @@ public class ConnectionString {
         parseUrl( url );
     }
 
+
     public String getUser() {
         return parameters.get( PropertyUtils.getUSERNAME_KEY() );
     }
@@ -85,7 +86,7 @@ public class ConnectionString {
     private void parseAuthority( String authority ) throws SQLException {
         log.debug( "Parsing authority: \"" + authority + "\"" );
         String host = authority;
-        String port = String.valueOf( PolyphenyDriver.DEFAULT_PORT );
+        String port = String.valueOf( PropertyUtils.getDEFAULT_PORT() );
         final int hostPortSeparatorIndex = authority.indexOf( ":" );
         if ( hostPortSeparatorIndex != -1 ) {
             host = substringBefore( hostPortSeparatorIndex, authority );
@@ -94,7 +95,7 @@ public class ConnectionString {
             }
         }
         if ( host.isEmpty() ) {
-            host = PolyphenyDriver.DEFAULT_HOST;
+            host = PropertyUtils.getDEFAULT_HOST();
         }
         target = host + ":" + port;
     }

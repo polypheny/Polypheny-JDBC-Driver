@@ -11,8 +11,7 @@ import java.util.logging.Logger;
 public class PolyphenyDriver implements java.sql.Driver {
 
     public static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
-    public static final String DEFAULT_HOST = "localhost";
-    public static final int DEFAULT_PORT = 20591;
+
 
     static {
         new PolyphenyDriver().register();
@@ -38,7 +37,7 @@ public class PolyphenyDriver implements java.sql.Driver {
         ConnectionString connectionString = new ConnectionString( url, properties );
         ProtoInterfaceClient protoInterfaceClient = new ProtoInterfaceClient( connectionString.getTarget() );
         protoInterfaceClient.register( connectionString.getParameters() );
-        PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata(protoInterfaceClient, connectionString);
+        PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata( protoInterfaceClient, connectionString );
         return new PolyphenyConnection( protoInterfaceClient, databaseMetadata );
     }
 
