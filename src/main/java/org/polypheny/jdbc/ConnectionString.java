@@ -51,7 +51,7 @@ public class ConnectionString {
         if ( url == null ) {
             throw new SQLException( "URL must no be null." );
         }
-        if ( !url.startsWith( PolyphenyDriver.DRIVER_URL_SCHEMA ) ) {
+        if ( !url.startsWith( DriverProperties.getDRIVER_URL_SCHEMA() ) ) {
             throw new SQLException( "Invalid driver schema." );
         }
         log.debug( "Parsing url: \"" + url + "\"" );

@@ -63,6 +63,7 @@ public class PolyphenyConnection implements Connection {
     public PolyphenyConnection( ProtoInterfaceClient protoInterfaceClient, PolyphenyDatabaseMetadata databaseMetaData ) {
         this.protoInterfaceClient = protoInterfaceClient;
         this.properties = new ConnectionProperties();
+        databaseMetaData.setConnection( this );
         this.databaseMetaData = databaseMetaData;
     }
 
@@ -267,7 +268,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public Statement createStatement( int resultSetType, int resultSetConcurrency ) throws SQLException {
         throwIfClosed();
-        PropertyUtils.throwIfOneInvalid( resultSetType, resultSetConcurrency );
+        PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
         StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
         return new PolyphenyStatement( this, statementProperties );
     }
@@ -276,7 +277,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public PreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency ) throws SQLException {
         throwIfClosed();
-        PropertyUtils.throwIfOneInvalid( resultSetType, resultSetConcurrency );
+        PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
         StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
         PreparedStatementSignature signature = getProtoInterfaceClient().prepareStement( sql );
         return new PolyphenyPreparedStatement( this, statementProperties, signature );
@@ -287,7 +288,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public CallableStatement prepareCall( String sql, int resultSetType, int resultSetConcurrency ) throws SQLException {
         throwIfClosed();
-        PropertyUtils.throwIfOneInvalid( resultSetType, resultSetConcurrency );
+        PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
 
         String methodName = new Object() {
         }
@@ -327,7 +328,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public void setHoldability( int holdability ) throws SQLException {
         throwIfClosed();
-        if ( PropertyUtils.isInvalidResultSetHoldability( holdability ) ) {
+        if ( !PropertyUtils.isValidResultSetHoldability( holdability ) ) {
             throw new SQLException( "Illegal argument for result set holdability" );
         }
         properties.setResultSetHoldability( holdability );
@@ -400,7 +401,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public Statement createStatement( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         throwIfClosed();
-        PropertyUtils.throwIfOneInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
+        PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
         return new PolyphenyStatement( this, statementProperties );
     }
@@ -409,7 +410,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public PreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         throwIfClosed();
-        PropertyUtils.throwIfOneInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
+        PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
         PreparedStatementSignature signature = getProtoInterfaceClient().prepareStement( sql );
         return new PolyphenyPreparedStatement( this, statementProperties, signature );
@@ -419,7 +420,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public CallableStatement prepareCall( String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         throwIfClosed();
-        PropertyUtils.throwIfOneInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
+        PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
 
         String methodName = new Object() {
         }

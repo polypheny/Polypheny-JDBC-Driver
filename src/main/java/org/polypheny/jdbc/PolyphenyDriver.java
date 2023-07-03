@@ -7,12 +7,9 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
+import lombok.Getter;
 
 public class PolyphenyDriver implements java.sql.Driver {
-
-    public static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
-
-
     static {
         new PolyphenyDriver().register();
     }
@@ -47,7 +44,7 @@ public class PolyphenyDriver implements java.sql.Driver {
         if ( url == null ) {
             throw new SQLException( "URL must no be null." );
         }
-        return url.startsWith( DRIVER_URL_SCHEMA );
+        return url.startsWith( DriverProperties.getDRIVER_URL_SCHEMA() );
     }
 
 
@@ -59,19 +56,19 @@ public class PolyphenyDriver implements java.sql.Driver {
 
     @Override
     public int getMajorVersion() {
-        return 0;
+        return DriverProperties.getDRIVER_MAJOR_VERSION();
     }
 
 
     @Override
     public int getMinorVersion() {
-        return 0;
+        return DriverProperties.getDRIVER_MINOR_VERSION();
     }
 
 
     @Override
     public boolean jdbcCompliant() {
-        return false;
+        return DriverProperties.isJDBC_COMPLIANT();
     }
 
 

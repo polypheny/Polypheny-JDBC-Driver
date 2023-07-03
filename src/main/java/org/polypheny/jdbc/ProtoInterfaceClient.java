@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.jdbc.proto.CloseStatementRequest;
 import org.polypheny.jdbc.proto.CommitRequest;
 import org.polypheny.jdbc.proto.ConnectionCheckRequest;
@@ -34,7 +35,6 @@ import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.jdbc.utils.NamedParameterUtils;
 
 public class ProtoInterfaceClient {
-
     private static final int MAJOR_API_VERSION = 2;
     private static final int MINOR_API_VERSION = 0;
     private static final String SQL_LANGUAGE_NAME = "sql";
