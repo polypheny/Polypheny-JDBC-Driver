@@ -14,7 +14,7 @@ import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.proto.StatementBatchStatus;
 import org.polypheny.jdbc.proto.StatementStatus;
 import org.polypheny.jdbc.utils.CallbackQueue;
-import org.polypheny.jdbc.utils.ValidPropertyValues;
+import org.polypheny.jdbc.utils.PropertyUtils;
 
 public class PolyphenyStatement implements Statement {
 
@@ -135,7 +135,7 @@ public class PolyphenyStatement implements Statement {
         int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement(timeout, statement, callback );
+            getClient().executeUnparameterizedStatement( timeout, statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -288,7 +288,7 @@ public class PolyphenyStatement implements Statement {
         int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement(timeout, statement, callback );
+            getClient().executeUnparameterizedStatement( timeout, statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -352,7 +352,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public void setFetchDirection( int direction ) throws SQLException {
         throwIfClosed();
-        if ( ValidPropertyValues.isInvalidFetchDdirection( direction ) ) {
+        if ( PropertyUtils.isInvalidFetchDdirection( direction ) ) {
             throw new SQLException( "Illegal argument for direction" );
         }
         properties.setFetchDirection( direction );
@@ -438,7 +438,7 @@ public class PolyphenyStatement implements Statement {
         int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatementBatch(timeout, statementBatch, callback );
+            getClient().executeUnparameterizedStatementBatch( timeout, statementBatch, callback );
             while ( true ) {
                 StatementBatchStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {

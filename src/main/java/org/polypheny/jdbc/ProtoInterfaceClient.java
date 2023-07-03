@@ -3,6 +3,7 @@ package org.polypheny.jdbc;
 import io.grpc.Channel;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -13,8 +14,11 @@ import org.polypheny.jdbc.proto.CommitRequest;
 import org.polypheny.jdbc.proto.ConnectionCheckRequest;
 import org.polypheny.jdbc.proto.ConnectionReply;
 import org.polypheny.jdbc.proto.ConnectionRequest;
+import org.polypheny.jdbc.proto.DbmsVersionRequest;
+import org.polypheny.jdbc.proto.DbmsVersionResponse;
 import org.polypheny.jdbc.proto.FetchRequest;
 import org.polypheny.jdbc.proto.Frame;
+import org.polypheny.jdbc.proto.LanguageRequest;
 import org.polypheny.jdbc.proto.ParameterSet;
 import org.polypheny.jdbc.proto.PreparedStatement;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
@@ -39,14 +43,17 @@ public class ProtoInterfaceClient {
     private final String clientUUID;
 
 
-    public ProtoInterfaceClient( String target ) {
+    public ProtoInterfaceClient( String target ) throws SQLException {
         this.clientUUID = UUID.randomUUID().toString();
-        Channel channel = Grpc.newChannelBuilder( target, InsecureChannelCredentials.create() )
-                .intercept( new ClientMetaInterceptor( clientUUID ) )
-                .build();
-        this.blockingStub = ProtoInterfaceGrpc.newBlockingStub( channel );
-        this.asyncStub = ProtoInterfaceGrpc.newStub( channel );
-
+        try {
+            Channel channel = Grpc.newChannelBuilder( target, InsecureChannelCredentials.create() )
+                    .intercept( new ClientMetaInterceptor( clientUUID ) )
+                    .build();
+            this.blockingStub = ProtoInterfaceGrpc.newBlockingStub( channel );
+            this.asyncStub = ProtoInterfaceGrpc.newStub( channel );
+        } catch (Exception e) {
+            throw new SQLException("Connection failed: " + e.getMessage());
+        }
     }
 
     private ProtoInterfaceGrpc.ProtoInterfaceBlockingStub getBlockingStub(int timeout) {
@@ -75,19 +82,26 @@ public class ProtoInterfaceClient {
         return true;
     }
 
+    public List<String> requestSupportedLanguages() {
+        LanguageRequest languageRequest = LanguageRequest.newBuilder().build();
+        return blockingStub.getSupportedLanguages( languageRequest ).getLanguageNamesList();
+    }
 
-    public void connect( Map<String, String> properties ) {
-        ConnectionRequest connectionRequest = ConnectionRequest.newBuilder()
-                .setMajorApiVersion( MAJOR_API_VERSION )
-                .setMinorApiVersion( MINOR_API_VERSION )
-                .setClientUuid( clientUUID )
-                .putAllConnectionProperties( properties )
-                .build();
-        ConnectionReply connectionReply = blockingStub.connect( connectionRequest );
-        if ( !connectionReply.getIsCompatible() ) {
-            throw new ProtoInterfaceServiceException( "client version " + getClientApiVersionString()
-                    + "not compatible with server version " + getServerApiVersionString( connectionReply ) + "." );
-        }
+
+
+
+    public void register( Map<String, String> properties ) {
+            ConnectionRequest connectionRequest = ConnectionRequest.newBuilder()
+                    .setMajorApiVersion( MAJOR_API_VERSION )
+                    .setMinorApiVersion( MINOR_API_VERSION )
+                    .setClientUuid( clientUUID )
+                    .putAllConnectionProperties( properties )
+                    .build();
+            ConnectionReply connectionReply = blockingStub.connect( connectionRequest );
+            if ( !connectionReply.getIsCompatible() ) {
+                throw new ProtoInterfaceServiceException( "client version " + getClientApiVersionString()
+                        + "not compatible with server version " + getServerApiVersionString( connectionReply ) + "." );
+            }
     }
 
 
@@ -176,6 +190,12 @@ public class ProtoInterfaceClient {
 
     private static String getClientApiVersionString() {
         return MAJOR_API_VERSION + "." + MINOR_API_VERSION;
+    }
+
+
+    public DbmsVersionResponse getDbmsVersion() {
+        DbmsVersionRequest dbmsVersionRequest = DbmsVersionRequest.newBuilder().build();
+        return blockingStub.getDbmsVersion( dbmsVersionRequest );
     }
 
 }

@@ -9,6 +9,7 @@ import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.jdbc.utils.PropertyUtils;
 
 @Slf4j
 public class ConnectionString {
@@ -26,6 +27,10 @@ public class ConnectionString {
     public ConnectionString( String url, Properties parameters ) throws SQLException {
         this.parameters = importPropertiesMap( parameters );
         parseUrl( url );
+    }
+
+    public String getUser() {
+        return parameters.get( PropertyUtils.getUSERNAME_KEY() );
     }
 
 

@@ -6,8 +6,45 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
+import lombok.Getter;
 
-public class ValidPropertyValues {
+public class PropertyUtils {
+
+    @Getter
+    private static final int DEFAULT_TRANSACTION_ISOLATION = Connection.TRANSACTION_READ_COMMITTED;
+    @Getter
+    private static final int DEFAULT_NETWORK_TIMEOUT = 0;
+    @Getter
+    private static final int DEFAULT_QUERY_TIMEOUT_SECONDS = 0;
+    @Getter
+    private static final int DEFAULT_FETCH_SIZE = 100;
+    @Getter
+    private static final int DEFAULT_FETCH_DIRECTION = ResultSet.FETCH_FORWARD;
+    @Getter
+    private static final int DEFAULT_RESULTSET_TYPE = ResultSet.TYPE_FORWARD_ONLY;
+    @Getter
+    private static final int DEFAULT_RESULTSET_CONCURRENCY = ResultSet.CONCUR_READ_ONLY;
+    @Getter
+    private static final int DEFAULT_MAX_FIELD_SIZE = 0;
+    @Getter
+    private static final long DEFAULT_LARGE_MAX_ROWS = 0;
+    @Getter
+    private static final boolean DEFAULT_DOING_ESCAPE_PROCESSING = true;
+    @Getter
+    private static final boolean DEFAULT_STATEMENT_POOLABLE = false;
+    @Getter
+    private static final boolean DEFAULT_PREPARED_STATEMENT_POOLABLE = true;
+    @Getter
+    private static final boolean DEFAULT_CALLABLE_STATEMENT_POOLABLE = true;
+    @Getter
+    private static final boolean DEFAULT_AUTOCOMMIT = true;
+    @Getter
+    private static final boolean DEFAULT_READ_ONLY = false;
+    @Getter
+    private static final int DEFAULT_RESULTSET_HOLDABILITY = ResultSet.CLOSE_CURSORS_AT_COMMIT;
+
+    @Getter
+    public static final String USERNAME_KEY = "user";
 
     private static final Set<Integer> RESULT_SET_TYPES = ImmutableSet.<Integer>builder()
             .add( ResultSet.TYPE_FORWARD_ONLY )
@@ -63,18 +100,18 @@ public class ValidPropertyValues {
         return TRANSACTION_ISOLATION_LEVELS.contains( transacitonIsolationLevel );
     }
 
-    public static void throwIfOneInvalid(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException{
+    public static void throwIfOneInvalid(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
         throwIfOneInvalid( resultSetType, resultSetConcurrency );
-        if ( ValidPropertyValues.isInvalidResultSetHoldability( resultSetHoldability ) ) {
+        if ( isInvalidResultSetHoldability( resultSetHoldability ) ) {
             throw new SQLException("Illegal value for result set holdability.");
         }
     }
 
     public static void throwIfOneInvalid(int resultSetType, int resultSetConcurrency) throws SQLException{
-        if (!ValidPropertyValues.isValidResultSetType( resultSetType ) ) {
+        if (!isValidResultSetType( resultSetType ) ) {
             throw new SQLException("Illegal value for result set type.");
         }
-        if (!ValidPropertyValues.isValidResultSetConcurrency( resultSetConcurrency )) {
+        if (!isValidResultSetConcurrency( resultSetConcurrency )) {
             throw new SQLException("Illegal value for result set concurrency.");
         }
     }

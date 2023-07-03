@@ -5,109 +5,120 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
+import org.polypheny.jdbc.proto.DbmsVersionResponse;
+import org.polypheny.jdbc.utils.PropertyUtils;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
-    String target;
-    public void setTarget(String target) {
-        this.target = target;
+
+    private static final String DATABASE_PRODUCT_NAME = "PolyphenyDB";
+
+    private ConnectionString connectionString;
+
+    private NullSorting nullSorting;
+
+    private ProtoInterfaceClient protoInterfaceClient;
+
+    private String productName;
+    private String productVersion;
+
+
+    private enum NullSorting {
+        START,
+        END,
+        HIGH,
+        LOW
     }
+
+
+    public PolyphenyDatabaseMetadata( ProtoInterfaceClient protoInterfaceClient, ConnectionString target ) {
+        this.protoInterfaceClient = protoInterfaceClient;
+        this.connectionString = target;
+        //TODO TH: check what polypheny does...
+        this.nullSorting = NullSorting.HIGH;
+    }
+
+    private void fetchDbmsVersionInfo() {
+        DbmsVersionResponse response = protoInterfaceClient.requestDbmsInfo();
+        productName = response.getDbmsName();
+        productVersion = response.getVersionName();
+    }
+
 
     @Override
     public boolean allProceduresAreCallable() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean allTablesAreSelectable() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public String getURL() throws SQLException {
-        if (target == null) {
+        if ( connectionString == null ) {
             return null;
         }
-        return PolyphenyDriver.DRIVER_URL_SCHEMA + "//" + target;
+        return PolyphenyDriver.DRIVER_URL_SCHEMA + "//" + connectionString.getTarget();
     }
 
 
     @Override
     public String getUserName() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        if ( connectionString == null ) {
+            return null;
+        }
+        return connectionString.getUser();
     }
 
 
     @Override
     public boolean isReadOnly() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return PropertyUtils.isDEFAULT_AUTOCOMMIT();
     }
 
 
     @Override
     public boolean nullsAreSortedHigh() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return nullSorting == NullSorting.HIGH;
     }
 
 
     @Override
     public boolean nullsAreSortedLow() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return nullSorting == NullSorting.LOW;
     }
 
 
     @Override
     public boolean nullsAreSortedAtStart() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return nullSorting == NullSorting.START;
     }
 
 
     @Override
     public boolean nullsAreSortedAtEnd() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return nullSorting == NullSorting.END;
     }
 
 
     @Override
     public String getDatabaseProductName() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        if (productName == null) {
+            fetchDbmsVersionInfo();
+        }
+        return productName;
     }
 
 
     @Override
     public String getDatabaseProductVersion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        if (productVersion == null) {
+            fetchDbmsVersionInfo();
+        }
+        return productVersion;
     }
 
 
@@ -1602,4 +1613,5 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         }.getClass().getEnclosingMethod().getName();
         throw new SQLException( "Feature " + methodName + " not implemented" );
     }
+
 }

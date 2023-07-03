@@ -2,16 +2,16 @@ package org.polypheny.jdbc;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.jdbc.utils.DefaultPropertyValues;
+import org.polypheny.jdbc.utils.PropertyUtils;
 
 public class ConnectionProperties {
 
     public ConnectionProperties() {
-        this.isAutoCommit = DefaultPropertyValues.isAUTOCOMMIT();
-        this.isReadOnly = DefaultPropertyValues.isREAD_ONLY();
-        this.resultSetHoldability = DefaultPropertyValues.getDEFAULT_RESULTSET_HOLDABILITY();
-        this.networkTimeout = DefaultPropertyValues.getDEFAULT_NETWORK_TIMEOUT();
-        this.transactionIsolation = DefaultPropertyValues.getDEFAULT_TRANSACTION_ISOLATION();
+        this.isAutoCommit = PropertyUtils.isDEFAULT_AUTOCOMMIT();
+        this.isReadOnly = PropertyUtils.isDEFAULT_READ_ONLY();
+        this.resultSetHoldability = PropertyUtils.getDEFAULT_RESULTSET_HOLDABILITY();
+        this.networkTimeout = PropertyUtils.getDEFAULT_NETWORK_TIMEOUT();
+        this.transactionIsolation = PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION();
     }
 
 
@@ -34,8 +34,8 @@ public class ConnectionProperties {
 
     public StatementProperties toStatementProperties() {
         return toStatementProperties(
-                DefaultPropertyValues.getDEFAULT_RESULTSET_TYPE(),
-                DefaultPropertyValues.getDEFAULT_RESULTSET_CONCURRENCY()
+                PropertyUtils.getDEFAULT_RESULTSET_TYPE(),
+                PropertyUtils.getDEFAULT_RESULTSET_CONCURRENCY()
         );
     }
 
@@ -47,16 +47,16 @@ public class ConnectionProperties {
 
     public StatementProperties toStatementProperties( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) {
         StatementProperties properties = new StatementProperties();
-        properties.setQueryTimeoutSeconds( DefaultPropertyValues.getQUERY_TIMEOUT_SECONDS() );
+        properties.setQueryTimeoutSeconds( PropertyUtils.getDEFAULT_QUERY_TIMEOUT_SECONDS() );
         properties.setResultSetType( resultSetType );
         properties.setResultSetConcurrency( resultSetConcurrency );
         properties.setResultSetHoldability( resultSetHoldability );
-        properties.setFetchSize( DefaultPropertyValues.getFETCH_SIZE() );
-        properties.setFetchDirection( DefaultPropertyValues.getFETCH_DIRECTION() );
-        properties.setMaxFieldSize( DefaultPropertyValues.getMAX_FIELD_SIZE() );
-        properties.setLargeMaxRows( DefaultPropertyValues.getLARGE_MAX_ROWS() );
-        properties.setDoesEscapeProcessing( DefaultPropertyValues.isDOING_ESCAPE_PROCESSING() );
-        properties.setPoolable( DefaultPropertyValues.isSTATEMENT_POOLABLE() );
+        properties.setFetchSize( PropertyUtils.getDEFAULT_FETCH_SIZE() );
+        properties.setFetchDirection( PropertyUtils.getDEFAULT_FETCH_DIRECTION() );
+        properties.setMaxFieldSize( PropertyUtils.getDEFAULT_MAX_FIELD_SIZE() );
+        properties.setLargeMaxRows( PropertyUtils.getDEFAULT_LARGE_MAX_ROWS() );
+        properties.setDoesEscapeProcessing( PropertyUtils.isDEFAULT_DOING_ESCAPE_PROCESSING() );
+        properties.setPoolable( PropertyUtils.isDEFAULT_STATEMENT_POOLABLE() );
         return properties;
     }
 
