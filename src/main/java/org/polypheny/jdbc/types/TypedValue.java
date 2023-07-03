@@ -567,12 +567,18 @@ public class TypedValue implements Convertible {
 
     @Override
     public Blob asBlob() throws SQLException {
+        if (value instanceof Blob) {
+            return (Blob) value;
+        }
         throw new SQLException( "Conversion to blob not supported." );
     }
 
 
     @Override
     public Clob asClob() throws SQLException {
+        if (value instanceof Clob) {
+            return (Clob) value;
+        }
         throw new SQLException( "Conversion to clob not supported." );
     }
 
@@ -585,6 +591,9 @@ public class TypedValue implements Convertible {
 
     @Override
     public Struct asStruct() throws SQLException {
+        if (value instanceof Struct) {
+            return (Struct) value;
+        }
         throw new SQLException( "Conversion to struct not supported." );
     }
 
