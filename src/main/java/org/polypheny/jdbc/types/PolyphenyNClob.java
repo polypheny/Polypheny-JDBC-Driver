@@ -1,4 +1,4 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.types;
 
 import java.io.InputStream;
 import java.io.OutputStream;
