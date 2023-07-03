@@ -50,8 +50,9 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public ResultSet executeQuery() throws SQLException {
         throwIfClosed();
+        int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executePreparedStatement( statementId, parameters );
+            StatementResult result = getClient().executePreparedStatement(timeout, statementId, parameters );
             resetCurrentResults();
             if ( !result.hasFrame() ) {
                 throw new SQLException( "Statement must produce a single ResultSet" );
@@ -69,8 +70,9 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public long executeLargeUpdate() throws SQLException {
         throwIfClosed();
+        int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executePreparedStatement( statementId, parameters );
+            StatementResult result = getClient().executePreparedStatement(timeout, statementId, parameters );
             resetCurrentResults();
             if ( result.hasFrame() ) {
                 throw new SQLException( "Statement must not produce a ResultSet" );
@@ -242,8 +244,9 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public boolean execute() throws SQLException {
         throwIfClosed();
+        int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executePreparedStatement( statementId, parameters );
+            StatementResult result = getClient().executePreparedStatement(timeout, statementId, parameters );
             resetCurrentResults();
             if ( !result.hasFrame() ) {
                 currentUpdateCount = result.getScalar();

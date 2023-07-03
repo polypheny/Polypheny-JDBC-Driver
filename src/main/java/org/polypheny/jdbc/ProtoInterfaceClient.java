@@ -49,12 +49,27 @@ public class ProtoInterfaceClient {
 
     }
 
-    public boolean checkConnection(int timeout) {
+    private ProtoInterfaceGrpc.ProtoInterfaceBlockingStub getBlockingStub(int timeout) {
+        if (timeout == 0) {
+            return blockingStub;
+        }
+        return blockingStub.withDeadlineAfter( timeout, TimeUnit.SECONDS );
+    }
+
+    private ProtoInterfaceGrpc.ProtoInterfaceStub getAsyncStub(int timeout) {
+        if (timeout == 0) {
+            return asyncStub;
+        }
+        return asyncStub.withDeadlineAfter( timeout, TimeUnit.SECONDS );
+    }
+
+
+    public boolean checkConnection( int timeout ) {
         ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
             /* ConnectionCheckResponses are empty messages */
             blockingStub.withDeadlineAfter( timeout, TimeUnit.SECONDS ).connectionCheck( request );
-        }catch (Exception e) {
+        } catch ( Exception e ) {
             return false;
         }
         return true;
@@ -76,12 +91,13 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void executeUnparameterizedStatement( String statement, CallbackQueue<StatementStatus> updateCallback ) {
-        asyncStub.executeUnparameterizedStatement( buildUnparameterizedStatement( statement ), updateCallback );
+    public void executeUnparameterizedStatement( int timeout, String statement, CallbackQueue<StatementStatus> updateCallback ) {
+        ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub( timeout );
+        stub.executeUnparameterizedStatement( buildUnparameterizedStatement( statement ), updateCallback );
     }
 
 
-    public void executeUnparameterizedStatementBatch( List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback ) {
+    public void executeUnparameterizedStatementBatch( int timeout, List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback ) {
         List<UnparameterizedStatement> batch = statements.
                 stream()
                 .map( this::buildUnparameterizedStatement )
@@ -89,7 +105,8 @@ public class ProtoInterfaceClient {
         UnparameterizedStatementBatch unparameterizedStatementBatch = UnparameterizedStatementBatch.newBuilder()
                 .addAllStatements( batch )
                 .build();
-        asyncStub.executeUnparameterizedStatementBatch( unparameterizedStatementBatch, updateCallback );
+        ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub( timeout );
+        stub.executeUnparameterizedStatementBatch( unparameterizedStatementBatch, updateCallback );
     }
 
 
@@ -111,18 +128,19 @@ public class ProtoInterfaceClient {
     }
 
 
-    public StatementResult executePreparedStatement( int statementId, List<TypedValue> parameters ) {
+    public StatementResult executePreparedStatement( int timeout, int statementId, List<TypedValue> parameters ) {
         Map<String, TypedValue> typedValueMap = NamedParameterUtils.convertToParameterMap( parameters );
-        return executePreparedStatement( statementId, typedValueMap );
+        return executePreparedStatement( timeout, statementId, typedValueMap );
     }
 
 
-    public StatementResult executePreparedStatement( int statementId, Map<String, TypedValue> parameters ) {
+    public StatementResult executePreparedStatement( int timeout, int statementId, Map<String, TypedValue> parameters ) {
         ParameterSet parameterSet = ParameterSet.newBuilder()
                 .setStatementId( statementId )
                 .putAllValues( ProtoValueSerializer.serializeParameterMap( parameters ) )
                 .build();
-        return blockingStub.executePreparedStatement( parameterSet );
+        ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub(timeout);
+        return stub.executePreparedStatement( parameterSet );
     }
 
 

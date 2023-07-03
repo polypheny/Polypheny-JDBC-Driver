@@ -100,9 +100,10 @@ public class PolyphenyStatement implements Statement {
     public ResultSet executeQuery( String statement ) throws SQLException {
         throwIfClosed();
         resetStatementId();
+        int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback );
+            getClient().executeUnparameterizedStatement( timeout, statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -131,9 +132,10 @@ public class PolyphenyStatement implements Statement {
     public int executeUpdate( String statement ) throws SQLException {
         throwIfClosed();
         resetStatementId();
+        int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback );
+            getClient().executeUnparameterizedStatement(timeout, statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -283,9 +285,10 @@ public class PolyphenyStatement implements Statement {
     public boolean execute( String statement ) throws SQLException {
         throwIfClosed();
         resetStatementId();
+        int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( statement, callback );
+            getClient().executeUnparameterizedStatement(timeout, statement, callback );
             while ( true ) {
                 StatementStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
@@ -432,9 +435,10 @@ public class PolyphenyStatement implements Statement {
     private List<Long> executeBatchInternal() throws SQLException {
         throwIfClosed();
         resetStatementId();
+        int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatementBatch( statementBatch, callback );
+            getClient().executeUnparameterizedStatementBatch(timeout, statementBatch, callback );
             while ( true ) {
                 StatementBatchStatus status = callback.takeNext();
                 if ( statementId == NO_STATEMENT_ID ) {
