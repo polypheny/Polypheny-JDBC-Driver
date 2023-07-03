@@ -5,23 +5,27 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
+import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
 import org.polypheny.jdbc.utils.PropertyUtils;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
-
-    private static final String DATABASE_PRODUCT_NAME = "PolyphenyDB";
-
+    private static final int NO_VERSION = -1;
     private ConnectionString connectionString;
 
     private NullSorting nullSorting;
 
     private ProtoInterfaceClient protoInterfaceClient;
 
+    private PolyphenyConnection polyphenyConnection;
+
     private String productName;
     private String productVersion;
+    private int databaseMinorVersion= NO_VERSION;
+    private int databaseMajorVersion = NO_VERSION;
 
 
+    // TODO TH: remove and hardcode this
     private enum NullSorting {
         START,
         END,
@@ -37,10 +41,16 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         this.nullSorting = NullSorting.HIGH;
     }
 
+    public void setConnection(PolyphenyConnection connection) {
+        this.polyphenyConnection = connection;
+    }
+
     private void fetchDbmsVersionInfo() {
         DbmsVersionResponse response = protoInterfaceClient.getDbmsVersion();
         productName = response.getDbmsName();
         productVersion = response.getVersionName();
+        databaseMinorVersion = response.getMinorVersion();
+        databaseMajorVersion = response.getMajorVersion();
     }
 
 
@@ -61,7 +71,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         if ( connectionString == null ) {
             return null;
         }
-        return PolyphenyDriver.DRIVER_URL_SCHEMA + "//" + connectionString.getTarget();
+        return DriverProperties.getDRIVER_URL_SCHEMA() + "//" + connectionString.getTarget();
     }
 
 
@@ -106,7 +116,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getDatabaseProductName() throws SQLException {
-        if (productName == null) {
+        if ( productName == null ) {
             fetchDbmsVersionInfo();
         }
         return productName;
@@ -115,7 +125,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getDatabaseProductVersion() throws SQLException {
-        if (productVersion == null) {
+        if ( productVersion == null ) {
             fetchDbmsVersionInfo();
         }
         return productVersion;
@@ -124,159 +134,115 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getDriverName() throws SQLException {
-        PolyphenyDriver.
+        return DriverProperties.getDRIVER_NAME();
     }
 
 
     @Override
     public String getDriverVersion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return DriverProperties.getDRIVER_VERSION();
     }
 
 
     @Override
     public int getDriverMajorVersion() {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        try {
-            throw new SQLException( "Feature " + methodName + " not implemented" );
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        }
+        return DriverProperties.getDRIVER_MAJOR_VERSION();
     }
 
 
     @Override
     public int getDriverMinorVersion() {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        try {
-            throw new SQLException( "Feature " + methodName + " not implemented" );
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        }
+        return DriverProperties.getDRIVER_MINOR_VERSION();
     }
 
 
     @Override
     public boolean usesLocalFiles() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean usesLocalFilePerTable() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsMixedCaseIdentifiers() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean storesUpperCaseIdentifiers() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean storesLowerCaseIdentifiers() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean storesMixedCaseIdentifiers() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsMixedCaseQuotedIdentifiers() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean storesUpperCaseQuotedIdentifiers() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean storesLowerCaseQuotedIdentifiers() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean storesMixedCaseQuotedIdentifiers() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public String getIdentifierQuoteString() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return "\"";
     }
 
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        try {
+            throw new NotImplementedException( "Feature not yet implemented" );
+        } catch ( NotImplementedException e ) {
+            throw new RuntimeException( e );
+        }
+        // TODO TH: implement this correctly
+        // Comma-separated list of all of this database's SQL keywords that are NOT also SQL:2003 keywords.
     }
 
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        try {
+            throw new NotImplementedException( "Feature not yet implemented" );
+        } catch ( NotImplementedException e ) {
+            throw new RuntimeException( e );
+        }
+        // TODO TH: implement this correctly
+        // Retrieves a comma-separated list of math functions available with this database. These are the Open /Open CLI math function names used in the JDBC function escape clause.
     }
 
 
@@ -327,763 +293,525 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsAlterTableWithAddColumn() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsAlterTableWithDropColumn() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsColumnAliasing() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean nullPlusNonNullIsNull() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsConvert() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        //TODO TH: change upon implementation
+        return false;
     }
 
 
     @Override
-    public boolean supportsConvert( int i, int i1 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean supportsConvert( int fromType, int toType ) throws SQLException {
+        return false;
     }
 
 
     @Override
     public boolean supportsTableCorrelationNames() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsDifferentTableCorrelationNames() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsExpressionsInOrderBy() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsOrderByUnrelated() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsGroupBy() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsGroupByUnrelated() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsGroupByBeyondSelect() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsLikeEscapeClause() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsMultipleResultSets() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsMultipleTransactions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsNonNullableColumns() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsMinimumSQLGrammar() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsCoreSQLGrammar() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsExtendedSQLGrammar() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsANSI92EntryLevelSQL() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsANSI92IntermediateSQL() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsANSI92FullSQL() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsIntegrityEnhancementFacility() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsOuterJoins() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsFullOuterJoins() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsLimitedOuterJoins() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public String getSchemaTerm() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return "namespace";
     }
 
 
     @Override
     public String getProcedureTerm() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return "procedure";
     }
 
 
     @Override
     public String getCatalogTerm() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return "catalog";
     }
 
 
     @Override
     public boolean isCatalogAtStart() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public String getCatalogSeparator() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return ".";
     }
 
 
     @Override
     public boolean supportsSchemasInDataManipulation() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsSchemasInProcedureCalls() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsSchemasInTableDefinitions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsSchemasInIndexDefinitions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        // Index definition not supported by polypheny!
+        return true;
     }
 
 
     @Override
     public boolean supportsSchemasInPrivilegeDefinitions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        // Privilege definition not supported by polypheny!
+        return true;
     }
 
 
     @Override
     public boolean supportsCatalogsInDataManipulation() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsCatalogsInProcedureCalls() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsCatalogsInTableDefinitions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsCatalogsInIndexDefinitions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        // Index definition not supported by polypheny!
+        return true;
     }
 
 
     @Override
     public boolean supportsCatalogsInPrivilegeDefinitions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        // Privilege Definition not supported by polypheny!
+        return true;
     }
 
 
     @Override
     public boolean supportsPositionedDelete() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsPositionedUpdate() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsSelectForUpdate() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsStoredProcedures() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsSubqueriesInComparisons() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsSubqueriesInExists() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsSubqueriesInIns() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsSubqueriesInQuantifieds() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsCorrelatedSubqueries() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsUnion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsUnionAll() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsOpenCursorsAcrossCommit() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsOpenCursorsAcrossRollback() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsOpenStatementsAcrossCommit() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsOpenStatementsAcrossRollback() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public int getMaxBinaryLiteralLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxCharLiteralLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxColumnNameLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxColumnsInGroupBy() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxColumnsInIndex() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxColumnsInOrderBy() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxColumnsInSelect() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxColumnsInTable() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxConnections() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        // GRPC supports 100 concurrent streams by default. Beyond this queuing occurs.
+        return 0;
     }
 
 
     @Override
     public int getMaxCursorNameLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxIndexLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxSchemaNameLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxProcedureNameLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxCatalogNameLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxRowSize() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public boolean doesMaxRowSizeIncludeBlobs() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public int getMaxStatementLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxStatements() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxTableNameLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxTablesInSelect() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getMaxUserNameLength() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return 0;
     }
 
 
     @Override
     public int getDefaultTransactionIsolation() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION();
     }
 
 
     @Override
     public boolean supportsTransactions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
-    public boolean supportsTransactionIsolationLevel( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean supportsTransactionIsolationLevel( int level ) throws SQLException {
+        // This is the only supported isolation level
+        return level == PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION();
     }
 
 
     @Override
     public boolean supportsDataDefinitionAndDataManipulationTransactions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsDataManipulationTransactionsOnly() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean dataDefinitionCausesTransactionCommit() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean dataDefinitionIgnoredInTransactions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
+        return false;
+    }
+
+
+    @Override
+    public ResultSet getProcedures( String catalog, String schemaPattern, String procedureNamePattern ) throws SQLException {
+        // Stored procedures not supported.
+        // TODO TH: implement empty result set
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
         throw new SQLException( "Feature " + methodName + " not implemented" );
@@ -1091,8 +819,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getProcedures( String s, String s1, String s2 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
+    public ResultSet getProcedureColumns( String catalog, String schemaPattern, String procedureNamePattern, String columnNamePattern ) throws SQLException {
+        // Stored procedures not supported.
+        // TODO TH: implement empty result set
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
         throw new SQLException( "Feature " + methodName + " not implemented" );
@@ -1100,16 +829,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getProcedureColumns( String s, String s1, String s2, String s3 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public ResultSet getTables( String s, String s1, String s2, String[] strings ) throws SQLException {
+    public ResultSet getTables( String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
+        // TODO TH: implement this
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
@@ -1244,115 +965,86 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public boolean supportsResultSetType( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean supportsResultSetType( int type ) throws SQLException {
+        return PropertyUtils.isValidResultSetType( type );
     }
 
 
     @Override
-    public boolean supportsResultSetConcurrency( int i, int i1 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean supportsResultSetConcurrency( int type, int concurrency ) throws SQLException {
+        return PropertyUtils.isValidResultSetConcurrency( type, concurrency );
     }
 
 
     @Override
-    public boolean ownUpdatesAreVisible( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean ownUpdatesAreVisible( int type ) throws SQLException {
+        //TODO TH: adjust according to implementation
+        return false;
     }
 
 
     @Override
-    public boolean ownDeletesAreVisible( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean ownDeletesAreVisible( int tyoe ) throws SQLException {
+        //TODO TH: adjust according to implementation
+        return false;
     }
 
 
     @Override
-    public boolean ownInsertsAreVisible( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean ownInsertsAreVisible( int type ) throws SQLException {
+        //TODO TH: adjust according to implementation
+        return false;
     }
 
 
     @Override
-    public boolean othersUpdatesAreVisible( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean othersUpdatesAreVisible( int type ) throws SQLException {
+        return false;
     }
 
 
     @Override
-    public boolean othersDeletesAreVisible( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean othersDeletesAreVisible( int type ) throws SQLException {
+        return false;
     }
 
 
     @Override
-    public boolean othersInsertsAreVisible( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean othersInsertsAreVisible( int type ) throws SQLException {
+        return false;
     }
 
 
     @Override
     public boolean updatesAreDetected( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        //TODO TH: adjust according to implementation
+        return false;
     }
 
 
     @Override
     public boolean deletesAreDetected( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        //TODO TH: adjust according to implementation
+        return false;
     }
 
 
     @Override
     public boolean insertsAreDetected( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        //TODO TH: adjust according to implementation
+        return false;
     }
 
 
     @Override
     public boolean supportsBatchUpdates() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public ResultSet getUDTs( String s, String s1, String s2, int[] ints ) throws SQLException {
+        //TODO TH: implement this...
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
@@ -1362,51 +1054,37 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public Connection getConnection() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return polyphenyConnection;
     }
 
 
     @Override
     public boolean supportsSavepoints() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsNamedParameters() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsMultipleOpenResults() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean supportsGetGeneratedKeys() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public ResultSet getSuperTypes( String s, String s1, String s2 ) throws SQLException {
+        //TODO TH: implement this...
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
@@ -1416,6 +1094,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getSuperTables( String s, String s1, String s2 ) throws SQLException {
+        //TODO TH: implement this...
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
@@ -1425,6 +1104,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getAttributes( String s, String s1, String s2, String s3 ) throws SQLException {
+        //TODO TH: implement this...
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
@@ -1433,92 +1113,68 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public boolean supportsResultSetHoldability( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean supportsResultSetHoldability( int resultSetHoldability ) throws SQLException {
+        return PropertyUtils.isValidResultSetHoldability( resultSetHoldability );
     }
 
 
     @Override
     public int getResultSetHoldability() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return PropertyUtils.getDEFAULT_RESULTSET_HOLDABILITY();
     }
 
 
     @Override
     public int getDatabaseMajorVersion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        if (databaseMajorVersion == NO_VERSION) {
+            fetchDbmsVersionInfo();
+        }
+        return databaseMinorVersion;
     }
 
 
     @Override
     public int getDatabaseMinorVersion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        if (databaseMajorVersion == NO_VERSION) {
+            fetchDbmsVersionInfo();
+        }
+        return databaseMinorVersion;
     }
 
 
     @Override
     public int getJDBCMajorVersion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return DriverProperties.getDRIVER_MAJOR_VERSION();
     }
 
 
     @Override
     public int getJDBCMinorVersion() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return DriverProperties.getDRIVER_MINOR_VERSION();
     }
 
 
     @Override
     public int getSQLStateType() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return sqlStateSQL;
     }
 
 
     @Override
     public boolean locatorsUpdateCopy() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return true;
     }
 
 
     @Override
     public boolean supportsStatementPooling() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public RowIdLifetime getRowIdLifetime() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return RowIdLifetime.ROWID_UNSUPPORTED;
     }
 
 
@@ -1587,10 +1243,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean generatedKeyAlwaysReturned() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
