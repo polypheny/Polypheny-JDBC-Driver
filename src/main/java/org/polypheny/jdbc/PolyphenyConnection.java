@@ -20,6 +20,9 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import lombok.SneakyThrows;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
+import org.polypheny.jdbc.types.PolyphenyBlob;
+import org.polypheny.jdbc.types.PolyphenyClob;
+import org.polypheny.jdbc.types.PolyphenyNClob;
 import org.polypheny.jdbc.utils.ValidPropertyValues;
 
 public class PolyphenyConnection implements Connection {
@@ -274,12 +277,9 @@ public class PolyphenyConnection implements Connection {
     public PreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency ) throws SQLException {
         throwIfClosed();
         ValidPropertyValues.throwIfOneInvalid( resultSetType, resultSetConcurrency );
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareStement( sql );
+        return new PolyphenyPreparedStatement( this, statementProperties, signature );
 
     }
 
@@ -410,13 +410,9 @@ public class PolyphenyConnection implements Connection {
     public PreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         throwIfClosed();
         ValidPropertyValues.throwIfOneInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareStement( sql );
+        return new PolyphenyPreparedStatement( this, statementProperties, signature );
     }
 
 
@@ -479,37 +475,21 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public Clob createClob() throws SQLException {
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return new PolyphenyClob();
 
     }
 
 
     @Override
     public Blob createBlob() throws SQLException {
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return new PolyphenyBlob();
 
     }
 
 
     @Override
     public NClob createNClob() throws SQLException {
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        return new PolyphenyNClob();
     }
 
 
