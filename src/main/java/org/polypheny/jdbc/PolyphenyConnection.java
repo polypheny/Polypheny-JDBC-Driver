@@ -511,13 +511,7 @@ public class PolyphenyConnection implements Connection {
         if ( timeout < 0 ) {
             throw new SQLException( "Illegal argument for timeout" );
         }
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        return getProtoInterfaceClient().checkConnection(timeout);
     }
 
 

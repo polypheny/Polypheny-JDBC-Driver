@@ -6,9 +6,11 @@ import io.grpc.InsecureChannelCredentials;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.proto.CloseStatementRequest;
 import org.polypheny.jdbc.proto.CommitRequest;
+import org.polypheny.jdbc.proto.ConnectionCheckRequest;
 import org.polypheny.jdbc.proto.ConnectionReply;
 import org.polypheny.jdbc.proto.ConnectionRequest;
 import org.polypheny.jdbc.proto.FetchRequest;
@@ -45,6 +47,17 @@ public class ProtoInterfaceClient {
         this.blockingStub = ProtoInterfaceGrpc.newBlockingStub( channel );
         this.asyncStub = ProtoInterfaceGrpc.newStub( channel );
 
+    }
+
+    public boolean checkConnection(int timeout) {
+        ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
+        try {
+            /* ConnectionCheckResponses are empty messages */
+            blockingStub.withDeadlineAfter( timeout, TimeUnit.SECONDS ).connectionCheck( request );
+        }catch (Exception e) {
+            return false;
+        }
+        return true;
     }
 
 
