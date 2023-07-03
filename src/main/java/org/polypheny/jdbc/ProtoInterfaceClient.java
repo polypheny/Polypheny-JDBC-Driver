@@ -75,7 +75,7 @@ public class ProtoInterfaceClient {
         ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
             /* ConnectionCheckResponses are empty messages */
-            blockingStub.withDeadlineAfter( timeout, TimeUnit.SECONDS ).connectionCheck( request );
+            blockingStub.withDeadlineAfter( timeout, TimeUnit.SECONDS ).checkConnection( request );
         } catch ( Exception e ) {
             return false;
         }
