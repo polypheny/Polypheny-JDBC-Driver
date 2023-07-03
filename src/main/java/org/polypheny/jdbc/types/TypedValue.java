@@ -567,25 +567,25 @@ public class TypedValue implements Convertible {
 
     @Override
     public Blob asBlob() throws SQLException {
-        throw new SQLException( "Conversion to time not supported." );
+        throw new SQLException( "Conversion to blob not supported." );
     }
 
 
     @Override
     public Clob asClob() throws SQLException {
-        throw new SQLException( "Conversion to time not supported." );
+        throw new SQLException( "Conversion to clob not supported." );
     }
 
 
     @Override
     public Array asArray() throws SQLException {
-        throw new SQLException( "Conversion to time not supported." );
+        throw new SQLException( "Conversion to array not supported." );
     }
 
 
     @Override
     public Struct asStruct() throws SQLException {
-        throw new SQLException( "Conversion to time not supported." );
+        throw new SQLException( "Conversion to struct not supported." );
     }
 
 
