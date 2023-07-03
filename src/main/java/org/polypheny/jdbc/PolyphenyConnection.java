@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import lombok.SneakyThrows;
+import org.polypheny.jdbc.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.utils.ValidPropertyValues;
 
 public class PolyphenyConnection implements Connection {
@@ -72,14 +73,8 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
-        throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareStement( sql );
+        return new PolyphenyPreparedStatement(this, properties.toStatementProperties(), signature );
     }
 
 
