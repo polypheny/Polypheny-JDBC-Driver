@@ -16,8 +16,15 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
 
     public PolyphenyResultSetMetadata( List<ColumnMeta> columnMetas ) {
-        this.columnMetas = MetaUtils.buildColumnMetas( columnMetas );
+        ArrayList<PolyphenyColumnMeta> polyphenyColumnMetas = MetaUtils.buildColumnMetas( columnMetas );
         this.columnIndexes = columnMetas.stream().collect( Collectors.toMap( ColumnMeta::getColumnLabel, m -> m.getColumnIndex() + 1, ( m, n ) -> n ) );
+    }
+
+
+    public PolyphenyResultSetMetadata( ArrayList<PolyphenyColumnMeta> columnMetaData ) {
+        this.columnMetas = columnMetaData;
+        this.columnIndexes = columnMetaData.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, m -> m.getOrdinal() + 1, ( m, n ) -> n ) );
+
     }
 
 
@@ -29,10 +36,11 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
         }
     }
 
-    public int getIndexFromLabel(String columnName) throws SQLException {
+
+    public int getIndexFromLabel( String columnName ) throws SQLException {
         Integer columnIndex = columnIndexes.get( columnName );
-        if (columnIndex == null) {
-            throw new SQLException("Invalid column name: " + columnName);
+        if ( columnIndex == null ) {
+            throw new SQLException( "Invalid column name: " + columnName );
         }
         return columnIndex;
     }
