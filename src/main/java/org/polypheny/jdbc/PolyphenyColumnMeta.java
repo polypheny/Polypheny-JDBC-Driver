@@ -86,15 +86,15 @@ public class PolyphenyColumnMeta {
 
 
     // Only there so constructor remains hidden to indicate that it shouldn't be used for anything else
-    static PolyphenyColumnMeta fromSpecifications( int ordinal, int length, String columnName, String entityName, int jdcType ) {
-        return new PolyphenyColumnMeta( ordinal, length, columnName, entityName, jdcType );
+    public static PolyphenyColumnMeta fromSpecifications( int ordinal, String columnName, String entityName, int jdcType ) {
+        return new PolyphenyColumnMeta( ordinal, columnName, jdcType );
     }
 
 
     /* This constructor is used exclusively to create metadata for the responses of the meta endpoint since these must be
      * represented as resultsets.
      */
-    private PolyphenyColumnMeta( int ordinal, int length, String columnName, String entityName, int jdbcType ) {
+    private PolyphenyColumnMeta( int ordinal, String columnName, int jdbcType ) {
         this.ordinal = ordinal;
         this.autoIncrement = false;
         this.caseSensitive = true;
@@ -102,13 +102,13 @@ public class PolyphenyColumnMeta {
         this.currency = false;
         this.nullable = ResultSetMetaData.columnNullable;
         this.signed = false;
-        this.displaySize = length;
+        this.displaySize = -1;
         this.columnLabel = null;
         this.columnName = columnName;
         this.namespace = null;
-        this.precision = 0;
+        this.precision = -1;
         this.scale = 1;
-        this.tableName = entityName;
+        this.tableName = "";
         this.catalogName = "";
         this.readOnly = false;
         this.writable = false;
