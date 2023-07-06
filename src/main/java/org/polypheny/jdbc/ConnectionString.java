@@ -104,7 +104,7 @@ public class ConnectionString {
     private void parseNamespace( String path ) {
         log.debug( "Parsing namespace: \"" + path + "\"" );
         if ( !path.isEmpty() ) {
-            parameters.put( PropertyUtils.NAMESPACE_KEY, path );
+            parameters.put( PropertyUtils.getNAMESPACE_KEY(), path );
         }
     }
 
@@ -117,11 +117,11 @@ public class ConnectionString {
         if ( username.isEmpty() ) {
             return;
         }
-        parameters.put( PropertyUtils.USERNAME_KEY, username );
+        parameters.put( PropertyUtils.getUSERNAME_KEY(), username );
         if ( password.isEmpty() ) {
             return;
         }
-        parameters.put( PropertyUtils.PASSWORD_KEY, password );
+        parameters.put( PropertyUtils.getPASSWORD_KEY(), password );
     }
 
 

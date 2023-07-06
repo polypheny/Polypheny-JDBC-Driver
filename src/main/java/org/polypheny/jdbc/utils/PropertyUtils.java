@@ -57,15 +57,16 @@ public class PropertyUtils {
 
     // Keys for properties
     @Getter
-    public static final String USERNAME_KEY = "user";
+    private static final String USERNAME_KEY = "user";
     @Getter
     @java.lang.SuppressWarnings(
             "squid:S2068"
             // Credentials should not be hard-coded: 'password' detected
             // Justification: "password" is here the key to set the password in the connection parameters.
     )
-    public static final String PASSWORD_KEY = "password";
-    public static final String NAMESPACE_KEY = "namespace";
+    private static final String PASSWORD_KEY = "password";
+    @Getter
+    private static final String NAMESPACE_KEY = "namespace";
 
     // Methods for input checking
     private static final Map<Integer, List<Integer>> SUPPORTED_CONCURRENCIES =
