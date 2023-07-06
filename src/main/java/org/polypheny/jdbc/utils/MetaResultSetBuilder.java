@@ -20,7 +20,7 @@ public class MetaResultSetBuilder {
     private static ArrayList<PolyphenyColumnMeta> generateMetas( List<Integer> jdbcTypes, String entityName, String... columnLabels ) {
         ArrayList<PolyphenyColumnMeta> columnMetas = new ArrayList<>();
         for ( String label : columnLabels ) {
-            int ordinal = columnLabels.length;
+            int ordinal = columnMetas.size();
             columnMetas.add( PolyphenyColumnMeta.fromSpecifications( ordinal, entityName, label, jdbcTypes.get( ordinal ) ) );
         }
         return columnMetas;
