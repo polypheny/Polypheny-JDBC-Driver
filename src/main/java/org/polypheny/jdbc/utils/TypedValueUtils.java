@@ -1,5 +1,7 @@
 package org.polypheny.jdbc.utils;
 
+import static java.util.stream.Collectors.toCollection;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +20,10 @@ public class TypedValueUtils {
     public static ArrayList<TypedValue> buildRow( Row row ) {
         return row.getValuesList().stream()
                 .map( TypedValue::new )
-                .collect( Collectors.toCollection( ArrayList::new ) );
+                .collect( toCollection( ArrayList::new ) );
     }
 
+    public static ArrayList<Integer> getTypes(List<TypedValue> typedValues) {
+        return typedValues.stream().map( TypedValue::getJdbcType ).collect(toCollection(ArrayList::new));
+    }
 }
