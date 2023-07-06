@@ -76,11 +76,46 @@ public class PolyphenyColumnMeta {
         this.writable = false;
         this.definitelyWritable = false;
         this.columnClassName = "";
-        if (protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED) {
-            throw new NotImplementedException("Struct types not implemented yet");
+        if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED ) {
+            throw new NotImplementedException( "Struct types not implemented yet" );
         } else {
-            this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto(protoColumnMeta.getTypeMeta().getProtoValueType());
+            this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( protoColumnMeta.getTypeMeta().getProtoValueType() );
         }
         this.polyphenyFieldTypeName = ProtoToPolyTypeNameMap.getPolyTypeNameFromProto( protoColumnMeta.getTypeMeta().getProtoValueType() );
     }
+
+
+    // Only there so constructor remains hidden to indicate that it shouldn't be used for anything else
+    static PolyphenyColumnMeta fromSpecifications( int ordinal, int length, String columnName, String entityName, int jdcType ) {
+        return new PolyphenyColumnMeta( ordinal, length, columnName, entityName, jdcType );
+    }
+
+
+    /* This constructor is used exclusively to create metadata for the responses of the meta endpoint since these must be
+     * represented as resultsets.
+     */
+    private PolyphenyColumnMeta( int ordinal, int length, String columnName, String entityName, int jdbcType ) {
+        this.ordinal = ordinal;
+        this.autoIncrement = false;
+        this.caseSensitive = true;
+        this.searchable = false;
+        this.currency = false;
+        this.nullable = ResultSetMetaData.columnNullable;
+        this.signed = false;
+        this.displaySize = length;
+        this.columnLabel = null;
+        this.columnName = columnName;
+        this.namespace = null;
+        this.precision = 0;
+        this.scale = 1;
+        this.tableName = entityName;
+        this.catalogName = "";
+        this.readOnly = false;
+        this.writable = false;
+        this.definitelyWritable = false;
+        this.columnClassName = "";
+        this.sqlType = jdbcType;
+        this.polyphenyFieldTypeName = "";
+    }
+
 }
