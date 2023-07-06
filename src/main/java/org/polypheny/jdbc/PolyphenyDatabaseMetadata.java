@@ -462,6 +462,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getProcedureTerm() throws SQLException {
+        // Stored procedures not supported...
         return "procedure";
     }
 

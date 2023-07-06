@@ -656,10 +656,10 @@ public class TypedValue implements Convertible {
         throw new SQLException( "Conversion to time not supported." );
     }
 
-
     @Override
     public Reader asNCharacterStream() throws SQLException {
         throw new SQLException( "Conversion to time not supported." );
     }
+
 
 }
