@@ -469,7 +469,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getCatalogTerm() throws SQLException {
-        return "catalog";
+        return "database";
     }
 
 
