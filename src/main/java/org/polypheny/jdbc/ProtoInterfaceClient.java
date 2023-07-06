@@ -6,6 +6,7 @@ import io.grpc.InsecureChannelCredentials;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -202,12 +203,11 @@ public class ProtoInterfaceClient {
     }
 
 
-    public TablesResponse getTables( String schemaPattern, String tableNamePattern ) {
-        TablesRequest tablesRequest = TablesRequest.newBuilder()
-                .setSchemaPattern( schemaPattern )
-                .setTablePattern( tableNamePattern )
-                .build();
-        return blockingStub.getTables( tablesRequest );
+    public TablesResponse getTables( String schemaPattern, String tablePattern ) {
+        TablesRequest.Builder requestBuilder = TablesRequest.newBuilder();
+        Optional.ofNullable(schemaPattern).ifPresent(requestBuilder::setSchemaPattern);
+        Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
+        return blockingStub.getTables( requestBuilder.build() );
     }
 
 }
