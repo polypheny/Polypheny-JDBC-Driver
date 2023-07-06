@@ -27,6 +27,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Calendar;
+import java.util.HashMap;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import lombok.Getter;
 import org.polypheny.jdbc.proto.ProtoValue;
@@ -37,6 +38,7 @@ public class TypedValue implements Convertible {
     private final int jdbcType;
     @Getter
     private final Object value;
+    private static final HashMap<Integer, TypedValue> NULL_MAP = new HashMap<>();
 
 
     public TypedValue( ProtoValue protoValue ) {
@@ -206,8 +208,13 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue fromNull( int sqlType ) throws NotImplementedException {
-        throw new NotImplementedException( "Not implemented yet..." );
+    public static TypedValue fromNull( int sqlType ) {
+        if ( NULL_MAP.containsKey(sqlType) ) {
+            return NULL_MAP.get(sqlType);
+        }
+        TypedValue nullValue = new TypedValue( sqlType, null );
+        NULL_MAP.put( sqlType, nullValue );
+        return nullValue;
     }
 
 
@@ -342,6 +349,11 @@ public class TypedValue implements Convertible {
     @Override
     public boolean isSqlNull() throws SQLException {
         return jdbcType == Types.NULL;
+    }
+
+    @Override
+    public boolean isNull() {
+        return value == null;
     }
 
 
