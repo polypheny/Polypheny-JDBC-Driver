@@ -20,6 +20,7 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 import org.polypheny.jdbc.proto.Frame;
@@ -30,7 +31,7 @@ public class PolyphenyForwardResultSet implements ResultSet {
     private PolyphenyStatement statement;
 
     private final PolyphenyResultSetMetadata metadata;
-    private final ForwardOnlyScroller resultScroller;
+    private final Scrollable<ArrayList<TypedValue>> resultScroller;
     private TypedValue lastRead;
     private boolean isClosed;
 
