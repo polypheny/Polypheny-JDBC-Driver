@@ -20,6 +20,8 @@ public interface Convertible {
 
     boolean isSqlNull() throws SQLException;
 
+    boolean isNull() throws SQLException;
+
 
     String asString() throws SQLException;
 
