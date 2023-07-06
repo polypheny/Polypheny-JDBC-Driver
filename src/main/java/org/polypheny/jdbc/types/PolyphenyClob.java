@@ -8,10 +8,11 @@ import java.io.StringReader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Clob;
+import java.sql.NClob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 
-public class PolyphenyClob implements Clob {
+public class PolyphenyClob implements Clob, NClob {
 
     String value;
     boolean isFreed;

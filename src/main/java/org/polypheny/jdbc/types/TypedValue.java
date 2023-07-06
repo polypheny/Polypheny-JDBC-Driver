@@ -4,12 +4,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Array;
 import java.sql.Blob;
@@ -333,10 +335,6 @@ public class TypedValue implements Convertible {
 
 
     private static String collectNCharacterStream( Reader reader ) throws IOException {
-        /*
-         * According to jdbc this should send the string to th dbms without changing the encoding to support utf-8 and utf-16.
-         * As polypheny is Java-based, utf8 and utf16 strings are supported anyway. No special handling required.
-         */
         return collectCharacterStream( reader );
     }
 
@@ -526,6 +524,12 @@ public class TypedValue implements Convertible {
     }
 
 
+    private byte[] encodeString( String string, Charset charset ) throws SQLException {
+        // separate method for error handling
+        return string.getBytes( charset );
+    }
+
+
     @Override
     public InputStream asUnicodeStream() throws SQLException {
         if ( jdbcType == Types.NULL ) {
@@ -567,7 +571,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Blob asBlob() throws SQLException {
-        if (value instanceof Blob) {
+        if ( value instanceof Blob ) {
             return (Blob) value;
         }
         throw new SQLException( "Conversion to blob not supported." );
@@ -576,7 +580,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Clob asClob() throws SQLException {
-        if (value instanceof Clob) {
+        if ( value instanceof Clob ) {
             return (Clob) value;
         }
         throw new SQLException( "Conversion to clob not supported." );
@@ -591,7 +595,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Struct asStruct() throws SQLException {
-        if (value instanceof Struct) {
+        if ( value instanceof Struct ) {
             return (Struct) value;
         }
         throw new SQLException( "Conversion to struct not supported." );
@@ -641,7 +645,11 @@ public class TypedValue implements Convertible {
 
     @Override
     public NClob asNClob() throws SQLException {
-        throw new SQLException( "Conversion to time not supported." );
+        // PolyphenyClob implements CLob and NClob as we handle both as UTF-8
+        if ( value instanceof PolyphenyClob ) {
+            return (NClob) value;
+        }
+        throw new SQLException( "Conversion to clob not supported." );
     }
 
 
@@ -653,12 +661,13 @@ public class TypedValue implements Convertible {
 
     @Override
     public String asNString() throws SQLException {
-        throw new SQLException( "Conversion to time not supported." );
+        return asString();
     }
+
 
     @Override
     public Reader asNCharacterStream() throws SQLException {
-        throw new SQLException( "Conversion to time not supported." );
+        return new InputStreamReader(asUnicodeStream());
     }
 
 
