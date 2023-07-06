@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import org.polypheny.jdbc.proto.CloseStatementRequest;
 import org.polypheny.jdbc.proto.CommitRequest;
 import org.polypheny.jdbc.proto.ConnectionCheckRequest;
@@ -27,6 +26,8 @@ import org.polypheny.jdbc.proto.ProtoInterfaceGrpc;
 import org.polypheny.jdbc.proto.StatementBatchStatus;
 import org.polypheny.jdbc.proto.StatementResult;
 import org.polypheny.jdbc.proto.StatementStatus;
+import org.polypheny.jdbc.proto.TablesRequest;
+import org.polypheny.jdbc.proto.TablesResponse;
 import org.polypheny.jdbc.proto.UnparameterizedStatement;
 import org.polypheny.jdbc.proto.UnparameterizedStatementBatch;
 import org.polypheny.jdbc.types.ProtoValueSerializer;
@@ -35,6 +36,7 @@ import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.jdbc.utils.NamedParameterUtils;
 
 public class ProtoInterfaceClient {
+
     private static final int MAJOR_API_VERSION = 2;
     private static final int MINOR_API_VERSION = 0;
     private static final String SQL_LANGUAGE_NAME = "sql";
@@ -51,20 +53,22 @@ public class ProtoInterfaceClient {
                     .build();
             this.blockingStub = ProtoInterfaceGrpc.newBlockingStub( channel );
             this.asyncStub = ProtoInterfaceGrpc.newStub( channel );
-        } catch (Exception e) {
-            throw new SQLException("Connection failed: " + e.getMessage());
+        } catch ( Exception e ) {
+            throw new SQLException( "Connection failed: " + e.getMessage() );
         }
     }
 
-    private ProtoInterfaceGrpc.ProtoInterfaceBlockingStub getBlockingStub(int timeout) {
-        if (timeout == 0) {
+
+    private ProtoInterfaceGrpc.ProtoInterfaceBlockingStub getBlockingStub( int timeout ) {
+        if ( timeout == 0 ) {
             return blockingStub;
         }
         return blockingStub.withDeadlineAfter( timeout, TimeUnit.SECONDS );
     }
 
-    private ProtoInterfaceGrpc.ProtoInterfaceStub getAsyncStub(int timeout) {
-        if (timeout == 0) {
+
+    private ProtoInterfaceGrpc.ProtoInterfaceStub getAsyncStub( int timeout ) {
+        if ( timeout == 0 ) {
             return asyncStub;
         }
         return asyncStub.withDeadlineAfter( timeout, TimeUnit.SECONDS );
@@ -82,26 +86,25 @@ public class ProtoInterfaceClient {
         return true;
     }
 
+
     public List<String> requestSupportedLanguages() {
         LanguageRequest languageRequest = LanguageRequest.newBuilder().build();
         return blockingStub.getSupportedLanguages( languageRequest ).getLanguageNamesList();
     }
 
 
-
-
     public void register( Map<String, String> properties ) {
-            ConnectionRequest connectionRequest = ConnectionRequest.newBuilder()
-                    .setMajorApiVersion( MAJOR_API_VERSION )
-                    .setMinorApiVersion( MINOR_API_VERSION )
-                    .setClientUuid( clientUUID )
-                    .putAllConnectionProperties( properties )
-                    .build();
-            ConnectionReply connectionReply = blockingStub.connect( connectionRequest );
-            if ( !connectionReply.getIsCompatible() ) {
-                throw new ProtoInterfaceServiceException( "client version " + getClientApiVersionString()
-                        + "not compatible with server version " + getServerApiVersionString( connectionReply ) + "." );
-            }
+        ConnectionRequest connectionRequest = ConnectionRequest.newBuilder()
+                .setMajorApiVersion( MAJOR_API_VERSION )
+                .setMinorApiVersion( MINOR_API_VERSION )
+                .setClientUuid( clientUUID )
+                .putAllConnectionProperties( properties )
+                .build();
+        ConnectionReply connectionReply = blockingStub.connect( connectionRequest );
+        if ( !connectionReply.getIsCompatible() ) {
+            throw new ProtoInterfaceServiceException( "client version " + getClientApiVersionString()
+                    + "not compatible with server version " + getServerApiVersionString( connectionReply ) + "." );
+        }
     }
 
 
@@ -153,7 +156,7 @@ public class ProtoInterfaceClient {
                 .setStatementId( statementId )
                 .putAllValues( ProtoValueSerializer.serializeParameterMap( parameters ) )
                 .build();
-        ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub(timeout);
+        ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub( timeout );
         return stub.executePreparedStatement( parameterSet );
     }
 
@@ -196,6 +199,15 @@ public class ProtoInterfaceClient {
     public DbmsVersionResponse getDbmsVersion() {
         DbmsVersionRequest dbmsVersionRequest = DbmsVersionRequest.newBuilder().build();
         return blockingStub.getDbmsVersion( dbmsVersionRequest );
+    }
+
+
+    public TablesResponse getTables( String schemaPattern, String tableNamePattern ) {
+        TablesRequest tablesRequest = TablesRequest.newBuilder()
+                .setSchemaPattern( schemaPattern )
+                .setTablePattern( tableNamePattern )
+                .build();
+        return blockingStub.getTables( tablesRequest );
     }
 
 }

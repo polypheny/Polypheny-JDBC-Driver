@@ -7,6 +7,8 @@ import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
+import org.polypheny.jdbc.proto.TablesResponse;
+import org.polypheny.jdbc.utils.MetaResultSetBuilder;
 import org.polypheny.jdbc.utils.PropertyUtils;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
@@ -831,11 +833,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getTables( String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
-        // TODO TH: implement this
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        // we ignore the catalog as polypheny does not have those.
+        TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern);
+        return MetaResultSetBuilder.buildFromTablesResponse( tablesResponse );
     }
 
 

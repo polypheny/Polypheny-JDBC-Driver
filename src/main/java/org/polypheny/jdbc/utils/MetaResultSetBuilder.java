@@ -17,7 +17,7 @@ public class MetaResultSetBuilder {
     private static final int VARCHAR_NORMAL_MAXIMUM_WIDTH = 2147483647;
 
 
-    private ArrayList<PolyphenyColumnMeta> generateMetas( List<Integer> jdbcTypes, String entityName, String... columnLabels ) {
+    private static ArrayList<PolyphenyColumnMeta> generateMetas( List<Integer> jdbcTypes, String entityName, String... columnLabels ) {
         ArrayList<PolyphenyColumnMeta> columnMetas = new ArrayList<>();
         for ( String label : columnLabels ) {
             int ordinal = columnLabels.length;
@@ -27,7 +27,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public ResultSet buildFromTablesResponse( TablesResponse tablesResponse ) {
+    public static ResultSet buildFromTablesResponse( TablesResponse tablesResponse ) {
         ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
         ArrayList<TypedValue> currentRow;
         for ( Table table : tablesResponse.getTablesList() ) {
