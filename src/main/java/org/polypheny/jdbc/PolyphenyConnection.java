@@ -22,7 +22,6 @@ import lombok.SneakyThrows;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.types.PolyphenyBlob;
 import org.polypheny.jdbc.types.PolyphenyClob;
-import org.polypheny.jdbc.types.PolyphenyNClob;
 import org.polypheny.jdbc.utils.PropertyUtils;
 
 public class PolyphenyConnection implements Connection {
@@ -490,7 +489,8 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public NClob createNClob() throws SQLException {
-        return new PolyphenyNClob();
+        // implements both clob and nclob as both are utf-8
+        return new PolyphenyClob();
     }
 
 
