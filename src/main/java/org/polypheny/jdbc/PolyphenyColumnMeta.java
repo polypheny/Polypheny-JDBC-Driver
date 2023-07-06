@@ -61,7 +61,7 @@ public class PolyphenyColumnMeta {
         this.caseSensitive = true;
         this.searchable = false;
         this.currency = false;
-        this.nullable = protoColumnMeta.getIsNullable() ? ResultSetMetaData.columnNoNulls : ResultSetMetaData.columnNullable;
+        this.nullable = protoColumnMeta.getIsNullable() ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls;
         this.signed = false;
         this.displaySize = protoColumnMeta.getLength();
         this.columnLabel = protoColumnMeta.getColumnLabel();
@@ -86,15 +86,15 @@ public class PolyphenyColumnMeta {
 
 
     // Only there so constructor remains hidden to indicate that it shouldn't be used for anything else
-    public static PolyphenyColumnMeta fromSpecifications( int ordinal, String columnName, String entityName, int jdcType ) {
-        return new PolyphenyColumnMeta( ordinal, columnName, jdcType );
+    public static PolyphenyColumnMeta fromSpecification( int ordinal, String columnLabel, String entityName, int jdcType ) {
+        return new PolyphenyColumnMeta( ordinal, columnLabel, entityName, jdcType );
     }
 
 
     /* This constructor is used exclusively to create metadata for the responses of the meta endpoint since these must be
      * represented as resultsets.
      */
-    private PolyphenyColumnMeta( int ordinal, String columnName, int jdbcType ) {
+    private PolyphenyColumnMeta( int ordinal, String columnLabel, String entityName, int jdbcType ) {
         this.ordinal = ordinal;
         this.autoIncrement = false;
         this.caseSensitive = true;
@@ -103,12 +103,12 @@ public class PolyphenyColumnMeta {
         this.nullable = ResultSetMetaData.columnNullable;
         this.signed = false;
         this.displaySize = -1;
-        this.columnLabel = null;
-        this.columnName = columnName;
+        this.columnLabel = columnLabel;
+        this.columnName = null;
         this.namespace = null;
         this.precision = -1;
         this.scale = 1;
-        this.tableName = "";
+        this.tableName = entityName;
         this.catalogName = "";
         this.readOnly = false;
         this.writable = false;
