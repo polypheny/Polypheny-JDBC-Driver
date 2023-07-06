@@ -11,19 +11,19 @@ import org.polypheny.jdbc.utils.MetaUtils;
 
 public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
-    ArrayList<PolyphenyColumnMeta> columnMetas;
-    Map<String, Integer> columnIndexes;
+    private ArrayList<PolyphenyColumnMeta> columnMetas;
+    private Map<String, Integer> columnIndexes;
 
 
     public PolyphenyResultSetMetadata( List<ColumnMeta> columnMetas ) {
         ArrayList<PolyphenyColumnMeta> polyphenyColumnMetas = MetaUtils.buildColumnMetas( columnMetas );
-        this.columnIndexes = columnMetas.stream().collect( Collectors.toMap( ColumnMeta::getColumnLabel, m -> m.getColumnIndex() + 1, ( m, n ) -> n ) );
+        this.columnIndexes = columnMetas.stream().collect( Collectors.toMap( ColumnMeta::getColumnLabel, ColumnMeta::getColumnIndex, ( m, n ) -> n ) );
     }
 
 
     public PolyphenyResultSetMetadata( ArrayList<PolyphenyColumnMeta> columnMetaData ) {
         this.columnMetas = columnMetaData;
-        this.columnIndexes = columnMetaData.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, m -> m.getOrdinal() + 1, ( m, n ) -> n ) );
+        this.columnIndexes = columnMetaData.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, PolyphenyColumnMeta::getOrdinal, ( m, n ) -> n ) );
 
     }
 
@@ -132,7 +132,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
     @Override
     public String getCatalogName( int columnIndex ) throws SQLException {
-        return getMeta( columnIndex ).getTableName();
+        return getMeta( columnIndex ).getCatalogName();
     }
 
 

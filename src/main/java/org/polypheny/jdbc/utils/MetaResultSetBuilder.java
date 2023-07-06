@@ -21,7 +21,7 @@ public class MetaResultSetBuilder {
         ArrayList<PolyphenyColumnMeta> columnMetas = new ArrayList<>();
         for ( String label : columnLabels ) {
             int ordinal = columnMetas.size();
-            columnMetas.add( PolyphenyColumnMeta.fromSpecifications( ordinal, entityName, label, jdbcTypes.get( ordinal ) ) );
+            columnMetas.add( PolyphenyColumnMeta.fromSpecification( ordinal, entityName, label, jdbcTypes.get( ordinal ) ) );
         }
         return columnMetas;
     }
