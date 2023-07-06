@@ -19,6 +19,7 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 import org.polypheny.jdbc.proto.Frame;
@@ -29,8 +30,8 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
 
     private PolyphenyStatement statement;
 
-    private final PolyphenyResultSetMetadata metadata;
-    private final BidirectionalScroller resultScroller;
+    private PolyphenyResultSetMetadata metadata;
+    private BidirectionalScrollable<ArrayList<TypedValue>> resultScroller;
     private TypedValue lastRead;
     private boolean isClosed;
 
@@ -49,6 +50,15 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
         this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
         this.resultScroller = new BidirectionalScroller( frame, getClient(), statement.getStatementId(), properties );
         this.properties = properties;
+        this.lastRead = null;
+        this.isClosed = false;
+    }
+
+    public PolyphenyBidirectionalResultSet(ArrayList<PolyphenyColumnMeta> columnMetas, ArrayList<ArrayList<TypedValue>> rows) {
+        this.resultScroller = new MetaScroller<>( rows );
+        this.metadata = new PolyphenyResultSetMetadata(columnMetas);
+        this.statement = null;
+        this.properties = ResultSetProperties.forMetaResultSet();
         this.lastRead = null;
         this.isClosed = false;
     }
