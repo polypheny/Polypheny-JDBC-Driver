@@ -9,11 +9,13 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
     private final ArrayList<T> data;
     private T current;
-    int currentIndex;
+    private int currentIndex;
 
 
     public MetaScroller( ArrayList<T> rows ) {
         this.data = rows;
+        this.current = null;
+        this.currentIndex = CURSOR_BEFORE_DATA;
     }
 
 
@@ -44,12 +46,18 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
             current = data.get( currentIndex );
             return true;
         }
+        return accessFromBack( rowIndex );
+    }
+
+
+    private boolean accessFromBack( int rowIndex ) {
         current = null;
         currentIndex = data.size() + rowIndex;
         if ( currentIndex > CURSOR_BEFORE_DATA ) {
             current = data.get( currentIndex );
             return true;
         }
+        currentIndex = CURSOR_BEFORE_DATA;
         return false;
     }
 
@@ -74,8 +82,8 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
     @Override
     public boolean previous() throws SQLException {
         current = null;
-        currentIndex++;
-        if ( currentIndex > CURSOR_BEFORE_DATA ) {
+        currentIndex--;
+        if ( currentIndex > CURSOR_BEFORE_DATA && currentIndex < data.size() ) {
             current = data.get( currentIndex );
             return true;
         }
@@ -149,6 +157,12 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
     @Override
     public int getRow() {
+        if ( currentIndex < 0 ) {
+            return 0;
+        }
+        if ( currentIndex >= data.size() ) {
+            return 0;
+        }
         return indexToRow( currentIndex );
     }
 
