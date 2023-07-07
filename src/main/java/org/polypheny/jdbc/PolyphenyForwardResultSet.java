@@ -231,97 +231,97 @@ public class PolyphenyForwardResultSet implements ResultSet {
 
     @Override
     public String getString( String columnLabel ) throws SQLException {
-        return getString( metadata.getIndexFromLabel( columnLabel ) );
+        return getString( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public boolean getBoolean( String columnLabel ) throws SQLException {
-        return getBoolean( metadata.getIndexFromLabel( columnLabel ) );
+        return getBoolean( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public byte getByte( String columnLabel ) throws SQLException {
-        return getByte( metadata.getIndexFromLabel( columnLabel ) );
+        return getByte( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public short getShort( String columnLabel ) throws SQLException {
-        return getShort( metadata.getIndexFromLabel( columnLabel ) );
+        return getShort( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public int getInt( String columnLabel ) throws SQLException {
-        return getInt( metadata.getIndexFromLabel( columnLabel ) );
+        return getInt( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public long getLong( String columnLabel ) throws SQLException {
-        return getLong( metadata.getIndexFromLabel( columnLabel ) );
+        return getLong( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public float getFloat( String columnLabel ) throws SQLException {
-        return getFloat( metadata.getIndexFromLabel( columnLabel ) );
+        return getFloat( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public double getDouble( String columnLabel ) throws SQLException {
-        return getDouble( metadata.getIndexFromLabel( columnLabel ) );
+        return getDouble( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public BigDecimal getBigDecimal( String columnLabel, int scale ) throws SQLException {
-        return getBigDecimal( metadata.getIndexFromLabel( columnLabel ), scale );
+        return getBigDecimal( metadata.getColumnIndexFromLabel( columnLabel ), scale );
     }
 
 
     @Override
     public byte[] getBytes( String columnLabel ) throws SQLException {
-        return getBytes( metadata.getIndexFromLabel( columnLabel ) );
+        return getBytes( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public Date getDate( String columnLabel ) throws SQLException {
-        return getDate( metadata.getIndexFromLabel( columnLabel ) );
+        return getDate( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public Time getTime( String columnLabel ) throws SQLException {
-        return getTime( metadata.getIndexFromLabel( columnLabel ) );
+        return getTime( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public Timestamp getTimestamp( String columnLabel ) throws SQLException {
-        return getTimestamp( metadata.getIndexFromLabel( columnLabel ) );
+        return getTimestamp( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public InputStream getAsciiStream( String columnLabel ) throws SQLException {
-        return getAsciiStream( metadata.getIndexFromLabel( columnLabel ) );
+        return getAsciiStream( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public InputStream getUnicodeStream( String columnLabel ) throws SQLException {
-        return getUnicodeStream( metadata.getIndexFromLabel( columnLabel ) );
+        return getUnicodeStream( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public InputStream getBinaryStream( String columnLabel ) throws SQLException {
-        return getBinaryStream( metadata.getIndexFromLabel( columnLabel ) );
+        return getBinaryStream( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
@@ -367,14 +367,14 @@ public class PolyphenyForwardResultSet implements ResultSet {
 
     @Override
     public Object getObject( String columnLabel ) throws SQLException {
-        return getObject( metadata.getIndexFromLabel( columnLabel ) );
+        return getObject( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public int findColumn( String columnLabel ) throws SQLException {
         throwIfClosed();
-        return metadata.getIndexFromLabel( columnLabel );
+        return metadata.getColumnIndexFromLabel( columnLabel );
     }
 
 
@@ -387,7 +387,7 @@ public class PolyphenyForwardResultSet implements ResultSet {
 
     @Override
     public Reader getCharacterStream( String columnLabel ) throws SQLException {
-        return getCharacterStream( metadata.getIndexFromLabel( columnLabel ) );
+        return getCharacterStream( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
@@ -400,7 +400,7 @@ public class PolyphenyForwardResultSet implements ResultSet {
 
     @Override
     public BigDecimal getBigDecimal( String columnLabel ) throws SQLException {
-        return getBigDecimal( metadata.getIndexFromLabel( columnLabel ) );
+        return getBigDecimal( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 

@@ -25,8 +25,8 @@ public class PolyphenyResultSetMetadataTest {
 
     @BeforeClass
     public static void setUpClass() {
-        PolyphenyColumnMeta firstMeta = PolyphenyColumnMeta.fromSpecification( 1, "first", "unittest", Types.BIGINT );
-        PolyphenyColumnMeta secondMeta = PolyphenyColumnMeta.fromSpecification( 2, "second", "unittest", Types.VARCHAR );
+        PolyphenyColumnMeta firstMeta = PolyphenyColumnMeta.fromSpecification( 0, "first", "unittest", Types.BIGINT );
+        PolyphenyColumnMeta secondMeta = PolyphenyColumnMeta.fromSpecification( 1, "second", "unittest", Types.VARCHAR );
         columnMetas = new ArrayList<>( Arrays.asList( firstMeta, secondMeta ) );
         resultSetMetadata = new PolyphenyResultSetMetadata( columnMetas );
     }
@@ -159,7 +159,7 @@ public class PolyphenyResultSetMetadataTest {
 
     @Test
     public void getIndexFromLabel__ColumnIndex_false() throws SQLException {
-        assertEquals( 1, resultSetMetadata.getIndexFromLabel( "first" ) );
+        assertEquals( 1, resultSetMetadata.getColumnIndexFromLabel( "first" ) );
     }
 
 

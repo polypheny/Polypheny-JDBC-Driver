@@ -48,7 +48,15 @@ public class MetaDataTest {
     public void getTables__NoError() throws Exception {
         ResultSet rs = dbConnection.getMetaData().getTables(null, null, "%",null );
         while (rs.next()) {
-            System.out.println(rs.getString(3));
+            System.out.println(rs.getString("TABLE_NAME"));
+        }
+    }
+
+    @Test
+    public void getTableTypes__NoError() throws Exception {
+        ResultSet rs = dbConnection.getMetaData().getTableTypes();
+        while (rs.next()) {
+            System.out.println(rs.getString("TABLE_TYPE"));
         }
     }
 

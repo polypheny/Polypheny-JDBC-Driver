@@ -25,7 +25,6 @@ import java.util.Calendar;
 import java.util.Map;
 import org.apache.commons.lang.ArrayUtils;
 import org.polypheny.jdbc.PolyphenyResultSetMetadata;
-import sun.text.resources.cldr.ext.FormatData_sq_XK;
 
 public class ArrayResultSet<T> implements ResultSet {
 
@@ -249,97 +248,97 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public String getString( String columnLabel ) throws SQLException {
-        return getString( metadata.getIndexFromLabel( columnLabel ) );
+        return getString( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public boolean getBoolean( String columnLabel ) throws SQLException {
-        return getBoolean( metadata.getIndexFromLabel( columnLabel ) );
+        return getBoolean( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public byte getByte( String columnLabel ) throws SQLException {
-        return getByte( metadata.getIndexFromLabel( columnLabel ) );
+        return getByte( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public short getShort( String columnLabel ) throws SQLException {
-        return getShort( metadata.getIndexFromLabel( columnLabel ) );
+        return getShort( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public int getInt( String columnLabel ) throws SQLException {
-        return getInt( metadata.getIndexFromLabel( columnLabel ) );
+        return getInt( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public long getLong( String columnLabel ) throws SQLException {
-        return getLong( metadata.getIndexFromLabel( columnLabel ) );
+        return getLong( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public float getFloat( String columnLabel ) throws SQLException {
-        return getFloat( metadata.getIndexFromLabel( columnLabel ) );
+        return getFloat( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public double getDouble( String columnLabel ) throws SQLException {
-        return getDouble( metadata.getIndexFromLabel( columnLabel ) );
+        return getDouble( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public BigDecimal getBigDecimal( String columnLabel, int scale ) throws SQLException {
-        return getBigDecimal( metadata.getIndexFromLabel( columnLabel ), scale );
+        return getBigDecimal( metadata.getColumnIndexFromLabel( columnLabel ), scale );
     }
 
 
     @Override
     public byte[] getBytes( String columnLabel ) throws SQLException {
-        return getBytes( metadata.getIndexFromLabel( columnLabel ) );
+        return getBytes( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public Date getDate( String columnLabel ) throws SQLException {
-        return getDate( metadata.getIndexFromLabel( columnLabel ) );
+        return getDate( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public Time getTime( String columnLabel ) throws SQLException {
-        return getTime( metadata.getIndexFromLabel( columnLabel ) );
+        return getTime( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public Timestamp getTimestamp( String columnLabel ) throws SQLException {
-        return getTimestamp( metadata.getIndexFromLabel( columnLabel ) );
+        return getTimestamp( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public InputStream getAsciiStream( String columnLabel ) throws SQLException {
-        return getAsciiStream( metadata.getIndexFromLabel( columnLabel ) );
+        return getAsciiStream( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public InputStream getUnicodeStream( String columnLabel ) throws SQLException {
-        return getUnicodeStream( metadata.getIndexFromLabel( columnLabel ) );
+        return getUnicodeStream( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public InputStream getBinaryStream( String columnLabel ) throws SQLException {
-        return getBinaryStream( metadata.getIndexFromLabel( columnLabel ) );
+        return getBinaryStream( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
@@ -375,14 +374,14 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public Object getObject( String columnLabel ) throws SQLException {
-        return getObject( metadata.getIndexFromLabel( columnLabel ) );
+        return getObject( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
     @Override
     public int findColumn( String columnLabel ) throws SQLException {
         throwIfClosed();
-        return metadata.getIndexFromLabel( columnLabel );
+        return metadata.getColumnIndexFromLabel( columnLabel );
     }
 
 
@@ -399,7 +398,7 @@ public class ArrayResultSet<T> implements ResultSet {
     @Override
     public Reader getCharacterStream( String columnLabel ) throws SQLException {
         throwIfClosed();
-        if ( accessValue( metadata.getIndexFromLabel( columnLabel ) ) instanceof Reader ) {
+        if ( accessValue( metadata.getColumnIndexFromLabel( columnLabel ) ) instanceof Reader ) {
             return (Reader) lastRead;
         }
         throw new SQLException( "Conversion not supported" );
@@ -418,7 +417,7 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public BigDecimal getBigDecimal( String columnLabel ) throws SQLException {
-        return getBigDecimal( metadata.getIndexFromLabel( columnLabel ) );
+        return getBigDecimal( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
 
 
@@ -925,19 +924,19 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public Blob getBlob( String s ) throws SQLException {
-        return getBlob( metadata.getIndexFromLabel( s ) );
+        return getBlob( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
     @Override
     public Clob getClob( String s ) throws SQLException {
-        return getClob( metadata.getIndexFromLabel( s ) );
+        return getClob( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
     @Override
     public Array getArray( String s ) throws SQLException {
-        return getArray( metadata.getIndexFromLabel( s ) );
+        return getArray( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
@@ -989,7 +988,7 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public URL getURL( String s ) throws SQLException {
-        return getURL( metadata.getIndexFromLabel( s ) );
+        return getURL( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
@@ -1053,7 +1052,7 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public RowId getRowId( String s ) throws SQLException {
-        return getRowId( metadata.getIndexFromLabel( s ) );
+        return getRowId( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
@@ -1114,7 +1113,7 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public NClob getNClob( String s ) throws SQLException {
-        return getNClob( metadata.getIndexFromLabel( s ) );
+        return getNClob( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
@@ -1130,7 +1129,7 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public SQLXML getSQLXML( String s ) throws SQLException {
-        return getSQLXML( metadata.getIndexFromLabel( s ) );
+        return getSQLXML( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
@@ -1158,7 +1157,7 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public String getNString( String s ) throws SQLException {
-        return getNString( metadata.getIndexFromLabel( s ) );
+        return getNString( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
@@ -1174,7 +1173,7 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public Reader getNCharacterStream( String s ) throws SQLException {
-        return getNCharacterStream( metadata.getIndexFromLabel( s ) );
+        return getNCharacterStream( metadata.getColumnIndexFromLabel( s ) );
     }
 
 
@@ -1358,7 +1357,7 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public <T> T getObject( String s, Class<T> aClass ) throws SQLException {
-        return getObject( metadata.getIndexFromLabel( s ), aClass);
+        return getObject( metadata.getColumnIndexFromLabel( s ), aClass);
     }
 
 

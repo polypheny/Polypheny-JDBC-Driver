@@ -28,6 +28,8 @@ import org.polypheny.jdbc.proto.ProtoInterfaceGrpc;
 import org.polypheny.jdbc.proto.StatementBatchStatus;
 import org.polypheny.jdbc.proto.StatementResult;
 import org.polypheny.jdbc.proto.StatementStatus;
+import org.polypheny.jdbc.proto.TableTypesRequest;
+import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesRequest;
 import org.polypheny.jdbc.proto.TablesResponse;
 import org.polypheny.jdbc.proto.UnparameterizedStatement;
@@ -210,6 +212,11 @@ public class ProtoInterfaceClient {
         Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
         Optional.ofNullable(types).ifPresent(t -> requestBuilder.addAllTableTypes( Arrays.asList(t) ));
         return blockingStub.getTables( requestBuilder.build() );
+    }
+
+
+    public TableTypesResponse getTablesTypes() {
+        return blockingStub.getTableTypes( TableTypesRequest.newBuilder().build() );
     }
 
 }

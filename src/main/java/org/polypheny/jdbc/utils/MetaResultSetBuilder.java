@@ -3,11 +3,14 @@ package org.polypheny.jdbc.utils;
 import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.jdbc.PolyphenyBidirectionalResultSet;
 import org.polypheny.jdbc.PolyphenyColumnMeta;
 import org.polypheny.jdbc.proto.Table;
+import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
 import org.polypheny.jdbc.types.TypedValue;
 
@@ -21,7 +24,7 @@ public class MetaResultSetBuilder {
         ArrayList<PolyphenyColumnMeta> columnMetas = new ArrayList<>();
         for ( String label : columnLabels ) {
             int ordinal = columnMetas.size();
-            columnMetas.add( PolyphenyColumnMeta.fromSpecification( ordinal, entityName, label, jdbcTypes.get( ordinal ) ) );
+            columnMetas.add( PolyphenyColumnMeta.fromSpecification( ordinal, label, entityName, jdbcTypes.get( ordinal ) ) );
         }
         return columnMetas;
     }
@@ -64,5 +67,18 @@ public class MetaResultSetBuilder {
         return new PolyphenyBidirectionalResultSet( columnMetas, rows );
     }
 
+
+    public static ResultSet buildFromTableTypesResponse( TableTypesResponse tableTypesResponse ) {
+        ArrayList<ArrayList<TypedValue>> rows = tableTypesResponse.getTableTypesList().stream()
+                .map( TypedValue::fromString )
+                .map(t -> new ArrayList<>( Arrays.asList( t ) )  )
+                .collect( Collectors.toCollection(ArrayList::new));
+        ArrayList<PolyphenyColumnMeta> columnMetas = generateMetas(
+                Collections.singletonList( Types.VARCHAR ),
+                "TABLE_TYPES",
+                "TABLE_TYPE"
+        );
+        return new PolyphenyBidirectionalResultSet( columnMetas, rows );
+    }
 
 }

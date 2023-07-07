@@ -7,6 +7,7 @@ import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
+import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
 import org.polypheny.jdbc.utils.MetaResultSetBuilder;
 import org.polypheny.jdbc.utils.PropertyUtils;
@@ -833,7 +834,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getTables( String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
-        // we ignore the catalog as polypheny does not have those.
+        // we ignore the catalogs as polypheny does not have those.
         TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern, types);
         return MetaResultSetBuilder.buildFromTablesResponse( tablesResponse );
     }
@@ -859,10 +860,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getTableTypes() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        TableTypesResponse tableTypesResponse = protoInterfaceClient.getTablesTypes();
+        return MetaResultSetBuilder.buildFromTableTypesResponse(tableTypesResponse);
     }
 
 
