@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.PolyphenyBidirectionalResultSet;
 import org.polypheny.jdbc.PolyphenyColumnMeta;
+import org.polypheny.jdbc.proto.Namespace;
+import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.Table;
 import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
@@ -71,12 +73,40 @@ public class MetaResultSetBuilder {
     public static ResultSet buildFromTableTypesResponse( TableTypesResponse tableTypesResponse ) {
         ArrayList<ArrayList<TypedValue>> rows = tableTypesResponse.getTableTypesList().stream()
                 .map( TypedValue::fromString )
-                .map(t -> new ArrayList<>( Arrays.asList( t ) )  )
-                .collect( Collectors.toCollection(ArrayList::new));
+                .map( t -> new ArrayList<>( Arrays.asList( t ) ) )
+                .collect( Collectors.toCollection( ArrayList::new ) );
         ArrayList<PolyphenyColumnMeta> columnMetas = generateMetas(
                 Collections.singletonList( Types.VARCHAR ),
                 "TABLE_TYPES",
                 "TABLE_TYPE"
+        );
+        return new PolyphenyBidirectionalResultSet( columnMetas, rows );
+    }
+
+
+    public static ResultSet buildFromNamespacesResponse( NamespacesResponse namespacesResponse ) {
+        ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
+        ArrayList<TypedValue> currentRow;
+        for ( Namespace namespace : namespacesResponse.getNamespacesList() ) {
+            currentRow = new ArrayList<>();
+            currentRow.add( TypedValue.fromString( namespace.getNamespaceName() ) );
+            currentRow.add( TypedValue.fromString( namespace.getDatabaseName() ) );
+            currentRow.add( TypedValue.fromString( namespace.getOwnerName() ) );
+            if ( namespace.hasNamespaceType() ) {
+                currentRow.add( TypedValue.fromString( namespace.getNamespaceType() ) );
+            } else {
+                currentRow.add( NULL_VARCHAR );
+            }
+            rows.add( currentRow );
+        }
+        ArrayList<PolyphenyColumnMeta> columnMetas = generateMetas(
+                Collections.nCopies( 4, Types.VARCHAR ),
+                "NAMESPACES",
+                "TABLE_CAT",
+                "TABLE_SCHEM",
+                "TABLE_CATALOG",
+                "OWNER",
+                "SCHEMA_TYPE"
         );
         return new PolyphenyBidirectionalResultSet( columnMetas, rows );
     }

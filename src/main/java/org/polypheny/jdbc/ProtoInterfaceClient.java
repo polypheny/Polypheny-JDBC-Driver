@@ -21,6 +21,8 @@ import org.polypheny.jdbc.proto.DbmsVersionResponse;
 import org.polypheny.jdbc.proto.FetchRequest;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.LanguageRequest;
+import org.polypheny.jdbc.proto.NamespacesRequest;
+import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.ParameterSet;
 import org.polypheny.jdbc.proto.PreparedStatement;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
@@ -206,9 +208,9 @@ public class ProtoInterfaceClient {
     }
 
 
-    public TablesResponse getTables( String schemaPattern, String tablePattern, String[] types) {
+    public TablesResponse getTables( String namespacePattern, String tablePattern, String[] types) {
         TablesRequest.Builder requestBuilder = TablesRequest.newBuilder();
-        Optional.ofNullable(schemaPattern).ifPresent(requestBuilder::setNamespacePattern);
+        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
         Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
         Optional.ofNullable(types).ifPresent(t -> requestBuilder.addAllTableTypes( Arrays.asList(t) ));
         return blockingStub.getTables( requestBuilder.build() );
@@ -217,6 +219,13 @@ public class ProtoInterfaceClient {
 
     public TableTypesResponse getTablesTypes() {
         return blockingStub.getTableTypes( TableTypesRequest.newBuilder().build() );
+    }
+
+
+    public NamespacesResponse getNamespaces( String namespacePattern ) {
+        NamespacesRequest.Builder requestBuilder = NamespacesRequest.newBuilder();
+        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
+        return blockingStub.getNamespaces(  requestBuilder.build());
     }
 
 }

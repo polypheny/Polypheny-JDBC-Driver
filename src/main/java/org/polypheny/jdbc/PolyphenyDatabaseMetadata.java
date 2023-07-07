@@ -7,6 +7,7 @@ import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
+import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
 import org.polypheny.jdbc.utils.MetaResultSetBuilder;
@@ -842,10 +843,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getSchemas() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return getSchemas(null, null);
     }
 
 
@@ -1179,11 +1177,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getSchemas( String s, String s1 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public ResultSet getSchemas( String catalog, String schemaPattern ) throws SQLException {
+        NamespacesResponse namespacesResponse = protoInterfaceClient.getNamespaces(schemaPattern);
+        return MetaResultSetBuilder.buildFromNamespacesResponse(namespacesResponse);
     }
 
 
