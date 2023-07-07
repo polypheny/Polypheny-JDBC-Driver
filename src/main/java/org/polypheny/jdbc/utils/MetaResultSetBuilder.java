@@ -102,7 +102,6 @@ public class MetaResultSetBuilder {
         ArrayList<PolyphenyColumnMeta> columnMetas = generateMetas(
                 Collections.nCopies( 4, Types.VARCHAR ),
                 "NAMESPACES",
-                "TABLE_CAT",
                 "TABLE_SCHEM",
                 "TABLE_CATALOG",
                 "OWNER",

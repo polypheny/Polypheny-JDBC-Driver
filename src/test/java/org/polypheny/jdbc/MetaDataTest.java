@@ -60,4 +60,12 @@ public class MetaDataTest {
         }
     }
 
+    @Test
+    public void getSchemas__NoError() throws Exception {
+        ResultSet rs = dbConnection.getMetaData().getSchemas();
+        while (rs.next()) {
+            System.out.println(rs.getString("TABLE_SCHEM"));
+        }
+    }
+
 }
