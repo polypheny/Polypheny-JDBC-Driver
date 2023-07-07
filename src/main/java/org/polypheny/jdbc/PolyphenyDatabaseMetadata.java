@@ -834,7 +834,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getTables( String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
         // we ignore the catalog as polypheny does not have those.
-        TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern);
+        TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern, types);
         return MetaResultSetBuilder.buildFromTablesResponse( tablesResponse );
     }
 

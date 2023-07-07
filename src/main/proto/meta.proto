@@ -25,6 +25,7 @@ message LanguageResponse {
 message TablesRequest{
   optional string schemaPattern = 1;
   optional string tablePattern = 2;
+  repeated string table_types = 3;
 }
 
 message TablesResponse {

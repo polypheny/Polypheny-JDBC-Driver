@@ -4,6 +4,7 @@ import io.grpc.Channel;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -203,10 +204,11 @@ public class ProtoInterfaceClient {
     }
 
 
-    public TablesResponse getTables( String schemaPattern, String tablePattern ) {
+    public TablesResponse getTables( String schemaPattern, String tablePattern, String[] types) {
         TablesRequest.Builder requestBuilder = TablesRequest.newBuilder();
         Optional.ofNullable(schemaPattern).ifPresent(requestBuilder::setSchemaPattern);
         Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
+        Optional.ofNullable(types).ifPresent(t -> requestBuilder.addAllTableTypes( Arrays.asList(t) ));
         return blockingStub.getTables( requestBuilder.build() );
     }
 
