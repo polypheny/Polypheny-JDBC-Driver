@@ -208,7 +208,7 @@ public class ProtoInterfaceClient {
 
     public TablesResponse getTables( String schemaPattern, String tablePattern, String[] types) {
         TablesRequest.Builder requestBuilder = TablesRequest.newBuilder();
-        Optional.ofNullable(schemaPattern).ifPresent(requestBuilder::setSchemaPattern);
+        Optional.ofNullable(schemaPattern).ifPresent(requestBuilder::setNamespacePattern);
         Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
         Optional.ofNullable(types).ifPresent(t -> requestBuilder.addAllTableTypes( Arrays.asList(t) ));
         return blockingStub.getTables( requestBuilder.build() );
