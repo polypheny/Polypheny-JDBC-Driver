@@ -16,7 +16,8 @@ import org.polypheny.jdbc.proto.Column;
 import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.Database;
 import org.polypheny.jdbc.proto.DatabasesResponse;
-import org.polypheny.jdbc.proto.ImportedKey;
+import org.polypheny.jdbc.proto.ExportedKeysResponse;
+import org.polypheny.jdbc.proto.ForeignKey;
 import org.polypheny.jdbc.proto.ImportedKeysResponse;
 import org.polypheny.jdbc.proto.Namespace;
 import org.polypheny.jdbc.proto.NamespacesResponse;
@@ -31,6 +32,23 @@ import org.polypheny.jdbc.types.TypedValue;
 public class MetaResultSetBuilder {
 
     private static final Function NULL_FUNCTION = o -> null;
+
+    private static final List<Parameter<ForeignKey>> FOREIGN_KEY_PARAMETERS = Arrays.asList(
+            new Parameter<>( "PKTABLE_CAT", Types.VARCHAR, nullIfFalse( ForeignKey::getReferencedDatabaseName, ForeignKey::hasReferencedDatabaseName ) ),
+            new Parameter<>( "PKTABLE_SCHEM", Types.VARCHAR, nullIfFalse( ForeignKey::getReferencedNamespaceName, ForeignKey::hasReferencedNamespaceName ) ),
+            new Parameter<>( "PKTABLE_NAME", Types.VARCHAR, ForeignKey::getReferencedTableName ),
+            new Parameter<>( "PKCOLUMN_NAME", Types.VARCHAR, ForeignKey::getReferencedColumnName ),
+            new Parameter<>( "FKTABLE_CAT", Types.VARCHAR, nullIfFalse( ForeignKey::getForeignDatabaseName, ForeignKey::hasForeignDatabaseName ) ),
+            new Parameter<>( "FKTABLE_SCHEM", Types.VARCHAR, nullIfFalse( ForeignKey::getForeignNamespaceName, ForeignKey::hasForeignNamespaceName ) ),
+            new Parameter<>( "FKTABLE_NAME", Types.VARCHAR, ForeignKey::getForeignTableName ),
+            new Parameter<>( "FKCOLUMN_NAME", Types.VARCHAR, ForeignKey::getForeignColumnName ),
+            new Parameter<>( "KEY_SEQ", Types.SMALLINT, integerAsShort( ForeignKey::getSequenceIndex ) ),
+            new Parameter<>( "UPDATE_RULE", Types.SMALLINT, integerAsShort( ForeignKey::getUpdateRule ) ),
+            new Parameter<>( "DELETE_RULE", Types.SMALLINT, integerAsShort( ForeignKey::getDeleteRule ) ),
+            new Parameter<>( "FK_NAME", Types.VARCHAR, ForeignKey::getKeyName ),
+            new Parameter<ForeignKey>( "PK_NAME", Types.VARCHAR, NULL_FUNCTION ),
+            new Parameter<ForeignKey>( "DEFERRABILITY", Types.SMALLINT, NULL_FUNCTION )
+    );
 
 
     private static <T extends GeneratedMessageV3> PolyphenyBidirectionalResultSet buildResultSet( String entityName, List<T> messages, List<Parameter<T>> parameters ) {
@@ -197,22 +215,17 @@ public class MetaResultSetBuilder {
         return buildResultSet(
                 "IMPORTED_KEYS",
                 importedKeysResponse.getImportedKeysList(),
-                Arrays.asList(
-                        new Parameter<>( "PKTABLE_CAT", Types.VARCHAR, nullIfFalse( ImportedKey::getReferencedDatabaseName, ImportedKey::hasReferencedDatabaseName ) ),
-                        new Parameter<>( "PKTABLE_SCHEM", Types.VARCHAR, nullIfFalse( ImportedKey::getReferencedNamespaceName, ImportedKey::hasReferencedNamespaceName ) ),
-                        new Parameter<>( "PKTABLE_NAME", Types.VARCHAR, ImportedKey::getReferencedTableName ),
-                        new Parameter<>( "PKCOLUMN_NAME", Types.VARCHAR, ImportedKey::getReferencedColumnName ),
-                        new Parameter<>( "FKTABLE_CAT", Types.VARCHAR, nullIfFalse( ImportedKey::getForeignDatabaseName, ImportedKey::hasForeignDatabaseName ) ),
-                        new Parameter<>( "FKTABLE_SCHEM", Types.VARCHAR, nullIfFalse( ImportedKey::getForeignNamespaceName, ImportedKey::hasForeignNamespaceName ) ),
-                        new Parameter<>( "FKTABLE_NAME", Types.VARCHAR, ImportedKey::getForeignTableName ),
-                        new Parameter<>( "FKCOLUMN_NAME", Types.VARCHAR, ImportedKey::getForeignColumnName ),
-                        new Parameter<>( "KEY_SEQ", Types.SMALLINT, integerAsShort( ImportedKey::getSequenceIndex ) ),
-                        new Parameter<>( "UPDATE_RULE", Types.SMALLINT, integerAsShort( ImportedKey::getUpdateRule ) ),
-                        new Parameter<>( "DELETE_RULE", Types.SMALLINT, integerAsShort( ImportedKey::getDeleteRule ) ),
-                        new Parameter<>( "FK_NAME", Types.VARCHAR, ImportedKey::getKeyName ),
-                        new Parameter<ImportedKey>( "PK_NAME", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<ImportedKey>( "DEFERRABILITY", Types.SMALLINT, NULL_FUNCTION )
-                )
+                FOREIGN_KEY_PARAMETERS
+
+        );
+    }
+
+
+    public static ResultSet fromExportedKeysResponse( ExportedKeysResponse exportedKeysResponse ) {
+        return buildResultSet(
+                "EXPORTED_KEYS",
+                exportedKeysResponse.getExportedKeysList(),
+                FOREIGN_KEY_PARAMETERS
         );
     }
 
