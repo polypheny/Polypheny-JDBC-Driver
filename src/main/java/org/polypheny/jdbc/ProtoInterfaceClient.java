@@ -28,6 +28,8 @@ import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.ParameterSet;
 import org.polypheny.jdbc.proto.PreparedStatement;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
+import org.polypheny.jdbc.proto.PrimaryKeysRequest;
+import org.polypheny.jdbc.proto.PrimaryKeysResponse;
 import org.polypheny.jdbc.proto.ProtoInterfaceGrpc;
 import org.polypheny.jdbc.proto.StatementBatchStatus;
 import org.polypheny.jdbc.proto.StatementResult;
@@ -237,6 +239,14 @@ public class ProtoInterfaceClient {
         requestBuilder.setTablePattern( tablePattern );
         requestBuilder.setColumnPattern( columnPattern );
         return blockingStub.getColumns( requestBuilder.build() );
+    }
+
+
+    public PrimaryKeysResponse getPrimaryKeys( String namespacePattern, String tablePattern ) {
+        PrimaryKeysRequest.Builder requestBuilder = PrimaryKeysRequest.newBuilder();
+        Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
+        requestBuilder.setTablePattern( tablePattern );
+        return blockingStub.getPrimaryKeys( requestBuilder.build() );
     }
 
 }

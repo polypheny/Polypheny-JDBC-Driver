@@ -10,6 +10,7 @@ import org.polypheny.jdbc.proto.ColumnsRequest;
 import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
 import org.polypheny.jdbc.proto.NamespacesResponse;
+import org.polypheny.jdbc.proto.PrimaryKeysResponse;
 import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
 import org.polypheny.jdbc.utils.MetaResultSetBuilder;
@@ -912,11 +913,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getPrimaryKeys( String s, String s1, String s2 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public ResultSet getPrimaryKeys( String catalog, String schema, String table ) throws SQLException {
+        PrimaryKeysResponse primaryKeysResponse= protoInterfaceClient.getPrimaryKeys(schema, table);
+        return MetaResultSetBuilder.buildFromPrimaryKeyResponse(primaryKeysResponse);
     }
 
 

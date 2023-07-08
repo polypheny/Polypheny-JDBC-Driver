@@ -6,6 +6,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.IllegalFormatConversionException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -16,6 +17,8 @@ import org.polypheny.jdbc.proto.Column;
 import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.Namespace;
 import org.polypheny.jdbc.proto.NamespacesResponse;
+import org.polypheny.jdbc.proto.PrimaryKey;
+import org.polypheny.jdbc.proto.PrimaryKeysResponse;
 import org.polypheny.jdbc.proto.Table;
 import org.polypheny.jdbc.proto.TableType;
 import org.polypheny.jdbc.proto.TableTypesResponse;
@@ -56,12 +59,22 @@ public class MetaResultSetBuilder {
     }
 
 
-    private static <T extends GeneratedMessageV3> Function<T, Object> nullIfFalse( Function<T, Object> access, Function<T, Boolean> presence ) {
+    private static <T extends GeneratedMessageV3> Function<T, Object> nullIfFalse( Function<T, Object> accessor, Function<T, Boolean> booleanFunction ) {
         return message -> {
-            if ( presence.apply( message ) ) {
-                return access.apply( message );
+            if ( booleanFunction.apply( message ) ) {
+                return accessor.apply( message );
             }
             return null;
+        };
+    }
+
+    private static <T extends GeneratedMessageV3> Function<T, Object> integerAsShort( Function<T, Object> accessor) {
+        return message -> {
+            Object value = accessor.apply( message );
+            if (value instanceof Integer) {
+                return ((Integer) value).shortValue();
+            }
+            throw new IllegalArgumentException("Can't convert this value to a short");
         };
     }
 
@@ -147,6 +160,22 @@ public class MetaResultSetBuilder {
     }
 
 
+    public static ResultSet buildFromPrimaryKeyResponse( PrimaryKeysResponse primaryKeysResponse ) {
+        return buildResultSet(
+                "PRIMARY_KEYS",
+                primaryKeysResponse.getPrimaryKeysList(),
+                Arrays.asList(
+                        new Parameter<>( "TABLE_CAT", Types.VARCHAR, nullIfFalse( PrimaryKey::getDatabaseName, PrimaryKey::hasDatabaseName ) ),
+                        new Parameter<>( "TABLE_SCHEM", Types.VARCHAR, nullIfFalse( PrimaryKey::getNamespaceName, PrimaryKey::hasNamespaceName ) ),
+                        new Parameter<>( "TABLE_NAME", Types.VARCHAR, PrimaryKey::getTableName ),
+                        new Parameter<>( "COLUMN_NAME", Types.VARCHAR, PrimaryKey::getColumnName ),
+                        new Parameter<>( "KEY_SEQ", Types.SMALLINT, integerAsShort( PrimaryKey::getSequenceIndex ) ),
+                        new Parameter<PrimaryKey>( "PK_NAME", Types.VARCHAR, NULL_FUNCTION )
+                )
+        );
+    }
+
+
     static class Parameter<T extends GeneratedMessageV3> {
 
         private final String name;
@@ -154,10 +183,10 @@ public class MetaResultSetBuilder {
         private final Function<T, Object> accessFunction;
 
 
-        Parameter( String name, int jdbcType, Function<T, Object> accessFunction ) {
+        Parameter( String name, int jdbcType, Function<T, Object> acessor ) {
             this.name = name;
             this.jdbcType = jdbcType;
-            this.accessFunction = accessFunction;
+            this.accessFunction = acessor;
         }
 
 
