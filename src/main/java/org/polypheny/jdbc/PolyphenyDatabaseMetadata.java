@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
+import org.polypheny.jdbc.proto.ColumnsRequest;
+import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
 import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.TableTypesResponse;
@@ -14,6 +16,7 @@ import org.polypheny.jdbc.utils.MetaResultSetBuilder;
 import org.polypheny.jdbc.utils.PropertyUtils;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
+
     private static final int NO_VERSION = -1;
     private ConnectionString connectionString;
 
@@ -25,7 +28,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     private String productName;
     private String productVersion;
-    private int databaseMinorVersion= NO_VERSION;
+    private int databaseMinorVersion = NO_VERSION;
     private int databaseMajorVersion = NO_VERSION;
 
 
@@ -45,9 +48,11 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         this.nullSorting = NullSorting.HIGH;
     }
 
-    public void setConnection(PolyphenyConnection connection) {
+
+    public void setConnection( PolyphenyConnection connection ) {
         this.polyphenyConnection = connection;
     }
+
 
     private void fetchDbmsVersionInfo() {
         DbmsVersionResponse response = protoInterfaceClient.getDbmsVersion();
@@ -834,16 +839,16 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getTables( String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
+    public ResultSet getTables( String catalog, String schemaPattern, String tableNamePattern, String[] types ) throws SQLException {
         // we ignore the catalogs as polypheny does not have those.
-        TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern, types);
+        TablesResponse tablesResponse = protoInterfaceClient.getTables( schemaPattern, tableNamePattern, types );
         return MetaResultSetBuilder.buildFromTablesResponse( tablesResponse );
     }
 
 
     @Override
     public ResultSet getSchemas() throws SQLException {
-        return getSchemas(null, null);
+        return getSchemas( null, null );
     }
 
 
@@ -859,16 +864,14 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getTableTypes() throws SQLException {
         TableTypesResponse tableTypesResponse = protoInterfaceClient.getTablesTypes();
-        return MetaResultSetBuilder.buildFromTableTypesResponse(tableTypesResponse);
+        return MetaResultSetBuilder.buildFromTableTypesResponse( tableTypesResponse );
     }
 
 
     @Override
-    public ResultSet getColumns( String s, String s1, String s2, String s3 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public ResultSet getColumns( String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern ) throws SQLException {
+        ColumnsResponse columnsResponse = protoInterfaceClient.getColumns(schemaPattern, tableNamePattern, columnNamePattern);
+        return MetaResultSetBuilder.buildFromColumnsResponse(columnsResponse);
     }
 
 
@@ -1124,7 +1127,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public int getDatabaseMajorVersion() throws SQLException {
-        if (databaseMajorVersion == NO_VERSION) {
+        if ( databaseMajorVersion == NO_VERSION ) {
             fetchDbmsVersionInfo();
         }
         return databaseMinorVersion;
@@ -1133,7 +1136,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public int getDatabaseMinorVersion() throws SQLException {
-        if (databaseMajorVersion == NO_VERSION) {
+        if ( databaseMajorVersion == NO_VERSION ) {
             fetchDbmsVersionInfo();
         }
         return databaseMinorVersion;
@@ -1178,8 +1181,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getSchemas( String catalog, String schemaPattern ) throws SQLException {
-        NamespacesResponse namespacesResponse = protoInterfaceClient.getNamespaces(schemaPattern);
-        return MetaResultSetBuilder.buildFromNamespacesResponse(namespacesResponse);
+        NamespacesResponse namespacesResponse = protoInterfaceClient.getNamespaces( schemaPattern );
+        return MetaResultSetBuilder.buildFromNamespacesResponse( namespacesResponse );
     }
 
 

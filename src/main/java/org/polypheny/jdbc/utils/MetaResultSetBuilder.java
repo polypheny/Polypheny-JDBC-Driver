@@ -1,113 +1,172 @@
 package org.polypheny.jdbc.utils;
 
+import com.google.protobuf.GeneratedMessageV3;
 import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.PolyphenyBidirectionalResultSet;
 import org.polypheny.jdbc.PolyphenyColumnMeta;
+import org.polypheny.jdbc.proto.Column;
+import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.Namespace;
 import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.Table;
+import org.polypheny.jdbc.proto.TableType;
 import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class MetaResultSetBuilder {
 
-    private static final TypedValue NULL_VARCHAR = TypedValue.fromNull( Types.VARCHAR );
-    private static final int VARCHAR_NORMAL_MAXIMUM_WIDTH = 2147483647;
+    private static final Function NULL_FUNCTION = o -> null;
 
 
-    private static ArrayList<PolyphenyColumnMeta> generateMetas( List<Integer> jdbcTypes, String entityName, String... columnLabels ) {
-        ArrayList<PolyphenyColumnMeta> columnMetas = new ArrayList<>();
-        for ( String label : columnLabels ) {
-            int ordinal = columnMetas.size();
-            columnMetas.add( PolyphenyColumnMeta.fromSpecification( ordinal, label, entityName, jdbcTypes.get( ordinal ) ) );
-        }
-        return columnMetas;
+    private static <T extends GeneratedMessageV3> PolyphenyBidirectionalResultSet buildResultSet( String entityName, List<T> messages, List<Parameter<T>> parameters ) {
+        ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas( entityName, parameters );
+        ArrayList<ArrayList<TypedValue>> rows = buildRows( messages, parameters );
+        return new PolyphenyBidirectionalResultSet( columnMetas, rows );
+    }
+
+
+    private static <T extends GeneratedMessageV3> ArrayList<PolyphenyColumnMeta> buildMetas( String entityName, List<Parameter<T>> parameters ) {
+        AtomicInteger ordinal = new AtomicInteger();
+        return parameters.stream()
+                .map( p -> PolyphenyColumnMeta.fromSpecification( ordinal.getAndIncrement(), p.name, entityName, p.jdbcType ) )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+    }
+
+
+    private static <T extends GeneratedMessageV3> ArrayList<ArrayList<TypedValue>> buildRows( List<T> messages, List<Parameter<T>> parameters ) {
+        return messages.stream()
+                .map( p -> buildRow( p, parameters ) )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+    }
+
+
+    private static <T extends GeneratedMessageV3> ArrayList<TypedValue> buildRow( T message, List<Parameter<T>> parameters ) {
+        return parameters.stream()
+                .map( p -> p.retrieveFrom( message ) )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+    }
+
+
+    private static <T extends GeneratedMessageV3> Function<T, Object> nullIfFalse( Function<T, Object> access, Function<T, Boolean> presence ) {
+        return message -> {
+            if ( presence.apply( message ) ) {
+                return access.apply( message );
+            }
+            return null;
+        };
     }
 
 
     public static ResultSet buildFromTablesResponse( TablesResponse tablesResponse ) {
-        ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
-        ArrayList<TypedValue> currentRow;
-        for ( Table table : tablesResponse.getTablesList() ) {
-            currentRow = new ArrayList<>();
-            currentRow.add( TypedValue.fromString( table.getSourceDatabaseName() ) );
-            currentRow.add( TypedValue.fromString( table.getNamespaceName() ) );
-            currentRow.add( TypedValue.fromString( table.getTableName() ) );
-            currentRow.add( TypedValue.fromString( table.getTableType() ) );
-            currentRow.add( NULL_VARCHAR ); //REMARKS always null
-            currentRow.add( NULL_VARCHAR ); //TYPE_CAT always null
-            currentRow.add( NULL_VARCHAR ); //TYPE_SCHEM always null
-            currentRow.add( NULL_VARCHAR ); //TYPE_NAME always null
-            currentRow.add( NULL_VARCHAR ); //SELF_REFERENCING_COL_NAME always null
-            currentRow.add( NULL_VARCHAR ); //REF_GENERATION always null
-            currentRow.add( TypedValue.fromString( table.getOwnerName() ) );
-
-            rows.add( currentRow );
-        }
-        ArrayList<PolyphenyColumnMeta> columnMetas = generateMetas(
-                Collections.nCopies( 11, Types.VARCHAR ),
+        return buildResultSet(
                 "TABLES",
-                "TABLE_CAT",
-                "TABLE_SCHEM",
-                "TABLE_NAME",
-                "TABLE_TYPE",
-                "REMARKS",
-                "TYPE_CAT",
-                "TYPE_SCHEM",
-                "TYPE_NAME",
-                "SELF_REFERENCING_COL_NAME",
-                "REF_GENERATION",
-                "OWNER"
+                tablesResponse.getTablesList(),
+                Arrays.asList(
+                        new Parameter<>( "TABLE_CAT", Types.VARCHAR, Table::getSourceDatabaseName ),
+                        new Parameter<>( "TABLE_SCHEM", Types.VARCHAR, Table::getNamespaceName ),
+                        new Parameter<>( "TABLE_NAME", Types.VARCHAR, Table::getTableName ),
+                        new Parameter<>( "TABLE_TYPE", Types.VARCHAR, Table::getTableType ),
+                        new Parameter<Table>( "REMARKS", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<Table>( "TYPE_CAT", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<Table>( "TYPE_SCHEM", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<Table>( "TYPE_NAME", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<Table>( "SELF_REFERENCING_COL_NAME", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<Table>( "REF_GENERATION", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<>( "OWNER", Types.VARCHAR, Table::getOwnerName )
+                )
         );
-        return new PolyphenyBidirectionalResultSet( columnMetas, rows );
     }
 
 
     public static ResultSet buildFromTableTypesResponse( TableTypesResponse tableTypesResponse ) {
-        ArrayList<ArrayList<TypedValue>> rows = tableTypesResponse.getTableTypesList().stream()
-                .map( TypedValue::fromString )
-                .map( t -> new ArrayList<>( Arrays.asList( t ) ) )
-                .collect( Collectors.toCollection( ArrayList::new ) );
-        ArrayList<PolyphenyColumnMeta> columnMetas = generateMetas(
-                Collections.singletonList( Types.VARCHAR ),
+        return buildResultSet(
                 "TABLE_TYPES",
-                "TABLE_TYPE"
+                tableTypesResponse.getTableTypesList(),
+                Collections.singletonList(
+                        new Parameter<>( "TABLE_TYPE", Types.VARCHAR, TableType::getTableType )
+                )
         );
-        return new PolyphenyBidirectionalResultSet( columnMetas, rows );
     }
 
 
     public static ResultSet buildFromNamespacesResponse( NamespacesResponse namespacesResponse ) {
-        ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
-        ArrayList<TypedValue> currentRow;
-        for ( Namespace namespace : namespacesResponse.getNamespacesList() ) {
-            currentRow = new ArrayList<>();
-            currentRow.add( TypedValue.fromString( namespace.getNamespaceName() ) );
-            currentRow.add( TypedValue.fromString( namespace.getDatabaseName() ) );
-            currentRow.add( TypedValue.fromString( namespace.getOwnerName() ) );
-            if ( namespace.hasNamespaceType() ) {
-                currentRow.add( TypedValue.fromString( namespace.getNamespaceType() ) );
-            } else {
-                currentRow.add( NULL_VARCHAR );
-            }
-            rows.add( currentRow );
-        }
-        ArrayList<PolyphenyColumnMeta> columnMetas = generateMetas(
-                Collections.nCopies( 4, Types.VARCHAR ),
+        return buildResultSet(
                 "NAMESPACES",
-                "TABLE_SCHEM",
-                "TABLE_CATALOG",
-                "OWNER",
-                "SCHEMA_TYPE"
+                namespacesResponse.getNamespacesList(),
+                Arrays.asList(
+                        new Parameter<>( "TABLE_SCHEM", Types.VARCHAR, Namespace::getNamespaceName ),
+                        new Parameter<>( "TABLE_CATALOG", Types.VARCHAR, Namespace::getDatabaseName ),
+                        new Parameter<>( "OWNER", Types.VARCHAR, Namespace::getOwnerName ),
+                        new Parameter<>( "SCHEMA_TYPE", Types.VARCHAR, nullIfFalse( Namespace::getNamespaceName, Namespace::hasNamespaceType ) )
+                )
         );
-        return new PolyphenyBidirectionalResultSet( columnMetas, rows );
+    }
+
+
+    public static ResultSet buildFromColumnsResponse( ColumnsResponse columnsResponse ) {
+        return buildResultSet(
+                "COLUMNS",
+                columnsResponse.getColumnsList(),
+                Arrays.asList(
+                        new Parameter<>( "TABLE_CAT", Types.VARCHAR, Column::getDatabaseName ),
+                        new Parameter<>( "TABLE_SCHEM", Types.VARCHAR, Column::getNamespaceName ),
+                        new Parameter<>( "TABLE_NAME", Types.VARCHAR, Column::getTableName ),
+                        new Parameter<>( "COLUMN_NAME", Types.INTEGER, Column::getColumnName ),
+                        new Parameter<>( "DATA_TYPE", Types.VARCHAR, m -> TypedValueUtils.getJdbcTypeFromPolyTypeName( m.getTypeName() ) ),
+                        new Parameter<>( "TYPE_NAME", Types.INTEGER, Column::getTypeName ),
+                        new Parameter<>( "COLUMN_SIZE", Types.INTEGER, Column::getTypeLength ),
+                        new Parameter<Column>( "BUFFER_LENGTH", Types.INTEGER, NULL_FUNCTION ),
+                        new Parameter<>( "DECIMAL_DIGITS", Types.INTEGER, Column::getTypeScale ),
+                        new Parameter<Column>( "NUM_PREC_RADIX", Types.INTEGER, NULL_FUNCTION ),
+                        new Parameter<>( "NULLABLE", Types.VARCHAR, m -> m.getIsNullable() ? 1 : 0 ),
+                        new Parameter<>( "REMARKS", Types.VARCHAR, m -> "" ),
+                        new Parameter<>( "COLUMN_DEF", Types.VARCHAR, nullIfFalse( Column::getDefaultValueAsString, Column::hasDefaultValueAsString ) ),
+                        new Parameter<Column>( "SQL_DATA_TYPE", Types.INTEGER, NULL_FUNCTION ),
+                        new Parameter<Column>( "SQL_DATETIME_SUB", Types.INTEGER, NULL_FUNCTION ),
+                        new Parameter<Column>( "CHAR_OCTET_LENGTH", Types.INTEGER, NULL_FUNCTION ),
+                        new Parameter<>( "ORDINAL_POSITION", Types.INTEGER, Column::getColumnIndex ),
+                        new Parameter<>( "IS_NULLABLE", Types.VARCHAR, m -> m.getIsNullable() ? "YES" : "NO" ),
+                        new Parameter<Column>( "SCOPE_CATALOG", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<Column>( "SCOPE_SCHEMA", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<Column>( "SCOPE_TABLE", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<Column>( "SOURCE_DATA_TYPE", Types.SMALLINT, NULL_FUNCTION ),
+                        new Parameter<>( "IS_AUTOINCREMENT", Types.VARCHAR, m -> "No" ),
+                        new Parameter<>( "IS_GENERATEDCOLUMN", Types.VARCHAR, m -> "No" ),
+                        new Parameter<>( "COLLATION", Types.VARCHAR, nullIfFalse( Column::getCollation, Column::hasCollation ) )
+                )
+        );
+    }
+
+
+    static class Parameter<T extends GeneratedMessageV3> {
+
+        private final String name;
+        private final int jdbcType;
+        private final Function<T, Object> accessFunction;
+
+
+        Parameter( String name, int jdbcType, Function<T, Object> accessFunction ) {
+            this.name = name;
+            this.jdbcType = jdbcType;
+            this.accessFunction = accessFunction;
+        }
+
+
+        TypedValue retrieveFrom( T message ) {
+            return new TypedValue( jdbcType, accessFunction.apply( message ) );
+        }
+
     }
 
 }
+
+

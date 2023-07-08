@@ -6,6 +6,7 @@ import org.polypheny.jdbc.proto.ParameterMeta;
 import org.polypheny.jdbc.proto.ProtoValueType;
 import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class PolyphenyParameterMeta {
     /* As all values are unsigned in polypheny we hardcoded this. */
@@ -34,7 +35,7 @@ public class PolyphenyParameterMeta {
     public PolyphenyParameterMeta( ParameterMeta parameterMeta ) {
         this.parameterClassName = null;
         this.parameterMode = PARAMETER_MODE;
-        this.parameterType = getJdbcTypeFromPolyTypeName( parameterMeta.getTypeName());
+        this.parameterType = TypedValueUtils.getJdbcTypeFromPolyTypeName( parameterMeta.getTypeName());
         this.parameterTypeName = parameterMeta.getTypeName();
         this.precision = parameterMeta.getPrecision();
         this.scale = parameterMeta.getScale();
@@ -42,10 +43,4 @@ public class PolyphenyParameterMeta {
         this.isSigned = SIGNEDNESS;
 
     }
-
-    private int getJdbcTypeFromPolyTypeName(String polyTypeName) {
-        ProtoValueType protoValueType = ProtoToPolyTypeNameMap.getProtoTypeFromPolyTypeName( polyTypeName );
-        return ProtoToJdbcTypeMap.getJdbcTypeFromProto( protoValueType );
-    }
-
 }

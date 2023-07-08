@@ -47,7 +47,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    private TypedValue( int jdbcType, Object value ) {
+    public TypedValue( int jdbcType, Object value ) {
         this.jdbcType = jdbcType;
         this.value = value;
     }

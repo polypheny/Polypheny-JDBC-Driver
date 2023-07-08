@@ -12,6 +12,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.proto.CloseStatementRequest;
+import org.polypheny.jdbc.proto.ColumnsRequest;
+import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.CommitRequest;
 import org.polypheny.jdbc.proto.ConnectionCheckRequest;
 import org.polypheny.jdbc.proto.ConnectionReply;
@@ -208,11 +210,11 @@ public class ProtoInterfaceClient {
     }
 
 
-    public TablesResponse getTables( String namespacePattern, String tablePattern, String[] types) {
+    public TablesResponse getTables( String namespacePattern, String tablePattern, String[] types ) {
         TablesRequest.Builder requestBuilder = TablesRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
-        Optional.ofNullable(types).ifPresent(t -> requestBuilder.addAllTableTypes( Arrays.asList(t) ));
+        Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
+        Optional.ofNullable( tablePattern ).ifPresent( requestBuilder::setTablePattern );
+        Optional.ofNullable( types ).ifPresent( t -> requestBuilder.addAllTableTypes( Arrays.asList( t ) ) );
         return blockingStub.getTables( requestBuilder.build() );
     }
 
@@ -224,8 +226,17 @@ public class ProtoInterfaceClient {
 
     public NamespacesResponse getNamespaces( String namespacePattern ) {
         NamespacesRequest.Builder requestBuilder = NamespacesRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        return blockingStub.getNamespaces(  requestBuilder.build());
+        Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
+        return blockingStub.getNamespaces( requestBuilder.build() );
+    }
+
+
+    public ColumnsResponse getColumns( String namespacePattern, String tablePattern, String columnPattern ) {
+        ColumnsRequest.Builder requestBuilder = ColumnsRequest.newBuilder();
+        Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
+        requestBuilder.setTablePattern( tablePattern );
+        requestBuilder.setColumnPattern( columnPattern );
+        return blockingStub.getColumns( requestBuilder.build() );
     }
 
 }

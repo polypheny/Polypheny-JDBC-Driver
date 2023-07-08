@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.proto.Row;
+import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
+import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class TypedValueUtils {
@@ -25,5 +27,9 @@ public class TypedValueUtils {
 
     public static ArrayList<Integer> getTypes(List<TypedValue> typedValues) {
         return typedValues.stream().map( TypedValue::getJdbcType ).collect(toCollection(ArrayList::new));
+    }
+
+    public static int getJdbcTypeFromPolyTypeName(String polyTypeName) {
+        return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoToPolyTypeNameMap.getProtoTypeFromPolyTypeName( polyTypeName ) );
     }
 }
