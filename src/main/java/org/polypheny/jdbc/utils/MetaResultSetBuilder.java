@@ -1,6 +1,7 @@
 package org.polypheny.jdbc.utils;
 
 import com.google.protobuf.GeneratedMessageV3;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -27,11 +28,11 @@ import org.polypheny.jdbc.proto.Table;
 import org.polypheny.jdbc.proto.TableType;
 import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
+import org.polypheny.jdbc.proto.Type;
+import org.polypheny.jdbc.proto.TypesResponse;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class MetaResultSetBuilder {
-
-    private static final Function NULL_FUNCTION = o -> null;
 
     private static final List<Parameter<ForeignKey>> FOREIGN_KEY_PARAMETERS = Arrays.asList(
             new Parameter<>( "PKTABLE_CAT", Types.VARCHAR, nullIfFalse( ForeignKey::getReferencedDatabaseName, ForeignKey::hasReferencedDatabaseName ) ),
@@ -46,8 +47,8 @@ public class MetaResultSetBuilder {
             new Parameter<>( "UPDATE_RULE", Types.SMALLINT, integerAsShort( ForeignKey::getUpdateRule ) ),
             new Parameter<>( "DELETE_RULE", Types.SMALLINT, integerAsShort( ForeignKey::getDeleteRule ) ),
             new Parameter<>( "FK_NAME", Types.VARCHAR, ForeignKey::getKeyName ),
-            new Parameter<ForeignKey>( "PK_NAME", Types.VARCHAR, NULL_FUNCTION ),
-            new Parameter<ForeignKey>( "DEFERRABILITY", Types.SMALLINT, NULL_FUNCTION )
+            new Parameter<>( "PK_NAME", Types.VARCHAR, p -> null ),
+            new Parameter<>( "DEFERRABILITY", Types.SMALLINT, p -> null )
     );
 
 
@@ -110,12 +111,12 @@ public class MetaResultSetBuilder {
                         new Parameter<>( "TABLE_SCHEM", Types.VARCHAR, Table::getNamespaceName ),
                         new Parameter<>( "TABLE_NAME", Types.VARCHAR, Table::getTableName ),
                         new Parameter<>( "TABLE_TYPE", Types.VARCHAR, Table::getTableType ),
-                        new Parameter<Table>( "REMARKS", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<Table>( "TYPE_CAT", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<Table>( "TYPE_SCHEM", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<Table>( "TYPE_NAME", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<Table>( "SELF_REFERENCING_COL_NAME", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<Table>( "REF_GENERATION", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<>( "REMARKS", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "TYPE_CAT", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "TYPE_SCHEM", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "TYPE_NAME", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "SELF_REFERENCING_COL_NAME", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "REF_GENERATION", Types.VARCHAR, p -> null ),
                         new Parameter<>( "OWNER", Types.VARCHAR, Table::getOwnerName )
                 )
         );
@@ -156,26 +157,26 @@ public class MetaResultSetBuilder {
                         new Parameter<>( "TABLE_SCHEM", Types.VARCHAR, Column::getNamespaceName ),
                         new Parameter<>( "TABLE_NAME", Types.VARCHAR, Column::getTableName ),
                         new Parameter<>( "COLUMN_NAME", Types.INTEGER, Column::getColumnName ),
-                        new Parameter<>( "DATA_TYPE", Types.VARCHAR, m -> TypedValueUtils.getJdbcTypeFromPolyTypeName( m.getTypeName() ) ),
+                        new Parameter<>( "DATA_TYPE", Types.VARCHAR, p -> TypedValueUtils.getJdbcTypeFromPolyTypeName( p.getTypeName() ) ),
                         new Parameter<>( "TYPE_NAME", Types.INTEGER, Column::getTypeName ),
                         new Parameter<>( "COLUMN_SIZE", Types.INTEGER, Column::getTypeLength ),
-                        new Parameter<Column>( "BUFFER_LENGTH", Types.INTEGER, NULL_FUNCTION ),
+                        new Parameter<>( "BUFFER_LENGTH", Types.INTEGER, p -> null ),
                         new Parameter<>( "DECIMAL_DIGITS", Types.INTEGER, Column::getTypeScale ),
-                        new Parameter<Column>( "NUM_PREC_RADIX", Types.INTEGER, NULL_FUNCTION ),
-                        new Parameter<>( "NULLABLE", Types.VARCHAR, m -> m.getIsNullable() ? 1 : 0 ),
-                        new Parameter<>( "REMARKS", Types.VARCHAR, m -> "" ),
+                        new Parameter<>( "NUM_PREC_RADIX", Types.INTEGER, p -> null ),
+                        new Parameter<>( "NULLABLE", Types.VARCHAR, p -> p.getIsNullable() ? 1 : 0 ),
+                        new Parameter<>( "REMARKS", Types.VARCHAR, p -> "" ),
                         new Parameter<>( "COLUMN_DEF", Types.VARCHAR, nullIfFalse( Column::getDefaultValueAsString, Column::hasDefaultValueAsString ) ),
-                        new Parameter<Column>( "SQL_DATA_TYPE", Types.INTEGER, NULL_FUNCTION ),
-                        new Parameter<Column>( "SQL_DATETIME_SUB", Types.INTEGER, NULL_FUNCTION ),
-                        new Parameter<Column>( "CHAR_OCTET_LENGTH", Types.INTEGER, NULL_FUNCTION ),
+                        new Parameter<>( "SQL_DATA_TYPE", Types.INTEGER, p -> null ),
+                        new Parameter<>( "SQL_DATETIME_SUB", Types.INTEGER, p -> null ),
+                        new Parameter<>( "CHAR_OCTET_LENGTH", Types.INTEGER, p -> null ),
                         new Parameter<>( "ORDINAL_POSITION", Types.INTEGER, Column::getColumnIndex ),
-                        new Parameter<>( "IS_NULLABLE", Types.VARCHAR, m -> m.getIsNullable() ? "YES" : "NO" ),
-                        new Parameter<Column>( "SCOPE_CATALOG", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<Column>( "SCOPE_SCHEMA", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<Column>( "SCOPE_TABLE", Types.VARCHAR, NULL_FUNCTION ),
-                        new Parameter<Column>( "SOURCE_DATA_TYPE", Types.SMALLINT, NULL_FUNCTION ),
-                        new Parameter<>( "IS_AUTOINCREMENT", Types.VARCHAR, m -> "No" ),
-                        new Parameter<>( "IS_GENERATEDCOLUMN", Types.VARCHAR, m -> "No" ),
+                        new Parameter<>( "IS_NULLABLE", Types.VARCHAR, p -> p.getIsNullable() ? "YES" : "NO" ),
+                        new Parameter<>( "SCOPE_CATALOG", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "SCOPE_SCHEMA", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "SCOPE_TABLE", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "SOURCE_DATA_TYPE", Types.SMALLINT, p -> null ),
+                        new Parameter<>( "IS_AUTOINCREMENT", Types.VARCHAR, p -> "No" ),
+                        new Parameter<>( "IS_GENERATEDCOLUMN", Types.VARCHAR, p -> "No" ),
                         new Parameter<>( "COLLATION", Types.VARCHAR, nullIfFalse( Column::getCollation, Column::hasCollation ) )
                 )
         );
@@ -192,13 +193,13 @@ public class MetaResultSetBuilder {
                         new Parameter<>( "TABLE_NAME", Types.VARCHAR, PrimaryKey::getTableName ),
                         new Parameter<>( "COLUMN_NAME", Types.VARCHAR, PrimaryKey::getColumnName ),
                         new Parameter<>( "KEY_SEQ", Types.SMALLINT, integerAsShort( PrimaryKey::getSequenceIndex ) ),
-                        new Parameter<PrimaryKey>( "PK_NAME", Types.VARCHAR, NULL_FUNCTION )
+                        new Parameter<>( "PK_NAME", Types.VARCHAR, p -> null )
                 )
         );
     }
 
 
-    public static ResultSet fromDatabasesResponse( DatabasesResponse databasesResponse ) {
+    public static ResultSet buildFromDatabasesResponse( DatabasesResponse databasesResponse ) {
         return buildResultSet(
                 "CATALOGS",
                 databasesResponse.getDatabasesList(),
@@ -211,7 +212,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet fromImportedKeysResponse( ImportedKeysResponse importedKeysResponse ) {
+    public static ResultSet buildFromImportedKeysResponse( ImportedKeysResponse importedKeysResponse ) {
         return buildResultSet(
                 "IMPORTED_KEYS",
                 importedKeysResponse.getImportedKeysList(),
@@ -221,11 +222,39 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet fromExportedKeysResponse( ExportedKeysResponse exportedKeysResponse ) {
+    public static ResultSet buildFromExportedKeysResponse( ExportedKeysResponse exportedKeysResponse ) {
         return buildResultSet(
                 "EXPORTED_KEYS",
                 exportedKeysResponse.getExportedKeysList(),
                 FOREIGN_KEY_PARAMETERS
+        );
+    }
+
+
+    public static ResultSet buildFromTypesResponse( TypesResponse typesResponse ) {
+        return buildResultSet(
+                "TYPE_INFO",
+                typesResponse.getTypesList(),
+                Arrays.asList(
+                        new Parameter<>( "TYPE_NAME", Types.VARCHAR, Type::getTypeName ),
+                        new Parameter<>( "DATA_TYPE", Types.INTEGER, t -> TypedValueUtils.getJdbcTypeFromPolyTypeName( t.getTypeName() ) ),
+                        new Parameter<>( "PRECISION", Types.INTEGER, Type::getPrecision ),
+                        new Parameter<>( "LITERAL_PREFIX", Types.VARCHAR, Type::getLiteralPrefix ),
+                        new Parameter<>( "LITERAL_SUFFIX", Types.VARCHAR, Type::getLiteralSuffix ),
+                        new Parameter<>( "CREATE_PARAMS", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "NULLABLE", Types.SMALLINT, p -> DatabaseMetaData.typeNullable ),
+                        new Parameter<>( "CASE_SENSITIVE", Types.BOOLEAN, Type::getIsCaseSensitive ),
+                        new Parameter<>( "SEARCHABLE", Types.SMALLINT, integerAsShort( Type::getIsSearchable ) ),
+                        new Parameter<>( "UNSIGNED_ATTRIBUTE", Types.BOOLEAN, p -> false ),
+                        new Parameter<>( "FIXED_PREC_SCALE", Types.BOOLEAN, p -> false ),
+                        new Parameter<>( "AUTO_INCREMENT", Types.BOOLEAN, Type::getIsAutoIncrement ),
+                        new Parameter<>( "LOCAL_TYPE_NAME", Types.VARCHAR, Type::getTypeName ),
+                        new Parameter<>( "MINIMUM_SCALE", Types.SMALLINT, integerAsShort( Type::getMinScale ) ),
+                        new Parameter<>( "MAXIMUM_SCALE", Types.SMALLINT, integerAsShort( Type::getMaxScale ) ),
+                        new Parameter<>( "SQL_DATA_TYPE", Types.INTEGER, p -> null ),
+                        new Parameter<>( "SQL_DATETIME_SUB", Types.INTEGER, p -> null ),
+                        new Parameter<>( "NUM_PREC_RADIX", Types.INTEGER, Type::getRadix )
+                )
         );
     }
 

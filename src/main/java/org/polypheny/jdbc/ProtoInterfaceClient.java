@@ -44,6 +44,8 @@ import org.polypheny.jdbc.proto.TableTypesRequest;
 import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesRequest;
 import org.polypheny.jdbc.proto.TablesResponse;
+import org.polypheny.jdbc.proto.TypesRequest;
+import org.polypheny.jdbc.proto.TypesResponse;
 import org.polypheny.jdbc.proto.UnparameterizedStatement;
 import org.polypheny.jdbc.proto.UnparameterizedStatementBatch;
 import org.polypheny.jdbc.types.ProtoValueSerializer;
@@ -274,6 +276,11 @@ public class ProtoInterfaceClient {
         Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
         requestBuilder.setTablePattern( tablePattern );
         return blockingStub.getExportedKeys( requestBuilder.build() );
+    }
+
+
+    public TypesResponse getTypes() {
+        return blockingStub.getTypes( TypesRequest.newBuilder().build() );
     }
 
 }

@@ -6,8 +6,6 @@ import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
-import org.apache.calcite.avatica.proto.Requests.CatalogsRequest;
-import org.polypheny.jdbc.proto.ColumnsRequest;
 import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.DatabasesResponse;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
@@ -17,6 +15,7 @@ import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.PrimaryKeysResponse;
 import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
+import org.polypheny.jdbc.proto.TypesResponse;
 import org.polypheny.jdbc.utils.MetaResultSetBuilder;
 import org.polypheny.jdbc.utils.PropertyUtils;
 
@@ -860,7 +859,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getCatalogs() throws SQLException {
         DatabasesResponse databasesResponse = protoInterfaceClient.getDatabases();
-        return MetaResultSetBuilder.fromDatabasesResponse(databasesResponse);
+        return MetaResultSetBuilder.buildFromDatabasesResponse(databasesResponse);
     }
 
 
@@ -924,14 +923,14 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getImportedKeys( String catalog, String schema, String table ) throws SQLException {
         ImportedKeysResponse importedKeysResponse = protoInterfaceClient.getImportedKeys(schema, table);
-        return MetaResultSetBuilder.fromImportedKeysResponse(importedKeysResponse);
+        return MetaResultSetBuilder.buildFromImportedKeysResponse(importedKeysResponse);
     }
 
 
     @Override
     public ResultSet getExportedKeys( String catalog, String schema, String table ) throws SQLException {
         ExportedKeysResponse exportedKeysResponse = protoInterfaceClient.getExportedKeys(schema, table);
-        return MetaResultSetBuilder.fromExportedKeysResponse(exportedKeysResponse);
+        return MetaResultSetBuilder.buildFromExportedKeysResponse(exportedKeysResponse);
     }
 
 
@@ -946,10 +945,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        TypesResponse typesResponse = protoInterfaceClient.getTypes();
+        return MetaResultSetBuilder.buildFromTypesResponse( typesResponse );
     }
 
 
