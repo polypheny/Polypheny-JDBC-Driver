@@ -16,6 +16,8 @@ import org.polypheny.jdbc.proto.Column;
 import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.Database;
 import org.polypheny.jdbc.proto.DatabasesResponse;
+import org.polypheny.jdbc.proto.ImportedKey;
+import org.polypheny.jdbc.proto.ImportedKeysResponse;
 import org.polypheny.jdbc.proto.Namespace;
 import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.PrimaryKey;
@@ -186,6 +188,30 @@ public class MetaResultSetBuilder {
                         new Parameter<>( "TABLE_CAT", Types.VARCHAR, Database::getDatabaseName ),
                         new Parameter<>( "OWNER", Types.VARCHAR, Database::getOwnerName ),
                         new Parameter<>( "DEFAULT_SCHEMA", Types.VARCHAR, Database::getDefaultNamespaceName )
+                )
+        );
+    }
+
+
+    public static ResultSet fromImportedKeysResponse( ImportedKeysResponse importedKeysResponse ) {
+        return buildResultSet(
+                "IMPORTED_KEYS",
+                importedKeysResponse.getImportedKeysList(),
+                Arrays.asList(
+                        new Parameter<>( "PKTABLE_CAT", Types.VARCHAR, nullIfFalse( ImportedKey::getReferencedDatabaseName, ImportedKey::hasReferencedDatabaseName ) ),
+                        new Parameter<>( "PKTABLE_SCHEM", Types.VARCHAR, nullIfFalse( ImportedKey::getReferencedNamespaceName, ImportedKey::hasReferencedNamespaceName ) ),
+                        new Parameter<>( "PKTABLE_NAME", Types.VARCHAR, ImportedKey::getReferencedTableName ),
+                        new Parameter<>( "PKCOLUMN_NAME", Types.VARCHAR, ImportedKey::getReferencedColumnName ),
+                        new Parameter<>( "FKTABLE_CAT", Types.VARCHAR, nullIfFalse( ImportedKey::getForeignDatabaseName, ImportedKey::hasForeignDatabaseName ) ),
+                        new Parameter<>( "FKTABLE_SCHEM", Types.VARCHAR, nullIfFalse( ImportedKey::getForeignNamespaceName, ImportedKey::hasForeignNamespaceName ) ),
+                        new Parameter<>( "FKTABLE_NAME", Types.VARCHAR, ImportedKey::getForeignTableName ),
+                        new Parameter<>( "FKCOLUMN_NAME", Types.VARCHAR, ImportedKey::getForeignColumnName ),
+                        new Parameter<>( "KEY_SEQ", Types.SMALLINT, integerAsShort( ImportedKey::getSequenceIndex ) ),
+                        new Parameter<>( "UPDATE_RULE", Types.SMALLINT, integerAsShort( ImportedKey::getUpdateRule ) ),
+                        new Parameter<>( "DELETE_RULE", Types.SMALLINT, integerAsShort( ImportedKey::getDeleteRule ) ),
+                        new Parameter<>( "FK_NAME", Types.VARCHAR, ImportedKey::getKeyName ),
+                        new Parameter<ImportedKey>( "PK_NAME", Types.VARCHAR, NULL_FUNCTION ),
+                        new Parameter<ImportedKey>( "DEFERRABILITY", Types.SMALLINT, NULL_FUNCTION )
                 )
         );
     }

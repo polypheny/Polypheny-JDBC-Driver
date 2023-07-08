@@ -24,6 +24,8 @@ import org.polypheny.jdbc.proto.DbmsVersionRequest;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
 import org.polypheny.jdbc.proto.FetchRequest;
 import org.polypheny.jdbc.proto.Frame;
+import org.polypheny.jdbc.proto.ImportedKeysRequest;
+import org.polypheny.jdbc.proto.ImportedKeysResponse;
 import org.polypheny.jdbc.proto.LanguageRequest;
 import org.polypheny.jdbc.proto.NamespacesRequest;
 import org.polypheny.jdbc.proto.NamespacesResponse;
@@ -254,6 +256,14 @@ public class ProtoInterfaceClient {
 
     public DatabasesResponse getDatabases() {
         return blockingStub.getDatabases( DatabasesRequest.newBuilder().build() );
+    }
+
+
+    public ImportedKeysResponse getImportedKeys( String namespacePattern, String tablePattern ) {
+        ImportedKeysRequest.Builder requestBuilder = ImportedKeysRequest.newBuilder();
+        Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
+        requestBuilder.setTablePattern(tablePattern);
+        return blockingStub.getImportedKeys( requestBuilder.build() );
     }
 
 }
