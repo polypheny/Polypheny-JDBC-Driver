@@ -176,9 +176,23 @@ message Type {
 }
 
 message IndexesRequest {
-
+  optional string namespace_pattern = 1;
+  optional string table_pattern = 2;
+  bool unique = 3;
 }
 
 message IndexesResponse{
+  repeated Index indexes = 1;
+}
 
+message Index {
+  string database_name = 1;
+  string namespace_name = 2;
+  string table_name = 3;
+  bool unique = 4;
+  string index_name = 5;
+  int32 position_index = 6;
+  string column_name = 7;
+  string location = 8;
+  int32 index_type = 9;
 }

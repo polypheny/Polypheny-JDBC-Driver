@@ -20,6 +20,8 @@ import org.polypheny.jdbc.proto.DatabasesResponse;
 import org.polypheny.jdbc.proto.ExportedKeysResponse;
 import org.polypheny.jdbc.proto.ForeignKey;
 import org.polypheny.jdbc.proto.ImportedKeysResponse;
+import org.polypheny.jdbc.proto.Index;
+import org.polypheny.jdbc.proto.IndexesResponse;
 import org.polypheny.jdbc.proto.Namespace;
 import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.PrimaryKey;
@@ -254,6 +256,31 @@ public class MetaResultSetBuilder {
                         new Parameter<>( "SQL_DATA_TYPE", Types.INTEGER, p -> null ),
                         new Parameter<>( "SQL_DATETIME_SUB", Types.INTEGER, p -> null ),
                         new Parameter<>( "NUM_PREC_RADIX", Types.INTEGER, Type::getRadix )
+                )
+        );
+    }
+
+
+    public static ResultSet buildFromIndexesResponse( IndexesResponse indexesResponse ) {
+        return buildResultSet(
+                "INDEX_INFO",
+                indexesResponse.getIndexesList(),
+                Arrays.asList(
+                        new Parameter<>( "TABLE_CAT", Types.VARCHAR, Index::getDatabaseName ),
+                        new Parameter<>( "TABLE_SCHEM", Types.VARCHAR, Index::getNamespaceName ),
+                        new Parameter<>( "TABLE_NAME", Types.VARCHAR, Index::getTableName ),
+                        new Parameter<>( "NON_UNIQUE", Types.BOOLEAN, p -> !p.getUnique() ),
+                        new Parameter<>( "INDEX_QUALIFIER", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "INDEX_NAME", Types.VARCHAR, Index::getIndexName ),
+                        new Parameter<>( "TYPE", Types.TINYINT, p -> 0 ),
+                        new Parameter<>( "ORDINAL_POSITION", Types.TINYINT, integerAsShort( Index::getPositionIndex ) ),
+                        new Parameter<>( "COLUMN_NAME", Types.VARCHAR, Index::getColumnName ),
+                        new Parameter<>( "ASC_OR_DESC", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "CARDINALITY", Types.BIGINT, p -> (long) -1 ),
+                        new Parameter<>( "PAGES", Types.BIGINT, p -> null ),
+                        new Parameter<>( "FILTER_CONDITION", Types.VARCHAR, p -> null ),
+                        new Parameter<>( "LOCATION", Types.VARCHAR, Index::getLocation ),
+                        new Parameter<>( "INDEX_TYPE", Types.INTEGER, Index::getIndexType )
                 )
         );
     }

@@ -28,6 +28,8 @@ import org.polypheny.jdbc.proto.FetchRequest;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.ImportedKeysRequest;
 import org.polypheny.jdbc.proto.ImportedKeysResponse;
+import org.polypheny.jdbc.proto.IndexesRequest;
+import org.polypheny.jdbc.proto.IndexesResponse;
 import org.polypheny.jdbc.proto.LanguageRequest;
 import org.polypheny.jdbc.proto.NamespacesRequest;
 import org.polypheny.jdbc.proto.NamespacesResponse;
@@ -281,6 +283,15 @@ public class ProtoInterfaceClient {
 
     public TypesResponse getTypes() {
         return blockingStub.getTypes( TypesRequest.newBuilder().build() );
+    }
+
+
+    public IndexesResponse getIndexes( String namespacePattern, String tablePattern, boolean unique) {
+        IndexesRequest.Builder requestBuilder = IndexesRequest.newBuilder();
+        Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
+        Optional.ofNullable( tablePattern ).ifPresent( requestBuilder::setTablePattern );
+        requestBuilder.setUnique(unique);
+        return blockingStub.getIndexes( requestBuilder.build() );
     }
 
 }
