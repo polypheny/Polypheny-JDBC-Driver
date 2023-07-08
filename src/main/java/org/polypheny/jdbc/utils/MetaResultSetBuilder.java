@@ -6,7 +6,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.IllegalFormatConversionException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -15,6 +14,8 @@ import org.polypheny.jdbc.PolyphenyBidirectionalResultSet;
 import org.polypheny.jdbc.PolyphenyColumnMeta;
 import org.polypheny.jdbc.proto.Column;
 import org.polypheny.jdbc.proto.ColumnsResponse;
+import org.polypheny.jdbc.proto.Database;
+import org.polypheny.jdbc.proto.DatabasesResponse;
 import org.polypheny.jdbc.proto.Namespace;
 import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.PrimaryKey;
@@ -68,13 +69,14 @@ public class MetaResultSetBuilder {
         };
     }
 
-    private static <T extends GeneratedMessageV3> Function<T, Object> integerAsShort( Function<T, Object> accessor) {
+
+    private static <T extends GeneratedMessageV3> Function<T, Object> integerAsShort( Function<T, Object> accessor ) {
         return message -> {
             Object value = accessor.apply( message );
-            if (value instanceof Integer) {
+            if ( value instanceof Integer ) {
                 return ((Integer) value).shortValue();
             }
-            throw new IllegalArgumentException("Can't convert this value to a short");
+            throw new IllegalArgumentException( "Can't convert this value to a short" );
         };
     }
 
@@ -171,6 +173,19 @@ public class MetaResultSetBuilder {
                         new Parameter<>( "COLUMN_NAME", Types.VARCHAR, PrimaryKey::getColumnName ),
                         new Parameter<>( "KEY_SEQ", Types.SMALLINT, integerAsShort( PrimaryKey::getSequenceIndex ) ),
                         new Parameter<PrimaryKey>( "PK_NAME", Types.VARCHAR, NULL_FUNCTION )
+                )
+        );
+    }
+
+
+    public static ResultSet fromDatabasesResponse( DatabasesResponse databasesResponse ) {
+        return buildResultSet(
+                "CATALOGS",
+                databasesResponse.getDatabasesList(),
+                Arrays.asList(
+                        new Parameter<>( "TABLE_CAT", Types.VARCHAR, Database::getDatabaseName ),
+                        new Parameter<>( "OWNER", Types.VARCHAR, Database::getOwnerName ),
+                        new Parameter<>( "DEFAULT_SCHEMA", Types.VARCHAR, Database::getDefaultNamespaceName )
                 )
         );
     }

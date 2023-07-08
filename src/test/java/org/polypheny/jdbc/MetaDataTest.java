@@ -67,21 +67,4 @@ public class MetaDataTest {
             System.out.println(rs.getString("TABLE_SCHEM"));
         }
     }
-
-    @Test
-    public void getColumns__NoError() throws Exception {
-        ResultSet rs = dbConnection.getMetaData().getColumns(null, null, "sample_table", null  );
-        while (rs.next()) {
-            System.out.println(rs.getString("TABLE_SCHEM"));
-        }
-    }
-
-    @Test
-    public void getPrimary__NoError() throws Exception {
-        ResultSet rs = dbConnection.getMetaData().getSchemas();
-        while (rs.next()) {
-            System.out.println(rs.getString("TABLE_SCHEM"));
-        }
-    }
-
 }

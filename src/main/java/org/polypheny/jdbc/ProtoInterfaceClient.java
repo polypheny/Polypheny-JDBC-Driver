@@ -18,6 +18,8 @@ import org.polypheny.jdbc.proto.CommitRequest;
 import org.polypheny.jdbc.proto.ConnectionCheckRequest;
 import org.polypheny.jdbc.proto.ConnectionReply;
 import org.polypheny.jdbc.proto.ConnectionRequest;
+import org.polypheny.jdbc.proto.DatabasesRequest;
+import org.polypheny.jdbc.proto.DatabasesResponse;
 import org.polypheny.jdbc.proto.DbmsVersionRequest;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
 import org.polypheny.jdbc.proto.FetchRequest;
@@ -247,6 +249,11 @@ public class ProtoInterfaceClient {
         Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
         requestBuilder.setTablePattern( tablePattern );
         return blockingStub.getPrimaryKeys( requestBuilder.build() );
+    }
+
+
+    public DatabasesResponse getDatabases() {
+        return blockingStub.getDatabases( DatabasesRequest.newBuilder().build() );
     }
 
 }

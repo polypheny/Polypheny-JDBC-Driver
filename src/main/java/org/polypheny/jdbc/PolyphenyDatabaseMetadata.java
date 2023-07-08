@@ -6,8 +6,10 @@ import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
+import org.apache.calcite.avatica.proto.Requests.CatalogsRequest;
 import org.polypheny.jdbc.proto.ColumnsRequest;
 import org.polypheny.jdbc.proto.ColumnsResponse;
+import org.polypheny.jdbc.proto.DatabasesResponse;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
 import org.polypheny.jdbc.proto.NamespacesResponse;
 import org.polypheny.jdbc.proto.PrimaryKeysResponse;
@@ -855,10 +857,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getCatalogs() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        DatabasesResponse databasesResponse = protoInterfaceClient.getDatabases();
+        return MetaResultSetBuilder.fromDatabasesResponse(databasesResponse);
     }
 
 
