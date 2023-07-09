@@ -64,7 +64,7 @@ message ProtoString {
 
 message ProtoTime {
   int64 value = 1;
-  TimeUnit timeUnit = 2;
+  TimeUnit time_unit = 2;
 }
 
 message ProtoTimeStamp {
