@@ -12,7 +12,6 @@ option java_outer_classname = "ProtoInterfaceProto";
 
 package polypheny.protointerface;
 
-// Functions provided by the proto interface
 service ProtoInterface {
   // Meta functions
   rpc GetDbmsVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
@@ -36,12 +35,13 @@ service ProtoInterface {
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc ExecuteUnparameterizedStatementBatch(UnparameterizedStatementBatch) returns (stream StatementBatchStatus) {}
 
-  // Parameterized statements
-  rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
 
   // Prepared Statements
-  rpc PrepareStatement(PreparedStatement) returns (PreparedStatementSignature) {}
-  rpc ExecutePreparedStatement(ParameterSet) returns (StatementResult){}
+  rpc PrepareIndexedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
+  rpc ExecuteIndexedStatement(ParameterList) returns (StatementResult){}
+  rpc ExecuteIndexedStatementBatch(IndexedParameterBatch) returns (StatementBatchStatus){}
+  rpc PrepareNamedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
+  rpc ExecuteNamedStatement(ParameterSet) returns (StatementResult){}
 
   // Results
   rpc FetchResult(FetchRequest) returns (Frame) {}
@@ -143,7 +143,7 @@ message ParameterMeta {
   int32 precision = 1;
   int32 scale = 2;
   string type_name = 3;
-  string parameter_name = 4;
+  optional string parameter_name = 4;
   string name = 5;
 }
 
@@ -153,14 +153,19 @@ message PreparedStatement {
   bool expects_result = 3;
 }
 
-message ParameterSet {
+message ParameterList {
   int32 statementId = 1;
-  map<string, ProtoValue> values = 2;
+  repeated ProtoValue parameters = 2;
 }
 
-message ParameterBatch {
+message ParameterSet {
   int32 statementId = 1;
-  //repeated map<string, ProtoValue> valuesMaps = 2;
+  map<string, ProtoValue> parameters = 2;
+}
+
+message IndexedParameterBatch {
+  int32 statement_id = 1;
+  repeated ParameterList parameter_lists = 2;
 }
 
 message StatementResult {
@@ -176,8 +181,4 @@ message Frame {
     GraphFrame graph_frame = 4;
     DocumentFrame document_frame = 5;
   }
-}
-
-message ValueMap {
-  map<string, ProtoValue> values = 1;
 }

@@ -28,12 +28,13 @@ import org.polypheny.jdbc.proto.FetchRequest;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.ImportedKeysRequest;
 import org.polypheny.jdbc.proto.ImportedKeysResponse;
+import org.polypheny.jdbc.proto.IndexedValueBatch;
 import org.polypheny.jdbc.proto.IndexesRequest;
 import org.polypheny.jdbc.proto.IndexesResponse;
 import org.polypheny.jdbc.proto.LanguageRequest;
 import org.polypheny.jdbc.proto.NamespacesRequest;
 import org.polypheny.jdbc.proto.NamespacesResponse;
-import org.polypheny.jdbc.proto.ParameterSet;
+import org.polypheny.jdbc.proto.ParameterList;
 import org.polypheny.jdbc.proto.PreparedStatement;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.proto.PrimaryKeysRequest;
@@ -53,7 +54,6 @@ import org.polypheny.jdbc.proto.UnparameterizedStatementBatch;
 import org.polypheny.jdbc.types.ProtoValueSerializer;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
-import org.polypheny.jdbc.utils.NamedParameterUtils;
 
 public class ProtoInterfaceClient {
 
@@ -155,29 +155,41 @@ public class ProtoInterfaceClient {
     }
 
 
-    public PreparedStatementSignature prepareStement( String statement ) {
+    public PreparedStatementSignature prepareIndexedStatement( String statement ) {
         PreparedStatement preparedStatement = PreparedStatement.newBuilder()
                 .setStatement( statement )
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
                 .build();
-        return blockingStub.prepareStatement( preparedStatement );
-
+        return blockingStub.prepareIndexedStatement( preparedStatement );
     }
 
 
-    public StatementResult executePreparedStatement( int timeout, int statementId, List<TypedValue> parameters ) {
-        Map<String, TypedValue> typedValueMap = NamedParameterUtils.convertToParameterMap( parameters );
-        return executePreparedStatement( timeout, statementId, typedValueMap );
+    public StatementResult executeIndexedStatement( int timeout, int statementId, List<TypedValue> values ) {
+        ParameterList parameterList = buildParameterList( values, statementId );
+        ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub( timeout );
+        return stub.executeIndexedStatement( parameterList );
     }
 
 
-    public StatementResult executePreparedStatement( int timeout, int statementId, Map<String, TypedValue> parameters ) {
-        ParameterSet parameterSet = ParameterSet.newBuilder()
+    public StatementBatchStatus executeIndexedStatementBatch( int timeout, int statementId, List<List<TypedValue>> parameterBatch ) {
+        List<ParameterList> parameterLists = parameterBatch.
+                stream()
+                .map( p -> buildParameterList( p, statementId ) )
+                .collect( Collectors.toList() );
+        IndexedValueBatch indexedValueBatch = IndexedValueBatch.newBuilder()
                 .setStatementId( statementId )
-                .putAllValues( ProtoValueSerializer.serializeParameterMap( parameters ) )
+                .addAllParameterLists( parameterLists )
                 .build();
         ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub( timeout );
-        return stub.executePreparedStatement( parameterSet );
+        return stub.executeIndexedStatementBatch( indexedValueBatch);
+    }
+
+
+    private ParameterList buildParameterList( List<TypedValue> values, int statementId ) {
+        return ParameterList.newBuilder()
+                .setStatementId( statementId )
+                .addAllValues( ProtoValueSerializer.serializeValuesList( values ) )
+                .build();
     }
 
 
@@ -286,11 +298,11 @@ public class ProtoInterfaceClient {
     }
 
 
-    public IndexesResponse getIndexes( String namespacePattern, String tablePattern, boolean unique) {
+    public IndexesResponse getIndexes( String namespacePattern, String tablePattern, boolean unique ) {
         IndexesRequest.Builder requestBuilder = IndexesRequest.newBuilder();
         Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
         Optional.ofNullable( tablePattern ).ifPresent( requestBuilder::setTablePattern );
-        requestBuilder.setUnique(unique);
+        requestBuilder.setUnique( unique );
         return blockingStub.getIndexes( requestBuilder.build() );
     }
 

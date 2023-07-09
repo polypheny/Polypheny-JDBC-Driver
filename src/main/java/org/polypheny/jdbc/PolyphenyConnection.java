@@ -81,7 +81,7 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareStement( sql );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql );
         return new PolyphenyPreparedStatement( this, properties.toStatementProperties(), signature );
     }
 
@@ -278,7 +278,7 @@ public class PolyphenyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
         StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareStement( sql );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql );
         return new PolyphenyPreparedStatement( this, statementProperties, signature );
 
     }
@@ -411,7 +411,7 @@ public class PolyphenyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         StatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareStement( sql );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql );
         return new PolyphenyPreparedStatement( this, statementProperties, signature );
     }
 

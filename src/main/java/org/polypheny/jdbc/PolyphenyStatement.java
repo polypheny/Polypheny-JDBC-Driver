@@ -29,8 +29,8 @@ public class PolyphenyStatement implements Statement {
     protected StatementProperties properties;
 
     // Value used to represent that no value is set for the update count according to JDBC.
-    private static final int NO_UPDATE_COUNT = -1;
-    private static final int NO_STATEMENT_ID = -1;
+    protected static final int NO_UPDATE_COUNT = -1;
+    protected static final int NO_STATEMENT_ID = -1;
 
     protected List<String> statementBatch;
 
@@ -412,7 +412,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public long[] executeLargeBatch() throws SQLException {
-        List<Long> scalars = executeBatchInternal();
+        List<Long> scalars = executeUnparameterizedBatch();
         long[] updateCounts = new long[scalars.size()];
         for ( int i = 0; i < scalars.size(); i++ ) {
             updateCounts[i] = scalars.get( i );
@@ -423,7 +423,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int[] executeBatch() throws SQLException {
-        List<Long> scalars = executeBatchInternal();
+        List<Long> scalars = executeUnparameterizedBatch();
         int[] updateCounts = new int[scalars.size()];
         for ( int i = 0; i < scalars.size(); i++ ) {
             updateCounts[i] = longToInt( scalars.get( i ) );
@@ -432,7 +432,7 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    private List<Long> executeBatchInternal() throws SQLException {
+    private List<Long> executeUnparameterizedBatch() throws SQLException {
         throwIfClosed();
         resetStatementId();
         int timeout = properties.getQueryTimeoutSeconds();
@@ -601,14 +601,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean isClosed() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        return isClosed;
     }
 
 

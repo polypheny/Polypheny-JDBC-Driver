@@ -1,6 +1,7 @@
 package org.polypheny.jdbc;
 
 import io.grpc.StatusRuntimeException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -22,15 +23,20 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
+import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
+import org.polypheny.jdbc.proto.StatementBatchStatus;
 import org.polypheny.jdbc.proto.StatementResult;
 import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class PolyphenyPreparedStatement extends PolyphenyStatement implements PreparedStatement {
 
     private List<TypedValue> parameters;
+    private List<List<TypedValue>> parameterBatch;
     private PolyphenyParameterMetaData parameterMetaData;
 
 
@@ -39,6 +45,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         this.statementId = statementSignature.getStatementId();
         this.parameterMetaData = new PolyphenyParameterMetaData( statementSignature );
         this.parameters = createParamterList( statementSignature.getParameterMetasCount() );
+        this.parameterBatch = new LinkedList<>();
     }
 
 
@@ -52,7 +59,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executePreparedStatement(timeout, statementId, parameters );
+            StatementResult result = getClient().executeIndexedStatement( timeout, statementId, parameters );
             resetCurrentResults();
             if ( !result.hasFrame() ) {
                 throw new SQLException( "Statement must produce a single ResultSet" );
@@ -72,7 +79,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executePreparedStatement(timeout, statementId, parameters );
+            StatementResult result = getClient().executeIndexedStatement( timeout, statementId, parameters );
             resetCurrentResults();
             if ( result.hasFrame() ) {
                 throw new SQLException( "Statement must not produce a ResultSet" );
@@ -101,10 +108,16 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     }
 
 
+    private int indexFromParameterIndex( int parameterIndex ) {
+        return parameterIndex - 1;
+    }
+
+
     @Override
     public void setNull( int parameterIndex, int sqlType ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNull( sqlType ) );
     }
 
 
@@ -112,6 +125,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBoolean( int parameterIndex, boolean x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBoolean( x ) );
     }
 
 
@@ -119,6 +133,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setByte( int parameterIndex, byte x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromByte( x ) );
     }
 
 
@@ -126,6 +141,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setShort( int parameterIndex, short x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromShort( x ) );
     }
 
 
@@ -133,6 +149,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setInt( int parameterIndex, int x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromInt( x ) );
     }
 
 
@@ -140,6 +157,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setLong( int parameterIndex, long x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromLong( x ) );
     }
 
 
@@ -147,6 +165,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setFloat( int parameterIndex, float x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromFloat( x ) );
     }
 
 
@@ -154,6 +173,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setDouble( int parameterIndex, double x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromDouble( x ) );
     }
 
 
@@ -161,6 +181,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBigDecimal( int parameterIndex, BigDecimal x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBigDecimal( x ) );
     }
 
 
@@ -168,6 +189,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setString( int parameterIndex, String x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromString( x ) );
     }
 
 
@@ -175,6 +197,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBytes( int parameterIndex, byte[] x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBytes( x ) );
     }
 
 
@@ -182,6 +205,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setDate( int parameterIndex, Date x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromDate( x ) );
     }
 
 
@@ -189,6 +213,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setTime( int parameterIndex, Time x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromTime( x ) );
     }
 
 
@@ -196,6 +221,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setTimestamp( int parameterIndex, Timestamp x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromTimestamp( x ) );
     }
 
 
@@ -203,6 +229,11 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setAsciiStream( int parameterIndex, InputStream x, int length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        try {
+            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromAsciiStream( x, length ) );
+        } catch ( IOException e ) {
+            throw new SQLException( e );
+        }
     }
 
 
@@ -210,6 +241,11 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setUnicodeStream( int parameterIndex, InputStream x, int length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        try {
+            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromUnicodeStream( x, length ) );
+        } catch ( IOException e ) {
+            throw new SQLException( e );
+        }
     }
 
 
@@ -217,6 +253,11 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBinaryStream( int parameterIndex, InputStream x, int length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        try {
+            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBinaryStream( x, length ) );
+        } catch ( IOException e ) {
+            throw new SQLException( e );
+        }
     }
 
 
@@ -231,6 +272,11 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setObject( int parameterIndex, Object x, int targetSqlType ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        try {
+            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x, targetSqlType ) );
+        } catch ( NotImplementedException e ) {
+            throw new SQLException( e );
+        }
     }
 
 
@@ -238,6 +284,11 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setObject( int parameterIndex, Object x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
+        try {
+            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x ) );
+        } catch ( NotImplementedException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -246,7 +297,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executePreparedStatement(timeout, statementId, parameters );
+            StatementResult result = getClient().executeIndexedStatement( timeout, statementId, parameters );
             resetCurrentResults();
             if ( !result.hasFrame() ) {
                 currentUpdateCount = result.getScalar();
@@ -265,6 +316,43 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public void addBatch() throws SQLException {
         throwIfClosed();
+        parameterBatch.add( parameters );
+    }
+
+
+    @Override
+    public long[] executeLargeBatch() throws SQLException {
+        List<Long> scalars = executeParameterizedBatch();
+        long[] updateCounts = new long[scalars.size()];
+        for ( int i = 0; i < scalars.size(); i++ ) {
+            updateCounts[i] = scalars.get( i );
+        }
+        return updateCounts;
+    }
+
+
+    @Override
+    public int[] executeBatch() throws SQLException {
+        List<Long> scalars = executeParameterizedBatch();
+        int[] updateCounts = new int[scalars.size()];
+        for ( int i = 0; i < scalars.size(); i++ ) {
+            updateCounts[i] = longToInt( scalars.get( i ) );
+        }
+        return updateCounts;
+    }
+
+
+    private List<Long> executeParameterizedBatch() throws SQLException {
+        throwIfClosed();
+        resetStatementId();
+        int timeout = properties.getQueryTimeoutSeconds();
+        CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
+        try {
+            StatementBatchStatus status = getClient().executeIndexedStatementBatch( timeout, statementId, parameterBatch );
+            return status.getScalarsList();
+        } catch ( ProtoInterfaceServiceException e ) {
+            throw new SQLException( e.getMessage() );
+        }
     }
 
 
