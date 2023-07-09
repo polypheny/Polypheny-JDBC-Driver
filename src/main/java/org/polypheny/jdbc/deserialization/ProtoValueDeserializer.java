@@ -22,6 +22,8 @@ public class ProtoValueDeserializer {
                     .put( ValueCase.TIME, new TimeDeserializer() )
                     .put( ValueCase.TIME_STAMP, new TimeStampDeserializer() )
                     .put( ValueCase.BIG_DECIMAL, new BigDecimalDeserializer() )
+                    .put(ValueCase.INTERVAL, new IntervalDeserializer())
+                    .put(ValueCase.USER_DEFINED_TYPE, new UserDefinedTypeDeserializer())
                     .build();
 
 

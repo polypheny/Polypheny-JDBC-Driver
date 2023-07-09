@@ -22,6 +22,8 @@ message ProtoValue {
     ProtoTimeStamp time_stamp = 11;
     ProtoNull null = 12;
     ProtoBigDecimal big_decimal = 13;
+    ProtoInterval interval = 14;
+    ProtoUserDefinedType user_defined_type = 15;
   }
 }
 
@@ -73,6 +75,15 @@ message ProtoBigDecimal {
   uint32 scale = 1;
   uint32 precision = 2;
   bytes unscaled_value = 3;
+}
+
+message ProtoInterval {
+  ProtoBigDecimal value = 1;
+}
+
+message ProtoUserDefinedType {
+  map<string, ProtoValueType> template = 1;
+  map<string, ProtoValue> value = 2;
 }
 
 enum ProtoValueType {
