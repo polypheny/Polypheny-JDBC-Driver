@@ -77,6 +77,7 @@ public class PolyphenyColumnMeta {
         this.definitelyWritable = false;
         this.columnClassName = "";
         if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED ) {
+            //TODO handle structured meta
             throw new NotImplementedException( "Struct types not implemented yet" );
         } else {
             this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( protoColumnMeta.getTypeMeta().getProtoValueType() );

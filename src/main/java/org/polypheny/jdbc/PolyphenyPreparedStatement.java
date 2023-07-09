@@ -274,6 +274,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfOutOfBounds( parameterIndex );
         try {
             parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x, targetSqlType ) );
+            //TODO TH: remove exception after conversion impl
         } catch ( NotImplementedException e ) {
             throw new SQLException( e );
         }

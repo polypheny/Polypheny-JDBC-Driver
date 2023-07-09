@@ -184,13 +184,10 @@ message ProtoDocument {
 }
 
 message ProtoEdge {
-  ProtoString id = 1;
-  ProtoString variable_name = 2;
-  ProtoMap properties = 3; //Dictionary = ProtoMap<ProtoString, ProtoValue>
-  ProtoList labels = 4; //ProtoList<ProtoString>
-  ProtoString source = 5;
-  ProtoString target = 6;
-  EdgeDirection edge_direction = 7;
+  ProtoGraphPropertyHolder graph_property_holder = 1;
+  ProtoString source = 2;
+  ProtoString target = 3;
+  EdgeDirection edge_direction = 4;
 
   enum EdgeDirection {
     UNSPECIFIED = 0;
@@ -199,7 +196,6 @@ message ProtoEdge {
     NONE = 3;
   }
 }
-
 message ProtoNode {
   ProtoGraphPropertyHolder graph_property_holder = 1;
 }
@@ -216,7 +212,7 @@ message ProtoPath {
   ProtoList edges = 2;
   ProtoList names = 3;
   // used directly instead of list as ProtoGraphPropertyHolder should not be used as ProtoValue
-  repeated ProtoGraphPropertyHolder path = 5;
+  repeated ProtoGraphPropertyHolder paths = 5;
   repeated ProtoSegment segments = 6;
 }
 

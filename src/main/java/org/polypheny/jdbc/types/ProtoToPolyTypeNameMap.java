@@ -4,30 +4,22 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.Map;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValueType;
 
 public class ProtoToPolyTypeNameMap {
 
-    private static final String COMMON_NAME_PREFIX = "PROTO_VALUE_TYPE_";
-    private static final Map<ProtoValueType, String> PROTO_TYPE_TO_POLY_TYPE;
+    private static final Map<ProtoValue.ProtoValueType, String> PROTO_TYPE_TO_POLY_TYPE;
 
 
     static {
-        PROTO_TYPE_TO_POLY_TYPE = Arrays.stream( ProtoValueType.values() )
+        PROTO_TYPE_TO_POLY_TYPE = Arrays.stream( ProtoValue.ProtoValueType.values() )
                 .sequential()
-                .collect( ImmutableMap.toImmutableMap( n -> n, n -> removeCommonName( n.name() ) ) );
+                .collect( ImmutableMap.toImmutableMap( n -> n, n -> n.name() ) );
     }
 
 
-    private static String removeCommonName( String valueName ) {
-        if ( valueName != null && valueName.startsWith( COMMON_NAME_PREFIX ) ) {
-            return valueName.substring( COMMON_NAME_PREFIX.length() );
-        }
-        return valueName;
-    }
-
-
-    public static String getPolyTypeNameFromProto( ProtoValueType protoValueType ) {
+    public static String getPolyTypeNameFromProto( ProtoValue.ProtoValueType protoValueType ) {
         String polyTypeName = PROTO_TYPE_TO_POLY_TYPE.get( protoValueType );
         if ( polyTypeName == null ) {
             throw new IllegalArgumentException( "Invalid proto value type." );
@@ -36,10 +28,9 @@ public class ProtoToPolyTypeNameMap {
     }
 
 
-    public static ProtoValueType getProtoTypeFromPolyTypeName( String polyTypeName ) {
-        String protoTypeName = COMMON_NAME_PREFIX + polyTypeName;
+    public static ProtoValue.ProtoValueType getProtoTypeFromPolyTypeName( String polyTypeName ) {
         try {
-            return ProtoValueType.valueOf( protoTypeName );
+            return ProtoValue.ProtoValueType.valueOf( polyTypeName );
         } catch ( IllegalArgumentException e ) {
             throw new ProtoInterfaceServiceException( "Unknown parameter type " + polyTypeName );
         }
