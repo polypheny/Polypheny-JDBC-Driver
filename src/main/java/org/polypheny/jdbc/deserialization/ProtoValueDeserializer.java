@@ -25,6 +25,8 @@ public class ProtoValueDeserializer {
                     .put(ValueCase.INTERVAL, new IntervalDeserializer())
                     .put(ValueCase.USER_DEFINED_TYPE, new UserDefinedTypeDeserializer())
                     .put(ValueCase.LIST, new ListDeserializer())
+                    .put(ValueCase.MAP, new MapDeserializer())
+                    .put(ValueCase.DOCUMENT, new DocumentDeserializer())
                     .build();
 
 
