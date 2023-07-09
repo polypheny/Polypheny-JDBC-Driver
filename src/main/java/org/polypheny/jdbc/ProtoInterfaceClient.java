@@ -28,6 +28,7 @@ import org.polypheny.jdbc.proto.FetchRequest;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.ImportedKeysRequest;
 import org.polypheny.jdbc.proto.ImportedKeysResponse;
+import org.polypheny.jdbc.proto.IndexedParameterBatch;
 import org.polypheny.jdbc.proto.IndexedValueBatch;
 import org.polypheny.jdbc.proto.IndexesRequest;
 import org.polypheny.jdbc.proto.IndexesResponse;
@@ -176,19 +177,19 @@ public class ProtoInterfaceClient {
                 stream()
                 .map( p -> buildParameterList( p, statementId ) )
                 .collect( Collectors.toList() );
-        IndexedValueBatch indexedValueBatch = IndexedValueBatch.newBuilder()
+        IndexedParameterBatch indexedParameterBatch = IndexedParameterBatch.newBuilder()
                 .setStatementId( statementId )
                 .addAllParameterLists( parameterLists )
                 .build();
         ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub( timeout );
-        return stub.executeIndexedStatementBatch( indexedValueBatch);
+        return stub.executeIndexedStatementBatch( indexedParameterBatch);
     }
 
 
     private ParameterList buildParameterList( List<TypedValue> values, int statementId ) {
         return ParameterList.newBuilder()
                 .setStatementId( statementId )
-                .addAllValues( ProtoValueSerializer.serializeValuesList( values ) )
+                .addAllParameters( ProtoValueSerializer.serializeParameterList( values ) )
                 .build();
     }
 
