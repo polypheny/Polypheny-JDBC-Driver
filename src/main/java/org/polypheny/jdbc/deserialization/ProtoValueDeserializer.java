@@ -24,6 +24,7 @@ public class ProtoValueDeserializer {
                     .put( ValueCase.BIG_DECIMAL, new BigDecimalDeserializer() )
                     .put(ValueCase.INTERVAL, new IntervalDeserializer())
                     .put(ValueCase.USER_DEFINED_TYPE, new UserDefinedTypeDeserializer())
+                    .put(ValueCase.LIST, new ListDeserializer())
                     .build();
 
 
