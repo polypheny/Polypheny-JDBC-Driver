@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.polypheny.jdbc.proto.ColumnMeta;
 import org.polypheny.jdbc.proto.ProtoValueType;
 import org.polypheny.jdbc.proto.TypeMeta;
-import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
+import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 
 public class PolyphenyColumnMetaTest {

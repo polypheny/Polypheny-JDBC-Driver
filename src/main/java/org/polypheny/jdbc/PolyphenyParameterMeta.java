@@ -3,9 +3,6 @@ package org.polypheny.jdbc;
 import java.sql.ParameterMetaData;
 import lombok.Getter;
 import org.polypheny.jdbc.proto.ParameterMeta;
-import org.polypheny.jdbc.proto.ProtoValueType;
-import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
-import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class PolyphenyParameterMeta {

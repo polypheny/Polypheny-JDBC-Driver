@@ -82,12 +82,15 @@ public interface Convertible {
 
     Struct asStruct() throws SQLException;
 
+    Date asDate() throws SQLException;
 
     Date asDate( Calendar calendar ) throws SQLException;
 
+    Time asTime() throws SQLException;
 
     Time asTime( Calendar calendar ) throws SQLException;
 
+    public Timestamp asTimestamp() throws SQLException;
 
     Timestamp asTimestamp( Calendar calendar ) throws SQLException;
 

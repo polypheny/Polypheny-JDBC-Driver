@@ -51,7 +51,7 @@ import org.polypheny.jdbc.proto.TypesRequest;
 import org.polypheny.jdbc.proto.TypesResponse;
 import org.polypheny.jdbc.proto.UnparameterizedStatement;
 import org.polypheny.jdbc.proto.UnparameterizedStatementBatch;
-import org.polypheny.jdbc.types.ProtoValueSerializer;
+import org.polypheny.jdbc.serialisation.ProtoValueSerializer;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
 

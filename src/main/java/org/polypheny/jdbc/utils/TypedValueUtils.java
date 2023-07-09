@@ -5,8 +5,9 @@ import static java.util.stream.Collectors.toCollection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.deserialization.ProtoValueDeserializer;
 import org.polypheny.jdbc.proto.Row;
-import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
+import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 import org.polypheny.jdbc.types.TypedValue;
 
@@ -21,7 +22,7 @@ public class TypedValueUtils {
 
     public static ArrayList<TypedValue> buildRow( Row row ) {
         return row.getValuesList().stream()
-                .map( TypedValue::new )
+                .map( ProtoValueDeserializer::deserialize )
                 .collect( toCollection( ArrayList::new ) );
     }
 

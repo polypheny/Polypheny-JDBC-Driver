@@ -1,4 +1,4 @@
-package org.polypheny.jdbc.types;
+package org.polypheny.jdbc.deserialization;
 
 import com.google.common.collect.ImmutableMap;
 import java.sql.Types;

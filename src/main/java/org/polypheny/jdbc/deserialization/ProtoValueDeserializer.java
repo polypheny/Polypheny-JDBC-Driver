@@ -1,9 +1,10 @@
-package org.polypheny.jdbc.types;
+package org.polypheny.jdbc.deserialization;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ValueCase;
+import org.polypheny.jdbc.types.TypedValue;
 
 public class ProtoValueDeserializer {
 
@@ -21,11 +22,10 @@ public class ProtoValueDeserializer {
                     .put( ValueCase.TIME, new TimeDeserializer() )
                     .put( ValueCase.TIME_STAMP, new TimeStampDeserializer() )
                     .put( ValueCase.BIG_DECIMAL, new BigDecimalDeserializer() )
-                    .put( ValueCase.STRUCTURED, new StructDeserializer())
                     .build();
 
 
-    public static Object deserialize( ProtoValue value ) {
+    public static TypedValue deserialize( ProtoValue value ) {
         return VALUE_DESERIALIZERS.get( value.getValueCase() ).deserialize( value );
     }
 }

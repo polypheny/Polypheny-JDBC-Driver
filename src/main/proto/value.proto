@@ -22,8 +22,6 @@ message ProtoValue {
     ProtoTimeStamp time_stamp = 11;
     ProtoNull null = 12;
     ProtoBigDecimal big_decimal = 13;
-    ProtoArray array = 14;
-    ProtoStructured structured = 15;
   }
 }
 
@@ -76,15 +74,6 @@ message ProtoBigDecimal {
   uint32 precision = 2;
   bytes unscaled_value = 3;
 }
-
-message ProtoStructured {
-  repeated ProtoValue fields = 1;
-}
-
-message ProtoArray {
-  repeated ProtoValue elements = 1;
-}
-
 
 enum ProtoValueType {
   PROTO_VALUE_TYPE_UNSPECIFIED = 0;

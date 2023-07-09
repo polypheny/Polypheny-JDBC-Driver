@@ -1,8 +1,8 @@
-package org.polypheny.jdbc.types;
+package org.polypheny.jdbc.deserialization;
 
 import org.polypheny.jdbc.proto.ProtoValue;
 
-public class DoubleDeserializer implements ValueDeserializer {
+public class NullDeserializer implements ValueDeserializer {
 
     @Override
     public Object deserialize( ProtoValue value ) {

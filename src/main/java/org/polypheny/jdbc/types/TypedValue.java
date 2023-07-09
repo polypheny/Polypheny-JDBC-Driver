@@ -30,7 +30,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import lombok.Getter;
-import org.polypheny.jdbc.proto.ProtoValue;
 
 public class TypedValue implements Convertible {
 
@@ -39,12 +38,6 @@ public class TypedValue implements Convertible {
     @Getter
     private final Object value;
     private static final HashMap<Integer, TypedValue> NULL_MAP = new HashMap<>();
-
-
-    public TypedValue( ProtoValue protoValue ) {
-        this.jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( protoValue.getType() );
-        this.value = ProtoValueDeserializer.deserialize( protoValue );
-    }
 
 
     public TypedValue( int jdbcType, Object value ) {
@@ -209,8 +202,8 @@ public class TypedValue implements Convertible {
 
 
     public static TypedValue fromNull( int sqlType ) {
-        if ( NULL_MAP.containsKey(sqlType) ) {
-            return NULL_MAP.get(sqlType);
+        if ( NULL_MAP.containsKey( sqlType ) ) {
+            return NULL_MAP.get( sqlType );
         }
         TypedValue nullValue = new TypedValue( sqlType, null );
         NULL_MAP.put( sqlType, nullValue );
@@ -305,9 +298,9 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue fromObject( Object value, int targetSqlType ) throws NotImplementedException {
+    public static TypedValue fromObject( Object value, int targetSqlType ) {
         //TODO TH: type conversion
-        throw new NotImplementedException( "Not yet implemented..." );
+        return null;
     }
 
 
@@ -350,6 +343,7 @@ public class TypedValue implements Convertible {
     public boolean isSqlNull() throws SQLException {
         return jdbcType == Types.NULL;
     }
+
 
     @Override
     public boolean isNull() {
@@ -615,8 +609,25 @@ public class TypedValue implements Convertible {
 
 
     @Override
+    public Date asDate() throws SQLException {
+        if ( value instanceof java.util.Date ) {
+            return (Date) value;
+        }
+        throw new SQLException( "Conversion to date supported." );
+    }
+
+
+    @Override
     public Date asDate( Calendar calendar ) throws SQLException {
         return null;
+    }
+
+
+    public Time asTime() throws SQLException {
+        if ( value instanceof Time ) {
+            return (Time) value;
+        }
+        throw new SQLException( "Conversion to time supported." );
     }
 
 
@@ -630,6 +641,14 @@ public class TypedValue implements Convertible {
         }
         long tValue = ((Time) value).getTime();
         return new Time( tValue - calendar.getTimeZone().getOffset( tValue ) );
+    }
+
+
+    public Timestamp asTimestamp() throws SQLException {
+        if ( value instanceof Timestamp ) {
+            return (Timestamp) value;
+        }
+        throw new SQLException( "Conversion to timestamp not supported." );
     }
 
 
@@ -679,7 +698,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Reader asNCharacterStream() throws SQLException {
-        return new InputStreamReader(asUnicodeStream());
+        return new InputStreamReader( asUnicodeStream() );
     }
 
 

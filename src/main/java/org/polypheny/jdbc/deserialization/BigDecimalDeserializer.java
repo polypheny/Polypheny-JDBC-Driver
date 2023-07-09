@@ -1,16 +1,24 @@
-package org.polypheny.jdbc.types;
+package org.polypheny.jdbc.deserialization;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.sql.Types;
 import org.polypheny.jdbc.proto.ProtoBigDecimal;
 import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.jdbc.types.TypedValue;
 
 public class BigDecimalDeserializer implements ValueDeserializer {
 
     @Override
-    public Object deserialize( ProtoValue value ) {
-        return deserializeToBigDecimal( value.getBigDecimal() );
+    public TypedValue deserialize( ProtoValue value ) {
+        int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
+        switch ( jdbcType ) {
+            case Types.DECIMAL:
+                BigDecimal b = deserializeToBigDecimal( value.getBigDecimal() );
+                return TypedValue.fromObject( b, jdbcType );
+        }
+        throw new IllegalArgumentException( "Illegal jdbc type for proto big decimal." );
     }
 
 
