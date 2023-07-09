@@ -29,7 +29,6 @@ import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.ImportedKeysRequest;
 import org.polypheny.jdbc.proto.ImportedKeysResponse;
 import org.polypheny.jdbc.proto.IndexedParameterBatch;
-import org.polypheny.jdbc.proto.IndexedValueBatch;
 import org.polypheny.jdbc.proto.IndexesRequest;
 import org.polypheny.jdbc.proto.IndexesResponse;
 import org.polypheny.jdbc.proto.LanguageRequest;
@@ -182,7 +181,7 @@ public class ProtoInterfaceClient {
                 .addAllParameterLists( parameterLists )
                 .build();
         ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub( timeout );
-        return stub.executeIndexedStatementBatch( indexedParameterBatch);
+        return stub.executeIndexedStatementBatch( indexedParameterBatch );
     }
 
 
