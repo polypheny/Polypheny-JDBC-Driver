@@ -3,6 +3,7 @@ package org.polypheny.jdbc.utils;
 import com.google.protobuf.GeneratedMessageV3;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +55,7 @@ public class MetaResultSetBuilder {
     );
 
 
-    private static <T extends GeneratedMessageV3> PolyphenyBidirectionalResultSet buildResultSet( String entityName, List<T> messages, List<Parameter<T>> parameters ) {
+    private static <T extends GeneratedMessageV3> PolyphenyBidirectionalResultSet buildResultSet( String entityName, List<T> messages, List<Parameter<T>> parameters ) throws SQLException {
         ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas( entityName, parameters );
         ArrayList<ArrayList<TypedValue>> rows = buildRows( messages, parameters );
         return new PolyphenyBidirectionalResultSet( columnMetas, rows );
@@ -69,17 +70,23 @@ public class MetaResultSetBuilder {
     }
 
 
-    private static <T extends GeneratedMessageV3> ArrayList<ArrayList<TypedValue>> buildRows( List<T> messages, List<Parameter<T>> parameters ) {
-        return messages.stream()
-                .map( p -> buildRow( p, parameters ) )
-                .collect( Collectors.toCollection( ArrayList::new ) );
+    private static <T extends GeneratedMessageV3> ArrayList<ArrayList<TypedValue>> buildRows( List<T> messages, List<Parameter<T>> parameters ) throws SQLException {
+        ArrayList<ArrayList<TypedValue>> arrayLists = new ArrayList<>();
+        for ( T p : messages ) {
+            ArrayList<TypedValue> typedValues = buildRow( p, parameters );
+            arrayLists.add( typedValues );
+        }
+        return arrayLists;
     }
 
 
-    private static <T extends GeneratedMessageV3> ArrayList<TypedValue> buildRow( T message, List<Parameter<T>> parameters ) {
-        return parameters.stream()
-                .map( p -> p.retrieveFrom( message ) )
-                .collect( Collectors.toCollection( ArrayList::new ) );
+    private static <T extends GeneratedMessageV3> ArrayList<TypedValue> buildRow( T message, List<Parameter<T>> parameters ) throws SQLException {
+        ArrayList<TypedValue> typedValues = new ArrayList<>();
+        for ( Parameter<T> p : parameters ) {
+            TypedValue typedValue = p.retrieveFrom( message );
+            typedValues.add( typedValue );
+        }
+        return typedValues;
     }
 
 
@@ -104,7 +111,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromTablesResponse( TablesResponse tablesResponse ) {
+    public static ResultSet buildFromTablesResponse( TablesResponse tablesResponse ) throws SQLException {
         return buildResultSet(
                 "TABLES",
                 tablesResponse.getTablesList(),
@@ -125,7 +132,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromTableTypesResponse( TableTypesResponse tableTypesResponse ) {
+    public static ResultSet buildFromTableTypesResponse( TableTypesResponse tableTypesResponse ) throws SQLException {
         return buildResultSet(
                 "TABLE_TYPES",
                 tableTypesResponse.getTableTypesList(),
@@ -136,7 +143,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromNamespacesResponse( NamespacesResponse namespacesResponse ) {
+    public static ResultSet buildFromNamespacesResponse( NamespacesResponse namespacesResponse ) throws SQLException {
         return buildResultSet(
                 "NAMESPACES",
                 namespacesResponse.getNamespacesList(),
@@ -150,7 +157,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromColumnsResponse( ColumnsResponse columnsResponse ) {
+    public static ResultSet buildFromColumnsResponse( ColumnsResponse columnsResponse ) throws SQLException {
         return buildResultSet(
                 "COLUMNS",
                 columnsResponse.getColumnsList(),
@@ -185,7 +192,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromPrimaryKeyResponse( PrimaryKeysResponse primaryKeysResponse ) {
+    public static ResultSet buildFromPrimaryKeyResponse( PrimaryKeysResponse primaryKeysResponse ) throws SQLException {
         return buildResultSet(
                 "PRIMARY_KEYS",
                 primaryKeysResponse.getPrimaryKeysList(),
@@ -201,7 +208,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromDatabasesResponse( DatabasesResponse databasesResponse ) {
+    public static ResultSet buildFromDatabasesResponse( DatabasesResponse databasesResponse ) throws SQLException {
         return buildResultSet(
                 "CATALOGS",
                 databasesResponse.getDatabasesList(),
@@ -214,7 +221,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromImportedKeysResponse( ImportedKeysResponse importedKeysResponse ) {
+    public static ResultSet buildFromImportedKeysResponse( ImportedKeysResponse importedKeysResponse ) throws SQLException {
         return buildResultSet(
                 "IMPORTED_KEYS",
                 importedKeysResponse.getImportedKeysList(),
@@ -224,7 +231,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromExportedKeysResponse( ExportedKeysResponse exportedKeysResponse ) {
+    public static ResultSet buildFromExportedKeysResponse( ExportedKeysResponse exportedKeysResponse ) throws SQLException {
         return buildResultSet(
                 "EXPORTED_KEYS",
                 exportedKeysResponse.getExportedKeysList(),
@@ -233,7 +240,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromTypesResponse( TypesResponse typesResponse ) {
+    public static ResultSet buildFromTypesResponse( TypesResponse typesResponse ) throws SQLException {
         return buildResultSet(
                 "TYPE_INFO",
                 typesResponse.getTypesList(),
@@ -261,7 +268,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromIndexesResponse( IndexesResponse indexesResponse ) {
+    public static ResultSet buildFromIndexesResponse( IndexesResponse indexesResponse ) throws SQLException {
         return buildResultSet(
                 "INDEX_INFO",
                 indexesResponse.getIndexesList(),
@@ -300,8 +307,8 @@ public class MetaResultSetBuilder {
         }
 
 
-        TypedValue retrieveFrom( T message ) {
-            return new TypedValue( jdbcType, accessFunction.apply( message ) );
+        TypedValue retrieveFrom( T message ) throws SQLException {
+            return TypedValue.fromObject( accessFunction.apply( message ), jdbcType );
         }
 
     }

@@ -9,6 +9,8 @@ import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
 import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Struct;
@@ -18,9 +20,9 @@ import java.util.Calendar;
 
 public interface Convertible {
 
-    boolean isSqlNull() throws SQLException;
+    boolean isSqlNull();
 
-    boolean isNull() throws SQLException;
+    boolean isNull();
 
 
     String asString() throws SQLException;
@@ -94,6 +96,9 @@ public interface Convertible {
 
     Timestamp asTimestamp( Calendar calendar ) throws SQLException;
 
+    Ref asRef() throws SQLException;
+
+    RowId asRowId() throws SQLException;
 
     URL asUrl() throws SQLException;
 

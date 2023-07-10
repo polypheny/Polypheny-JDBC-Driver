@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.io.StringReader;
@@ -21,15 +20,18 @@ import java.sql.NClob;
 import java.sql.Ref;
 import java.sql.RowId;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLXML;
 import java.sql.Struct;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.text.ParseException;
 import java.util.Calendar;
 import java.util.HashMap;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import lombok.Getter;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
 
@@ -40,7 +42,7 @@ public class TypedValue implements Convertible {
     private static final HashMap<Integer, TypedValue> NULL_MAP = new HashMap<>();
 
 
-    public TypedValue( int jdbcType, Object value ) {
+    private TypedValue( int jdbcType, Object value ) {
         this.jdbcType = jdbcType;
         this.value = value;
     }
@@ -292,6 +294,11 @@ public class TypedValue implements Convertible {
     }
 
 
+    public static TypedValue fromStruct( Struct value ) {
+        return new TypedValue( Types.STRUCT, value );
+    }
+
+
     private static String collectCharacterStream( Reader reader ) throws IOException {
         char[] readBuffer = new char[8 * 1024];
         StringBuilder buffer = new StringBuilder();
@@ -321,8 +328,13 @@ public class TypedValue implements Convertible {
     }
 
 
+    public static TypedValue fromJavaObject( Object value ) {
+        return new TypedValue( Types.JAVA_OBJECT, value );
+    }
+
+
     @Override
-    public boolean isSqlNull() throws SQLException {
+    public boolean isSqlNull() {
         return jdbcType == Types.NULL;
     }
 
@@ -484,7 +496,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public BigDecimal asBigDecimal() throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof BigDecimal ) {
@@ -509,7 +521,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public InputStream asAsciiStream() throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof String ) {
@@ -527,7 +539,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public InputStream asUnicodeStream() throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof String ) {
@@ -539,7 +551,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public InputStream asBinaryStream() throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof byte[] ) {
@@ -551,7 +563,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Reader asCharacterStream() throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof String ) {
@@ -623,7 +635,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Time asTime( Calendar calendar ) throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof Time ) {
@@ -644,7 +656,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Timestamp asTimestamp( Calendar calendar ) throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof Timestamp ) {
@@ -656,8 +668,32 @@ public class TypedValue implements Convertible {
 
 
     @Override
+    public Ref asRef() throws SQLException {
+        if ( isSqlNull() ) {
+            return null;
+        }
+        if ( value instanceof Ref ) {
+            return (Ref) value;
+        }
+        throw new SQLException( "Can't convert this value to a ref" );
+    }
+
+
+    @Override
+    public RowId asRowId() throws SQLException {
+        if ( isSqlNull() ) {
+            return null;
+        }
+        if ( value instanceof RowId ) {
+            return (RowId) value;
+        }
+        throw new SQLException( "Can't convert this value to a row id" );
+    }
+
+
+    @Override
     public URL asUrl() throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof URL ) {
@@ -669,25 +705,25 @@ public class TypedValue implements Convertible {
 
     @Override
     public NClob asNClob() throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof NClob ) {
             return (NClob) value;
         }
-        throw new SQLException( "Can't convert this value to a nclob");
+        throw new SQLException( "Can't convert this value to a nclob" );
     }
 
 
     @Override
     public SQLXML asSQLXML() throws SQLException {
-        if ( jdbcType == Types.NULL ) {
+        if ( isSqlNull() ) {
             return null;
         }
         if ( value instanceof SQLXML ) {
             return (SQLXML) value;
         }
-        throw new SQLException( "Can't convert this value to a nclob");
+        throw new SQLException( "Can't convert this value to a nclob" );
     }
 
 
@@ -704,30 +740,93 @@ public class TypedValue implements Convertible {
 
 
     @Override
-    public Object asObject() {
-        if ( jdbcType == Types.NULL ) {
+    public Object asObject() throws SQLException {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
-        //TODO soething
+        switch ( jdbcType ) {
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGVARCHAR:
+            case Types.NCHAR:
+            case Types.NVARCHAR:
+            case Types.LONGNVARCHAR:
+                return asString();
+            case Types.NUMERIC:
+            case Types.DECIMAL:
+                return asBigDecimal();
+            case Types.BIT:
+            case Types.BOOLEAN:
+                return asBoolean();
+            case Types.TINYINT:
+            case Types.SMALLINT:
+            case Types.INTEGER:
+                return asInt();
+            case Types.BIGINT:
+                return asLong();
+            case Types.REAL:
+                return asFloat();
+            case Types.FLOAT:
+            case Types.DOUBLE:
+                return asDouble();
+            case Types.BINARY:
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
+                return asBytes();
+            case Types.DATE:
+                return asDate();
+            case Types.TIME:
+                return asTime();
+            case Types.TIMESTAMP:
+                return asTimestamp();
+            case Types.DISTINCT:
+                // should return object type of underlying type
+                throw new IllegalArgumentException( "Retrieval of Types.DISTINCT not implemented" );
+            case Types.CLOB:
+                return asClob();
+            case Types.BLOB:
+                return asBlob();
+            case Types.ARRAY:
+                return asArray();
+            case Types.STRUCT:
+                return asStruct();
+            case Types.REF:
+                return asRef();
+            case Types.DATALINK:
+                return asUrl();
+            case Types.JAVA_OBJECT:
+                return getValue();
+            case Types.ROWID:
+                return asRowId();
+            case Types.NCLOB:
+                return asNClob();
+            case Types.SQLXML:
+                return asSQLXML();
+        }
+        throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }
 
 
-    public static TypedValue fromObject( Object value ) throws NotImplementedException {
-        //TODO TH: type conversion
-        throw new NotImplementedException( "Not yet implemented..." );
+    public static TypedValue fromObject( Object value ) throws SQLException {
+        try {
+            return TypedValueUtils.buildTypedValueFromObject( value );
+        } catch ( ParseException | SQLFeatureNotSupportedException e ) {
+            throw new SQLException( e );
+        }
     }
 
 
-    public static TypedValue fromObject( Object value, int targetSqlType ) {
-        //TODO TH: type conversion
-        return null;
+    public static TypedValue fromObject( Object value, int targetSqlType ) throws SQLException {
+        try {
+            return TypedValueUtils.buildTypedValueFromObject( value, targetSqlType );
+        } catch ( ParseException | SQLFeatureNotSupportedException e ) {
+            throw new SQLException( e );
+        }
     }
 
 
     public static TypedValue fromObject( Object value, int targetSqlType, int scaleOrLength ) throws NotImplementedException {
-        //TODO TH: type conversion
-        throw new NotImplementedException( "Not yet implemented..." );
+        return TypedValueUtils.fromObject( value, targetSqlType, scaleOrLength );
     }
-
 
 }
