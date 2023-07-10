@@ -43,7 +43,6 @@ public class TypedValueUtils {
     private static final SimpleDateFormat SQL_DATE_FORMAT = new SimpleDateFormat( "dd MMM yyyy" );
     private static final SimpleDateFormat SQL_TIME_FORMAT = new SimpleDateFormat( "HH:mm:ss" );
 
-
     private static Time timeFromString( String string ) throws ParseException {
         return new Time( SQL_TIME_FORMAT.parse( string ).getTime() );
     }

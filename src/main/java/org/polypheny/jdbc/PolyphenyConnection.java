@@ -20,9 +20,11 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import lombok.SneakyThrows;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
+import org.polypheny.jdbc.types.PolyphenyArray;
 import org.polypheny.jdbc.types.PolyphenyBlob;
 import org.polypheny.jdbc.types.PolyphenyClob;
 import org.polypheny.jdbc.utils.PropertyUtils;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class PolyphenyConnection implements Connection {
 
@@ -570,8 +572,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public Array createArrayOf( String typeName, Object[] elements ) throws SQLException {
         throwIfClosed();
-        return null;
-
+        return new PolyphenyArray( typeName, elements );
     }
 
 

@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Map;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.ProtoValueType;
 
 public class ProtoToPolyTypeNameMap {
 

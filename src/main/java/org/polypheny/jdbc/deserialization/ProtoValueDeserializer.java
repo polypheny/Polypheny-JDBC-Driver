@@ -2,6 +2,7 @@ package org.polypheny.jdbc.deserialization;
 
 
 import com.google.common.collect.ImmutableMap;
+import java.sql.SQLException;
 import java.util.Map;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ValueCase;
@@ -32,11 +33,16 @@ public class ProtoValueDeserializer {
                     .put( ValueCase.EDGE, new EdgeDeserializer() )
                     .put( ValueCase.PATH, new PathDeserializer() )
                     .put( ValueCase.GRAPH, new GraphDeserializer() )
+                    .put( ValueCase.ARRAY, new ArrayDeserializer() )
                     .build();
 
 
     public static TypedValue deserialize( ProtoValue value ) {
-        return VALUE_DESERIALIZERS.get( value.getValueCase() ).deserialize( value );
+        try {
+            return VALUE_DESERIALIZERS.get( value.getValueCase() ).deserialize( value );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 }

@@ -18,9 +18,10 @@ import org.polypheny.jdbc.proto.ProtoLong;
 import org.polypheny.jdbc.proto.ProtoNull;
 import org.polypheny.jdbc.proto.ProtoString;
 import org.polypheny.jdbc.proto.ProtoTime;
+import org.polypheny.jdbc.proto.ProtoTime.TimeUnit;
 import org.polypheny.jdbc.proto.ProtoTimeStamp;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.TimeUnit;
+import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class ProtoValueSerializer {
@@ -88,10 +89,11 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
             case Types.ARRAY:
-                // TODO TH: find something useful to do here...
+                serializeAsProtoArray(typedValue);
                 break;
             case Types.BLOB:
-                // TODO TH: find something useful to do here...
+                // requires getter conversions to work propertly...
+                serializeAsProtoBinary( typedValue );
                 break;
             case Types.CLOB:
                 // TODO TH: find something useful to do here...
@@ -105,7 +107,6 @@ public class ProtoValueSerializer {
             case Types.ROWID:
                 // TODO TH: find something useful to do here...
                 break;
-
             case Types.NCLOB:
                 // TODO TH: find something useful to do here...
                 break;
@@ -126,13 +127,23 @@ public class ProtoValueSerializer {
     }
 
 
+    private static void serializeAsProtoArray( TypedValue typedValue ) {
+        //
+    }
+
+
+    private static ProtoValue.ProtoValueType getType( TypedValue typedValue ) {
+        return JdbcToProtoTypeMap.getTypeOf( typedValue );
+    }
+
+
     private static ProtoValue serializeAsProtoDouble( TypedValue typedValue ) throws SQLException {
         ProtoDouble protoDouble = ProtoDouble.newBuilder()
                 .setDouble( typedValue.asDouble() )
                 .build();
         return ProtoValue.newBuilder()
                 .setDouble( protoDouble )
-                .setType( getType( polyDouble ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -143,7 +154,7 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setFloat( protoFloat )
-                .setType( getType( polyFloat ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -154,7 +165,7 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setLong( protoLong )
-                .setType( getType( polyLong ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -168,18 +179,18 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBigDecimal( protoBigDecimal )
-                .setType( getType( polyBigDecimal ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
 
     private static ProtoValue serializeAsProtoDate( TypedValue typedValue ) throws SQLException {
         ProtoDate protoDate = ProtoDate.newBuilder()
-                .setDate( typedValue.asDate( ).getTime() / DateTimeUtils.MILLIS_PER_DAY )
+                .setDate( typedValue.asDate().getTime() / DateTimeUtils.MILLIS_PER_DAY )
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )
-                .setType( getType( polyDate ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -190,30 +201,30 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setString( protoString )
-                .setType( getType( polyString ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
 
     private static ProtoValue serializeAsProtoTime( TypedValue typedValue ) throws SQLException {
         ProtoTime protoTime = ProtoTime.newBuilder()
-                .setValue( typedValue.asTime(  ).getTime() )
-                .setTimeUnit( TimeUnit.TIME_UNIT_MILLISECOND )
+                .setValue( typedValue.asTime().getTime() )
+                .setTimeUnit( TimeUnit.MILLISECOND )
                 .build();
         return ProtoValue.newBuilder()
                 .setTime( protoTime )
-                .setType( getType( polyTime ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
 
     private static ProtoValue serializeAsTimeStamp( TypedValue typedValue ) throws SQLException {
         ProtoTimeStamp protoTimeStamp = ProtoTimeStamp.newBuilder()
-                .setTimeStamp( typedValue.asTimestamp(  ).getTime())
+                .setTimeStamp( typedValue.asTimestamp().getTime() )
                 .build();
         return ProtoValue.newBuilder()
                 .setTimeStamp( protoTimeStamp )
-                .setType( getType( polyTimeStamp ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -224,7 +235,7 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
-                .setType( getType( polyBinary ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -232,7 +243,7 @@ public class ProtoValueSerializer {
     private static ProtoValue serializeAsProtoNull( TypedValue typedValue ) {
         return ProtoValue.newBuilder()
                 .setNull( ProtoNull.newBuilder().build() )
-                .setType( getType( polyNull ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -243,18 +254,18 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBoolean( protoBoolean )
-                .setType( getType( polyBoolean ) )
+                .setType( ProtoValueType.NULL )
                 .build();
     }
 
 
     private static ProtoValue serializeAsProtoInteger( TypedValue typedValue ) throws SQLException {
         ProtoInteger protoInteger = ProtoInteger.newBuilder()
-                .setInteger( typedValue.asInt())
+                .setInteger( typedValue.asInt() )
                 .build();
         return ProtoValue.newBuilder()
                 .setInteger( protoInteger )
-                .setType( getType( polyInteger ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 

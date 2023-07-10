@@ -1,5 +1,6 @@
 package org.polypheny.jdbc.deserialization;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import org.apache.commons.lang3.NotImplementedException;
@@ -10,7 +11,7 @@ import org.polypheny.jdbc.types.TypedValue;
 public class TimeStampDeserializer implements ValueDeserializer {
 
     @Override
-    public TypedValue deserialize( ProtoValue value ) {
+    public TypedValue deserialize( ProtoValue value ) throws SQLException {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.TIMESTAMP:

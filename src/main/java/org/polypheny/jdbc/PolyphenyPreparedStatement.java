@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
-import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.proto.StatementBatchStatus;
@@ -272,12 +271,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setObject( int parameterIndex, Object x, int targetSqlType ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x, targetSqlType ) );
-            //TODO TH: remove exception after conversion impl
-        } catch ( NotImplementedException e ) {
-            throw new SQLException( e );
-        }
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x, targetSqlType ) );
     }
 
 
@@ -285,11 +279,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setObject( int parameterIndex, Object x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x ) );
-        } catch ( NotImplementedException e ) {
-            throw new RuntimeException( e );
-        }
+        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x ) );
     }
 
 

@@ -1,5 +1,6 @@
 package org.polypheny.jdbc.deserialization;
 
+import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.Date;
 import org.polypheny.jdbc.proto.ProtoDate;
@@ -9,7 +10,7 @@ import org.polypheny.jdbc.types.TypedValue;
 public class DateDeserializer implements ValueDeserializer {
 
     @Override
-    public TypedValue deserialize( ProtoValue value ) {
+    public TypedValue deserialize( ProtoValue value ) throws SQLException {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch(jdbcType) {
             case Types.DATE:
