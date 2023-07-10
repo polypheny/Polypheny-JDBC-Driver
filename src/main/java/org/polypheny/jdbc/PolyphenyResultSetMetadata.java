@@ -16,14 +16,14 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
 
     public PolyphenyResultSetMetadata( List<ColumnMeta> columnMetas ) {
-        ArrayList<PolyphenyColumnMeta> polyphenyColumnMetas = MetaUtils.buildColumnMetas( columnMetas );
-        this.columnIndexes = columnMetas.stream().collect( Collectors.toMap( ColumnMeta::getColumnLabel, c -> c.getColumnIndex() + 1, ( m, n ) -> n ) );
+        this.columnMetas = MetaUtils.buildColumnMetas( columnMetas );
+        this.columnIndexes = this.columnMetas.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, c -> c.getOrdinal() + 1, ( m, n ) -> n ) );
     }
 
 
-    public PolyphenyResultSetMetadata( ArrayList<PolyphenyColumnMeta> columnMetaData ) {
-        this.columnMetas = columnMetaData;
-        this.columnIndexes = columnMetaData.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, c -> c.getOrdinal() + 1, ( m, n ) -> n ) );
+    public PolyphenyResultSetMetadata( ArrayList<PolyphenyColumnMeta> columnMetas ) {
+        this.columnMetas = columnMetas;
+        this.columnIndexes = this.columnMetas.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, c -> c.getOrdinal() + 1, ( m, n ) -> n ) );
 
     }
 
