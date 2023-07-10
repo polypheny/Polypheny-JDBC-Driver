@@ -299,7 +299,7 @@ public class PolyphenyStatement implements Statement {
                 }
                 callback.awaitCompletion();
                 resetCurrentResults();
-                if ( status.getResult().hasFrame() ) {
+                if ( !status.getResult().hasFrame() ) {
                     currentUpdateCount = longToInt( status.getResult().getScalar() );
                     return false;
                 }
