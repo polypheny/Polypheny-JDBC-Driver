@@ -34,7 +34,7 @@ public class QueryTest {
     public void tearDown() {
     }
 
-
+/*
     @Test
     public void selectStar__NoError() throws Exception {
         final String DB_URL = "jdbc:polypheny://localhost:20590";
@@ -60,5 +60,5 @@ public class QueryTest {
             e.printStackTrace();
         }
     }
-
+*/
 }

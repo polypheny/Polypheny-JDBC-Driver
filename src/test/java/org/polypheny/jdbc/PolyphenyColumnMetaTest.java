@@ -12,10 +12,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.polypheny.jdbc.proto.ColumnMeta;
-import org.polypheny.jdbc.proto.ProtoValueType;
-import org.polypheny.jdbc.proto.TypeMeta;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
+import org.polypheny.jdbc.proto.ColumnMeta;
+import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.jdbc.proto.TypeMeta;
 import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 
 public class PolyphenyColumnMetaTest {
@@ -35,7 +36,7 @@ public class PolyphenyColumnMetaTest {
     private static final String ENTITY_NAME = "ENTITY_NAME";
     private static final String SCHEMA_NAME = "SCHEMA_NAME";
     private static final String NAMESPACE_NAME = "NAMESPACE_NAME";
-    private static final ProtoValueType VALUE_TYPE = ProtoValueType.PROTO_VALUE_TYPE_BIGINT;
+    private static final ProtoValue.ProtoValueType VALUE_TYPE = ProtoValueType.BIGINT;
     private static final int JDBC_TYPE = Types.NCLOB;
 
 
@@ -298,13 +299,13 @@ public class PolyphenyColumnMetaTest {
 
     @Test
     public void fromSpecification__Ordinal_ColumnName_EntityName_JdbcType_ColumnName() {
-        assertNull(specifiedColumnMeta.getColumnName() );
+        assertNull( specifiedColumnMeta.getColumnName() );
     }
 
 
     @Test
     public void fromSpecification__Ordinal_ColumnName_EntityName_JdbcType_Namespace() {
-        assertNull(specifiedColumnMeta.getNamespace() );
+        assertNull( specifiedColumnMeta.getNamespace() );
     }
 
 

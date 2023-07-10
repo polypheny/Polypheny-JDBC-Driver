@@ -18,7 +18,6 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoValue.ProtoValueType.NULL, Types.NULL )
                     .put( ProtoValue.ProtoValueType.DECIMAL, Types.DECIMAL )
                     .put( ProtoValue.ProtoValueType.BINARY, Types.BINARY )
-                    .put( ProtoValue.ProtoValueType.FILE, Types.BINARY )
                     .put( ProtoValue.ProtoValueType.BIGINT, Types.BIGINT )
                     .put( ProtoValue.ProtoValueType.DOUBLE, Types.DOUBLE )
                     .put( ProtoValue.ProtoValueType.SYMBOL, Types.OTHER )

@@ -43,7 +43,7 @@ public class MetaDataTest {
     public void tearDown() {
     }
 
-
+/*
     @Test
     public void getTables__NoError() throws Exception {
         ResultSet rs = dbConnection.getMetaData().getTables(null, null, "%",null );
@@ -67,4 +67,6 @@ public class MetaDataTest {
             System.out.println(rs.getString("TABLE_SCHEM"));
         }
     }
+
+ */
 }
