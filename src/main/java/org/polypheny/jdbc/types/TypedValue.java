@@ -94,7 +94,7 @@ public class TypedValue implements Convertible {
 
     public static TypedValue fromBytes( byte[] bytes ) {
         /* differentiation between VARBINARY and LONGVARBINARY can be ignored as value is converted to PolyBinary anyway */
-        return new TypedValue( Types.VARBINARY, bytes );
+        return new TypedValue( Types.BINARY, bytes );
     }
 
 
@@ -292,24 +292,6 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue fromObject( Object value ) throws NotImplementedException {
-        //TODO TH: type conversion
-        throw new NotImplementedException( "Not yet implemented..." );
-    }
-
-
-    public static TypedValue fromObject( Object value, int targetSqlType ) {
-        //TODO TH: type conversion
-        return null;
-    }
-
-
-    public static TypedValue fromObject( Object value, int targetSqlType, int scaleOrLength ) throws NotImplementedException {
-        //TODO TH: type conversion
-        throw new NotImplementedException( "Not yet implemented..." );
-    }
-
-
     private static String collectCharacterStream( Reader reader ) throws IOException {
         char[] readBuffer = new char[8 * 1024];
         StringBuilder buffer = new StringBuilder();
@@ -353,7 +335,10 @@ public class TypedValue implements Convertible {
 
     @Override
     public String asString() throws SQLException {
-        return value.toString();
+        if ( value instanceof String ) {
+            return (String) value;
+        }
+        throw new SQLException( "Can't convert this value to string" );
     }
 
 
@@ -365,54 +350,55 @@ public class TypedValue implements Convertible {
         }
         switch ( jdbcType ) {
             case Types.BOOLEAN:
-                return (Boolean) value;
+                if ( value instanceof Boolean ) {
+                    return (Boolean) value;
+                }
+                throw new SQLException( "Can't convert this value to boolean" );
             case Types.TINYINT:
-                return (Byte) value != 0;
+                if ( value instanceof Byte ) {
+                    return (Byte) value != 0;
+                }
+                throw new SQLException( "Can't convert this value to boolean" );
             case Types.SMALLINT:
-                short sValue = (short) value;
-                switch ( sValue ) {
-                    case 0:
-                        return false;
-                    case 1:
-                        return true;
+                if ( value instanceof Short ) {
+                    switch ( (Short) value ) {
+                        case 0:
+                            return false;
+                        case 1:
+                            return true;
+                    }
                 }
-                throw new SQLException( "Cast from SMALLINT " + sValue + " to boolean is not supported." );
+                throw new SQLException( "Can't convert this value to boolean" );
             case Types.INTEGER:
-                int iValue = (int) value;
-                switch ( iValue ) {
-                    case 0:
-                        return false;
-                    case 1:
-                        return true;
+                if ( value instanceof Integer ) {
+                    switch ( (Integer) value ) {
+                        case 0:
+                            return false;
+                        case 1:
+                            return true;
+                    }
                 }
-                throw new SQLException( "Cast from INTEGER " + iValue + " to boolean is not supported." );
+                throw new SQLException( "Can't convert this value to boolean" );
             case Types.BIGINT:
-                long lValue = (long) value;
-                if ( lValue == 0 ) {
-                    return false;
+                if ( value instanceof Long ) {
+                    if ( (Long) value == 0 ) {
+                        return false;
+                    } else if ( (Long) value == 1 ) {
+                        return true;
+                    }
                 }
-                if ( lValue == 1 ) {
-                    return true;
-                }
-                throw new SQLException( "Cast from BIGINT " + lValue + " to boolean is not supported." );
+                throw new SQLException( "Can't convert this value to boolean" );
             case Types.CHAR:
-                char cValue = (char) value;
-                if ( cValue == '0' ) {
-                    return false;
-                }
-                if ( cValue == '1' ) {
-                    return true;
-                }
-                throw new SQLException( "Cast from CHAR " + cValue + " to boolean is not supported." );
             case Types.VARCHAR:
-                String strValue = (String) value;
-                if ( strValue.equals( "0" ) ) {
-                    return false;
+                if ( value instanceof String ) {
+                    if ( value.equals( "0" ) ) {
+                        return false;
+                    }
+                    if ( value.equals( "1" ) ) {
+                        return true;
+                    }
                 }
-                if ( strValue.equals( "1" ) ) {
-                    return true;
-                }
-                throw new SQLException( "Cast from VARCHAR " + strValue + " to boolean is not supported." );
+                throw new SQLException( "Can't convert this value to boolean" );
         }
         throw new SQLException( "Conversion to BOOLEAN is not supported." );
     }
@@ -423,10 +409,10 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( jdbcType != Types.TINYINT ) {
-            throw new SQLException( "Conversion to byte is not supported." );
+        if ( value instanceof Byte ) {
+            return (Byte) value;
         }
-        return (byte) value;
+        throw new SQLException( "Can't convert this value to byte" );
     }
 
 
@@ -435,10 +421,10 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( jdbcType != Types.SMALLINT ) {
-            throw new SQLException( "Conversion to short is not supported." );
+        if ( value instanceof Short ) {
+            return (Short) value;
         }
-        return (short) value;
+        throw new SQLException( "Can't convert this value to short" );
     }
 
 
@@ -447,10 +433,10 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( jdbcType != Types.INTEGER ) {
-            throw new SQLException( "Conversion to int is not supported." );
+        if ( value instanceof Integer ) {
+            return (Integer) value;
         }
-        return (int) value;
+        throw new SQLException( "Can't convert this value to int" );
     }
 
 
@@ -459,10 +445,10 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( jdbcType != Types.BIGINT ) {
-            throw new SQLException( "Conversion to long is not supported." );
+        if ( value instanceof Long ) {
+            return (Long) value;
         }
-        return (long) value;
+        throw new SQLException( "Can't convert this value to long" );
     }
 
 
@@ -471,10 +457,10 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( jdbcType != Types.REAL ) {
-            throw new SQLException( "Conversion to float is not supported." );
+        if ( value instanceof Float ) {
+            return (Float) value;
         }
-        return (float) value;
+        throw new SQLException( "Can't convert this value to float" );
     }
 
 
@@ -483,10 +469,10 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( jdbcType != Types.DOUBLE ) {
-            throw new SQLException( "Conversion to double is not supported." );
+        if ( value instanceof Double ) {
+            return (Double) value;
         }
-        return (double) value;
+        throw new SQLException( "Can't convert this value to double" );
     }
 
 
@@ -501,10 +487,10 @@ public class TypedValue implements Convertible {
         if ( jdbcType == Types.NULL ) {
             return null;
         }
-        if ( jdbcType != Types.DECIMAL ) {
-            throw new SQLException( "Conversion to BigDecimal is not supported." );
+        if ( value instanceof BigDecimal ) {
+            return (BigDecimal) value;
         }
-        return ((BigDecimal) value);
+        throw new SQLException( "Can't convert this value to byte" );
     }
 
 
@@ -526,7 +512,10 @@ public class TypedValue implements Convertible {
         if ( jdbcType == Types.NULL ) {
             return null;
         }
-        return new ByteArrayInputStream( value.toString().getBytes( StandardCharsets.US_ASCII ) );
+        if ( value instanceof String ) {
+            return new ByteArrayInputStream( ((String) value).getBytes( StandardCharsets.US_ASCII ) );
+        }
+        throw new SQLException( "Conversion to ascii stream not supported." );
     }
 
 
@@ -541,7 +530,10 @@ public class TypedValue implements Convertible {
         if ( jdbcType == Types.NULL ) {
             return null;
         }
-        return new ByteArrayInputStream( value.toString().getBytes( StandardCharsets.UTF_8 ) );
+        if ( value instanceof String ) {
+            return new ByteArrayInputStream( ((String) value).getBytes( StandardCharsets.UTF_8 ) );
+        }
+        throw new SQLException( "Conversion to unicode stream not supported." );
     }
 
 
@@ -550,19 +542,10 @@ public class TypedValue implements Convertible {
         if ( jdbcType == Types.NULL ) {
             return null;
         }
-        if ( jdbcType == Types.BINARY || jdbcType == Types.VARBINARY ) {
+        if ( value instanceof byte[] ) {
             return new ByteArrayInputStream( (byte[]) value );
         }
         throw new SQLException( "Conversion to binary stream not supported." );
-    }
-
-
-    @Override
-    public Object asObject() {
-        if ( jdbcType == Types.NULL ) {
-            return null;
-        }
-        return value;
     }
 
 
@@ -571,7 +554,11 @@ public class TypedValue implements Convertible {
         if ( jdbcType == Types.NULL ) {
             return null;
         }
-        return new StringReader( value.toString() );
+        if ( value instanceof String ) {
+            return new StringReader( (String) value );
+        }
+        throw new SQLException( "Can't convert this value to a character stream" );
+
     }
 
 
@@ -580,7 +567,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Blob ) {
             return (Blob) value;
         }
-        throw new SQLException( "Conversion to blob not supported." );
+        throw new SQLException( "Can't convert this value to a blob" );
     }
 
 
@@ -589,13 +576,16 @@ public class TypedValue implements Convertible {
         if ( value instanceof Clob ) {
             return (Clob) value;
         }
-        throw new SQLException( "Conversion to clob not supported." );
+        throw new SQLException( "Can't convert this value to a clob" );
     }
 
 
     @Override
     public Array asArray() throws SQLException {
-        throw new SQLException( "Conversion to array not supported." );
+        if ( value instanceof Array ) {
+            return (Array) value;
+        }
+        throw new SQLException( "Can't convert this value to an array" );
     }
 
 
@@ -604,7 +594,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Struct ) {
             return (Struct) value;
         }
-        throw new SQLException( "Conversion to struct not supported." );
+        throw new SQLException( "Can't convert this value to a struct" );
     }
 
 
@@ -613,7 +603,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof java.util.Date ) {
             return (Date) value;
         }
-        throw new SQLException( "Conversion to date supported." );
+        throw new SQLException( "Can't convert this value to a date" );
     }
 
 
@@ -627,7 +617,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Time ) {
             return (Time) value;
         }
-        throw new SQLException( "Conversion to time supported." );
+        throw new SQLException( "Can't convert this value to time" );
     }
 
 
@@ -636,11 +626,11 @@ public class TypedValue implements Convertible {
         if ( jdbcType == Types.NULL ) {
             return null;
         }
-        if ( jdbcType != Types.TIME ) {
-            throw new SQLException( "Conversion to time not supported." );
+        if ( value instanceof Time ) {
+            long tValue = ((Time) value).getTime();
+            return new Time( tValue - calendar.getTimeZone().getOffset( tValue ) );
         }
-        long tValue = ((Time) value).getTime();
-        return new Time( tValue - calendar.getTimeZone().getOffset( tValue ) );
+        throw new SQLException( "Can't convert this value to time" );
     }
 
 
@@ -648,7 +638,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Timestamp ) {
             return (Timestamp) value;
         }
-        throw new SQLException( "Conversion to timestamp not supported." );
+        throw new SQLException( "Can't convert this value to time" );
     }
 
 
@@ -657,11 +647,11 @@ public class TypedValue implements Convertible {
         if ( jdbcType == Types.NULL ) {
             return null;
         }
-        if ( jdbcType != Types.TIMESTAMP ) {
-            throw new SQLException( "Conversion to time not supported." );
+        if ( value instanceof Timestamp ) {
+            long tsValue = ((Timestamp) value).getTime();
+            return new Timestamp( tsValue - calendar.getTimeZone().getOffset( tsValue ) );
         }
-        long tsValue = ((Timestamp) value).getTime();
-        return new Timestamp( tsValue - calendar.getTimeZone().getOffset( tsValue ) );
+        throw new SQLException( "Can't convert this value to a timestamp" );
     }
 
 
@@ -670,23 +660,34 @@ public class TypedValue implements Convertible {
         if ( jdbcType == Types.NULL ) {
             return null;
         }
-        throw new SQLException( "Conversion to time not supported." );
+        if ( value instanceof URL ) {
+            return (URL) value;
+        }
+        throw new SQLException( "Can't convert this value to a url" );
     }
 
 
     @Override
     public NClob asNClob() throws SQLException {
-        // PolyphenyClob implements CLob and NClob as we handle both as UTF-8
-        if ( value instanceof PolyphenyClob ) {
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        if ( value instanceof NClob ) {
             return (NClob) value;
         }
-        throw new SQLException( "Conversion to clob not supported." );
+        throw new SQLException( "Can't convert this value to a nclob");
     }
 
 
     @Override
     public SQLXML asSQLXML() throws SQLException {
-        throw new SQLException( "Conversion to time not supported." );
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        if ( value instanceof SQLXML ) {
+            return (SQLXML) value;
+        }
+        throw new SQLException( "Can't convert this value to a nclob");
     }
 
 
@@ -698,7 +699,34 @@ public class TypedValue implements Convertible {
 
     @Override
     public Reader asNCharacterStream() throws SQLException {
-        return new InputStreamReader( asUnicodeStream() );
+        return asCharacterStream();
+    }
+
+
+    @Override
+    public Object asObject() {
+        if ( jdbcType == Types.NULL ) {
+            return null;
+        }
+        //TODO soething
+    }
+
+
+    public static TypedValue fromObject( Object value ) throws NotImplementedException {
+        //TODO TH: type conversion
+        throw new NotImplementedException( "Not yet implemented..." );
+    }
+
+
+    public static TypedValue fromObject( Object value, int targetSqlType ) {
+        //TODO TH: type conversion
+        return null;
+    }
+
+
+    public static TypedValue fromObject( Object value, int targetSqlType, int scaleOrLength ) throws NotImplementedException {
+        //TODO TH: type conversion
+        throw new NotImplementedException( "Not yet implemented..." );
     }
 
 
