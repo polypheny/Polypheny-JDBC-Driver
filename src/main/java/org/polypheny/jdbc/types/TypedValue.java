@@ -347,10 +347,10 @@ public class TypedValue implements Convertible {
 
     @Override
     public String asString() throws SQLException {
-        if ( value instanceof String ) {
-            return (String) value;
+        if ( isSqlNull() ) {
+            return null;
         }
-        throw new SQLException( "Can't convert this value to string" );
+        return value.toString();
     }
 
 
@@ -360,57 +360,14 @@ public class TypedValue implements Convertible {
             // jdbc4: if the value is SQL NULL, the value returned is false
             return false;
         }
-        switch ( jdbcType ) {
-            case Types.BOOLEAN:
-                if ( value instanceof Boolean ) {
-                    return (Boolean) value;
-                }
-                throw new SQLException( "Can't convert this value to boolean" );
-            case Types.TINYINT:
-                if ( value instanceof Byte ) {
-                    return (Byte) value != 0;
-                }
-                throw new SQLException( "Can't convert this value to boolean" );
-            case Types.SMALLINT:
-                if ( value instanceof Short ) {
-                    switch ( (Short) value ) {
-                        case 0:
-                            return false;
-                        case 1:
-                            return true;
-                    }
-                }
-                throw new SQLException( "Can't convert this value to boolean" );
-            case Types.INTEGER:
-                if ( value instanceof Integer ) {
-                    switch ( (Integer) value ) {
-                        case 0:
-                            return false;
-                        case 1:
-                            return true;
-                    }
-                }
-                throw new SQLException( "Can't convert this value to boolean" );
-            case Types.BIGINT:
-                if ( value instanceof Long ) {
-                    if ( (Long) value == 0 ) {
-                        return false;
-                    } else if ( (Long) value == 1 ) {
-                        return true;
-                    }
-                }
-                throw new SQLException( "Can't convert this value to boolean" );
-            case Types.CHAR:
-            case Types.VARCHAR:
-                if ( value instanceof String ) {
-                    if ( value.equals( "0" ) ) {
-                        return false;
-                    }
-                    if ( value.equals( "1" ) ) {
-                        return true;
-                    }
-                }
-                throw new SQLException( "Can't convert this value to boolean" );
+        if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
+            return TypedValueUtils.getBooleanFromNumber( (Number) value );
+        }
+        if ( TypedValueUtils.isBooleanRepresented( jdbcType ) ) {
+            return (Boolean) value;
+        }
+        if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+            return TypedValueUtils.getBooleanFromString( (String) value );
         }
         throw new SQLException( "Conversion to BOOLEAN is not supported." );
     }
@@ -421,8 +378,17 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( value instanceof Byte ) {
-            return (Byte) value;
+        if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
+            return ((Number) value).byteValue();
+        }
+        if ( TypedValueUtils.isBooleanRepresented( jdbcType ) ) {
+            return TypedValueUtils.getNumberFromBoolean( (Boolean) value ).byteValue();
+        }
+        try {
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return Byte.parseByte( (String) value );
+            }
+        } catch ( NumberFormatException ignored ) {
         }
         throw new SQLException( "Can't convert this value to byte" );
     }
@@ -433,8 +399,17 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( value instanceof Short ) {
-            return (Short) value;
+        if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
+            return ((Number) value).shortValue();
+        }
+        if ( TypedValueUtils.isBooleanRepresented( jdbcType ) ) {
+            return TypedValueUtils.getNumberFromBoolean( (Boolean) value ).shortValue();
+        }
+        try {
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return Short.parseShort( (String) value );
+            }
+        } catch ( NumberFormatException ignored ) {
         }
         throw new SQLException( "Can't convert this value to short" );
     }
@@ -445,8 +420,17 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( value instanceof Integer ) {
-            return (Integer) value;
+        if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
+            return ((Number) value).intValue();
+        }
+        if ( TypedValueUtils.isBooleanRepresented( jdbcType ) ) {
+            return TypedValueUtils.getNumberFromBoolean( (Boolean) value ).intValue();
+        }
+        try {
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return Integer.parseInt( (String) value );
+            }
+        } catch ( NumberFormatException ignored ) {
         }
         throw new SQLException( "Can't convert this value to int" );
     }
@@ -457,8 +441,17 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( value instanceof Long ) {
-            return (Long) value;
+        if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
+            return ((Number) value).longValue();
+        }
+        if ( TypedValueUtils.isBooleanRepresented( jdbcType ) ) {
+            return TypedValueUtils.getNumberFromBoolean( (Boolean) value ).longValue();
+        }
+        try {
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return Long.parseLong( (String) value );
+            }
+        } catch ( NumberFormatException ignored ) {
         }
         throw new SQLException( "Can't convert this value to long" );
     }
@@ -469,8 +462,17 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( value instanceof Float ) {
-            return (Float) value;
+        if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
+            return ((Number) value).floatValue();
+        }
+        if ( TypedValueUtils.isBooleanRepresented( jdbcType ) ) {
+            return TypedValueUtils.getNumberFromBoolean( (Boolean) value ).floatValue();
+        }
+        try {
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return Float.parseFloat( (String) value );
+            }
+        } catch ( NumberFormatException ignored ) {
         }
         throw new SQLException( "Can't convert this value to float" );
     }
@@ -481,8 +483,17 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return 0;
         }
-        if ( value instanceof Double ) {
-            return (Double) value;
+        if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
+            return ((Number) value).doubleValue();
+        }
+        if ( TypedValueUtils.isBooleanRepresented( jdbcType ) ) {
+            return TypedValueUtils.getNumberFromBoolean( (Boolean) value ).doubleValue();
+        }
+        try {
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return Double.parseDouble( (String) value );
+            }
+        } catch ( NumberFormatException ignored ) {
         }
         throw new SQLException( "Can't convert this value to double" );
     }
@@ -499,8 +510,20 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return null;
         }
-        if ( value instanceof BigDecimal ) {
-            return (BigDecimal) value;
+        try {
+            if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
+                if ( value instanceof BigDecimal ) {
+                    return (BigDecimal) value;
+                }
+                return new BigDecimal( value.toString() );
+            }
+            if ( TypedValueUtils.isBooleanRepresented( jdbcType ) ) {
+                return TypedValueUtils.getBigDecimalFromBoolean( (Boolean) value );
+            }
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return new BigDecimal( (String) value );
+            }
+        } catch ( NumberFormatException ignored ) {
         }
         throw new SQLException( "Can't convert this value to byte" );
     }
@@ -508,6 +531,12 @@ public class TypedValue implements Convertible {
 
     @Override
     public byte[] asBytes() throws SQLException {
+        if ( isSqlNull() ) {
+            return null;
+        }
+        if ( TypedValueUtils.isBinaryRepresented( jdbcType ) ) {
+            return (byte[]) value;
+        }
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             ObjectOutputStream objectOutputStream = new ObjectOutputStream( byteArrayOutputStream );
@@ -585,7 +614,8 @@ public class TypedValue implements Convertible {
 
     @Override
     public Clob asClob() throws SQLException {
-        if ( value instanceof Clob ) {
+        if (TypedValueUtils.isClobOrNClobRepresented( jdbcType )) {
+            // legit cast as Clob is a superinterface of Clob
             return (Clob) value;
         }
         throw new SQLException( "Can't convert this value to a clob" );
@@ -612,8 +642,20 @@ public class TypedValue implements Convertible {
 
     @Override
     public Date asDate() throws SQLException {
-        if ( value instanceof java.util.Date ) {
-            return (Date) value;
+        if ( isSqlNull() ) {
+            return null;
+        }
+        switch ( jdbcType ) {
+            case Types.DATE:
+                return (Date) value;
+            case Types.TIMESTAMP:
+                return TypedValueUtils.getDateFromTimestamp( (Timestamp) value );
+        }
+        try {
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return TypedValueUtils.getDateFromString( (String) value );
+            }
+        } catch ( ParseException ignored ) {
         }
         throw new SQLException( "Can't convert this value to a date" );
     }
@@ -621,13 +663,28 @@ public class TypedValue implements Convertible {
 
     @Override
     public Date asDate( Calendar calendar ) throws SQLException {
-        return null;
+        if ( isSqlNull() ) {
+            return null;
+        }
+        return TypedValueUtils.getDateInCalendar( asDate(), calendar );
     }
 
 
     public Time asTime() throws SQLException {
-        if ( value instanceof Time ) {
-            return (Time) value;
+        if ( isSqlNull() ) {
+            return null;
+        }
+        switch ( jdbcType ) {
+            case Types.DATE:
+                return (Time) value;
+            case Types.TIMESTAMP:
+                return TypedValueUtils.getTimeFromTimestamp( (Timestamp) value );
+        }
+        try {
+            if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+                return TypedValueUtils.getTimeFromString( (String) value );
+            }
+        } catch ( ParseException ignored ) {
         }
         throw new SQLException( "Can't convert this value to time" );
     }
@@ -638,17 +695,24 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return null;
         }
-        if ( value instanceof Time ) {
-            long tValue = ((Time) value).getTime();
-            return new Time( tValue - calendar.getTimeZone().getOffset( tValue ) );
-        }
-        throw new SQLException( "Can't convert this value to time" );
+        return TypedValueUtils.getTimeInCalendar( asTime(), calendar );
     }
 
 
     public Timestamp asTimestamp() throws SQLException {
-        if ( value instanceof Timestamp ) {
-            return (Timestamp) value;
+        if ( isSqlNull() ) {
+            return null;
+        }
+        switch ( jdbcType ) {
+            case Types.TIMESTAMP:
+                return (Timestamp) value;
+            case Types.DATE:
+                return TypedValueUtils.getTimestampFromDate( (Date) value );
+            case Types.TIME:
+                return  TypedValueUtils.getTimestampFromTime( (Time) value );
+        }
+        if (TypedValueUtils.isStringRepresented( jdbcType )) {
+                return TypedValueUtils.getTimestampFromString( (String) value);
         }
         throw new SQLException( "Can't convert this value to time" );
     }
@@ -659,11 +723,7 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() ) {
             return null;
         }
-        if ( value instanceof Timestamp ) {
-            long tsValue = ((Timestamp) value).getTime();
-            return new Timestamp( tsValue - calendar.getTimeZone().getOffset( tsValue ) );
-        }
-        throw new SQLException( "Can't convert this value to a timestamp" );
+        return TypedValueUtils.getTimestampInCalendar( asTimestamp(), calendar );
     }
 
 

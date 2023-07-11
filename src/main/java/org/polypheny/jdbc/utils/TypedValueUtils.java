@@ -2,6 +2,7 @@ package org.polypheny.jdbc.utils;
 
 import static java.util.stream.Collectors.toCollection;
 
+import com.google.common.collect.ImmutableSet;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
@@ -30,6 +31,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
@@ -43,22 +45,91 @@ public class TypedValueUtils {
     private static final SimpleDateFormat SQL_DATE_FORMAT = new SimpleDateFormat( "dd MMM yyyy" );
     private static final SimpleDateFormat SQL_TIME_FORMAT = new SimpleDateFormat( "HH:mm:ss" );
 
-    private static Time timeFromString( String string ) throws ParseException {
+    private static final Set<Integer> NUMERIC_RETURNING_TYPES =
+            ImmutableSet.<Integer>builder()
+                    .add( Types.TINYINT )
+                    .add( Types.SMALLINT )
+                    .add( Types.INTEGER )
+                    .add( Types.BIGINT )
+                    .add( Types.REAL )
+                    .add( Types.FLOAT )
+                    .add( Types.DOUBLE )
+                    .add( Types.DECIMAL )
+                    .add( Types.NUMERIC )
+                    .build();
+
+    private static final Set<Integer> STRING_RETURNING_TYPES =
+            ImmutableSet.<Integer>builder()
+                    .add( Types.CHAR )
+                    .add( Types.VARCHAR )
+                    .add( Types.LONGVARCHAR )
+                    .build();
+
+    private static final Set<Integer> BOOLEAN_RETURNING_TYPES =
+            ImmutableSet.<Integer>builder()
+                    .add( Types.BIT )
+                    .add( Types.BOOLEAN )
+                    .build();
+
+    private static final Set<Integer> BINARY_RETURNING_TYPES =
+            ImmutableSet.<Integer>builder()
+                    .add( Types.BIT )
+                    .add( Types.BOOLEAN )
+                    .build();
+
+
+    private static final Set<Integer> CLOB_RETURNING_TYPES =
+            ImmutableSet.<Integer>builder()
+                    .add( Types.CLOB )
+                    .add( Types.NCLOB )
+                    .build();
+
+
+    public static boolean isNumberRepresented( int jdbcType ) {
+        return NUMERIC_RETURNING_TYPES.contains( jdbcType );
+    }
+
+
+    public static boolean isStringRepresented( int jdbcType ) {
+        return STRING_RETURNING_TYPES.contains( jdbcType );
+    }
+
+
+    public static boolean isBooleanRepresented( int jdbcType ) {
+        return BOOLEAN_RETURNING_TYPES.contains( jdbcType );
+    }
+
+
+    public static boolean isBinaryRepresented( int jdbcType ) {
+        return BINARY_RETURNING_TYPES.contains( jdbcType );
+    }
+
+    public static boolean isClobOrNClobRepresented( int jdbcType ) {
+        return CLOB_RETURNING_TYPES.contains( jdbcType );
+    }
+
+
+    public static Time getTimeFromString( String string ) throws ParseException {
         return new Time( SQL_TIME_FORMAT.parse( string ).getTime() );
     }
 
 
-    private static Date dateFromString( String string ) throws ParseException {
+    public static Date getDateFromString( String string ) throws ParseException {
         return new Date( SQL_DATE_FORMAT.parse( string ).getTime() );
     }
 
 
-    private static boolean getBooleanFromNumber( Number number ) {
+    public static boolean getBooleanFromNumber( Number number ) {
         return number.byteValue() == 1;
     }
 
 
-    private static Number getNumberFromBoolean( Boolean bool ) {
+    public static boolean getBooleanFromString( String string ) {
+        return string.equals( "1" ) || string.equalsIgnoreCase( "true" );
+    }
+
+
+    public static Number getNumberFromBoolean( Boolean bool ) {
         if ( bool ) {
             return 1;
         }
@@ -66,11 +137,39 @@ public class TypedValueUtils {
     }
 
 
-    private static String getOneZeroStringFromBoolean( Boolean bool ) {
+    public static BigDecimal getBigDecimalFromBoolean( Boolean bool ) {
+        if ( bool ) {
+            return BigDecimal.ONE;
+        }
+        return BigDecimal.ZERO;
+    }
+
+
+    public static String getOneZeroStringFromBoolean( Boolean bool ) {
         if ( bool ) {
             return "1";
         }
         return "0";
+    }
+
+
+    public static Date getDateFromTimestamp( Timestamp timestamp ) {
+        return new Date( timestamp.getTime() );
+    }
+
+
+    public static Date getDateInCalendar( Date date, Calendar calendar ) {
+        return new Date( getTimeLongInCalendar( date.getTime(), calendar ) );
+    }
+
+
+    public static Time getTimeFromTimestamp( Timestamp timestamp ) {
+        return new Time( timestamp.getTime() );
+    }
+
+
+    public static Time getTimeInCalendar( Time time, Calendar calendar ) {
+        return new Time( getTimeLongInCalendar( time.getTime(), calendar ) );
     }
 
 
@@ -81,6 +180,28 @@ public class TypedValueUtils {
 
     private static Timestamp getTimestampFromOffsetDateTime( OffsetDateTime offsetDateTime ) {
         return Timestamp.valueOf( offsetDateTime.atZoneSameInstant( ZoneOffset.UTC ).toLocalDateTime() );
+    }
+
+
+    public static Timestamp getTimestampFromTime( Time value ) {
+        return new Timestamp( value.getTime() );
+    }
+
+
+    public static Timestamp getTimestampFromDate( Date value ) {
+        return new Timestamp( value.getTime() );
+    }
+
+    public static Timestamp getTimestampFromString( String value ) {
+        return Timestamp.valueOf( value );
+    }
+
+    public static Timestamp getTimestampInCalendar( Timestamp timestamp, Calendar calendar ) {
+        return new Timestamp( getTimeLongInCalendar( timestamp.getTime(), calendar ) );
+    }
+
+    private static long getTimeLongInCalendar(long value, Calendar calendar) {
+        return value - calendar.getTimeZone().getOffset( value );
     }
 
 
@@ -308,15 +429,15 @@ public class TypedValueUtils {
         if ( value instanceof OffsetDateTime ) {
             return buildTypedValueFromOffsetDateTime( (OffsetDateTime) value, targetSqlType );
         }
-        return buildTypedValueFromJavaObject(value, targetSqlType);
+        return buildTypedValueFromJavaObject( value, targetSqlType );
     }
 
 
     private static TypedValue buildTypedValueFromJavaObject( Object value, int targetSqlType ) throws ParseException {
-        if (targetSqlType != Types.JAVA_OBJECT) {
+        if ( targetSqlType != Types.JAVA_OBJECT ) {
             throw new ParseException( "Can't parse Object as type " + targetSqlType, 0 );
         }
-        return TypedValue.fromJavaObject(value);
+        return TypedValue.fromJavaObject( value );
     }
 
 
@@ -502,9 +623,9 @@ public class TypedValueUtils {
     private static TypedValue buildTypedValueFromTimestamp( Timestamp value, int targetSqlType ) throws ParseException {
         switch ( targetSqlType ) {
             case Types.TIME:
-                return TypedValue.fromTime( new Time( value.getTime() ) );
+                return TypedValue.fromTime( getTimeFromTimestamp( value ) );
             case Types.DATE:
-                return TypedValue.fromDate( new Date( value.getTime() ) );
+                return TypedValue.fromDate( getDateFromTimestamp( value ) );
             case Types.TIMESTAMP:
                 return TypedValue.fromTimestamp( value );
             case Types.CHAR:
@@ -521,7 +642,7 @@ public class TypedValueUtils {
             case Types.TIME:
                 return TypedValue.fromTime( value );
             case Types.TIMESTAMP:
-                return TypedValue.fromTimestamp( new Timestamp( value.getTime() ) );
+                return TypedValue.fromTimestamp( getTimestampFromTime( value ) );
             case Types.CHAR:
             case Types.VARCHAR:
             case Types.LONGVARCHAR:
@@ -536,7 +657,7 @@ public class TypedValueUtils {
             case Types.DATE:
                 return TypedValue.fromDate( value );
             case Types.TIMESTAMP:
-                return TypedValue.fromTimestamp( new Timestamp( value.getTime() ) );
+                return TypedValue.fromTimestamp( getTimestampFromDate( value ) );
             case Types.CHAR:
             case Types.VARCHAR:
             case Types.LONGVARCHAR:
@@ -839,16 +960,7 @@ public class TypedValueUtils {
                 return TypedValue.fromBigDecimal( new BigDecimal( value ) );
             case Types.BIT:
             case Types.BOOLEAN:
-                if ( value.equals( "0" ) ) {
-                    return TypedValue.fromBoolean( false );
-                }
-                if ( value.equals( "1" ) ) {
-                    return TypedValue.fromBoolean( true );
-                }
-                if ( value.equalsIgnoreCase( "true" ) ) {
-                    return TypedValue.fromBoolean( true );
-                }
-                return TypedValue.fromBoolean( false );
+                return TypedValue.fromBoolean( getBooleanFromString( value ) );
             case Types.CHAR:
             case Types.VARCHAR:
             case Types.LONGVARCHAR:
@@ -861,11 +973,11 @@ public class TypedValueUtils {
             case Types.LONGVARBINARY:
                 return TypedValue.fromBytes( value.getBytes( StandardCharsets.UTF_8 ) );
             case Types.DATE:
-                return TypedValue.fromDate( dateFromString( value ) );
+                return TypedValue.fromDate( getDateFromString( value ) );
             case Types.TIME:
-                return TypedValue.fromTime( timeFromString( value ) );
+                return TypedValue.fromTime( getTimeFromString( value ) );
             case Types.TIMESTAMP:
-                return TypedValue.fromTimestamp( Timestamp.valueOf( value ) );
+                return TypedValue.fromTimestamp( getTimestampFromString( value ) );
         }
         throw new ParseException( "Can't parse String as type " + targetSqlType, 0 );
     }
