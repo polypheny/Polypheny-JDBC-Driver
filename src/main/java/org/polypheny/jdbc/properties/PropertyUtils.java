@@ -1,4 +1,4 @@
-package org.polypheny.jdbc.utils;
+package org.polypheny.jdbc.properties;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -67,6 +67,16 @@ public class PropertyUtils {
     private static final String PASSWORD_KEY = "password";
     @Getter
     private static final String NAMESPACE_KEY = "namespace";
+    @Getter
+    private static final String AUTOCOMMIT_KEY = "autocommit";
+    @Getter
+    private static final String READ_ONLY_KEY = "readonly";
+    @Getter
+    private static final String RESULT_SET_HOLDABILITY_KEY = "holdability";
+    @Getter
+    private static final String NETWORK_TIMEOUT_KEY = "nwtimeout";
+    @Getter
+    private static final String TRANSACTION_ISOLATION_KEY = "isolation";
 
     // Methods for input checking
     private static final Map<Integer, List<Integer>> SUPPORTED_CONCURRENCIES =

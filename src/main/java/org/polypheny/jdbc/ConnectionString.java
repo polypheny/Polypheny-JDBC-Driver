@@ -9,7 +9,8 @@ import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.jdbc.utils.PropertyUtils;
+import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
 
 @Slf4j
 public class ConnectionString {

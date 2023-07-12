@@ -11,7 +11,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.polypheny.jdbc.utils.PropertyUtils;
+import org.polypheny.jdbc.properties.PropertyUtils;
 
 public class ConnectionStringTest {
 
