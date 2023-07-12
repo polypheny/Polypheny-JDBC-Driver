@@ -258,8 +258,8 @@ public class ProtoInterfaceClient {
     public ColumnsResponse getColumns( String namespacePattern, String tablePattern, String columnPattern ) {
         ColumnsRequest.Builder requestBuilder = ColumnsRequest.newBuilder();
         Optional.ofNullable( namespacePattern ).ifPresent( requestBuilder::setNamespacePattern );
-        requestBuilder.setTablePattern( tablePattern );
-        requestBuilder.setColumnPattern( columnPattern );
+        Optional.ofNullable( tablePattern ).ifPresent( requestBuilder::setTablePattern );
+        Optional.ofNullable( columnPattern ).ifPresent( requestBuilder::setColumnPattern );
         return blockingStub.getColumns( requestBuilder.build() );
     }
 

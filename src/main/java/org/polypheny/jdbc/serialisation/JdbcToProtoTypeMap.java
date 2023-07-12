@@ -11,7 +11,7 @@ public class JdbcToProtoTypeMap {
 
     private static final Map<Integer, ProtoValue.ProtoValueType> JDBC_TYPE_TO_PROTO =
             ImmutableMap.<Integer, ProtoValue.ProtoValueType>builder()
-                    .put( Types.TINYINT, ProtoValue.ProtoValueType.INTEGER )
+                    .put( Types.TINYINT, ProtoValueType.INTEGER )
                     .put( Types.SMALLINT, ProtoValueType.INTEGER )
                     .put( Types.INTEGER, ProtoValueType.INTEGER )
                     .put( Types.BIT, ProtoValueType.BOOLEAN )

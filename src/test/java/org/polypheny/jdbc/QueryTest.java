@@ -25,6 +25,12 @@ public class QueryTest {
 
         try {
             Connection conn = DriverManager.getConnection( DB_URL, CONNECTION_PROPERTIES );
+            ResultSet rs  = conn.getMetaData().getTypeInfo();
+            while ( rs.next() ) {
+                System.out.print( "1: " + rs.getString( 1 ) );
+                System.out.print( ", 2: " + rs.getString( 2 ) + "\n" );
+            }
+            /*
             Statement stmt = conn.createStatement();
             ResultSet rs;
             if ( stmt.execute( QUERY ) ) {
@@ -36,6 +42,8 @@ public class QueryTest {
                 }
             }
             int uc = stmt.getUpdateCount();
+            */
+
         } catch ( SQLException e ) {
             e.printStackTrace();
         }

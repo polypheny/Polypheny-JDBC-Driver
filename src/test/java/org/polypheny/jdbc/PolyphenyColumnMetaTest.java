@@ -17,7 +17,6 @@ import org.polypheny.jdbc.proto.ColumnMeta;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
 import org.polypheny.jdbc.proto.TypeMeta;
-import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 
 public class PolyphenyColumnMetaTest {
 
@@ -238,7 +237,7 @@ public class PolyphenyColumnMetaTest {
     @Test
     public void protoConstructor__ColumnMeta_FieldTypeName() {
         PolyphenyColumnMeta meta = new PolyphenyColumnMeta( protoColumnMeta );
-        String expected = ProtoToPolyTypeNameMap.getPolyTypeNameFromProto( VALUE_TYPE );
+        String expected = VALUE_TYPE.name();
         assertEquals( expected, meta.getPolyphenyFieldTypeName() );
     }
 

@@ -3,10 +3,9 @@ package org.polypheny.jdbc;
 import java.sql.ResultSetMetaData;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.jdbc.proto.ColumnMeta;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
+import org.polypheny.jdbc.proto.ColumnMeta;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
-import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 
 public class PolyphenyColumnMeta {
 
@@ -76,13 +75,13 @@ public class PolyphenyColumnMeta {
         this.writable = false;
         this.definitelyWritable = false;
         this.columnClassName = "";
-        if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoValueType.USER_DEFINED_TYPE) {
+        if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoValueType.USER_DEFINED_TYPE ) {
             //TODO handle structured meta
             throw new NotImplementedException( "Struct types not implemented yet" );
         } else {
             this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( protoColumnMeta.getTypeMeta().getProtoValueType() );
         }
-        this.polyphenyFieldTypeName = ProtoToPolyTypeNameMap.getPolyTypeNameFromProto( protoColumnMeta.getTypeMeta().getProtoValueType() );
+        this.polyphenyFieldTypeName = protoColumnMeta.getTypeMeta().getProtoValueType().name();
     }
 
 

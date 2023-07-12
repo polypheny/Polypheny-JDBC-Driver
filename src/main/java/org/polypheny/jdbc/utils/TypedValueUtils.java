@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.deserialization.ProtoValueDeserializer;
+import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.Row;
-import org.polypheny.jdbc.types.ProtoToPolyTypeNameMap;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class TypedValueUtils {
@@ -225,11 +225,14 @@ public class TypedValueUtils {
 
 
     public static int getJdbcTypeFromPolyTypeName( String polyTypeName ) {
-        return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoToPolyTypeNameMap.getProtoTypeFromPolyTypeName( polyTypeName ) );
+        return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoValue.ProtoValueType.valueOf( polyTypeName ) );
     }
 
 
     public static TypedValue buildTypedValueFromObject( Object value ) throws SQLFeatureNotSupportedException, ParseException {
+        if (value == null) {
+            return TypedValue.fromNull( Types.NULL );
+        }
         if ( value instanceof String ) {
             return buildTypedValueFromObject( value, Types.VARCHAR );
         }
@@ -332,6 +335,9 @@ public class TypedValueUtils {
 
 
     public static TypedValue buildTypedValueFromObject( Object value, int targetSqlType ) throws ParseException, SQLFeatureNotSupportedException {
+        if (value == null) {
+            return TypedValue.fromNull( targetSqlType );
+        }
         if ( value instanceof String ) {
             return buildTypedValueFromString( (String) value, targetSqlType );
         }

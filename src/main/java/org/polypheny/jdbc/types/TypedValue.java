@@ -234,7 +234,6 @@ public class TypedValue implements Convertible {
         throw new NotImplementedException( "Not yet implemented..." );
     }
 
-
     public static TypedValue fromArray( Array value ) {
         return new TypedValue( Types.ARRAY, value );
     }
@@ -347,7 +346,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public String asString() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         return value.toString();
@@ -356,7 +355,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public boolean asBoolean() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             // jdbc4: if the value is SQL NULL, the value returned is false
             return false;
         }
@@ -375,7 +374,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public byte asByte() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return 0;
         }
         if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
@@ -396,7 +395,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public short asShort() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return 0;
         }
         if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
@@ -417,7 +416,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public int asInt() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return 0;
         }
         if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
@@ -438,7 +437,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public long asLong() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return 0;
         }
         if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
@@ -459,7 +458,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public float asFloat() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return 0;
         }
         if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
@@ -480,7 +479,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public double asDouble() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return 0;
         }
         if ( TypedValueUtils.isNumberRepresented( jdbcType ) ) {
@@ -507,7 +506,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public BigDecimal asBigDecimal() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         try {
@@ -531,7 +530,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public byte[] asBytes() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( TypedValueUtils.isBinaryRepresented( jdbcType ) ) {
@@ -550,7 +549,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public InputStream asAsciiStream() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof String ) {
@@ -568,7 +567,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public InputStream asUnicodeStream() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof String ) {
@@ -580,7 +579,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public InputStream asBinaryStream() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof byte[] ) {
@@ -592,7 +591,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Reader asCharacterStream() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof String ) {
@@ -642,7 +641,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Date asDate() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         switch ( jdbcType ) {
@@ -663,7 +662,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Date asDate( Calendar calendar ) throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         return TypedValueUtils.getDateInCalendar( asDate(), calendar );
@@ -671,7 +670,7 @@ public class TypedValue implements Convertible {
 
 
     public Time asTime() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         switch ( jdbcType ) {
@@ -692,7 +691,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Time asTime( Calendar calendar ) throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         return TypedValueUtils.getTimeInCalendar( asTime(), calendar );
@@ -700,7 +699,7 @@ public class TypedValue implements Convertible {
 
 
     public Timestamp asTimestamp() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         switch ( jdbcType ) {
@@ -720,7 +719,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Timestamp asTimestamp( Calendar calendar ) throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         return TypedValueUtils.getTimestampInCalendar( asTimestamp(), calendar );
@@ -729,7 +728,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Ref asRef() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof Ref ) {
@@ -741,7 +740,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public RowId asRowId() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof RowId ) {
@@ -753,7 +752,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public URL asUrl() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof URL ) {
@@ -765,7 +764,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public NClob asNClob() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof NClob ) {
@@ -777,7 +776,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public SQLXML asSQLXML() throws SQLException {
-        if ( isSqlNull() ) {
+        if ( isSqlNull() || isNull() ) {
             return null;
         }
         if ( value instanceof SQLXML ) {

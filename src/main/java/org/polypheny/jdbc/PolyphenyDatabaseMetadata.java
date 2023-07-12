@@ -1,5 +1,6 @@
 package org.polypheny.jdbc;
 
+import io.grpc.StatusRuntimeException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -860,21 +861,29 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getCatalogs() throws SQLException {
         DatabasesResponse databasesResponse = protoInterfaceClient.getDatabases();
-        return MetaResultSetBuilder.buildFromDatabasesResponse(databasesResponse);
+        return MetaResultSetBuilder.buildFromDatabasesResponse( databasesResponse );
     }
 
 
     @Override
     public ResultSet getTableTypes() throws SQLException {
-        TableTypesResponse tableTypesResponse = protoInterfaceClient.getTablesTypes();
-        return MetaResultSetBuilder.buildFromTableTypesResponse( tableTypesResponse );
+        try {
+            TableTypesResponse tableTypesResponse = protoInterfaceClient.getTablesTypes();
+            return MetaResultSetBuilder.buildFromTableTypesResponse( tableTypesResponse );
+        } catch ( StatusRuntimeException e ) {
+            throw new SQLException( e.getMessage() );
+        }
     }
 
 
     @Override
     public ResultSet getColumns( String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern ) throws SQLException {
-        ColumnsResponse columnsResponse = protoInterfaceClient.getColumns(schemaPattern, tableNamePattern, columnNamePattern);
-        return MetaResultSetBuilder.buildFromColumnsResponse(columnsResponse);
+        try {
+            ColumnsResponse columnsResponse = protoInterfaceClient.getColumns( schemaPattern, tableNamePattern, columnNamePattern );
+            return MetaResultSetBuilder.buildFromColumnsResponse( columnsResponse );
+        } catch ( StatusRuntimeException e ) {
+            throw new SQLException( e.getMessage() );
+        }
     }
 
 
@@ -916,22 +925,22 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getPrimaryKeys( String catalog, String schema, String table ) throws SQLException {
-        PrimaryKeysResponse primaryKeysResponse= protoInterfaceClient.getPrimaryKeys(schema, table);
-        return MetaResultSetBuilder.buildFromPrimaryKeyResponse(primaryKeysResponse);
+        PrimaryKeysResponse primaryKeysResponse = protoInterfaceClient.getPrimaryKeys( schema, table );
+        return MetaResultSetBuilder.buildFromPrimaryKeyResponse( primaryKeysResponse );
     }
 
 
     @Override
     public ResultSet getImportedKeys( String catalog, String schema, String table ) throws SQLException {
-        ImportedKeysResponse importedKeysResponse = protoInterfaceClient.getImportedKeys(schema, table);
-        return MetaResultSetBuilder.buildFromImportedKeysResponse(importedKeysResponse);
+        ImportedKeysResponse importedKeysResponse = protoInterfaceClient.getImportedKeys( schema, table );
+        return MetaResultSetBuilder.buildFromImportedKeysResponse( importedKeysResponse );
     }
 
 
     @Override
     public ResultSet getExportedKeys( String catalog, String schema, String table ) throws SQLException {
-        ExportedKeysResponse exportedKeysResponse = protoInterfaceClient.getExportedKeys(schema, table);
-        return MetaResultSetBuilder.buildFromExportedKeysResponse(exportedKeysResponse);
+        ExportedKeysResponse exportedKeysResponse = protoInterfaceClient.getExportedKeys( schema, table );
+        return MetaResultSetBuilder.buildFromExportedKeysResponse( exportedKeysResponse );
     }
 
 
@@ -953,8 +962,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getIndexInfo( String catalog, String schema, String table, boolean unique, boolean approximate ) throws SQLException {
-        IndexesResponse indexesResponse = protoInterfaceClient.getIndexes(schema, table, unique);
-        return MetaResultSetBuilder.buildFromIndexesResponse(indexesResponse);
+        IndexesResponse indexesResponse = protoInterfaceClient.getIndexes( schema, table, unique );
+        return MetaResultSetBuilder.buildFromIndexesResponse( indexesResponse );
     }
 
 
