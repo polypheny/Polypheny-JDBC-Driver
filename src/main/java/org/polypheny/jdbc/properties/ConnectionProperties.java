@@ -1,8 +1,8 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.properties;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.jdbc.utils.PropertyUtils;
+import org.polypheny.jdbc.StatementProperties;
 
 public class ConnectionProperties {
 
@@ -30,6 +30,10 @@ public class ConnectionProperties {
     @Getter
     @Setter
     private int transactionIsolation;
+
+    @Getter
+    @Setter
+    private String catalogName;
 
 
     public StatementProperties toStatementProperties() {
