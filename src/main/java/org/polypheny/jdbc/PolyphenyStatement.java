@@ -160,6 +160,9 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void close() throws SQLException {
+        if (currentResult != null) {
+            currentResult.close();
+        }
         getClient().closeStatement( statementId );
     }
 
