@@ -11,46 +11,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.polypheny.jdbc.proto.CloseStatementRequest;
-import org.polypheny.jdbc.proto.ColumnsRequest;
-import org.polypheny.jdbc.proto.ColumnsResponse;
-import org.polypheny.jdbc.proto.CommitRequest;
-import org.polypheny.jdbc.proto.ConnectionCheckRequest;
-import org.polypheny.jdbc.proto.ConnectionReply;
-import org.polypheny.jdbc.proto.ConnectionRequest;
-import org.polypheny.jdbc.proto.DatabasesRequest;
-import org.polypheny.jdbc.proto.DatabasesResponse;
-import org.polypheny.jdbc.proto.DbmsVersionRequest;
-import org.polypheny.jdbc.proto.DbmsVersionResponse;
-import org.polypheny.jdbc.proto.ExportedKeysRequest;
-import org.polypheny.jdbc.proto.ExportedKeysResponse;
-import org.polypheny.jdbc.proto.FetchRequest;
-import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.proto.ImportedKeysRequest;
-import org.polypheny.jdbc.proto.ImportedKeysResponse;
-import org.polypheny.jdbc.proto.IndexedParameterBatch;
-import org.polypheny.jdbc.proto.IndexesRequest;
-import org.polypheny.jdbc.proto.IndexesResponse;
-import org.polypheny.jdbc.proto.LanguageRequest;
-import org.polypheny.jdbc.proto.NamespacesRequest;
-import org.polypheny.jdbc.proto.NamespacesResponse;
-import org.polypheny.jdbc.proto.ParameterList;
-import org.polypheny.jdbc.proto.PreparedStatement;
-import org.polypheny.jdbc.proto.PreparedStatementSignature;
-import org.polypheny.jdbc.proto.PrimaryKeysRequest;
-import org.polypheny.jdbc.proto.PrimaryKeysResponse;
-import org.polypheny.jdbc.proto.ProtoInterfaceGrpc;
-import org.polypheny.jdbc.proto.StatementBatchStatus;
-import org.polypheny.jdbc.proto.StatementResult;
-import org.polypheny.jdbc.proto.StatementStatus;
-import org.polypheny.jdbc.proto.TableTypesRequest;
-import org.polypheny.jdbc.proto.TableTypesResponse;
-import org.polypheny.jdbc.proto.TablesRequest;
-import org.polypheny.jdbc.proto.TablesResponse;
-import org.polypheny.jdbc.proto.TypesRequest;
-import org.polypheny.jdbc.proto.TypesResponse;
-import org.polypheny.jdbc.proto.UnparameterizedStatement;
-import org.polypheny.jdbc.proto.UnparameterizedStatementBatch;
+
+import org.polypheny.jdbc.proto.*;
 import org.polypheny.jdbc.serialisation.ProtoValueSerializer;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
@@ -196,6 +158,11 @@ public class ProtoInterfaceClient {
     public void commitTransaction() {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
         blockingStub.commitTransaction( commitRequest );
+    }
+
+    public void rollbackTransaction() {
+        RollbackRequest rollbackRequest = RollbackRequest.newBuilder().build();
+        blockingStub.rollbackTransaction(rollbackRequest);
     }
 
 
