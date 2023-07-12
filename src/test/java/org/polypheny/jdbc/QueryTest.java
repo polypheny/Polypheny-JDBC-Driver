@@ -2,9 +2,10 @@ package org.polypheny.jdbc;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Properties;
 import org.polypheny.jdbc.utils.PropertyUtils;
 
@@ -25,29 +26,24 @@ public class QueryTest {
 
         try {
             Connection conn = DriverManager.getConnection( DB_URL, CONNECTION_PROPERTIES );
-            ResultSet rs  = conn.getMetaData().getTypeInfo();
-            while ( rs.next() ) {
-                System.out.print( "1: " + rs.getString( 1 ) );
-                System.out.print( ", 2: " + rs.getString( 2 ) + "\n" );
-            }
+
             /*
             Statement stmt = conn.createStatement();
-            ResultSet rs;
-            if ( stmt.execute( QUERY ) ) {
-                rs = stmt.getResultSet();
-                int count = rs.getMetaData().getColumnCount();
-                while ( rs.next() ) {
-                    System.out.print( "ID: " + rs.getInt( "employeeno" ) );
-                    System.out.print( ", Age: " + rs.getInt( "age" ) + "\n" );
-                }
-            }
-            int uc = stmt.getUpdateCount();
+            stmt.addBatch( "drop table test" );
+            stmt.addBatch( "create table test (id int, name varchar(30))" );
+            stmt.addBatch( "insert into test values(1, 'foo'),(2, 'bar')" );
+            stmt.addBatch( "insert into test values(3, 'baz')" );
+            int[] update_counts = stmt.executeBatch();
+            System.out.println( Arrays.toString( update_counts ) );
+            stmt.close();
             */
 
+            PreparedStatement pstmt = conn.prepareStatement( "insert into test values(?, ?)" );
         } catch ( SQLException e ) {
             e.printStackTrace();
         }
     }
+
 }
 
 
