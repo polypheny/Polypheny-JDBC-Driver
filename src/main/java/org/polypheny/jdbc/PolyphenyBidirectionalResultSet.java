@@ -1669,20 +1669,18 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
 
 
     @Override
-    public <T> T unwrap( Class<T> aClass ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public <T> T unwrap(Class<T> aClass) throws SQLException {
+        if (aClass.isInstance(this)) {
+            return aClass.cast(this);
+        }
+        throw new SQLException("Not a wrapper for " + aClass);
     }
 
 
     @Override
-    public boolean isWrapperFor( Class<?> aClass ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean isWrapperFor(Class<?> aClass) {
+        return aClass.isInstance(this);
+
     }
 
 }
