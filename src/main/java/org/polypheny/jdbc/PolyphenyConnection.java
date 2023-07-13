@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+
+import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import lombok.SneakyThrows;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
@@ -95,14 +97,7 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public String nativeSQL( String sql ) throws SQLException {
-        throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throw new SQLFeatureNotSupportedException();
     }
 
 
@@ -156,9 +151,8 @@ public class PolyphenyConnection implements Connection {
 
 
     @Override
-    public boolean isClosed() throws SQLException {
+    public boolean isClosed() {
         return isClosed;
-
     }
 
 
@@ -166,7 +160,6 @@ public class PolyphenyConnection implements Connection {
     public DatabaseMetaData getMetaData() throws SQLException {
         throwIfClosed();
         return databaseMetaData;
-
     }
 
 
@@ -195,7 +188,7 @@ public class PolyphenyConnection implements Connection {
 
 
     @Override
-    public String getCatalog() throws SQLException {
+    public String getCatalog() {
         return properties.getCatalogName();
 
     }
@@ -260,26 +253,13 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public Map<String, Class<?>> getTypeMap() throws SQLException {
-        throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throw new SQLFeatureNotSupportedException();
     }
 
 
     @Override
     public void setTypeMap( Map<String, Class<?>> map ) throws SQLException {
-        throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLFeatureNotSupportedException();
     }
 
 
@@ -421,55 +401,27 @@ public class PolyphenyConnection implements Connection {
     }
 
 
-    @SneakyThrows
     @Override
     public void setClientInfo( String name, String value ) throws SQLClientInfoException {
-        throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLClientInfoException();
     }
 
 
-    @SneakyThrows
     @Override
     public void setClientInfo( Properties properties ) throws SQLClientInfoException {
-        throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLClientInfoException();
     }
 
 
     @Override
     public String getClientInfo( String name ) throws SQLException {
-        throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        return getClientInfo().getProperty(name);
     }
 
 
     @Override
-    public Properties getClientInfo() throws SQLException {
-        throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+    public Properties getClientInfo() {
+        return new Properties();
     }
 
 
@@ -510,12 +462,7 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public void abort( Executor executor ) throws SQLException {
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLFeatureNotSupportedException();
     }
 
 
@@ -541,25 +488,17 @@ public class PolyphenyConnection implements Connection {
 
 
     @Override
-    public <T> T unwrap( Class<T> iface ) throws SQLException {
-        String methodName = new Object() {
+    public <T> T unwrap(Class<T> aClass) throws SQLException {
+        if (aClass.isInstance(this)) {
+            return aClass.cast(this);
         }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throw new SQLException("Not a wrapper for " + aClass);
     }
 
 
     @Override
-    public boolean isWrapperFor( Class<?> iface ) throws SQLException {
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean isWrapperFor(Class<?> aClass) {
+        return aClass.isInstance(this);
 
     }
 
