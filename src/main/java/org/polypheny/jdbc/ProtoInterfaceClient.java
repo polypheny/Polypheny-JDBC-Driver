@@ -4,6 +4,8 @@ import io.grpc.Channel;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
+import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.*;
 import org.polypheny.jdbc.serialisation.ProtoValueSerializer;
 import org.polypheny.jdbc.types.TypedValue;
@@ -76,59 +78,74 @@ public class ProtoInterfaceClient {
 
 
     public void register(PolyphenyConnectionProperties connectionProperties) {
-
-
-        ConnectionRequest connectionRequest = ConnectionRequest.newBuilder()
+        ConnectionRequest.Builder requestBuilder = ConnectionRequest.newBuilder();
+        Optional.ofNullable(connectionProperties.getUsername()).ifPresent(requestBuilder::setUsername);
+        Optional.ofNullable(connectionProperties.getPassword()).ifPresent(requestBuilder::setPassword);
+        requestBuilder
                 .setMajorApiVersion(MAJOR_API_VERSION)
                 .setMinorApiVersion(MINOR_API_VERSION)
                 .setClientUuid(clientUUID)
-                .setConnectionProperties(buildConnectionProperties(connectionProperties))
-                .build();
-        ConnectionReply connectionReply = blockingStub.connect(connectionRequest);
+                .setConnectionProperties(buildConnectionProperties(connectionProperties));
+        ConnectionReply connectionReply = blockingStub.connect(requestBuilder.build());
         if (!connectionReply.getIsCompatible()) {
             throw new ProtoInterfaceServiceException("client version " + getClientApiVersionString()
                     + "not compatible with server version " + getServerApiVersionString(connectionReply) + ".");
         }
     }
 
+    public void unregister() {
+        DisconnectionRequest request = DisconnectionRequest.newBuilder().build();
+        blockingStub.disconnect(request);
+    }
+
     private ConnectionProperties buildConnectionProperties(PolyphenyConnectionProperties polyphenyConnectionProperties) {
         ConnectionProperties.Builder propertiesBuilder = ConnectionProperties.newBuilder();
-        Optional.ofNullable(polyphenyConnectionProperties.getUsername()).ifPresent(propertiesBuilder::setUsername);
-        Optional.ofNullable(polyphenyConnectionProperties.getPassword()).ifPresent(propertiesBuilder::setPassword);
         Optional.ofNullable(polyphenyConnectionProperties.getNamespaceName()).ifPresent(propertiesBuilder::setNamespaceName);
         return propertiesBuilder
                 .setIsAutoCommit(polyphenyConnectionProperties.isAutoCommit())
                 .setIsReadOnly(polyphenyConnectionProperties.isReadOnly())
-                .setHoldability(polyphenyConnectionProperties.getProtoHoldability())
-                .setIsolation(polyphenyConnectionProperties.getProtoIsolation())
+                .setIsolation(PropertyUtils.getProtoIsolation(polyphenyConnectionProperties.getTransactionIsolation()))
                 .setNetworkTimeout(polyphenyConnectionProperties.getNetworkTimeout())
                 .build();
     }
 
-
-    public void executeUnparameterizedStatement(int timeout, String statement, CallbackQueue<StatementStatus> updateCallback) {
-        ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub(timeout);
-        stub.executeUnparameterizedStatement(buildUnparameterizedStatement(statement), updateCallback);
+    private StatementProperties buildStatementProperties(PolyphenyStatementProperties polyphenyStatementProperties, int statementId) {
+        return StatementProperties.newBuilder()
+                .setStatementId(statementId)
+                .setUpdateBehaviour(PropertyUtils.getProtoUpdateBehaviour(polyphenyStatementProperties.getResultSetConcurrency()))
+                .setFetchSize(polyphenyStatementProperties.getFetchSize())
+                .setReverseFetch(PropertyUtils.isForwardFetching(polyphenyStatementProperties.getFetchDirection()))
+                .setMaxTotalFetchSize(polyphenyStatementProperties.getLargeMaxRows())
+                .setDoesEscapeProcessing(polyphenyStatementProperties.isDoesEscapeProcessing())
+                .setIsPoolable(polyphenyStatementProperties.isPoolable())
+                .build();
     }
 
 
-    public void executeUnparameterizedStatementBatch(int timeout, List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback) {
+    public void executeUnparameterizedStatement(PolyphenyStatementProperties properties, String statement, CallbackQueue<StatementStatus> updateCallback) {
+        ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub(properties.getQueryTimeoutSeconds());
+        stub.executeUnparameterizedStatement(buildUnparameterizedStatement(properties, statement), updateCallback);
+    }
+
+
+    public void executeUnparameterizedStatementBatch(PolyphenyStatementProperties properties, List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback) {
         List<UnparameterizedStatement> batch = statements.
                 stream()
-                .map(this::buildUnparameterizedStatement)
+                .map(s -> buildUnparameterizedStatement(properties, s))
                 .collect(Collectors.toList());
         UnparameterizedStatementBatch unparameterizedStatementBatch = UnparameterizedStatementBatch.newBuilder()
                 .addAllStatements(batch)
                 .build();
-        ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub(timeout);
+        ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub(properties.getQueryTimeoutSeconds());
         stub.executeUnparameterizedStatementBatch(unparameterizedStatementBatch, updateCallback);
     }
 
 
-    private UnparameterizedStatement buildUnparameterizedStatement(String statement) {
+    private UnparameterizedStatement buildUnparameterizedStatement(PolyphenyStatementProperties properties, String statement) {
         return UnparameterizedStatement.newBuilder()
                 .setStatement(statement)
                 .setStatementLanguageName(SQL_LANGUAGE_NAME)
+                .setProperties((buildStatementProperties(properties, PolyphenyStatement.NO_STATEMENT_ID)))
                 .build();
     }
 
@@ -190,11 +207,11 @@ public class ProtoInterfaceClient {
     }
 
 
-    public Frame fetchResult(int statementId, long offset, int fetchSize) {
+
+    public Frame fetchResult(int statementId, long offset) {
         FetchRequest fetchRequest = FetchRequest.newBuilder()
                 .setStatementId(statementId)
                 .setOffset(offset)
-                .setFetchSize(fetchSize)
                 .build();
         return blockingStub.fetchResult(fetchRequest);
     }
@@ -290,6 +307,11 @@ public class ProtoInterfaceClient {
     }
 
     public void setConnectionProperties(PolyphenyConnectionProperties connectionProperties) {
+        blockingStub.updateConnectionProperties(buildConnectionProperties(connectionProperties));
+    }
 
+    public void setStatementProperties(PolyphenyStatementProperties statementProperties, int statementId) {
+
+        blockingStub.updateStatementProperties(buildStatementProperties(statementProperties, statementId));
     }
 }

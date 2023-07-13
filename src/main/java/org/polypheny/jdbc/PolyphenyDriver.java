@@ -7,7 +7,9 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
-import lombok.Getter;
+
+import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
+import org.polypheny.jdbc.properties.DriverProperties;
 
 public class PolyphenyDriver implements java.sql.Driver {
     static {
@@ -33,9 +35,10 @@ public class PolyphenyDriver implements java.sql.Driver {
         }
         ConnectionString connectionString = new ConnectionString( url, properties );
         ProtoInterfaceClient protoInterfaceClient = new ProtoInterfaceClient( connectionString.getTarget() );
-        protoInterfaceClient.register( connectionString.getParameters() );
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
         PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata( protoInterfaceClient, connectionString );
-        return new PolyphenyConnection( protoInterfaceClient, databaseMetadata );
+        protoInterfaceClient.register( connectionProperties );
+        return new PolyphenyConnection( connectionProperties, databaseMetadata );
     }
 
 

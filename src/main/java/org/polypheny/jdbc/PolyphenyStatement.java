@@ -1,20 +1,17 @@
 package org.polypheny.jdbc;
 
 import io.grpc.StatusRuntimeException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLWarning;
-import java.sql.Statement;
-import java.util.LinkedList;
-import java.util.List;
 import lombok.Getter;
+import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.proto.StatementBatchStatus;
 import org.polypheny.jdbc.proto.StatementStatus;
 import org.polypheny.jdbc.utils.CallbackQueue;
-import org.polypheny.jdbc.utils.PropertyUtils;
+
+import java.sql.*;
+import java.util.LinkedList;
+import java.util.List;
 
 public class PolyphenyStatement implements Statement {
 
@@ -26,7 +23,7 @@ public class PolyphenyStatement implements Statement {
 
     private boolean isClosed;
     private boolean isClosedOnCompletion;
-    protected StatementProperties properties;
+    protected PolyphenyStatementProperties properties;
 
     // Value used to represent that no value is set for the update count according to JDBC.
     protected static final int NO_UPDATE_COUNT = -1;
@@ -35,125 +32,130 @@ public class PolyphenyStatement implements Statement {
     protected List<String> statementBatch;
 
 
-    public PolyphenyStatement( PolyphenyConnection connection, StatementProperties properties ) {
+    public PolyphenyStatement(PolyphenyConnection connection, PolyphenyStatementProperties properties) throws SQLException {
         this.polyphenyConnection = connection;
         this.properties = properties;
-
         this.isClosed = false;
         this.isClosedOnCompletion = false;
         this.statementBatch = new LinkedList<>();
-        resetCurrentResults();
-        resetStatementId();
+        this.properties.setPolyphenyStatement(this);
+        this.statementId = NO_STATEMENT_ID;
+        this.currentResult = null;
     }
 
 
-    protected ResultSet createResultSet( Frame frame ) throws SQLException {
-        switch ( properties.getResultSetType() ) {
+    protected ResultSet createResultSet(Frame frame) throws SQLException {
+        switch (properties.getResultSetType()) {
             case ResultSet.TYPE_FORWARD_ONLY:
-                return new PolyphenyForwardResultSet( this, frame, properties.toResultSetProperties() );
+                return new PolyphenyForwardResultSet(this, frame, properties.toResultSetProperties());
             case ResultSet.TYPE_SCROLL_INSENSITIVE:
             case ResultSet.TYPE_SCROLL_SENSITIVE:
-                return new PolyphenyBidirectionalResultSet( this, frame, properties.toResultSetProperties() );
+                return new PolyphenyBidirectionalResultSet(this, frame, properties.toResultSetProperties());
             default:
-                throw new SQLException( "Should never be thrown" );
+                throw new SQLException("Should never be thrown");
         }
     }
 
+    public boolean hasStatementId() {
+        return statementId != NO_STATEMENT_ID;
+    }
 
     protected ProtoInterfaceClient getClient() {
         return polyphenyConnection.getProtoInterfaceClient();
     }
 
 
-    protected int longToInt( long longNumber ) {
-        return Math.toIntExact( longNumber );
+    protected int longToInt(long longNumber) {
+        return Math.toIntExact(longNumber);
     }
 
 
-    protected void resetCurrentResults() {
+    protected void closeCurrentResult() throws SQLException {
+        currentResult.close();
+        if (statementId != NO_STATEMENT_ID) {
+            getClient().closeStatement(statementId);
+        }
         currentResult = null;
         currentUpdateCount = NO_UPDATE_COUNT;
     }
 
 
-    void resetStatementId() {
+    void discardStatementId() {
         statementId = NO_STATEMENT_ID;
     }
 
 
     protected void throwIfClosed() throws SQLException {
-        if ( isClosed ) {
-            throw new SQLException( "Illegal operation for a closed statement" );
+        if (isClosed) {
+            throw new SQLException("Illegal operation for a closed statement");
         }
     }
 
 
-    protected void throwIfNotRelational( Frame frame ) throws SQLException {
-        if ( frame.getResultCase() == ResultCase.RELATIONAL_FRAME ) {
+    protected void throwIfNotRelational(Frame frame) throws SQLException {
+        if (frame.getResultCase() == ResultCase.RELATIONAL_FRAME) {
             return;
         }
-        throw new SQLException( "Statement must produce a relational result" );
+        throw new SQLException("Statement must produce a relational result");
     }
 
 
     @Override
-    public ResultSet executeQuery( String statement ) throws SQLException {
+    public ResultSet executeQuery(String statement) throws SQLException {
         throwIfClosed();
-        resetStatementId();
-        int timeout = properties.getQueryTimeoutSeconds();
+        closeCurrentResult();
+        discardStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( timeout, statement, callback );
-            while ( true ) {
+            getClient().executeUnparameterizedStatement(properties, statement, callback);
+            while (true) {
                 StatementStatus status = callback.takeNext();
-                if ( statementId == NO_STATEMENT_ID ) {
+                if (!hasStatementId()) {
                     statementId = status.getStatementId();
                 }
-                if ( !status.hasResult() ) {
+                if (!status.hasResult()) {
                     continue;
                 }
                 callback.awaitCompletion();
-                resetCurrentResults();
-                if ( !status.getResult().hasFrame() ) {
-                    throw new SQLException( "Statement must produce a single ResultSet" );
+                if (!status.getResult().hasFrame()) {
+                    throw new SQLException("Statement must produce a single ResultSet");
                 }
                 Frame frame = status.getResult().getFrame();
-                throwIfNotRelational( frame );
-                currentResult = createResultSet( frame );
+                throwIfNotRelational(frame);
+                currentResult = createResultSet(frame);
                 return currentResult;
             }
-        } catch ( StatusRuntimeException | InterruptedException e ) {
-            throw new SQLException( e.getMessage() );
+        } catch (StatusRuntimeException | InterruptedException e) {
+            throw new SQLException(e.getMessage());
         }
     }
 
 
     @Override
-    public int executeUpdate( String statement ) throws SQLException {
+    public int executeUpdate(String statement) throws SQLException {
         throwIfClosed();
-        resetStatementId();
-        int timeout = properties.getQueryTimeoutSeconds();
+        closeCurrentResult();
+        discardStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( timeout, statement, callback );
-            while ( true ) {
+            getClient().executeUnparameterizedStatement(properties, statement, callback);
+            while (true) {
                 StatementStatus status = callback.takeNext();
-                if ( statementId == NO_STATEMENT_ID ) {
+                if (!hasStatementId()) {
                     statementId = status.getStatementId();
                 }
-                if ( !status.hasResult() ) {
+                if (!status.hasResult()) {
                     continue;
                 }
                 callback.awaitCompletion();
-                resetCurrentResults();
-                if ( status.getResult().hasFrame() ) {
-                    throw new SQLException( "Statement must not produce a ResultSet" );
+                if (status.getResult().hasFrame()) {
+                    throw new SQLException("Statement must not produce a ResultSet");
                 }
                 currentUpdateCount = status.getResult().getScalar();
-                return longToInt( currentUpdateCount );
+                return longToInt(currentUpdateCount);
             }
-        } catch ( StatusRuntimeException | InterruptedException e ) {
-            throw new SQLException( e.getMessage() );
+        } catch (StatusRuntimeException | InterruptedException e) {
+            throw new SQLException(e.getMessage());
         }
     }
 
@@ -163,7 +165,9 @@ public class PolyphenyStatement implements Statement {
         if (currentResult != null) {
             currentResult.close();
         }
-        getClient().closeStatement( statementId );
+        isClosed = true;
+        polyphenyConnection.removeStatementFromOpen(this);
+        getClient().closeStatement(statementId);
     }
 
 
@@ -175,12 +179,9 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void setMaxFieldSize( int max ) throws SQLException {
+    public void setMaxFieldSize(int max) throws SQLException {
         throwIfClosed();
-        if ( max < 0 ) {
-            throw new SQLException( "Illegal argument for max" );
-        }
-        properties.setMaxFieldSize( max );
+        properties.setMaxFieldSize(max);
     }
 
 
@@ -194,30 +195,27 @@ public class PolyphenyStatement implements Statement {
     @Override
     public int getMaxRows() throws SQLException {
         throwIfClosed();
-        return longToInt( getLargeMaxRows() );
+        return longToInt(getLargeMaxRows());
     }
 
 
     @Override
-    public void setLargeMaxRows( long max ) throws SQLException {
+    public void setLargeMaxRows(long max) throws SQLException {
         throwIfClosed();
-        if ( max < 0 ) {
-            throw new SQLException( "Illegal argument for max" );
-        }
-        properties.setLargeMaxRows( max );
+        properties.setLargeMaxRows(max);
     }
 
 
     @Override
-    public void setMaxRows( int max ) throws SQLException {
-        setLargeMaxRows( max );
+    public void setMaxRows(int max) throws SQLException {
+        setLargeMaxRows(max);
     }
 
 
     @Override
-    public void setEscapeProcessing( boolean enable ) throws SQLException {
+    public void setEscapeProcessing(boolean enable) throws SQLException {
         throwIfClosed();
-        properties.setDoesEscapeProcessing( enable );
+        properties.setDoesEscapeProcessing(enable);
     }
 
 
@@ -229,12 +227,12 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void setQueryTimeout( int seconds ) throws SQLException {
+    public void setQueryTimeout(int seconds) throws SQLException {
         throwIfClosed();
-        if ( seconds < 0 ) {
-            throw new SQLException( "Illegal argument for max" );
+        if (seconds < 0) {
+            throw new SQLException("Illegal argument for max");
         }
-        properties.setQueryTimeoutSeconds( seconds );
+        properties.setQueryTimeoutSeconds(seconds);
     }
 
 
@@ -247,13 +245,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return null;
 
     }
 
@@ -261,59 +253,44 @@ public class PolyphenyStatement implements Statement {
     @Override
     public void clearWarnings() throws SQLException {
         throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
     }
 
 
     @Override
-    public void setCursorName( String s ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public void setCursorName(String s) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
     }
 
 
     @Override
-    public boolean execute( String statement ) throws SQLException {
+    public boolean execute(String statement) throws SQLException {
         throwIfClosed();
-        resetStatementId();
-        int timeout = properties.getQueryTimeoutSeconds();
+        closeCurrentResult();
+        discardStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement( timeout, statement, callback );
-            while ( true ) {
+            getClient().executeUnparameterizedStatement(properties, statement, callback);
+            while (true) {
                 StatementStatus status = callback.takeNext();
-                if ( statementId == NO_STATEMENT_ID ) {
+                if (!hasStatementId()) {
                     statementId = status.getStatementId();
                 }
-                if ( !status.hasResult() ) {
+                if (!status.hasResult()) {
                     continue;
                 }
                 callback.awaitCompletion();
-                resetCurrentResults();
-                if ( !status.getResult().hasFrame() ) {
-                    currentUpdateCount = longToInt( status.getResult().getScalar() );
+                if (!status.getResult().hasFrame()) {
+                    currentUpdateCount = longToInt(status.getResult().getScalar());
                     return false;
                 }
                 Frame frame = status.getResult().getFrame();
-                throwIfNotRelational( frame );
-                currentResult = createResultSet( frame );
+                throwIfNotRelational(frame);
+                currentResult = createResultSet(frame);
                 return true;
 
             }
-        } catch ( ProtoInterfaceServiceException | InterruptedException e ) {
-            throw new SQLException( e.getMessage() );
+        } catch (ProtoInterfaceServiceException | InterruptedException e) {
+            throw new SQLException(e.getMessage());
         }
     }
 
@@ -334,31 +311,23 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public int getUpdateCount() throws SQLException {
-        return longToInt( getLargeUpdateCount() );
+        return longToInt(getLargeUpdateCount());
     }
 
 
     @Override
     public boolean getMoreResults() throws SQLException {
         throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        closeCurrentResult();
+        // statements can not return multiple result sets
+        return false;
     }
 
 
     @Override
-    public void setFetchDirection( int direction ) throws SQLException {
+    public void setFetchDirection(int direction) throws SQLException {
         throwIfClosed();
-        if ( PropertyUtils.isInvalidFetchDdirection( direction ) ) {
-            throw new SQLException( "Illegal argument for direction" );
-        }
-        properties.setFetchDirection( direction );
+        properties.setFetchDirection(direction);
     }
 
 
@@ -370,12 +339,9 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void setFetchSize( int rows ) throws SQLException {
+    public void setFetchSize(int rows) throws SQLException {
         throwIfClosed();
-        if ( rows < 0 ) {
-            throw new SQLException( "Illegal argument for max" );
-        }
-        properties.setFetchSize( rows );
+        properties.setFetchSize(rows);
     }
 
 
@@ -401,9 +367,9 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void addBatch( String sql ) throws SQLException {
+    public void addBatch(String sql) throws SQLException {
         throwIfClosed();
-        statementBatch.add( sql );
+        statementBatch.add(sql);
     }
 
 
@@ -417,8 +383,8 @@ public class PolyphenyStatement implements Statement {
     public long[] executeLargeBatch() throws SQLException {
         List<Long> scalars = executeUnparameterizedBatch();
         long[] updateCounts = new long[scalars.size()];
-        for ( int i = 0; i < scalars.size(); i++ ) {
-            updateCounts[i] = scalars.get( i );
+        for (int i = 0; i < scalars.size(); i++) {
+            updateCounts[i] = scalars.get(i);
         }
         return updateCounts;
     }
@@ -428,8 +394,8 @@ public class PolyphenyStatement implements Statement {
     public int[] executeBatch() throws SQLException {
         List<Long> scalars = executeUnparameterizedBatch();
         int[] updateCounts = new int[scalars.size()];
-        for ( int i = 0; i < scalars.size(); i++ ) {
-            updateCounts[i] = longToInt( scalars.get( i ) );
+        for (int i = 0; i < scalars.size(); i++) {
+            updateCounts[i] = longToInt(scalars.get(i));
         }
         return updateCounts;
     }
@@ -437,25 +403,24 @@ public class PolyphenyStatement implements Statement {
 
     private List<Long> executeUnparameterizedBatch() throws SQLException {
         throwIfClosed();
-        resetStatementId();
-        int timeout = properties.getQueryTimeoutSeconds();
+        closeCurrentResult();
+        discardStatementId();
         CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatementBatch( timeout, statementBatch, callback );
-            while ( true ) {
+            getClient().executeUnparameterizedStatementBatch(properties, statementBatch, callback);
+            while (true) {
                 StatementBatchStatus status = callback.takeNext();
-                if ( statementId == NO_STATEMENT_ID ) {
+                if (!hasStatementId()) {
                     statementId = status.getBatchId();
                 }
-                if ( status.getScalarsCount() == 0 ) {
+                if (status.getScalarsCount() == 0) {
                     continue;
                 }
                 callback.awaitCompletion();
-                resetCurrentResults();
                 return status.getScalarsList();
             }
-        } catch ( ProtoInterfaceServiceException | InterruptedException e ) {
-            throw new SQLException( e.getMessage() );
+        } catch (ProtoInterfaceServiceException | InterruptedException e) {
+            throw new SQLException(e.getMessage());
         }
     }
 
@@ -468,129 +433,76 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public boolean getMoreResults( int i ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
+    public boolean getMoreResults(int i) throws SQLException {
+        if (i == KEEP_CURRENT_RESULT || i == CLOSE_ALL_RESULTS) {
+            throw new SQLFeatureNotSupportedException();
         }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throwIfClosed();
+        closeCurrentResult();
+        // statements can not return multiple result sets
+        return false;
     }
 
 
     @Override
     public ResultSet getGeneratedKeys() throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLFeatureNotSupportedException();
+    }
+
+
+    @Override
+    public long executeLargeUpdate(String sql, int autogeneratedKeys) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+
+    @Override
+    public int executeUpdate(String sql, int autogeneratedKeys) throws SQLException {
+        return longToInt(executeLargeUpdate(sql, autogeneratedKeys));
+    }
+
+
+    @Override
+    public long executeLargeUpdate(String sql, int[] columnIndexes) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+
+    @Override
+    public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
+        return longToInt(executeLargeUpdate(sql, columnIndexes));
+    }
+
+
+    @Override
+    public long executeLargeUpdate(String sql, String[] columnNames) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
+    }
+
+
+    @Override
+    public int executeUpdate(String sql, String[] columnNames) throws SQLException {
+        return longToInt(executeLargeUpdate(sql, columnNames));
+    }
+
+
+    @Override
+    public boolean execute(String s, int i) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
 
     }
 
 
     @Override
-    public long executeLargeUpdate( String sql, int autogeneratedKeys ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public int executeUpdate( String sql, int autogeneratedKeys ) throws SQLException {
-        return longToInt( executeLargeUpdate( sql, autogeneratedKeys ) );
-    }
-
-
-    @Override
-    public long executeLargeUpdate( String sql, int[] columnIndexes ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean execute(String s, int[] ints) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
 
     }
 
 
     @Override
-    public int executeUpdate( String sql, int[] columnIndexes ) throws SQLException {
-        return longToInt( executeLargeUpdate( sql, columnIndexes ) );
-    }
-
-
-    @Override
-    public long executeLargeUpdate( String sql, String[] columnNames ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public int executeUpdate( String sql, String[] columnNames ) throws SQLException {
-        return longToInt( executeLargeUpdate( sql, columnNames ) );
-    }
-
-
-    @Override
-    public boolean execute( String s, int i ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
-    }
-
-
-    @Override
-    public boolean execute( String s, int[] ints ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
-    }
-
-
-    @Override
-    public boolean execute( String s, String[] strings ) throws SQLException {
-        throwIfClosed();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean execute(String s, String[] strings) throws SQLException {
+        throw new SQLFeatureNotSupportedException();
 
     }
 
@@ -609,9 +521,9 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public void setPoolable( boolean poolable ) throws SQLException {
+    public void setPoolable(boolean poolable) throws SQLException {
         throwIfClosed();
-        properties.setPoolable( poolable );
+        properties.setIsPoolable(poolable);
     }
 
 
@@ -637,27 +549,17 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public <T> T unwrap( Class<T> aClass ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
+    public <T> T unwrap(Class<T> aClass) throws SQLException {
+        if (aClass.isInstance(this)) {
+            return aClass.cast(this);
         }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-
+        throw new SQLException("Not a wrapper for " + aClass);
     }
 
 
     @Override
-    public boolean isWrapperFor( Class<?> aClass ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean isWrapperFor(Class<?> aClass) throws SQLException {
+        return aClass.isInstance(this);
 
     }
 

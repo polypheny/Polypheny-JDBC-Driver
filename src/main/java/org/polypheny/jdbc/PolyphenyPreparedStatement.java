@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.proto.StatementBatchStatus;
@@ -39,7 +41,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private PolyphenyParameterMetaData parameterMetaData;
 
 
-    public PolyphenyPreparedStatement( PolyphenyConnection connection, StatementProperties properties, PreparedStatementSignature statementSignature ) {
+    public PolyphenyPreparedStatement(PolyphenyConnection connection, PolyphenyStatementProperties properties, PreparedStatementSignature statementSignature ) throws SQLException {
         super( connection, properties );
         this.statementId = statementSignature.getStatementId();
         this.parameterMetaData = new PolyphenyParameterMetaData( statementSignature );
@@ -59,7 +61,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         int timeout = properties.getQueryTimeoutSeconds();
         try {
             StatementResult result = getClient().executeIndexedStatement( timeout, statementId, parameters );
-            resetCurrentResults();
+            closeCurrentResult();
             if ( !result.hasFrame() ) {
                 throw new SQLException( "Statement must produce a single ResultSet" );
             }
@@ -79,7 +81,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         int timeout = properties.getQueryTimeoutSeconds();
         try {
             StatementResult result = getClient().executeIndexedStatement( timeout, statementId, parameters );
-            resetCurrentResults();
+            closeCurrentResult();
             if ( result.hasFrame() ) {
                 throw new SQLException( "Statement must not produce a ResultSet" );
             }
@@ -289,7 +291,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         int timeout = properties.getQueryTimeoutSeconds();
         try {
             StatementResult result = getClient().executeIndexedStatement( timeout, statementId, parameters );
-            resetCurrentResults();
+            closeCurrentResult();
             if ( !result.hasFrame() ) {
                 currentUpdateCount = result.getScalar();
                 return false;
@@ -335,7 +337,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
-        resetStatementId();
+        discardStatementId();
         int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
         try {

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.jdbc.properties.ResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.types.TypedValue;
@@ -35,7 +36,7 @@ public class ResultFetcher implements Runnable {
 
     @Override
     public void run() {
-        Frame nextFrame = client.fetchResult( statementId, offset + properties.getFetchSize(), properties.getFetchSize() );
+        Frame nextFrame = client.fetchResult( statementId, offset + properties.getFetchSize() );
         System.out.println( "Fetching offset: " + (offset + properties.getFetchSize()) );
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new ProtoInterfaceServiceException( "Illegal result type." );

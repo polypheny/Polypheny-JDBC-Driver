@@ -1,4 +1,4 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.properties;
 
 import java.sql.ResultSet;
 import lombok.Getter;

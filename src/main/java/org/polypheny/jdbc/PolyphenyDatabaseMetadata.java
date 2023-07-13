@@ -6,7 +6,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
-import jdk.jshell.spi.ExecutionControl.NotImplementedException;
+
+import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.proto.ColumnsResponse;
 import org.polypheny.jdbc.proto.DatabasesResponse;
 import org.polypheny.jdbc.proto.DbmsVersionResponse;
@@ -19,7 +20,7 @@ import org.polypheny.jdbc.proto.TableTypesResponse;
 import org.polypheny.jdbc.proto.TablesResponse;
 import org.polypheny.jdbc.proto.TypesResponse;
 import org.polypheny.jdbc.utils.MetaResultSetBuilder;
-import org.polypheny.jdbc.utils.PropertyUtils;
+import org.polypheny.jdbc.properties.PropertyUtils;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
@@ -239,11 +240,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        try {
-            throw new NotImplementedException( "Feature not yet implemented" );
-        } catch ( NotImplementedException e ) {
-            throw new RuntimeException( e );
-        }
+        return "";
         // TODO TH: implement this correctly
         // Comma-separated list of all of this database's SQL keywords that are NOT also SQL:2003 keywords.
     }
@@ -251,11 +248,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        try {
-            throw new NotImplementedException( "Feature not yet implemented" );
-        } catch ( NotImplementedException e ) {
-            throw new RuntimeException( e );
-        }
+        return "";
         // TODO TH: implement this correctly
         // Retrieves a comma-separated list of math functions available with this database. These are the Open /Open CLI math function names used in the JDBC function escape clause.
     }

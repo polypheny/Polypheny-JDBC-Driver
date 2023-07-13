@@ -164,6 +164,10 @@ public class ConnectionString {
 
 
     public HashMap<String, String> getParameters() {
+        String property = parameters.get(PropertyUtils.getPASSWORD_KEY());
+        if (property != null && property.equals(DriverProperties.getBACKDOR_STRING()) && DriverProperties.isBACKDOOR_ENABLED()) {
+            parameters.put(PropertyUtils.getPASSWORD_KEY(), "");
+        }
         return parameters;
     }
 

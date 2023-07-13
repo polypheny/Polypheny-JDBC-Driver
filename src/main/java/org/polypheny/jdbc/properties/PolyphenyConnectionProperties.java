@@ -3,8 +3,6 @@ package org.polypheny.jdbc.properties;
 import lombok.Getter;
 import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.ProtoInterfaceClient;
-import org.polypheny.jdbc.StatementProperties;
-import org.polypheny.jdbc.proto.ConnectionProperties;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -68,30 +66,6 @@ public class PolyphenyConnectionProperties {
         throw new SQLException("Invalid value for result set holdability: " + string);
     }
 
-    public ConnectionProperties.Holdability getProtoHoldability() {
-        switch (resultSetHoldability) {
-            case ResultSet.CLOSE_CURSORS_AT_COMMIT:
-                return ConnectionProperties.Holdability.CLOSE;
-            case ResultSet.HOLD_CURSORS_OVER_COMMIT:
-                return ConnectionProperties.Holdability.HOLD;
-        }
-        throw new RuntimeException("Should never be thrown");
-    }
-
-    public ConnectionProperties.Isolation getProtoIsolation() {
-        switch (transactionIsolation) {
-            case Connection.TRANSACTION_READ_COMMITTED:
-                return ConnectionProperties.Isolation.COMMITTED;
-            case Connection.TRANSACTION_READ_UNCOMMITTED:
-                return ConnectionProperties.Isolation.DIRTY;
-            case Connection.TRANSACTION_SERIALIZABLE:
-                return ConnectionProperties.Isolation.SERIALIZABLE;
-            case Connection.TRANSACTION_REPEATABLE_READ:
-                    return ConnectionProperties.Isolation.REPEATABLE_READ;
-        }
-        throw new RuntimeException("Should never be thrown");
-    }
-
 
     @Getter
     private ProtoInterfaceClient protoInterfaceClient;
@@ -130,7 +104,7 @@ public class PolyphenyConnectionProperties {
             throw new SQLException("Invalid value for result set holdability");
         }
         this.resultSetHoldability = resultSetHoldability;
-        sync();
+        // not transmitted to server -> no sync()
     }
 
     public void setNetworkTimeout(int networkTimeout) {
@@ -147,12 +121,13 @@ public class PolyphenyConnectionProperties {
     }
 
     public void setCatalogName(String catalogName) {
-        // only there for consistency - no sync
         this.catalogName = catalogName;
+        // not transmitted to server -> no sync()
     }
 
     public void setNamespaceName(String namespaceName) {
         this.namespaceName = namespaceName;
+        sync();
     }
 
 
@@ -161,7 +136,7 @@ public class PolyphenyConnectionProperties {
     }
 
 
-    public StatementProperties toStatementProperties() {
+    public PolyphenyStatementProperties toStatementProperties() throws SQLException {
         return toStatementProperties(
                 PropertyUtils.getDEFAULT_RESULTSET_TYPE(),
                 PropertyUtils.getDEFAULT_RESULTSET_CONCURRENCY()
@@ -169,13 +144,14 @@ public class PolyphenyConnectionProperties {
     }
 
 
-    public StatementProperties toStatementProperties(int resultSetType, int resultSetConcurrency) {
+    public PolyphenyStatementProperties toStatementProperties(int resultSetType, int resultSetConcurrency) throws SQLException {
         return toStatementProperties(resultSetType, resultSetConcurrency, resultSetHoldability);
     }
 
 
-    public StatementProperties toStatementProperties(int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
-        StatementProperties properties = new StatementProperties();
+    public PolyphenyStatementProperties toStatementProperties(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+        PolyphenyStatementProperties properties = new PolyphenyStatementProperties();
+        properties.setProtoInterfaceClient(protoInterfaceClient);
         properties.setQueryTimeoutSeconds(PropertyUtils.getDEFAULT_QUERY_TIMEOUT_SECONDS());
         properties.setResultSetType(resultSetType);
         properties.setResultSetConcurrency(resultSetConcurrency);
@@ -185,7 +161,7 @@ public class PolyphenyConnectionProperties {
         properties.setMaxFieldSize(PropertyUtils.getDEFAULT_MAX_FIELD_SIZE());
         properties.setLargeMaxRows(PropertyUtils.getDEFAULT_LARGE_MAX_ROWS());
         properties.setDoesEscapeProcessing(PropertyUtils.isDEFAULT_DOING_ESCAPE_PROCESSING());
-        properties.setPoolable(PropertyUtils.isDEFAULT_STATEMENT_POOLABLE());
+        properties.setIsPoolable(PropertyUtils.isDEFAULT_STATEMENT_POOLABLE());
         return properties;
     }
 

@@ -1,4 +1,4 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.properties;
 
 import lombok.Getter;
 
@@ -20,4 +20,9 @@ public class DriverProperties {
     private static final boolean JDBC_COMPLIANT = false;
     @Getter
     private static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
+    @Getter
+    // This feature is for testing purposes only!
+    private static final boolean BACKDOOR_ENABLED = true;
+    @Getter
+    private static final String BACKDOR_STRING = "dasKannKeinEmptyString";
 }
