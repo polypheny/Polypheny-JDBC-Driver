@@ -3,6 +3,7 @@ package org.polypheny.jdbc;
 import io.grpc.Channel;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
+import io.grpc.stub.StreamObserver;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
@@ -304,6 +305,26 @@ public class ProtoInterfaceClient {
         Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
         requestBuilder.setUnique(unique);
         return blockingStub.getIndexes(requestBuilder.build());
+    }
+
+    public String getSqlStringFunctions() {
+        return blockingStub.getSqlStringFunctions(SqlStringFunctionsRequest.newBuilder().build()).getString();
+    }
+
+    public String getSqlSystemFunctions() {
+        return blockingStub.getSqlSystemFunctions(SqlSystemFunctionsRequest.newBuilder().build()).getString();
+    }
+
+    public String getSqlTimeDateFunctions() {
+        return blockingStub.getSqlTimeDateFunctions(SqlTimeDateFunctionsRequest.newBuilder().build()).getString();
+    }
+
+    public String getSqlNumericFunctions() {
+        return blockingStub.getSqlNumericFunctions(SqlNumericFunctionsRequest.newBuilder().build()).getString();
+    }
+
+    public String getSqlKeywords() {
+        return blockingStub.getSqlKeywords(SqlKeywordsRequest.newBuilder().build()).getString();
     }
 
     public void setConnectionProperties(PolyphenyConnectionProperties connectionProperties) {
