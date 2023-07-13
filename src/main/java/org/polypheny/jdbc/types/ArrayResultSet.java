@@ -1362,14 +1362,18 @@ public class ArrayResultSet<T> implements ResultSet {
 
 
     @Override
-    public <T> T unwrap( Class<T> aClass ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+    public <T> T unwrap(Class<T> aClass) throws SQLException {
+        if (aClass.isInstance(this)) {
+            return aClass.cast(this);
+        }
+        throw new SQLException("Not a wrapper for " + aClass);
     }
 
 
     @Override
-    public boolean isWrapperFor( Class<?> aClass ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+    public boolean isWrapperFor(Class<?> aClass) {
+        return aClass.isInstance(this);
+
     }
 
 }
