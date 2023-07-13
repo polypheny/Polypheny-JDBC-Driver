@@ -27,6 +27,12 @@ service ProtoInterface {
   rpc GetTypes(TypesRequest) returns (TypesResponse) {}
   rpc GetIndexes(IndexesRequest) returns (IndexesResponse) {}
 
+  rpc getSqlStringFunctions(SqlStringFunctionsRequest) returns (MetaStringResponse) {}
+  rpc getSqlSystemFunctions(SqlSystemFunctionsRequest) returns (MetaStringResponse) {}
+  rpc getSqlTimeDateFunctions(SqlTimeDateFunctionsRequest) returns (MetaStringResponse) {}
+  rpc getSqlNumericFunctions(SqlNumericFunctionsRequest) returns (MetaStringResponse) {}
+  rpc getSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
+
   // Connection related
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
