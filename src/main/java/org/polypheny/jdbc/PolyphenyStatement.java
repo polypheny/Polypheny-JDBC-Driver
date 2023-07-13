@@ -558,7 +558,7 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public boolean isWrapperFor(Class<?> aClass) throws SQLException {
+    public boolean isWrapperFor(Class<?> aClass) {
         return aClass.isInstance(this);
 
     }
