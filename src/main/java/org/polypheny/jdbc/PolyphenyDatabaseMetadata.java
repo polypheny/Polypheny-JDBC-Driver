@@ -240,62 +240,43 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        return "";
-        // TODO TH: implement this correctly
-        // Comma-separated list of all of this database's SQL keywords that are NOT also SQL:2003 keywords.
+        return protoInterfaceClient.getSqlKeywords();
     }
 
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        return "";
-        // TODO TH: implement this correctly
-        // Retrieves a comma-separated list of math functions available with this database. These are the Open /Open CLI math function names used in the JDBC function escape clause.
+        return protoInterfaceClient.getSqlNumericFunctions();
     }
 
 
     @Override
     public String getStringFunctions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return protoInterfaceClient.getSqlStringFunctions();
     }
 
 
     @Override
     public String getSystemFunctions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return protoInterfaceClient.getSqlSystemFunctions();
     }
 
 
     @Override
     public String getTimeDateFunctions() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return protoInterfaceClient.getSqlTimeDateFunctions();
     }
 
 
     @Override
     public String getSearchStringEscape() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return "\\";
     }
 
 
     @Override
     public String getExtraNameCharacters() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return "";
     }
 
 
@@ -1183,19 +1164,13 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
     @Override
     public boolean autoCommitFailureClosesAllResultSets() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return false;
     }
 
 
@@ -1242,20 +1217,18 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public <T> T unwrap( Class<T> aClass ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public <T> T unwrap(Class<T> aClass) throws SQLException {
+        if (aClass.isInstance(this)) {
+            return aClass.cast(this);
+        }
+        throw new SQLException("Not a wrapper for " + aClass);
     }
 
 
     @Override
-    public boolean isWrapperFor( Class<?> aClass ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public boolean isWrapperFor(Class<?> aClass) {
+        return aClass.isInstance(this);
+
     }
 
 }
