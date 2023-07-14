@@ -1,13 +1,9 @@
 package org.polypheny.jdbc;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Arrays;
 import java.util.Properties;
-import org.polypheny.jdbc.utils.PropertyUtils;
+import org.polypheny.jdbc.properties.PropertyUtils;
 
 public class QueryTest {
 
@@ -29,7 +25,6 @@ public class QueryTest {
 
             /*
             Statement stmt = conn.createStatement();
-            stmt.addBatch( "drop table test" );
             stmt.addBatch( "create table test (id int, name varchar(30))" );
             stmt.addBatch( "insert into test values(1, 'foo'),(2, 'bar')" );
             stmt.addBatch( "insert into test values(3, 'baz')" );
@@ -38,12 +33,12 @@ public class QueryTest {
             stmt.close();
             */
 
-            PreparedStatement pstmt = conn.prepareStatement( "insert into test values(?, ?)" );
+
+            PreparedStatement pstmt = conn.prepareStatement( "insert into test values(?, ?, ?)" );
         } catch ( SQLException e ) {
             e.printStackTrace();
         }
     }
 
 }
-
 

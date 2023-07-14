@@ -29,8 +29,8 @@ import java.sql.Types;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.HashMap;
-import jdk.jshell.spi.ExecutionControl.NotImplementedException;
 import lombok.Getter;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
@@ -105,9 +105,11 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue fromDate( Date value, Calendar calendar ) throws NotImplementedException {
-        //TODO TH handle date and calendar
-        throw new NotImplementedException( "Not yet implemented..." );
+    public static TypedValue fromDate( Date value, Calendar calendar ) {
+        if (calendar == null) {
+            throw new NullPointerException("Calendar must not be null");
+        }
+        return fromDate( TypedValueUtils.getDateInCalendar( value, calendar ) );
     }
 
 
@@ -116,9 +118,11 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue fromTime( Time value, Calendar calendar ) throws NotImplementedException {
-        //TODO TH handle time and calendar
-        throw new NotImplementedException( "Not yet implemented..." );
+    public static TypedValue fromTime( Time value, Calendar calendar ) {
+        if (calendar == null) {
+            throw new NullPointerException("Calendar must not be null");
+        }
+        return fromTime( TypedValueUtils.getTimeInCalendar( value, calendar ) );
     }
 
 
@@ -128,8 +132,10 @@ public class TypedValue implements Convertible {
 
 
     public static TypedValue fromTimestamp( Timestamp value, Calendar calendar ) throws NotImplementedException {
-        //TODO TH handle timestamp and calendar
-        throw new NotImplementedException( "Not yet implemented..." );
+        if (calendar == null) {
+            throw new NullPointerException("Calendar must not be null");
+        }
+        return fromTimestamp(TypedValueUtils.getTimestampInCalendar(value, calendar));
     }
 
 
@@ -233,6 +239,7 @@ public class TypedValue implements Convertible {
         //TODO TH build CLOB from string...
         throw new NotImplementedException( "Not yet implemented..." );
     }
+
 
     public static TypedValue fromArray( Array value ) {
         return new TypedValue( Types.ARRAY, value );
@@ -613,7 +620,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Clob asClob() throws SQLException {
-        if (TypedValueUtils.isClobOrNClobRepresented( jdbcType )) {
+        if ( TypedValueUtils.isClobOrNClobRepresented( jdbcType ) ) {
             // legit cast as Clob is a superinterface of Clob
             return (Clob) value;
         }
@@ -708,10 +715,10 @@ public class TypedValue implements Convertible {
             case Types.DATE:
                 return TypedValueUtils.getTimestampFromDate( (Date) value );
             case Types.TIME:
-                return  TypedValueUtils.getTimestampFromTime( (Time) value );
+                return TypedValueUtils.getTimestampFromTime( (Time) value );
         }
-        if (TypedValueUtils.isStringRepresented( jdbcType )) {
-                return TypedValueUtils.getTimestampFromString( (String) value);
+        if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
+            return TypedValueUtils.getTimestampFromString( (String) value );
         }
         throw new SQLException( "Can't convert this value to time" );
     }

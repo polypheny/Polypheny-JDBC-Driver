@@ -71,7 +71,9 @@ public class PolyphenyStatement implements Statement {
 
 
     protected void closeCurrentResult() throws SQLException {
-        currentResult.close();
+        if (currentResult != null) {
+            currentResult.close();
+        }
         if (statementId != NO_STATEMENT_ID) {
             getClient().closeStatement(statementId);
         }
