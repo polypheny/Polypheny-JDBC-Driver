@@ -127,8 +127,8 @@ public class PolyphenyStatement implements Statement {
                 currentResult = createResultSet(frame);
                 return currentResult;
             }
-        } catch (StatusRuntimeException | InterruptedException e) {
-            throw new SQLException(e.getMessage());
+        } catch (Throwable e) {
+            throw new SQLException(e);
         }
     }
 
@@ -156,8 +156,8 @@ public class PolyphenyStatement implements Statement {
                 currentUpdateCount = status.getResult().getScalar();
                 return longToInt(currentUpdateCount);
             }
-        } catch (StatusRuntimeException | InterruptedException e) {
-            throw new SQLException(e.getMessage());
+        } catch (Throwable e) {
+            throw new SQLException(e);
         }
     }
 
@@ -291,7 +291,7 @@ public class PolyphenyStatement implements Statement {
                 return true;
 
             }
-        } catch (ProtoInterfaceServiceException | InterruptedException e) {
+        } catch (Throwable e) {
             throw new SQLException(e.getMessage());
         }
     }
@@ -421,8 +421,8 @@ public class PolyphenyStatement implements Statement {
                 callback.awaitCompletion();
                 return status.getScalarsList();
             }
-        } catch (ProtoInterfaceServiceException | InterruptedException e) {
-            throw new SQLException(e.getMessage());
+        } catch (Throwable e) {
+            throw new SQLException(e);
         }
     }
 

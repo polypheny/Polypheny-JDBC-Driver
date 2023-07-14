@@ -258,6 +258,7 @@ public class TypedValue implements Convertible {
 
     public static TypedValue fromNString( String value ) {
         /* differentiation between NVARCHAR and LONGNVARCHAR can be ignored as value is converted to PolyString anyway */
+        /* differentiation between NVARCHAR and LONGNVARCHAR can be ignored as value is converted to PolyString anyway */
         return new TypedValue( Types.NVARCHAR, value );
     }
 

@@ -23,18 +23,24 @@ public class QueryTest {
         try {
             Connection conn = DriverManager.getConnection( DB_URL, CONNECTION_PROPERTIES );
 
-            /*
+
+            //This is not related to the bug. Just ignore...
+
             Statement stmt = conn.createStatement();
+            stmt.execute("this is not sql");
+            //stmt.execute("insert into test values(5, baum)");
+            /*
             stmt.addBatch( "create table test (id int, name varchar(30))" );
             stmt.addBatch( "insert into test values(1, 'foo'),(2, 'bar')" );
             stmt.addBatch( "insert into test values(3, 'baz')" );
             int[] update_counts = stmt.executeBatch();
             System.out.println( Arrays.toString( update_counts ) );
-            stmt.close();
             */
+            stmt.close();
 
 
-            PreparedStatement pstmt = conn.prepareStatement( "insert into test values(?, ?, ?)" );
+
+            //PreparedStatement pstmt = conn.prepareStatement( "insert into test values(?, ?, ?)" );
         } catch ( SQLException e ) {
             e.printStackTrace();
         }

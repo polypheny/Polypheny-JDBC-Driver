@@ -31,7 +31,7 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     }
 
 
-    public T takeNext() throws InterruptedException, ProtoInterfaceServiceException {
+    public T takeNext() throws Throwable {
         queueLock.lock();
         while ( messageQueue.isEmpty() ) {
             hasNext.await();
@@ -43,9 +43,9 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     }
 
 
-    private void throwReceivedException() throws ProtoInterfaceServiceException {
+    private void throwReceivedException() throws Throwable {
         if ( propagatedException != null ) {
-            throw new ProtoInterfaceServiceException( propagatedException.getLocalizedMessage() );
+            throw propagatedException;
         }
     }
 
