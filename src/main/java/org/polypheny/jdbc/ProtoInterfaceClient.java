@@ -332,7 +332,14 @@ public class ProtoInterfaceClient {
     }
 
     public void setStatementProperties(PolyphenyStatementProperties statementProperties, int statementId) {
-
         blockingStub.updateStatementProperties(buildStatementProperties(statementProperties, statementId));
+    }
+
+    public ProceduresResponse getProcedures(String namespacePattern, String procedureNamePattern) {
+        ProceduresRequest.Builder requestBuilder = ProceduresRequest.newBuilder();
+        requestBuilder.setLanguage(SQL_LANGUAGE_NAME);
+        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
+        Optional.ofNullable(procedureNamePattern).ifPresent(requestBuilder::setProcedurePattern);
+        return blockingStub.getProcedures(requestBuilder.build());
     }
 }

@@ -8,17 +8,7 @@ import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 
 import org.polypheny.jdbc.properties.DriverProperties;
-import org.polypheny.jdbc.proto.ColumnsResponse;
-import org.polypheny.jdbc.proto.DatabasesResponse;
-import org.polypheny.jdbc.proto.DbmsVersionResponse;
-import org.polypheny.jdbc.proto.ExportedKeysResponse;
-import org.polypheny.jdbc.proto.ImportedKeysResponse;
-import org.polypheny.jdbc.proto.IndexesResponse;
-import org.polypheny.jdbc.proto.NamespacesResponse;
-import org.polypheny.jdbc.proto.PrimaryKeysResponse;
-import org.polypheny.jdbc.proto.TableTypesResponse;
-import org.polypheny.jdbc.proto.TablesResponse;
-import org.polypheny.jdbc.proto.TypesResponse;
+import org.polypheny.jdbc.proto.*;
 import org.polypheny.jdbc.utils.MetaResultSetBuilder;
 import org.polypheny.jdbc.properties.PropertyUtils;
 
@@ -800,11 +790,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getProcedures( String catalog, String schemaPattern, String procedureNamePattern ) throws SQLException {
-        // Stored procedures not supported.
-        // TODO TH: implement empty result set
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        ProceduresResponse proceduresResponse = protoInterfaceClient.getProcedures(schemaPattern, procedureNamePattern);
+        return MetaResultSetBuilder.buildFromProceduresResponse(proceduresResponse);
     }
 
 
