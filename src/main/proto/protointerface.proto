@@ -5,6 +5,7 @@ import "relational_frame.proto";
 import "graph_frame.proto";
 import "document_frame.proto";
 import "meta.proto";
+import "namespace_meta.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.jdbc.proto";
