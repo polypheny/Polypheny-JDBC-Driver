@@ -23,27 +23,6 @@ message LanguageResponse {
   repeated string language_names = 1;
 }
 
-message TablesRequest{
-  optional string namespace_pattern = 1;
-  optional string table_pattern = 2;
-  repeated string table_types = 3;
-}
-
-message TablesResponse {
-  repeated Table tables = 1;
-}
-
-
-message ColumnsRequest {
-  optional string namespace_pattern = 1;
-  optional string table_pattern = 2;
-  optional string column_pattern = 3;
-}
-
-message ColumnsResponse {
-  repeated Column columns = 1;
-}
-
 
 message DatabasesRequest {
 }
@@ -70,36 +49,6 @@ message TableType {
   string table_type = 1;
 }
 
-message PrimaryKeysRequest {
-  optional string namespace_pattern = 1;
-  string table_pattern = 2;
-}
-
-message PrimaryKeysResponse {
-  repeated PrimaryKey primary_keys = 1;
-}
-
-
-
-message ImportedKeysRequest {
-  optional string namespace_pattern = 1;
-  string table_pattern = 2;
-}
-
-message ImportedKeysResponse {
-  repeated ForeignKey imported_keys = 1;
-}
-
-
-message ExportedKeysRequest {
-  optional string namespace_pattern = 1;
-  string table_pattern = 2;
-}
-
-message ExportedKeysResponse {
-  repeated ForeignKey exported_keys = 1;
-}
-
 message TypesRequest {
 
 }
@@ -120,17 +69,6 @@ message Type {
   int32 max_scale = 9;
   int32 radix = 10;
 }
-
-message IndexesRequest {
-  optional string namespace_pattern = 1;
-  optional string table_pattern = 2;
-  bool unique = 3;
-}
-
-message IndexesResponse{
-  repeated Index indexes = 1;
-}
-
 
 message SqlStringFunctionsRequest {
 }
