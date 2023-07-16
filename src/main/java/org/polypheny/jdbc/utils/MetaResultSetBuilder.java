@@ -6,7 +6,10 @@ import org.polypheny.jdbc.PolyphenyColumnMeta;
 import org.polypheny.jdbc.proto.*;
 import org.polypheny.jdbc.types.TypedValue;
 
-import java.sql.*;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,6 +19,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class MetaResultSetBuilder {
+
+    private static final Function DUMMY_ACCESSOR = a -> "Dummy value: Accessor not implemented";
 
     private static final List<Parameter<ForeignKey>> FOREIGN_KEY_PARAMETERS = Arrays.asList(
             new Parameter<>("PKTABLE_CAT", Types.VARCHAR, nullIfFalse(ForeignKey::getReferencedDatabaseName, ForeignKey::hasReferencedDatabaseName)),
@@ -34,6 +39,11 @@ public class MetaResultSetBuilder {
             new Parameter<>("DEFERRABILITY", Types.SMALLINT, p -> null)
     );
 
+    private static <T extends GeneratedMessageV3> PolyphenyBidirectionalResultSet buildEmptyResultSet(String entityName, List<Parameter<T>> parameters) throws SQLException {
+        ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas(entityName, parameters);
+        ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
+        return new PolyphenyBidirectionalResultSet(columnMetas, rows);
+    }
 
     private static <T extends GeneratedMessageV3> PolyphenyBidirectionalResultSet buildResultSet(String entityName, List<T> messages, List<Parameter<T>> parameters) throws SQLException {
         ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas(entityName, parameters);
@@ -272,20 +282,169 @@ public class MetaResultSetBuilder {
         );
     }
 
-    public static ResultSet buildFromProceduresResponse(ProceduresResponse proceduresResponse) throws SQLException {
-        return buildResultSet(
+    public static ResultSet buildFromProceduresResponse() throws SQLException {
+        // This creates an empty dummy result set because the requested information does not exist on the server side.
+        return buildEmptyResultSet(
                 "PROCEDURES",
-                proceduresResponse.getProceduresList(),
                 Arrays.asList(
-                        new Parameter<>("PROCEDURE_CAT", Types.VARCHAR, p -> null),
-                        new Parameter<>("PROCEDURE_SCHEM", Types.VARCHAR, Procedure::getInputParameters),
-                        new Parameter<>("PROCEDURE_NAME", Types.VARCHAR, Procedure::getTrivialName),
-                        new Parameter<>("reserved for future use", Types.VARCHAR, p -> null),
-                        new Parameter<>("reserved for future use ", Types.VARCHAR, p -> null),
-                        new Parameter<>( "reserved for future use ", Types.VARCHAR, p -> null ),
-                        new Parameter<>( "REMARKS ", Types.VARCHAR, Procedure::getDescription ),
-                        new Parameter<>( "PROCEDURE_TYPE", Types.TINYINT, integerAsShort(p -> p.getReturnType().getNumber()) ),
-                        new Parameter<>( "SPECIFIC_NAME ", Types.VARCHAR, Procedure::getUniqueName )
+                        new Parameter<>("PROCEDURE_CAT", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("PROCEDURE_SCHEM", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("PROCEDURE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("reserved for future use", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("reserved for future use", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("reserved for future use", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("REMARKS", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("PROCEDURE_TYPE", Types.TINYINT, DUMMY_ACCESSOR),
+                        new Parameter<>("SPECIFIC_NAME", Types.VARCHAR, DUMMY_ACCESSOR)
+                )
+        );
+    }
+
+    public static ResultSet buildFromProcedureColumnResponse() throws SQLException {
+        return buildEmptyResultSet(
+                "PROCEDURE_COLUMNS",
+                Arrays.asList(
+                        new Parameter<>("PROCEDURE_CAT", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("PROCEDURE_SCHEM", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("PROCEDURE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("COLUMN_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("COLUMN_TYPE", Types.TINYINT, DUMMY_ACCESSOR),
+                        new Parameter<>("DATA_TYPE", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("TYPE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("PRECISION", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("LENGTH", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("SCALE", Types.TINYINT, DUMMY_ACCESSOR),
+                        new Parameter<>("RADIX", Types.TINYINT, DUMMY_ACCESSOR),
+                        new Parameter<>("NULLABLE", Types.TINYINT, DUMMY_ACCESSOR),
+                        new Parameter<>("REMARKS", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("COLUMN_DEF", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SQL_DATA_TYPE", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("SQL_DATETIME_SUB", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("CHAR_OCTET_LENGTH", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("ORDINAL_POSITION", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("IS_NULLABLE", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SPECIFIC_NAME", Types.VARCHAR, DUMMY_ACCESSOR)
+                )
+        );
+    }
+
+    public static ResultSet buildFromColumnPrivilegesResponse(ColumnsResponse columnsResponse, String userName) throws SQLException {
+        //TODO... hack something together to get all combinations of access-rights and columns... sigh
+        return buildResultSet(
+                "COLUMN_PRIVELEGES",
+                columnsResponse.getColumnsList(),
+                Arrays.asList(
+                        new Parameter<>("TABLE_CAT", Types.VARCHAR, Column::getDatabaseName),
+                        new Parameter<>("TABLE_SCHEM", Types.VARCHAR, Column::getNamespaceName),
+                        new Parameter<>("TABLE_NAME", Types.VARCHAR, Column::getTableName),
+                        new Parameter<>("COLUMN_NAME", Types.VARCHAR, Column::getColumnName),
+                        new Parameter<>("GRANTOR", Types.TINYINT, p -> null),
+                        new Parameter<>("GRANTEE ", Types.INTEGER, p -> userName),
+                        new Parameter<>("PRIVILEGE", Types.VARCHAR, p -> "SELECT"),
+                        new Parameter<>("IS_GRANTABLE", Types.INTEGER, p -> "NO")
+                )
+        );
+    }
+
+    public static ResultSet buildFromTablePrivilegesResponse(TablesResponse tablesResponse, String userName) throws SQLException {
+        //TODO... hack something together to get all combinations of access-rights and tables... sigh
+        return buildResultSet(
+                "TABLE_PRIVELEGES",
+                tablesResponse.getTablesList(),
+                Arrays.asList(
+                        new Parameter<>("TABLE_CAT", Types.VARCHAR, p -> null),
+                        new Parameter<>("TABLE_SCHEM", Types.VARCHAR, Table::getNamespaceName),
+                        new Parameter<>("TABLE_NAME", Types.VARCHAR, Table::getTableName),
+                        new Parameter<>("GRANTOR", Types.TINYINT, p -> null),
+                        new Parameter<>("GRANTEE ", Types.INTEGER, p -> userName),
+                        new Parameter<>("PRIVILEGE", Types.VARCHAR, p -> "SELECT"),
+                        new Parameter<>("IS_GRANTABLE", Types.INTEGER, p -> "NO")
+                )
+        );
+    }
+
+    public static ResultSet buildFromVersionColumnsResponse() throws SQLException {
+        return buildEmptyResultSet(
+                "VERSION_COLUMNS",
+                Arrays.asList(
+                        new Parameter<>("SCOPE", Types.TINYINT, DUMMY_ACCESSOR),
+                        new Parameter<>("COLUMN_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("DATA_TYPE", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("TYPE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("COLUMN_SIZE", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("BUFFER_LENGTH", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("DECIMAL_DIGITS", Types.TINYINT, DUMMY_ACCESSOR),
+                        new Parameter<>("PSEUDO_COLUMN", Types.TINYINT, DUMMY_ACCESSOR)
+                )
+        );
+    }
+
+    public static ResultSet fromUDTResponse() throws SQLException {
+        return buildEmptyResultSet(
+                "UDTs",
+                Arrays.asList(
+                        new Parameter<>("TYPE_CAT", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("TYPE_SCHEM", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("TYPE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("CLASS_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("DATA_TYPE", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("REMARKS", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("BASE_TYPE", Types.TINYINT, DUMMY_ACCESSOR)
+                )
+        );
+    }
+
+    public static ResultSet buildFromSuperTypesResponse() throws SQLException {
+        return buildEmptyResultSet(
+                "UDTs",
+                Arrays.asList(
+                        new Parameter<>("TYPE_CAT", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("TYPE_SCHEM", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("TYPE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SUPERTYPE_CAT", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SUPERTYPE_SCHEM", Types.INTEGER, DUMMY_ACCESSOR),
+                        new Parameter<>("SUPERTYPE_NAME", Types.VARCHAR, DUMMY_ACCESSOR)
+                )
+        );
+    }
+
+    public static ResultSet buildFromSuperTablesResponse() throws SQLException {
+        return buildEmptyResultSet(
+                "SUPERTABLES",
+                Arrays.asList(
+                        new Parameter<>("TABLE_CAT", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("TABLE_SCHEM", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("TABLE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SUPERTABLE_NAME", Types.VARCHAR, DUMMY_ACCESSOR)
+                )
+        );
+    }
+
+    public static ResultSet buildFromAttributesResponse() throws SQLException {
+        return buildEmptyResultSet(
+                "ATTRIBUTES",
+                Arrays.asList(
+                        new Parameter<>("TABLE_CAT", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("TABLE_SCHEM", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("TABLE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("ATTR_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("DATA_TYPE", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("ATTR_TYPE_NAME", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("ATTR_SIZE", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("DECIMAL_DIGITS", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("NUM_PREC_RADIX", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("NULLABLE", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("REMARKS", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("ATTR_DEF", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SQL_DATA_TYPE", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SQL_DATETIME_SUB", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("CHAR_OCTET_LENGTH", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("ORDINAL_POSITION", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("IS_NULLABLE", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SCOPE_CATALOG", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SCOPE_SCHEMA", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SCOPE_TABLE", Types.VARCHAR, DUMMY_ACCESSOR),
+                        new Parameter<>("SOURCE_DATA_TYPE", Types.VARCHAR, DUMMY_ACCESSOR)
                 )
         );
     }

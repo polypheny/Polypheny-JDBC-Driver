@@ -1,16 +1,12 @@
 package org.polypheny.jdbc;
 
 import io.grpc.StatusRuntimeException;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.RowIdLifetime;
-import java.sql.SQLException;
-
 import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.*;
 import org.polypheny.jdbc.utils.MetaResultSetBuilder;
-import org.polypheny.jdbc.properties.PropertyUtils;
+
+import java.sql.*;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
@@ -38,15 +34,22 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     }
 
 
-    public PolyphenyDatabaseMetadata( ProtoInterfaceClient protoInterfaceClient, ConnectionString target ) {
+    public PolyphenyDatabaseMetadata(ProtoInterfaceClient protoInterfaceClient, ConnectionString target) {
         this.protoInterfaceClient = protoInterfaceClient;
         this.connectionString = target;
         //TODO TH: check what polypheny does...
         this.nullSorting = NullSorting.HIGH;
     }
 
+    private void throwNotSupportedIfStrict() throws SQLFeatureNotSupportedException {
+        if (!DriverProperties.isSTRICT_MODE()) {
+            return;
+        }
+        throw new SQLFeatureNotSupportedException();
+    }
 
-    public void setConnection( PolyphenyConnection connection ) {
+
+    public void setConnection(PolyphenyConnection connection) {
         this.polyphenyConnection = connection;
     }
 
@@ -74,7 +77,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getURL() throws SQLException {
-        if ( connectionString == null ) {
+        if (connectionString == null) {
             return null;
         }
         return DriverProperties.getDRIVER_URL_SCHEMA() + "//" + connectionString.getTarget();
@@ -83,7 +86,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getUserName() throws SQLException {
-        if ( connectionString == null ) {
+        if (connectionString == null) {
             return null;
         }
         return connectionString.getUser();
@@ -122,7 +125,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getDatabaseProductName() throws SQLException {
-        if ( productName == null ) {
+        if (productName == null) {
             fetchDbmsVersionInfo();
         }
         return productName;
@@ -131,7 +134,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getDatabaseProductVersion() throws SQLException {
-        if ( productVersion == null ) {
+        if (productVersion == null) {
             fetchDbmsVersionInfo();
         }
         return productVersion;
@@ -302,7 +305,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public boolean supportsConvert( int fromType, int toType ) throws SQLException {
+    public boolean supportsConvert(int fromType, int toType) throws SQLException {
         return false;
     }
 
@@ -758,7 +761,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public boolean supportsTransactionIsolationLevel( int level ) throws SQLException {
+    public boolean supportsTransactionIsolationLevel(int level) throws SQLException {
         // This is the only supported isolation level
         return level == PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION();
     }
@@ -789,40 +792,50 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getProcedures( String catalog, String schemaPattern, String procedureNamePattern ) throws SQLException {
-        ProceduresResponse proceduresResponse = protoInterfaceClient.getProcedures(schemaPattern, procedureNamePattern);
-        return MetaResultSetBuilder.buildFromProceduresResponse(proceduresResponse);
+    public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern) throws SQLException {
+        throwNotSupportedIfStrict();
+        return MetaResultSetBuilder.buildFromProceduresResponse();
+
     }
 
 
     @Override
-    public ResultSet getProcedureColumns( String catalog, String schemaPattern, String procedureNamePattern, String columnNamePattern ) throws SQLException {
-        // Stored procedures not supported.
-        // TODO TH: implement empty result set
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern, String columnNamePattern) throws SQLException {
+        throwNotSupportedIfStrict();
+        return MetaResultSetBuilder.buildFromProcedureColumnResponse();
     }
 
 
     @Override
-    public ResultSet getTables( String catalog, String schemaPattern, String tableNamePattern, String[] types ) throws SQLException {
-        // we ignore the catalogs as polypheny does not have those.
-        TablesResponse tablesResponse = protoInterfaceClient.getTables( schemaPattern, tableNamePattern, types );
-        return MetaResultSetBuilder.buildFromTablesResponse( tablesResponse );
+    public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
+        try {
+            // we ignore the catalogs as polypheny does not have those.
+            TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern, types);
+            return MetaResultSetBuilder.buildFromTablesResponse(tablesResponse);
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
+        }
     }
 
 
     @Override
     public ResultSet getSchemas() throws SQLException {
-        return getSchemas( null, null );
+        try {
+            return getSchemas(null, null);
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
+        }
     }
 
 
     @Override
     public ResultSet getCatalogs() throws SQLException {
-        DatabasesResponse databasesResponse = protoInterfaceClient.getDatabases();
-        return MetaResultSetBuilder.buildFromDatabasesResponse( databasesResponse );
+        try {
+            DatabasesResponse databasesResponse = protoInterfaceClient.getDatabases();
+            return MetaResultSetBuilder.buildFromDatabasesResponse(databasesResponse);
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
+        }
     }
 
 
@@ -830,171 +843,186 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     public ResultSet getTableTypes() throws SQLException {
         try {
             TableTypesResponse tableTypesResponse = protoInterfaceClient.getTablesTypes();
-            return MetaResultSetBuilder.buildFromTableTypesResponse( tableTypesResponse );
-        } catch ( StatusRuntimeException e ) {
-            throw new SQLException( e.getMessage() );
+            return MetaResultSetBuilder.buildFromTableTypesResponse(tableTypesResponse);
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
         }
     }
 
 
     @Override
-    public ResultSet getColumns( String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern ) throws SQLException {
+    public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
         try {
-            ColumnsResponse columnsResponse = protoInterfaceClient.getColumns( schemaPattern, tableNamePattern, columnNamePattern );
-            return MetaResultSetBuilder.buildFromColumnsResponse( columnsResponse );
-        } catch ( StatusRuntimeException e ) {
-            throw new SQLException( e.getMessage() );
+            ColumnsResponse columnsResponse = protoInterfaceClient.getColumns(schemaPattern, tableNamePattern, columnNamePattern);
+            return MetaResultSetBuilder.buildFromColumnsResponse(columnsResponse);
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
         }
     }
 
 
     @Override
-    public ResultSet getColumnPrivileges( String s, String s1, String s2, String s3 ) throws SQLException {
+    public ResultSet getColumnPrivileges(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
+        /* This feature is currently not supported by polypheny thus the following workaround is used:
+         * 1) get all columns using getColumns()
+         * 2) the MetaResultSetBuilder constructs a full rights result set from the response of the getCoumns() api call.
+         *
+         * For proper implementation a dedicated api call should be used the result of witch should be passed to the MetaResultSet builder.
+         */
+        throwNotSupportedIfStrict();
+        try {
+            ColumnsResponse columnsResponse = protoInterfaceClient.getColumns(schemaPattern, tableNamePattern, columnNamePattern);
+            return MetaResultSetBuilder.buildFromColumnPrivilegesResponse(columnsResponse, getUserName());
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
+        }
+    }
+
+
+    @Override
+    public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
+        /* This feature is currently not supported by polypheny thus the following workaround is used:
+         * 1) get all tables using getColumns()
+         * 2) the MetaResultSetBuilder constructs a full rights result set from the response of the getTables() api call.
+         *
+         * For proper implementation a dedicated api call should be used the result of witch should be passed to the MetaResultSet builder.
+         */
+        throwNotSupportedIfStrict();
+        try {
+            TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern, null);
+            return MetaResultSetBuilder.buildFromTablePrivilegesResponse(tablesResponse, getUserName());
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
+        }
+    }
+
+
+    @Override
+    public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable) throws SQLException {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLException("Feature " + methodName + " not implemented");
     }
 
 
     @Override
-    public ResultSet getTablePrivileges( String s, String s1, String s2 ) throws SQLException {
+    public ResultSet getVersionColumns(String s, String s1, String s2) throws SQLException {
+       return MetaResultSetBuilder.buildFromVersionColumnsResponse();
+    }
+
+
+    @Override
+    public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
+        PrimaryKeysResponse primaryKeysResponse = protoInterfaceClient.getPrimaryKeys(schema, table);
+        return MetaResultSetBuilder.buildFromPrimaryKeyResponse(primaryKeysResponse);
+    }
+
+
+    @Override
+    public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
+        ImportedKeysResponse importedKeysResponse = protoInterfaceClient.getImportedKeys(schema, table);
+        return MetaResultSetBuilder.buildFromImportedKeysResponse(importedKeysResponse);
+    }
+
+
+    @Override
+    public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
+        ExportedKeysResponse exportedKeysResponse = protoInterfaceClient.getExportedKeys(schema, table);
+        return MetaResultSetBuilder.buildFromExportedKeysResponse(exportedKeysResponse);
+    }
+
+
+    @Override
+    public ResultSet getCrossReference(String s, String s1, String s2, String s3, String s4, String s5) throws SQLException {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public ResultSet getBestRowIdentifier( String s, String s1, String s2, int i, boolean b ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public ResultSet getVersionColumns( String s, String s1, String s2 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
-    }
-
-
-    @Override
-    public ResultSet getPrimaryKeys( String catalog, String schema, String table ) throws SQLException {
-        PrimaryKeysResponse primaryKeysResponse = protoInterfaceClient.getPrimaryKeys( schema, table );
-        return MetaResultSetBuilder.buildFromPrimaryKeyResponse( primaryKeysResponse );
-    }
-
-
-    @Override
-    public ResultSet getImportedKeys( String catalog, String schema, String table ) throws SQLException {
-        ImportedKeysResponse importedKeysResponse = protoInterfaceClient.getImportedKeys( schema, table );
-        return MetaResultSetBuilder.buildFromImportedKeysResponse( importedKeysResponse );
-    }
-
-
-    @Override
-    public ResultSet getExportedKeys( String catalog, String schema, String table ) throws SQLException {
-        ExportedKeysResponse exportedKeysResponse = protoInterfaceClient.getExportedKeys( schema, table );
-        return MetaResultSetBuilder.buildFromExportedKeysResponse( exportedKeysResponse );
-    }
-
-
-    @Override
-    public ResultSet getCrossReference( String s, String s1, String s2, String s3, String s4, String s5 ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLException("Feature " + methodName + " not implemented");
     }
 
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
         TypesResponse typesResponse = protoInterfaceClient.getTypes();
-        return MetaResultSetBuilder.buildFromTypesResponse( typesResponse );
+        return MetaResultSetBuilder.buildFromTypesResponse(typesResponse);
     }
 
 
     @Override
-    public ResultSet getIndexInfo( String catalog, String schema, String table, boolean unique, boolean approximate ) throws SQLException {
-        IndexesResponse indexesResponse = protoInterfaceClient.getIndexes( schema, table, unique );
-        return MetaResultSetBuilder.buildFromIndexesResponse( indexesResponse );
+    public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate) throws SQLException {
+        IndexesResponse indexesResponse = protoInterfaceClient.getIndexes(schema, table, unique);
+        return MetaResultSetBuilder.buildFromIndexesResponse(indexesResponse);
     }
 
 
     @Override
-    public boolean supportsResultSetType( int type ) throws SQLException {
-        return PropertyUtils.isValidResultSetType( type );
+    public boolean supportsResultSetType(int type) throws SQLException {
+        return PropertyUtils.isValidResultSetType(type);
     }
 
 
     @Override
-    public boolean supportsResultSetConcurrency( int type, int concurrency ) throws SQLException {
-        return PropertyUtils.isValidResultSetConcurrency( type, concurrency );
+    public boolean supportsResultSetConcurrency(int type, int concurrency) throws SQLException {
+        return PropertyUtils.isValidResultSetConcurrency(type, concurrency);
     }
 
 
     @Override
-    public boolean ownUpdatesAreVisible( int type ) throws SQLException {
+    public boolean ownUpdatesAreVisible(int type) throws SQLException {
         //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
-    public boolean ownDeletesAreVisible( int tyoe ) throws SQLException {
+    public boolean ownDeletesAreVisible(int tyoe) throws SQLException {
         //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
-    public boolean ownInsertsAreVisible( int type ) throws SQLException {
+    public boolean ownInsertsAreVisible(int type) throws SQLException {
         //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
-    public boolean othersUpdatesAreVisible( int type ) throws SQLException {
+    public boolean othersUpdatesAreVisible(int type) throws SQLException {
         return false;
     }
 
 
     @Override
-    public boolean othersDeletesAreVisible( int type ) throws SQLException {
+    public boolean othersDeletesAreVisible(int type) throws SQLException {
         return false;
     }
 
 
     @Override
-    public boolean othersInsertsAreVisible( int type ) throws SQLException {
+    public boolean othersInsertsAreVisible(int type) throws SQLException {
         return false;
     }
 
 
     @Override
-    public boolean updatesAreDetected( int i ) throws SQLException {
+    public boolean updatesAreDetected(int i) throws SQLException {
         //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
-    public boolean deletesAreDetected( int i ) throws SQLException {
+    public boolean deletesAreDetected(int i) throws SQLException {
         //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
-    public boolean insertsAreDetected( int i ) throws SQLException {
+    public boolean insertsAreDetected(int i) throws SQLException {
         //TODO TH: adjust according to implementation
         return false;
     }
@@ -1007,12 +1035,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getUDTs( String s, String s1, String s2, int[] ints ) throws SQLException {
-        //TODO TH: implement this...
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types) throws SQLException {
+        throwNotSupportedIfStrict();
+        return MetaResultSetBuilder.fromUDTResponse();
     }
 
 
@@ -1047,38 +1072,29 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getSuperTypes( String s, String s1, String s2 ) throws SQLException {
-        //TODO TH: implement this...
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
+        throwNotSupportedIfStrict();
+        return MetaResultSetBuilder.buildFromSuperTypesResponse();
     }
 
 
     @Override
-    public ResultSet getSuperTables( String s, String s1, String s2 ) throws SQLException {
-        //TODO TH: implement this...
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
+        throwNotSupportedIfStrict();
+        return MetaResultSetBuilder.buildFromSuperTablesResponse();
     }
 
 
     @Override
-    public ResultSet getAttributes( String s, String s1, String s2, String s3 ) throws SQLException {
-        //TODO TH: implement this...
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+    public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern, String attributeNamePattern) throws SQLException {
+        throwNotSupportedIfStrict();
+        return MetaResultSetBuilder.buildFromAttributesResponse();
     }
 
 
     @Override
-    public boolean supportsResultSetHoldability( int resultSetHoldability ) throws SQLException {
-        return PropertyUtils.isValidResultSetHoldability( resultSetHoldability );
+    public boolean supportsResultSetHoldability(int resultSetHoldability) throws SQLException {
+        return PropertyUtils.isValidResultSetHoldability(resultSetHoldability);
     }
 
 
@@ -1090,7 +1106,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public int getDatabaseMajorVersion() throws SQLException {
-        if ( databaseMajorVersion == NO_VERSION ) {
+        if (databaseMajorVersion == NO_VERSION) {
             fetchDbmsVersionInfo();
         }
         return databaseMinorVersion;
@@ -1099,7 +1115,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public int getDatabaseMinorVersion() throws SQLException {
-        if ( databaseMajorVersion == NO_VERSION ) {
+        if (databaseMajorVersion == NO_VERSION) {
             fetchDbmsVersionInfo();
         }
         return databaseMinorVersion;
@@ -1143,9 +1159,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public ResultSet getSchemas( String catalog, String schemaPattern ) throws SQLException {
-        NamespacesResponse namespacesResponse = protoInterfaceClient.getNamespaces( schemaPattern );
-        return MetaResultSetBuilder.buildFromNamespacesResponse( namespacesResponse );
+    public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
+        NamespacesResponse namespacesResponse = protoInterfaceClient.getNamespaces(schemaPattern);
+        return MetaResultSetBuilder.buildFromNamespacesResponse(namespacesResponse);
     }
 
 
@@ -1166,34 +1182,34 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLException("Feature " + methodName + " not implemented");
     }
 
 
     @Override
-    public ResultSet getFunctions( String s, String s1, String s2 ) throws SQLException {
+    public ResultSet getFunctions(String s, String s1, String s2) throws SQLException {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLException("Feature " + methodName + " not implemented");
     }
 
 
     @Override
-    public ResultSet getFunctionColumns( String s, String s1, String s2, String s3 ) throws SQLException {
+    public ResultSet getFunctionColumns(String s, String s1, String s2, String s3) throws SQLException {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLException("Feature " + methodName + " not implemented");
     }
 
 
     @Override
-    public ResultSet getPseudoColumns( String s, String s1, String s2, String s3 ) throws SQLException {
+    public ResultSet getPseudoColumns(String s, String s1, String s2, String s3) throws SQLException {
         // saves time as exceptions don't have to be typed out by hand
         String methodName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        throw new SQLException("Feature " + methodName + " not implemented");
     }
 
 

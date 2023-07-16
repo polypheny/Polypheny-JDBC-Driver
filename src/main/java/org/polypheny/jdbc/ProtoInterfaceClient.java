@@ -342,4 +342,13 @@ public class ProtoInterfaceClient {
         Optional.ofNullable(procedureNamePattern).ifPresent(requestBuilder::setProcedurePattern);
         return blockingStub.getProcedures(requestBuilder.build());
     }
+
+    public ProcedureColumnsResponse getProcedureColumns(String namespacePattern, String procedureNamePattern, String columnNamePattern) {
+        ProcedureColumnsRequest.Builder requestBuilder = ProcedureColumnsRequest.newBuilder();
+        requestBuilder.setLanguage(SQL_LANGUAGE_NAME);
+        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
+        Optional.ofNullable(procedureNamePattern).ifPresent(requestBuilder::setProcedurePattern);
+        Optional.ofNullable(columnNamePattern).ifPresent(requestBuilder::setProcedurePattern);
+        return blockingStub.getProcedureColumns(requestBuilder.build());
+    }
 }

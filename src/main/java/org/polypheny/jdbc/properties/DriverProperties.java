@@ -20,6 +20,9 @@ public class DriverProperties {
     private static final boolean JDBC_COMPLIANT = false;
     @Getter
     private static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
+
+    @Getter
+    private static final boolean STRICT_MODE = false;
     @Getter
     // This feature is for testing purposes only!
     private static final boolean BACKDOOR_ENABLED = true;
