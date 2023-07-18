@@ -16,7 +16,6 @@ public class UserDefinedTypeDeserializer implements ValueDeserializer {
         switch (jdbcType) {
             case Types.OTHER:
                 return deserializeToUdtPrototype(value.getUserDefinedType(), value.getType().name());
-            //TODO implementation
         }
         throw new IllegalArgumentException("Illegal jdbc type for proto user defined type.");
     }
