@@ -115,7 +115,5 @@ public interface Convertible {
 
     Reader asNCharacterStream() throws SQLException;
 
-    <T> T asObject(Class<T> type);
-
-    Object asObject(Map<String, Class<?>> map);
+    Object asObject(Map<String, Class<?>> map) throws SQLException;
 }

@@ -7,25 +7,14 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.NClob;
-import java.sql.Ref;
-import java.sql.RowId;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLXML;
-import java.sql.Struct;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -37,26 +26,27 @@ import org.polypheny.jdbc.deserialization.UDTPrototype;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
+    private static String UDT_PROOTYPE_TYPE = "UDT_PROTOTYPE";
 
     @Getter
     private final int jdbcType;
     @Getter
-    private final Object value;
+    private Object value;
     @Getter
-    private final boolean isUdtPrototype;
+    private String internalType;
     private static final HashMap<Integer, TypedValue> NULL_MAP = new HashMap<>();
 
 
     private TypedValue( int jdbcType, Object value ) {
         this.jdbcType = jdbcType;
         this.value = value;
-        this.isUdtPrototype = false;
+        this.internalType = null;
     }
 
     private TypedValue (UDTPrototype udtPrototype) {
         this.jdbcType = Types.OTHER;
         this.value = udtPrototype;
-        this.isUdtPrototype = true;
+        this.internalType = UDT_PROOTYPE_TYPE;
     }
 
     public static TypedValue fromUdtPrototype(UDTPrototype udtPrototype) {
@@ -820,6 +810,10 @@ public class TypedValue implements Convertible {
         return asCharacterStream();
     }
 
+    private boolean isUdtPrototype() {
+        return internalType.equals(UDT_PROOTYPE_TYPE);
+    }
+
     public UDTPrototype getUdtPrototype() throws SQLException {
         if (!isUdtPrototype()) {
             throw  new SQLException("This typed value does not represent a udt prototype");
@@ -899,13 +893,29 @@ public class TypedValue implements Convertible {
     }
 
     @Override
-    public <T>  T asObject(Class<T> type) {
-        return null;
+    public Object asObject(Map<String,Class<?>> map) throws SQLException {
+        return buildFromUdtPrototype(map);
     }
 
-    @Override
-    public Object asObject(Map<String,Class<?>> map) {
-        return null;
+    private Object buildFromUdtPrototype(Map<String, Class<?>> map) throws SQLException {
+        if (value == null) {
+            return null;
+        }
+        UDTPrototype prototype = getUdtPrototype();
+        Class<?> udtClass = map.get(prototype.getTypeName());
+        if (udtClass == null) {
+            throw new SQLException("Type-map contains no type for internal type " + prototype.getTypeName());
+        }
+        try {
+            Constructor<?> udtConstructor = udtClass.getConstructor(SQLInput.class, String.class);
+            Object value = udtConstructor.newInstance(prototype, prototype.getTypeName());
+            internalType = prototype.getTypeName();
+            return value;
+        } catch (NoSuchMethodException e) {
+            throw new SQLException("The type contained in the type map does not implement the SQLInput interface required for udt construction");
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new SQLException("Construction of user defined type failed", e);
+        }
     }
 
 
