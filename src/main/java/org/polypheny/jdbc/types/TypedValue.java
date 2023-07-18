@@ -31,6 +31,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import lombok.Getter;
 import org.apache.commons.lang.NotImplementedException;
+import org.polypheny.jdbc.deserialization.UDTPrototype;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
@@ -39,13 +40,24 @@ public class TypedValue implements Convertible {
     private final int jdbcType;
     @Getter
     private final Object value;
+    @Getter
+    private final boolean isUdtPrototype;
     private static final HashMap<Integer, TypedValue> NULL_MAP = new HashMap<>();
 
 
     private TypedValue( int jdbcType, Object value ) {
         this.jdbcType = jdbcType;
         this.value = value;
+        this.isUdtPrototype = false;
     }
+
+    private TypedValue (UDTPrototype udtPrototype) {
+        this.jdbcType = Types.OTHER;
+        this.value = udtPrototype;
+        this.isUdtPrototype = true;
+    }
+
+    public static TypedValue fromUdtPrototype(UDTPrototype udtPrototype)
 
 
     public static TypedValue fromBoolean( boolean value ) {
@@ -870,6 +882,10 @@ public class TypedValue implements Convertible {
             case Types.SQLXML:
                 return asSQLXML();
         }
+        if (isUdtPrototype) {
+            return value;
+        }
+
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }
 
