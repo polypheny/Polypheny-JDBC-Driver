@@ -29,6 +29,8 @@ import java.sql.Types;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Map;
+
 import lombok.Getter;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.jdbc.deserialization.UDTPrototype;
@@ -271,7 +273,6 @@ public class TypedValue implements Convertible {
 
 
     public static TypedValue fromNString( String value ) {
-        /* differentiation between NVARCHAR and LONGNVARCHAR can be ignored as value is converted to PolyString anyway */
         /* differentiation between NVARCHAR and LONGNVARCHAR can be ignored as value is converted to PolyString anyway */
         return new TypedValue( Types.NVARCHAR, value );
     }
@@ -895,6 +896,16 @@ public class TypedValue implements Convertible {
                 return asSQLXML();
         }
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
+    }
+
+    @Override
+    public <T>  T asObject(Class<T> type) {
+        return null;
+    }
+
+    @Override
+    public Object asObject(Map<String,Class<?>> map) {
+        return null;
     }
 
 
