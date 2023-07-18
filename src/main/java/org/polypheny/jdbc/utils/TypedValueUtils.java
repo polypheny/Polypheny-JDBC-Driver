@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.averagingDouble;
 import static java.util.stream.Collectors.toCollection;
 
 public class TypedValueUtils {
@@ -99,7 +100,7 @@ public class TypedValueUtils {
 
 
     public static Date getDateFromString(String string) throws ParseException {
-        return new Date(SQL_DATE_FORMAT.parse(string).getTime());
+        return Date.valueOf(string);
     }
 
 

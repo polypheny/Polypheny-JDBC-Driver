@@ -22,10 +22,6 @@ public class QueryTest {
 
         try {
             Connection conn = DriverManager.getConnection( DB_URL, CONNECTION_PROPERTIES );
-            DatabaseMetaData dbmd = conn.getMetaData();
-            ResultSet rs = dbmd.getTables(null, null, null, null);
-
-
 
             //This is not related to the bug. Just ignore...
 
@@ -43,7 +39,13 @@ public class QueryTest {
 
 
 
-            //PreparedStatement pstmt = conn.prepareStatement( "insert into test values(?, ?, ?)" );
+            PolyphenyPreparedStatement pstmt = (PolyphenyPreparedStatement) conn.prepareStatement( "INSERT INTO public.test (a, b) VALUES (?, ?)" );
+            pstmt.setInt(1, 42);
+            pstmt.setInt(2, 69);
+            //(42.0, '2023-07-21', 69.0, 56789.0);
+            pstmt.executeUpdate();
+            pstmt.close();
+            conn.close();
         } catch ( SQLException e ) {
             e.printStackTrace();
         }

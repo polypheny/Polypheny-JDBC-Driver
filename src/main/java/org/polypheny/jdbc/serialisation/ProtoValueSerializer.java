@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.jdbc.proto.ProtoBigDecimal;
 import org.polypheny.jdbc.proto.ProtoBinary;
@@ -33,8 +35,15 @@ public class ProtoValueSerializer {
 
 
     public static List<ProtoValue> serializeParameterList( List<TypedValue> values ) {
-        //TODO implement this
-        return null;
+        return values.stream().map(ProtoValueSerializer::saveSerialize).collect(Collectors.toList());
+    }
+
+    private static ProtoValue saveSerialize(TypedValue typedValue) throws RuntimeException {
+        try {
+            return serialize(typedValue);
+        } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
 
