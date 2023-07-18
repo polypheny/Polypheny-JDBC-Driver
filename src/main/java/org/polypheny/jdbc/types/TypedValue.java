@@ -817,6 +817,16 @@ public class TypedValue implements Convertible {
         return asCharacterStream();
     }
 
+    public UDTPrototype getUdtPrototype() throws SQLException {
+        if (!isUdtPrototype()) {
+            throw  new SQLException("This typed value does not represent a udt prototype");
+        }
+        if (!(value instanceof  UDTPrototype)) {
+            throw new SQLException("Should never be thrown");
+        }
+        return (UDTPrototype) value;
+    }
+
 
     @Override
     public Object asObject() throws SQLException {
@@ -882,10 +892,6 @@ public class TypedValue implements Convertible {
             case Types.SQLXML:
                 return asSQLXML();
         }
-        if (isUdtPrototype) {
-            return value;
-        }
-
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }
 
