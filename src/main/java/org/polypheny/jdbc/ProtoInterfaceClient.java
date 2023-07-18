@@ -3,7 +3,6 @@ package org.polypheny.jdbc;
 import io.grpc.Channel;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
-import io.grpc.stub.StreamObserver;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
@@ -13,10 +12,7 @@ import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -208,7 +204,6 @@ public class ProtoInterfaceClient {
     }
 
 
-
     public Frame fetchResult(int statementId, long offset) {
         FetchRequest fetchRequest = FetchRequest.newBuilder()
                 .setStatementId(statementId)
@@ -235,77 +230,18 @@ public class ProtoInterfaceClient {
     }
 
 
-    public TablesResponse getTables(String namespacePattern, String tablePattern, String[] types) {
-        TablesRequest.Builder requestBuilder = TablesRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
-        Optional.ofNullable(types).ifPresent(t -> requestBuilder.addAllTableTypes(Arrays.asList(t)));
-        return blockingStub.getTables(requestBuilder.build());
+    public List<Database> getDatabases() {
+        return blockingStub.getDatabases(DatabasesRequest.newBuilder().build()).getDatabasesList();
     }
 
-
-    public TableTypesResponse getTablesTypes() {
-        return blockingStub.getTableTypes(TableTypesRequest.newBuilder().build());
+    public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas() {
+        return blockingStub.getClientInfoPropertyMetas(ClientInfoPropertyMetaRequest.newBuilder().build()).getClientInfoPropertyMetasList();
     }
 
-
-    public NamespacesResponse getNamespaces(String namespacePattern) {
-        NamespacesRequest.Builder requestBuilder = NamespacesRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        return blockingStub.getNamespaces(requestBuilder.build());
+    public List<Type> getTypes() {
+        return blockingStub.getTypes(TypesRequest.newBuilder().build()).getTypesList();
     }
 
-
-    public ColumnsResponse getColumns(String namespacePattern, String tablePattern, String columnPattern) {
-        ColumnsRequest.Builder requestBuilder = ColumnsRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
-        Optional.ofNullable(columnPattern).ifPresent(requestBuilder::setColumnPattern);
-        return blockingStub.getColumns(requestBuilder.build());
-    }
-
-
-    public PrimaryKeysResponse getPrimaryKeys(String namespacePattern, String tablePattern) {
-        PrimaryKeysRequest.Builder requestBuilder = PrimaryKeysRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        requestBuilder.setTablePattern(tablePattern);
-        return blockingStub.getPrimaryKeys(requestBuilder.build());
-    }
-
-
-    public DatabasesResponse getDatabases() {
-        return blockingStub.getDatabases(DatabasesRequest.newBuilder().build());
-    }
-
-
-    public ImportedKeysResponse getImportedKeys(String namespacePattern, String tablePattern) {
-        ImportedKeysRequest.Builder requestBuilder = ImportedKeysRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        requestBuilder.setTablePattern(tablePattern);
-        return blockingStub.getImportedKeys(requestBuilder.build());
-    }
-
-
-    public ExportedKeysResponse getExportedKeys(String namespacePattern, String tablePattern) {
-        ExportedKeysRequest.Builder requestBuilder = ExportedKeysRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        requestBuilder.setTablePattern(tablePattern);
-        return blockingStub.getExportedKeys(requestBuilder.build());
-    }
-
-
-    public TypesResponse getTypes() {
-        return blockingStub.getTypes(TypesRequest.newBuilder().build());
-    }
-
-
-    public IndexesResponse getIndexes(String namespacePattern, String tablePattern, boolean unique) {
-        IndexesRequest.Builder requestBuilder = IndexesRequest.newBuilder();
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        Optional.ofNullable(tablePattern).ifPresent(requestBuilder::setTablePattern);
-        requestBuilder.setUnique(unique);
-        return blockingStub.getIndexes(requestBuilder.build());
-    }
 
     public String getSqlStringFunctions() {
         return blockingStub.getSqlStringFunctions(SqlStringFunctionsRequest.newBuilder().build()).getString();
@@ -335,20 +271,59 @@ public class ProtoInterfaceClient {
         blockingStub.updateStatementProperties(buildStatementProperties(statementProperties, statementId));
     }
 
-    public ProceduresResponse getProcedures(String namespacePattern, String procedureNamePattern) {
+    public List<Procedure> searchProcedures(String languageName, String procedureNamePattern) {
         ProceduresRequest.Builder requestBuilder = ProceduresRequest.newBuilder();
-        requestBuilder.setLanguage(SQL_LANGUAGE_NAME);
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        Optional.ofNullable(procedureNamePattern).ifPresent(requestBuilder::setProcedurePattern);
-        return blockingStub.getProcedures(requestBuilder.build());
+        requestBuilder.setLanguage(languageName);
+        Optional.ofNullable(procedureNamePattern).ifPresent(requestBuilder::setProcedureNamePattern);
+        return blockingStub.searchProcedures(requestBuilder.build()).getProceduresList();
     }
 
-    public ProcedureColumnsResponse getProcedureColumns(String namespacePattern, String procedureNamePattern, String columnNamePattern) {
-        ProcedureColumnsRequest.Builder requestBuilder = ProcedureColumnsRequest.newBuilder();
-        requestBuilder.setLanguage(SQL_LANGUAGE_NAME);
-        Optional.ofNullable(namespacePattern).ifPresent(requestBuilder::setNamespacePattern);
-        Optional.ofNullable(procedureNamePattern).ifPresent(requestBuilder::setProcedurePattern);
-        Optional.ofNullable(columnNamePattern).ifPresent(requestBuilder::setProcedurePattern);
-        return blockingStub.getProcedureColumns(requestBuilder.build());
+    public Map<String, String> getClientInfoProperties() {
+        return blockingStub.getClientInfoProperties(ClientInfoPropertiesRequest.newBuilder().build()).getPropertiesMap();
+    }
+
+
+    public List<Namespace> searchNamespaces(String schemaPattern, String protoNamespaceType) {
+        NamespacesRequest.Builder requestBuilder = NamespacesRequest.newBuilder();
+        Optional.ofNullable(schemaPattern).ifPresent(requestBuilder::setNamespacePattern);
+        Optional.ofNullable(protoNamespaceType).ifPresent(requestBuilder::setNamespaceType);
+        return blockingStub.searchNamespaces(requestBuilder.build()).getNamespacesList();
+    }
+
+    public List<Entity> searchEntities(String namespace, String entityNamePattern) {
+        EntitiesRequest.Builder requestBuilder = EntitiesRequest.newBuilder();
+        requestBuilder.setNamespaceName(namespace);
+        Optional.ofNullable(entityNamePattern).ifPresent(requestBuilder::setEntityPattern);
+        return blockingStub.searchEntities(requestBuilder.build()).getEntitiesList();
+    }
+
+    public List<TableType> getTablesTypes() {
+        return blockingStub.getTableTypes(TableTypesRequest.newBuilder().build()).getTableTypesList();
+    }
+
+    public Namespace getNamespace(String namespaceName) {
+        NamespaceRequest.Builder requestBuilder = NamespaceRequest.newBuilder();
+        requestBuilder.setNamespaceName(namespaceName);
+        return blockingStub.getNamespace(requestBuilder.build());
+    }
+
+    public List<UserDefinedType> getUserDefinedTypes() {
+        UserDefinedTypesRequest.Builder requestBuilder = UserDefinedTypesRequest.newBuilder();
+        return blockingStub.getUserDefinedTypes(requestBuilder.build()).getUserDefinedTypesList();
+    }
+
+    public void setClientInfoProperties(Properties properties) {
+        ClientInfoProperties.Builder requestBuilder = ClientInfoProperties.newBuilder();
+        properties.stringPropertyNames()
+                .forEach(s -> requestBuilder.putProperties(s, properties.getProperty(s)));
+        blockingStub.setClientInfoProperties(requestBuilder.build());
+    }
+
+    public List<Function> searchFunctions(String languaheName, String functionCategory) {
+        FunctionsRequest functionsRequest = FunctionsRequest.newBuilder()
+                .setQueryLanguage(languaheName)
+                .setFunctionCategory(functionCategory)
+                .build();
+        return blockingStub.searchFunctions(functionsRequest).getFunctionsList();
     }
 }

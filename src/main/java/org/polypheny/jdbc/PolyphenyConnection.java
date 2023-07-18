@@ -2,15 +2,18 @@ package org.polypheny.jdbc;
 
 import java.sql.*;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-import com.fasterxml.jackson.databind.annotation.JsonAppend;
-import lombok.SneakyThrows;
+import io.grpc.StatusRuntimeException;
+import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
+import org.polypheny.jdbc.proto.UserDefinedType;
+import org.polypheny.jdbc.proto.UserDefinedTypesRequest;
 import org.polypheny.jdbc.types.PolyphenyArray;
 import org.polypheny.jdbc.types.PolyphenyBlob;
 import org.polypheny.jdbc.types.PolyphenyClob;
@@ -403,13 +406,16 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public void setClientInfo( String name, String value ) throws SQLClientInfoException {
-        throw new SQLClientInfoException();
+        Properties properties = getClientInfo();
+        properties.setProperty(name, value);
+        getProtoInterfaceClient().setClientInfoProperties(properties);
+
     }
 
 
     @Override
     public void setClientInfo( Properties properties ) throws SQLClientInfoException {
-        throw new SQLClientInfoException();
+        getProtoInterfaceClient().setClientInfoProperties(properties);
     }
 
 
@@ -420,8 +426,14 @@ public class PolyphenyConnection implements Connection {
 
 
     @Override
-    public Properties getClientInfo() {
-        return new Properties();
+    public Properties getClientInfo() throws SQLClientInfoException {
+        try {
+            Properties properties = new Properties();
+            properties.putAll(getProtoInterfaceClient().getClientInfoProperties());
+            return properties;
+        } catch (StatusRuntimeException e) {
+            throw new SQLClientInfoException();
+        }
     }
 
 
@@ -501,5 +513,4 @@ public class PolyphenyConnection implements Connection {
         return aClass.isInstance(this);
 
     }
-
 }

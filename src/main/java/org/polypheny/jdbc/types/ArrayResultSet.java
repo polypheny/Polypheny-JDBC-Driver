@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 import org.apache.commons.lang.ArrayUtils;
-import org.polypheny.jdbc.PolyphenyResultSetMetadata;
+import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 
 public class ArrayResultSet<T> implements ResultSet {
 

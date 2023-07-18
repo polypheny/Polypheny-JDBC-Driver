@@ -1,4 +1,4 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.meta;
 
 import java.sql.ParameterMetaData;
 import lombok.Getter;

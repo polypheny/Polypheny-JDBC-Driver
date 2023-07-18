@@ -1,12 +1,17 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.meta;
 
 import io.grpc.StatusRuntimeException;
+import org.polypheny.jdbc.ConnectionString;
+import org.polypheny.jdbc.PolyphenyConnection;
+import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.*;
-import org.polypheny.jdbc.utils.MetaResultSetBuilder;
 
 import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
@@ -794,29 +799,36 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern) throws SQLException {
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromProceduresResponse();
-
+        List<Procedure> procedures = protoInterfaceClient.searchProcedures("sql", procedureNamePattern);
+        return MetaResultSetBuilder.buildFromProcedures(procedures);
     }
 
 
     @Override
     public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern, String columnNamePattern) throws SQLException {
+        // For now an empty result set is returned
+        // For the production version the getProcedures api call should be used to retrieve the procedures meta
+        // which will contain all info required to build this result set.
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromProcedureColumnResponse();
+        return MetaResultSetBuilder.buildFromProcedureColumns();
     }
 
 
     @Override
     public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
+        // catalog ignored because polypheny doesn't have those
         try {
-            // we ignore the catalogs as polypheny does not have those.
-            TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern, types);
-            return MetaResultSetBuilder.buildFromTablesResponse(tablesResponse);
+            List<Table> tables = getTableStream(schemaPattern, tableNamePattern).collect(Collectors.toList());
+            if (types == null) {
+                return MetaResultSetBuilder.buildFromTables(tables);
+            }
+            HashSet<String> tableTypes = new HashSet<>(Arrays.asList(types));
+            tables = tables.stream().filter(t -> tableTypes.contains(t.getTableType())).collect(Collectors.toList());
+            return MetaResultSetBuilder.buildFromTables(tables);
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
         }
     }
-
 
     @Override
     public ResultSet getSchemas() throws SQLException {
@@ -831,8 +843,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getCatalogs() throws SQLException {
         try {
-            DatabasesResponse databasesResponse = protoInterfaceClient.getDatabases();
-            return MetaResultSetBuilder.buildFromDatabasesResponse(databasesResponse);
+            List<Database> databases = protoInterfaceClient.getDatabases();
+            return MetaResultSetBuilder.buildFromDatabases(databases);
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
         }
@@ -842,8 +854,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getTableTypes() throws SQLException {
         try {
-            TableTypesResponse tableTypesResponse = protoInterfaceClient.getTablesTypes();
-            return MetaResultSetBuilder.buildFromTableTypesResponse(tableTypesResponse);
+            List<TableType> tableTypes = protoInterfaceClient.getTablesTypes();
+            return MetaResultSetBuilder.buildFromTableTypes(tableTypes);
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
         }
@@ -853,13 +865,37 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
         try {
-            ColumnsResponse columnsResponse = protoInterfaceClient.getColumns(schemaPattern, tableNamePattern, columnNamePattern);
-            return MetaResultSetBuilder.buildFromColumnsResponse(columnsResponse);
+            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name())
+                    .stream()
+                    .map(n -> getMatchingColumns(n, tableNamePattern, columnNamePattern))
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+            return MetaResultSetBuilder.buildFromColumns(columns);
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
         }
     }
 
+    private List<Column> getMatchingColumns(Namespace namespace, String tableNamePattern, String columnNamePattern) {
+        Stream<Column> columnStream = protoInterfaceClient.searchEntities(namespace.getNamespaceName(), tableNamePattern).stream()
+                .filter(Entity::hasTable)
+                .map(Entity::getTable)
+                .map(Table::getColumnsList)
+                .flatMap(List::stream);
+        if (columnNamePattern == null) {
+            return columnStream.collect(Collectors.toList());
+        }
+        return columnStream
+                .filter(c -> columnMatchesPattern(namespace, c, columnNamePattern))
+                .collect(Collectors.toList());
+    }
+
+    private boolean columnMatchesPattern (Namespace namespace, Column column, String columnNamePattern) {
+        if (namespace.getIsCaseSensitive()) {
+            return column.getColumnName().matches(MetaUtils.convertToRegex(columnNamePattern));
+        }
+        return column.getColumnName().toLowerCase().matches(MetaUtils.convertToRegex(columnNamePattern.toLowerCase()));
+    }
 
     @Override
     public ResultSet getColumnPrivileges(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
@@ -871,26 +907,30 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
          */
         throwNotSupportedIfStrict();
         try {
-            ColumnsResponse columnsResponse = protoInterfaceClient.getColumns(schemaPattern, tableNamePattern, columnNamePattern);
-            return MetaResultSetBuilder.buildFromColumnPrivilegesResponse(columnsResponse, getUserName());
+            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name())
+                    .stream()
+                    .map(n -> getMatchingColumns(n, tableNamePattern, columnNamePattern))
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+            return MetaResultSetBuilder.buildFromColumnPrivileges(columns, getUserName());
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
         }
     }
 
 
+
+
     @Override
     public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
         /* This feature is currently not supported by polypheny thus the following workaround is used:
          * 1) get all tables using getColumns()
-         * 2) the MetaResultSetBuilder constructs a full rights result set from the response of the getTables() api call.
-         *
-         * For proper implementation a dedicated api call should be used the result of witch should be passed to the MetaResultSet builder.
+         * 2) the MetaResultSetBuilder constructs a full rights result set from the response of the searchNamespaces() and searchEntities() api calls.
          */
         throwNotSupportedIfStrict();
         try {
-            TablesResponse tablesResponse = protoInterfaceClient.getTables(schemaPattern, tableNamePattern, null);
-            return MetaResultSetBuilder.buildFromTablePrivilegesResponse(tablesResponse, getUserName());
+            List<Table> tables = getTableStream(schemaPattern, tableNamePattern).collect(Collectors.toList());
+            return MetaResultSetBuilder.buildFromTablePrivileges(tables, getUserName());
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
         }
@@ -899,60 +939,115 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        List<Column> columns = getTableStream(schema, table)
+                .map(Table::getPrimaryKey)
+                .map(PrimaryKey::getColumnsList)
+                .flatMap(List::stream)
+                .filter(c -> !c.getIsNullable() || nullable)
+                .collect(Collectors.toList());
+        return MetaResultSetBuilder.fromBestRowIdentifiers(columns);
     }
 
 
     @Override
-    public ResultSet getVersionColumns(String s, String s1, String s2) throws SQLException {
-       return MetaResultSetBuilder.buildFromVersionColumnsResponse();
+    public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
+        try {
+            List<Column> columns = getTableStream(schema, table)
+                    .map(Table::getColumnsList)
+                    .flatMap(List::stream)
+                    .filter(c -> c.getColumnType() == Column.ColumnType.VERSION)
+                    .collect(Collectors.toList());
+            return MetaResultSetBuilder.buildFromVersionColumns(columns);
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
+        }
     }
 
 
     @Override
     public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
-        PrimaryKeysResponse primaryKeysResponse = protoInterfaceClient.getPrimaryKeys(schema, table);
-        return MetaResultSetBuilder.buildFromPrimaryKeyResponse(primaryKeysResponse);
+        List<PrimaryKey> primaryKeys = getTableStream(schema, table)
+                .map(Table::getPrimaryKey)
+                .collect(Collectors.toList());
+        return MetaResultSetBuilder.buildFromPrimaryKeys(primaryKeys);
     }
 
 
     @Override
     public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
-        ImportedKeysResponse importedKeysResponse = protoInterfaceClient.getImportedKeys(schema, table);
-        return MetaResultSetBuilder.buildFromImportedKeysResponse(importedKeysResponse);
+        List<ForeignKey> foreignKeys = getTableStream(schema, table)
+                .map(Table::getForeignKeysList)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+        return MetaResultSetBuilder.buildFromImportedKeys(foreignKeys);
     }
 
 
     @Override
     public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
-        ExportedKeysResponse exportedKeysResponse = protoInterfaceClient.getExportedKeys(schema, table);
-        return MetaResultSetBuilder.buildFromExportedKeysResponse(exportedKeysResponse);
+        List<ForeignKey> exportedKeys = getTableStream(schema, table)
+                .map(Table::getExportedKeysList)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+        return MetaResultSetBuilder.buildFromExportedKeys(exportedKeys);
+    }
+
+    private Stream<Table> getTableStream(String namespace, String table) {
+        return protoInterfaceClient.searchNamespaces(namespace, MetaUtils.NamespaceTypes.RELATIONAL.name())
+                .stream()
+                .map(Namespace::getNamespaceName)
+                .map(name -> protoInterfaceClient.searchEntities(name, table))
+                .flatMap(List::stream)
+                .filter(Entity::hasTable)
+                .map(Entity::getTable);
     }
 
 
     @Override
-    public ResultSet getCrossReference(String s, String s1, String s2, String s3, String s4, String s5) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable,
+                                       String foreignCatalog, String foreignSchema, String foreignTable) throws SQLException {
+        HashMap<String, Table> parentTables = getTableStream(parentSchema, parentTable)
+                .collect(Collectors.toMap(Table::getTableName, t -> t, (prev, next) -> next, HashMap::new));
+        List<ForeignKey> foreignKeys = getTableStream(foreignSchema, foreignTable)
+                .map(Table::getForeignKeysList)
+                .flatMap(List::stream)
+                .filter(f -> referencesTable(f, parentTables.get(f.getReferencedTableName())))
+                .collect(Collectors.toList());
+        return MetaResultSetBuilder.buildFromCrossReference(foreignKeys);
+    }
+
+    private boolean referencesTable(ForeignKey foreignKey, Table table) {
+        if (table == null) {
+            return false;
+        }
+        if (!foreignKey.getReferencedTableName().equals(table.getTableName())){
+            return false;
+        }
+        if (!foreignKey.getReferencedNamespaceName().equals(table.getNamespaceName())){
+            return false;
+        }
+        if (!foreignKey.getReferencedDatabaseName().equals(table.getSourceDatabaseName())){
+            return false;
+        }
+        return true;
     }
 
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
-        TypesResponse typesResponse = protoInterfaceClient.getTypes();
-        return MetaResultSetBuilder.buildFromTypesResponse(typesResponse);
+        List<Type> types = protoInterfaceClient.getTypes();
+        return MetaResultSetBuilder.buildFromTypes(types);
     }
 
 
     @Override
     public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate) throws SQLException {
-        IndexesResponse indexesResponse = protoInterfaceClient.getIndexes(schema, table, unique);
-        return MetaResultSetBuilder.buildFromIndexesResponse(indexesResponse);
+        List<Index> indexes = getTableStream(schema, table)
+                .map(Table::getIndexesList)
+                .flatMap(List::stream)
+                .filter(i -> i.getUnique() || !unique)
+                .collect(Collectors.toList());
+        return MetaResultSetBuilder.buildFromIndexes(indexes);
     }
 
 
@@ -1037,7 +1132,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types) throws SQLException {
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.fromUDTResponse();
+        List<UserDefinedType> userDefinedTypes = protoInterfaceClient.getUserDefinedTypes();
+        return MetaResultSetBuilder.buildFromUserDefinedTypes(userDefinedTypes);
     }
 
 
@@ -1074,21 +1170,23 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromSuperTypesResponse();
+        return MetaResultSetBuilder.buildFromSuperTypes();
     }
 
 
     @Override
     public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromSuperTablesResponse();
+        return MetaResultSetBuilder.buildFromSuperTables();
     }
 
 
     @Override
     public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern, String attributeNamePattern) throws SQLException {
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromAttributesResponse();
+        // Now creates an empty result set. In the future the getUserDefinedTypes api call should be used to retrieve
+        // the UDT meta which will contain all data necessary to build this result set.
+        return MetaResultSetBuilder.buildFromAttributes();
     }
 
 
@@ -1160,8 +1258,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
-        NamespacesResponse namespacesResponse = protoInterfaceClient.getNamespaces(schemaPattern);
-        return MetaResultSetBuilder.buildFromNamespacesResponse(namespacesResponse);
+        List<Namespace> namespaces = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name());
+        return MetaResultSetBuilder.buildFromNamespaces(namespaces);
     }
 
 
@@ -1179,37 +1277,41 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getClientInfoProperties() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        List<ClientInfoPropertyMeta> metas = protoInterfaceClient.getClientInfoPropertyMetas();
+        return MetaResultSetBuilder.buildFromClientInfoPropertyMetas(metas);
     }
 
 
     @Override
-    public ResultSet getFunctions(String s, String s1, String s2) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) throws SQLException {
+        List<Function> functions = protoInterfaceClient.searchFunctions("sql", "SYSTEM")
+                .stream()
+                .filter(f -> f.getName().matches(MetaUtils.convertToRegex(functionNamePattern)))
+                .collect(Collectors.toList());
+        return MetaResultSetBuilder.fromFunctions(functions);
     }
 
 
     @Override
     public ResultSet getFunctionColumns(String s, String s1, String s2, String s3) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwNotSupportedIfStrict();
+        return MetaResultSetBuilder.buildFromFunctionColumns();
     }
 
 
     @Override
-    public ResultSet getPseudoColumns(String s, String s1, String s2, String s3) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
+        try {
+            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name())
+                    .stream()
+                    .map(n -> getMatchingColumns(n, tableNamePattern, columnNamePattern))
+                    .flatMap(List::stream)
+                    .filter(Column::getIsHidden)
+                    .collect(Collectors.toList());
+            return MetaResultSetBuilder.buildFromPseudoColumns(columns);
+        } catch (StatusRuntimeException e) {
+            throw new SQLException(e.getMessage());
+        }
     }
 
 

@@ -8,6 +8,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.DriverProperties;
 

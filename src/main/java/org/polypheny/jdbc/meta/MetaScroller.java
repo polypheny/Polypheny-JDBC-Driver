@@ -1,4 +1,6 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.meta;
+
+import org.polypheny.jdbc.BidirectionalScrollable;
 
 import java.sql.SQLException;
 import java.util.ArrayList;

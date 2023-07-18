@@ -1,11 +1,10 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.meta;
 
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import java.util.List;
-import lombok.Getter;
+
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
-import org.polypheny.jdbc.utils.MetaUtils;
 
 public class PolyphenyParameterMetaData implements ParameterMetaData {
 

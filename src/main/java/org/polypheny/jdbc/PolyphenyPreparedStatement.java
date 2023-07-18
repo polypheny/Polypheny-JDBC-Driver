@@ -26,6 +26,7 @@ import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.polypheny.jdbc.meta.PolyphenyParameterMetaData;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;

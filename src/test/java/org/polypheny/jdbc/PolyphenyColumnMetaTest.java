@@ -13,6 +13,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
+import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.proto.ColumnMeta;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;

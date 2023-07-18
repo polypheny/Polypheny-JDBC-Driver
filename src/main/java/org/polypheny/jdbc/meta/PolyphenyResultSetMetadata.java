@@ -1,4 +1,4 @@
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.meta;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import org.polypheny.jdbc.proto.ColumnMeta;
-import org.polypheny.jdbc.utils.MetaUtils;
 
 public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 

@@ -7,14 +7,11 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 import org.polypheny.jdbc.PolyphenyBidirectionalResultSet;
-import org.polypheny.jdbc.PolyphenyColumnMeta;
+import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
 
