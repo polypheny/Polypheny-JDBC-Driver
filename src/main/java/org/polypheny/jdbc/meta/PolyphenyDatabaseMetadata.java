@@ -940,6 +940,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable) throws SQLException {
         List<Column> columns = getTableStream(schema, table)
+                .filter(Table::hasPrimaryKey)
                 .map(Table::getPrimaryKey)
                 .map(PrimaryKey::getColumnsList)
                 .flatMap(List::stream)
@@ -967,6 +968,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
         List<PrimaryKey> primaryKeys = getTableStream(schema, table)
+                .filter(Table::hasPrimaryKey)
                 .map(Table::getPrimaryKey)
                 .collect(Collectors.toList());
         return MetaResultSetBuilder.buildFromPrimaryKeys(primaryKeys);

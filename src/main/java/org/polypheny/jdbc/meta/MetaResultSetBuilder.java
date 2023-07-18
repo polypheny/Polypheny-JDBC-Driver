@@ -191,7 +191,7 @@ public class MetaResultSetBuilder {
                 c.getTableName(),
                 c.getColumnName(),
                 sequenceIndex.getAndIncrement(),
-                primaryKey.getNamespaceName()
+                null
         )).collect(Collectors.toList());
     }
 

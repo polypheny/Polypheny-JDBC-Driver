@@ -11,7 +11,6 @@ import org.polypheny.jdbc.serialisation.ProtoValueSerializer;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -26,7 +25,7 @@ public class ProtoInterfaceClient {
     private final String clientUUID;
 
 
-    public ProtoInterfaceClient(String target) throws SQLException {
+    public ProtoInterfaceClient(String target) throws ProtoInterfaceServiceException {
         this.clientUUID = UUID.randomUUID().toString();
         try {
             Channel channel = Grpc.newChannelBuilder(target, InsecureChannelCredentials.create())
@@ -35,7 +34,7 @@ public class ProtoInterfaceClient {
             this.blockingStub = ProtoInterfaceGrpc.newBlockingStub(channel);
             this.asyncStub = ProtoInterfaceGrpc.newStub(channel);
         } catch (Exception e) {
-            throw new SQLException("Connection failed: " + e.getMessage());
+            throw new ProtoInterfaceServiceException("Connection failed: " + e.getMessage());
         }
     }
 
@@ -44,7 +43,11 @@ public class ProtoInterfaceClient {
         if (timeout == 0) {
             return blockingStub;
         }
-        return blockingStub.withDeadlineAfter(timeout, TimeUnit.SECONDS);
+        try {
+            return blockingStub.withDeadlineAfter(timeout, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -52,7 +55,11 @@ public class ProtoInterfaceClient {
         if (timeout == 0) {
             return asyncStub;
         }
-        return asyncStub.withDeadlineAfter(timeout, TimeUnit.SECONDS);
+        try {
+            return asyncStub.withDeadlineAfter(timeout, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -70,29 +77,41 @@ public class ProtoInterfaceClient {
 
     public List<String> requestSupportedLanguages() {
         LanguageRequest languageRequest = LanguageRequest.newBuilder().build();
-        return blockingStub.getSupportedLanguages(languageRequest).getLanguageNamesList();
+        try {
+            return blockingStub.getSupportedLanguages(languageRequest).getLanguageNamesList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
-    public void register(PolyphenyConnectionProperties connectionProperties) {
-        ConnectionRequest.Builder requestBuilder = ConnectionRequest.newBuilder();
-        Optional.ofNullable(connectionProperties.getUsername()).ifPresent(requestBuilder::setUsername);
-        Optional.ofNullable(connectionProperties.getPassword()).ifPresent(requestBuilder::setPassword);
-        requestBuilder
-                .setMajorApiVersion(MAJOR_API_VERSION)
-                .setMinorApiVersion(MINOR_API_VERSION)
-                .setClientUuid(clientUUID)
-                .setConnectionProperties(buildConnectionProperties(connectionProperties));
-        ConnectionReply connectionReply = blockingStub.connect(requestBuilder.build());
-        if (!connectionReply.getIsCompatible()) {
-            throw new ProtoInterfaceServiceException("client version " + getClientApiVersionString()
-                    + "not compatible with server version " + getServerApiVersionString(connectionReply) + ".");
+    public void register(PolyphenyConnectionProperties connectionProperties) throws ProtoInterfaceServiceException {
+        try {
+            ConnectionRequest.Builder requestBuilder = ConnectionRequest.newBuilder();
+            Optional.ofNullable(connectionProperties.getUsername()).ifPresent(requestBuilder::setUsername);
+            Optional.ofNullable(connectionProperties.getPassword()).ifPresent(requestBuilder::setPassword);
+            requestBuilder
+                    .setMajorApiVersion(MAJOR_API_VERSION)
+                    .setMinorApiVersion(MINOR_API_VERSION)
+                    .setClientUuid(clientUUID)
+                    .setConnectionProperties(buildConnectionProperties(connectionProperties));
+            ConnectionReply connectionReply = blockingStub.connect(requestBuilder.build());
+            if (!connectionReply.getIsCompatible()) {
+                throw new ProtoInterfaceServiceException("client version " + getClientApiVersionString()
+                        + "not compatible with server version " + getServerApiVersionString(connectionReply) + ".");
+            }
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
         }
     }
 
     public void unregister() {
         DisconnectionRequest request = DisconnectionRequest.newBuilder().build();
-        blockingStub.disconnect(request);
+        try {
+            blockingStub.disconnect(request);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     private ConnectionProperties buildConnectionProperties(PolyphenyConnectionProperties polyphenyConnectionProperties) {
@@ -121,7 +140,11 @@ public class ProtoInterfaceClient {
 
     public void executeUnparameterizedStatement(PolyphenyStatementProperties properties, String statement, CallbackQueue<StatementStatus> updateCallback) {
         ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub(properties.getQueryTimeoutSeconds());
-        stub.executeUnparameterizedStatement(buildUnparameterizedStatement(properties, statement), updateCallback);
+        try {
+            stub.executeUnparameterizedStatement(buildUnparameterizedStatement(properties, statement), updateCallback);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -134,7 +157,11 @@ public class ProtoInterfaceClient {
                 .addAllStatements(batch)
                 .build();
         ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub(properties.getQueryTimeoutSeconds());
-        stub.executeUnparameterizedStatementBatch(unparameterizedStatementBatch, updateCallback);
+        try {
+            stub.executeUnparameterizedStatementBatch(unparameterizedStatementBatch, updateCallback);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -152,14 +179,22 @@ public class ProtoInterfaceClient {
                 .setStatement(statement)
                 .setStatementLanguageName(SQL_LANGUAGE_NAME)
                 .build();
-        return blockingStub.prepareIndexedStatement(preparedStatement);
+        try {
+            return blockingStub.prepareIndexedStatement(preparedStatement);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
     public StatementResult executeIndexedStatement(int timeout, int statementId, List<TypedValue> values) {
         ParameterList parameterList = buildParameterList(values, statementId);
         ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub(timeout);
-        return stub.executeIndexedStatement(parameterList);
+        try {
+            return stub.executeIndexedStatement(parameterList);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -173,7 +208,11 @@ public class ProtoInterfaceClient {
                 .addAllParameterLists(parameterLists)
                 .build();
         ProtoInterfaceGrpc.ProtoInterfaceBlockingStub stub = getBlockingStub(timeout);
-        return stub.executeIndexedStatementBatch(indexedParameterBatch);
+        try {
+            return stub.executeIndexedStatementBatch(indexedParameterBatch);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -187,12 +226,20 @@ public class ProtoInterfaceClient {
 
     public void commitTransaction() {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
-        blockingStub.commitTransaction(commitRequest);
+        try {
+            blockingStub.commitTransaction(commitRequest);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public void rollbackTransaction() {
         RollbackRequest rollbackRequest = RollbackRequest.newBuilder().build();
-        blockingStub.rollbackTransaction(rollbackRequest);
+        try {
+            blockingStub.rollbackTransaction(rollbackRequest);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -200,7 +247,11 @@ public class ProtoInterfaceClient {
         CloseStatementRequest request = CloseStatementRequest.newBuilder()
                 .setStatementId(statementId)
                 .build();
-        blockingStub.closeStatement(request);
+        try {
+            blockingStub.closeStatement(request);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -209,7 +260,11 @@ public class ProtoInterfaceClient {
                 .setStatementId(statementId)
                 .setOffset(offset)
                 .build();
-        return blockingStub.fetchResult(fetchRequest);
+        try {
+            return blockingStub.fetchResult(fetchRequest);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -226,60 +281,112 @@ public class ProtoInterfaceClient {
 
     public DbmsVersionResponse getDbmsVersion() {
         DbmsVersionRequest dbmsVersionRequest = DbmsVersionRequest.newBuilder().build();
-        return blockingStub.getDbmsVersion(dbmsVersionRequest);
+        try {
+            return blockingStub.getDbmsVersion(dbmsVersionRequest);
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
     public List<Database> getDatabases() {
-        return blockingStub.getDatabases(DatabasesRequest.newBuilder().build()).getDatabasesList();
+        try {
+            return blockingStub.getDatabases(DatabasesRequest.newBuilder().build()).getDatabasesList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas() {
-        return blockingStub.getClientInfoPropertyMetas(ClientInfoPropertyMetaRequest.newBuilder().build()).getClientInfoPropertyMetasList();
+        try {
+            return blockingStub.getClientInfoPropertyMetas(ClientInfoPropertyMetaRequest.newBuilder().build()).getClientInfoPropertyMetasList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public List<Type> getTypes() {
-        return blockingStub.getTypes(TypesRequest.newBuilder().build()).getTypesList();
+        try {
+            return blockingStub.getTypes(TypesRequest.newBuilder().build()).getTypesList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
     public String getSqlStringFunctions() {
-        return blockingStub.getSqlStringFunctions(SqlStringFunctionsRequest.newBuilder().build()).getString();
+        try {
+            return blockingStub.getSqlStringFunctions(SqlStringFunctionsRequest.newBuilder().build()).getString();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public String getSqlSystemFunctions() {
-        return blockingStub.getSqlSystemFunctions(SqlSystemFunctionsRequest.newBuilder().build()).getString();
+        try {
+            return blockingStub.getSqlSystemFunctions(SqlSystemFunctionsRequest.newBuilder().build()).getString();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public String getSqlTimeDateFunctions() {
-        return blockingStub.getSqlTimeDateFunctions(SqlTimeDateFunctionsRequest.newBuilder().build()).getString();
+        try {
+            return blockingStub.getSqlTimeDateFunctions(SqlTimeDateFunctionsRequest.newBuilder().build()).getString();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public String getSqlNumericFunctions() {
-        return blockingStub.getSqlNumericFunctions(SqlNumericFunctionsRequest.newBuilder().build()).getString();
+        try {
+            return blockingStub.getSqlNumericFunctions(SqlNumericFunctionsRequest.newBuilder().build()).getString();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public String getSqlKeywords() {
-        return blockingStub.getSqlKeywords(SqlKeywordsRequest.newBuilder().build()).getString();
+        try {
+            return blockingStub.getSqlKeywords(SqlKeywordsRequest.newBuilder().build()).getString();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public void setConnectionProperties(PolyphenyConnectionProperties connectionProperties) {
-        blockingStub.updateConnectionProperties(buildConnectionProperties(connectionProperties));
+        try {
+            blockingStub.updateConnectionProperties(buildConnectionProperties(connectionProperties));
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public void setStatementProperties(PolyphenyStatementProperties statementProperties, int statementId) {
-        blockingStub.updateStatementProperties(buildStatementProperties(statementProperties, statementId));
+        try {
+            blockingStub.updateStatementProperties(buildStatementProperties(statementProperties, statementId));
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public List<Procedure> searchProcedures(String languageName, String procedureNamePattern) {
         ProceduresRequest.Builder requestBuilder = ProceduresRequest.newBuilder();
         requestBuilder.setLanguage(languageName);
         Optional.ofNullable(procedureNamePattern).ifPresent(requestBuilder::setProcedureNamePattern);
-        return blockingStub.searchProcedures(requestBuilder.build()).getProceduresList();
+        try {
+            return blockingStub.searchProcedures(requestBuilder.build()).getProceduresList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public Map<String, String> getClientInfoProperties() {
-        return blockingStub.getClientInfoProperties(ClientInfoPropertiesRequest.newBuilder().build()).getPropertiesMap();
+        try {
+            return blockingStub.getClientInfoProperties(ClientInfoPropertiesRequest.newBuilder().build()).getPropertiesMap();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
 
@@ -287,36 +394,60 @@ public class ProtoInterfaceClient {
         NamespacesRequest.Builder requestBuilder = NamespacesRequest.newBuilder();
         Optional.ofNullable(schemaPattern).ifPresent(requestBuilder::setNamespacePattern);
         Optional.ofNullable(protoNamespaceType).ifPresent(requestBuilder::setNamespaceType);
-        return blockingStub.searchNamespaces(requestBuilder.build()).getNamespacesList();
+        try {
+            return blockingStub.searchNamespaces(requestBuilder.build()).getNamespacesList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public List<Entity> searchEntities(String namespace, String entityNamePattern) {
         EntitiesRequest.Builder requestBuilder = EntitiesRequest.newBuilder();
         requestBuilder.setNamespaceName(namespace);
         Optional.ofNullable(entityNamePattern).ifPresent(requestBuilder::setEntityPattern);
-        return blockingStub.searchEntities(requestBuilder.build()).getEntitiesList();
+        try {
+            return blockingStub.searchEntities(requestBuilder.build()).getEntitiesList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public List<TableType> getTablesTypes() {
-        return blockingStub.getTableTypes(TableTypesRequest.newBuilder().build()).getTableTypesList();
+        try {
+            return blockingStub.getTableTypes(TableTypesRequest.newBuilder().build()).getTableTypesList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public Namespace getNamespace(String namespaceName) {
         NamespaceRequest.Builder requestBuilder = NamespaceRequest.newBuilder();
         requestBuilder.setNamespaceName(namespaceName);
-        return blockingStub.getNamespace(requestBuilder.build());
+        try {
+            return blockingStub.getNamespace(requestBuilder.build());
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public List<UserDefinedType> getUserDefinedTypes() {
         UserDefinedTypesRequest.Builder requestBuilder = UserDefinedTypesRequest.newBuilder();
-        return blockingStub.getUserDefinedTypes(requestBuilder.build()).getUserDefinedTypesList();
+        try {
+            return blockingStub.getUserDefinedTypes(requestBuilder.build()).getUserDefinedTypesList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public void setClientInfoProperties(Properties properties) {
         ClientInfoProperties.Builder requestBuilder = ClientInfoProperties.newBuilder();
         properties.stringPropertyNames()
                 .forEach(s -> requestBuilder.putProperties(s, properties.getProperty(s)));
-        blockingStub.setClientInfoProperties(requestBuilder.build());
+        try {
+            blockingStub.setClientInfoProperties(requestBuilder.build());
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 
     public List<Function> searchFunctions(String languaheName, String functionCategory) {
@@ -324,6 +455,10 @@ public class ProtoInterfaceClient {
                 .setQueryLanguage(languaheName)
                 .setFunctionCategory(functionCategory)
                 .build();
-        return blockingStub.searchFunctions(functionsRequest).getFunctionsList();
+        try {
+            return blockingStub.searchFunctions(functionsRequest).getFunctionsList();
+        } catch (Exception e) {
+            throw new ProtoInterfaceServiceException(e.getMessage());
+        }
     }
 }

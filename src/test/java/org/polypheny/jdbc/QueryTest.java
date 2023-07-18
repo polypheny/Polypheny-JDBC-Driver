@@ -22,12 +22,15 @@ public class QueryTest {
 
         try {
             Connection conn = DriverManager.getConnection( DB_URL, CONNECTION_PROPERTIES );
+            DatabaseMetaData dbmd = conn.getMetaData();
+            ResultSet rs = dbmd.getTables(null, null, null, null);
+
 
 
             //This is not related to the bug. Just ignore...
 
-            Statement stmt = conn.createStatement();
-            stmt.execute("this is not sql");
+            //Statement stmt = conn.createStatement();
+            //stmt.execute("this is not sql");
             //stmt.execute("insert into test values(5, baum)");
             /*
             stmt.addBatch( "create table test (id int, name varchar(30))" );
@@ -36,7 +39,7 @@ public class QueryTest {
             int[] update_counts = stmt.executeBatch();
             System.out.println( Arrays.toString( update_counts ) );
             */
-            stmt.close();
+            //stmt.close();
 
 
 

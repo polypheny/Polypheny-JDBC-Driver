@@ -31,15 +31,19 @@ public class PolyphenyDriver implements java.sql.Driver {
 
     @Override
     public Connection connect( String url, Properties properties ) throws SQLException {
-        if ( !acceptsURL( url ) ) {
-            return null;
-        }
-        ConnectionString connectionString = new ConnectionString( url, properties );
-        ProtoInterfaceClient protoInterfaceClient = new ProtoInterfaceClient( connectionString.getTarget() );
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
-        PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata( protoInterfaceClient, connectionString );
-        protoInterfaceClient.register( connectionProperties );
-        return new PolyphenyConnection( connectionProperties, databaseMetadata );
+            if (!acceptsURL(url)) {
+                return null;
+            }
+            ConnectionString connectionString = new ConnectionString(url, properties);
+            ProtoInterfaceClient protoInterfaceClient = new ProtoInterfaceClient(connectionString.getTarget());
+            PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+            PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata(protoInterfaceClient, connectionString);
+            try {
+                protoInterfaceClient.register(connectionProperties);
+            } catch (ProtoInterfaceServiceException e) {
+                throw new SQLException(e.getMessage());
+            }
+            return new PolyphenyConnection(connectionProperties, databaseMetadata);
     }
 
 
