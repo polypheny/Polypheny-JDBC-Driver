@@ -1,6 +1,14 @@
 package org.polypheny.jdbc.deserialization;
 
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.polypheny.jdbc.proto.ProtoDocument;
+import org.polypheny.jdbc.proto.ProtoEntry;
+import org.polypheny.jdbc.proto.ProtoList;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.types.TypedValue;
 
@@ -11,10 +19,25 @@ public class DocumentDeserializer implements ValueDeserializer {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.STRUCT:
-                return null;
+                return deserializeAsUdtPrototype(value.getDocument(), value.getType().name());
             //TODO implementation
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto document." );
+    }
+
+    private TypedValue deserializeAsUdtPrototype(ProtoDocument document, String typeName) {
+            ArrayList<TypedValue> values = document.getEntriesList().stream()
+                    .map(this::splitDocumentEntry)
+                    .flatMap(List::stream)
+                    .collect(Collectors.toCollection(ArrayList::new));
+            return TypedValue.fromUdtPrototype(new UDTPrototype(typeName, values));
+    }
+
+    private List<TypedValue> splitDocumentEntry(ProtoEntry entry) {
+        List<TypedValue> values = new LinkedList<>();
+        values.add(ProtoValueDeserializer.deserialize(entry.getKey()));
+        values.add(ProtoValueDeserializer.deserialize(entry.getValue()));
+        return values;
     }
 
 }
