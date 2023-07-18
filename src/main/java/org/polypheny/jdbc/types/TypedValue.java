@@ -57,7 +57,9 @@ public class TypedValue implements Convertible {
         this.isUdtPrototype = true;
     }
 
-    public static TypedValue fromUdtPrototype(UDTPrototype udtPrototype)
+    public static TypedValue fromUdtPrototype(UDTPrototype udtPrototype) {
+        return new TypedValue(udtPrototype);
+    }
 
 
     public static TypedValue fromBoolean( boolean value ) {
