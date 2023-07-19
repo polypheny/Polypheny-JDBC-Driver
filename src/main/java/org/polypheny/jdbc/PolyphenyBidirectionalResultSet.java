@@ -480,28 +480,19 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
 
     @Override
     public boolean absolute( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return resultScroller.absolute(i);
     }
 
 
     @Override
     public boolean relative( int i ) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return resultScroller.relative(i);
     }
 
 
     @Override
     public boolean previous() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return resultScroller.previous();
     }
 
 

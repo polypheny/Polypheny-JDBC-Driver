@@ -1,52 +1,116 @@
 package org.polypheny.jdbc;
 
-import java.sql.*;
-import java.util.Arrays;
-import java.util.Properties;
+import org.junit.Test;
 import org.polypheny.jdbc.properties.PropertyUtils;
+
+import java.math.BigInteger;
+import java.sql.*;
+import java.util.Properties;
 
 public class QueryTest {
 
-    public static void main( String[] args ) throws ClassNotFoundException {
+    public static void main(String[] args) throws ClassNotFoundException {
 
+
+    }
+
+    @Test
+    public void thisOneWorks() throws ClassNotFoundException {
         final String DB_URL = "jdbc:polypheny://localhost:20590";
         final String USER = "pa";
         final String PASS = "";
-        final String QUERY = "SELECT * FROM emp";
 
-        final Properties CONNECTION_PROPERTIES = new Properties();
-        CONNECTION_PROPERTIES.setProperty( PropertyUtils.getUSERNAME_KEY(), USER );
-        CONNECTION_PROPERTIES.setProperty( PropertyUtils.getPASSWORD_KEY(), PASS );
+        Class.forName("org.polypheny.jdbc.PolyphenyDriver");
 
-        Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
+        try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS)) {
 
-        try {
-            Connection conn = DriverManager.getConnection( DB_URL, CONNECTION_PROPERTIES );
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS my_next_table (id INT, name VARCHAR(50))";
+            Statement statement = connection.createStatement();
+            statement.execute(createTableSQL);
 
-            //This is not related to the bug. Just ignore...
+            String insertSQL = "INSERT INTO my_next_table (id, name) VALUES (?, ?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(insertSQL);
 
-            //Statement stmt = conn.createStatement();
-            //stmt.execute("this is not sql");
-            //stmt.execute("insert into test values(5, baum)");
-            /*
-            stmt.addBatch( "create table test (id int, name varchar(30))" );
-            stmt.addBatch( "insert into test values(1, 'foo'),(2, 'bar')" );
-            stmt.addBatch( "insert into test values(3, 'baz')" );
-            int[] update_counts = stmt.executeBatch();
-            System.out.println( Arrays.toString( update_counts ) );
-            */
-            //stmt.close();
+            preparedStatement.setInt(1, 1);
+            preparedStatement.setString(2, "John Doe");
 
+            System.out.println("Values inserted successfully!");
 
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
-            PolyphenyPreparedStatement pstmt = (PolyphenyPreparedStatement) conn.prepareStatement( "INSERT INTO public.test (a, b) VALUES (?, ?)" );
-            pstmt.setInt(1, 42);
-            pstmt.setInt(2, 69);
-            //(42.0, '2023-07-21', 69.0, 56789.0);
-            pstmt.executeUpdate();
-            pstmt.close();
-            conn.close();
-        } catch ( SQLException e ) {
+    @Test
+    public void parserCrashesOnValidStatementOnCreateTable() throws ClassNotFoundException {
+        final String DB_URL = "jdbc:polypheny://localhost:20590";
+        final String USER = "pa";
+        final String PASS = "";
+
+        Class.forName("org.polypheny.jdbc.PolyphenyDriver");
+
+        try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS)) {
+
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS my_other_table (id INT, name VARCHAR(50), value NUMERIC)";
+            connection.createStatement().execute(createTableSQL);
+
+            String insertSQL = "INSERT INTO my_other_table (id, name, value) VALUES (?, ?, ?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(insertSQL);
+
+            preparedStatement.setInt(1, 1);
+            preparedStatement.setString(2, "John Doe");
+            preparedStatement.setObject(3, new BigInteger("123456789012345678901234567890"));
+            preparedStatement.executeUpdate();
+
+            preparedStatement.setInt(1, 2);
+            preparedStatement.setString(2, "Jane Smith");
+            preparedStatement.setObject(3, new BigInteger("987654321098765432109876543210"));
+            preparedStatement.executeUpdate();
+
+            preparedStatement.setInt(1, 3);
+            preparedStatement.setString(2, "Alice Johnson");
+            preparedStatement.setObject(3, new BigInteger("555555555555555555555555555555"));
+            preparedStatement.executeUpdate();
+
+            System.out.println("Values inserted successfully!");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void failsWithNullPointerExceptionInPolyImplementation() throws ClassNotFoundException {
+        final String DB_URL = "jdbc:polypheny://localhost:20590";
+        final String USER = "pa";
+        final String PASS = "";
+
+        Class.forName("org.polypheny.jdbc.PolyphenyDriver");
+
+        try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS)) {
+
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS my_table (id INT, name VARCHAR(50))";
+            Statement statement = connection.createStatement();
+            statement.execute(createTableSQL);
+
+            String insertSQL = "INSERT INTO my_table (id, name) VALUES (?, ?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(insertSQL);
+
+            preparedStatement.setInt(1, 1);
+            preparedStatement.setString(2, "John Doe");
+            preparedStatement.executeUpdate();
+
+            preparedStatement.setInt(1, 2);
+            preparedStatement.setString(2, "Jane Smith");
+            preparedStatement.executeUpdate();
+
+            preparedStatement.setInt(1, 3);
+            preparedStatement.setString(2, "Alice Johnson");
+            preparedStatement.executeUpdate();
+
+            System.out.println("Values inserted successfully!");
+
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }

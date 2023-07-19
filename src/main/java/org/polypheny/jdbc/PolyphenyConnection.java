@@ -1,11 +1,9 @@
 package org.polypheny.jdbc;
 
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 import io.grpc.StatusRuntimeException;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
@@ -145,7 +143,8 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public void close() throws SQLException {
-        for (Statement statement : openStatements) {
+        List<Statement> statements = new ArrayList<>(openStatements);
+        for (Statement statement : statements) {
             statement.close();
         }
         getProtoInterfaceClient().unregister();

@@ -1645,7 +1645,7 @@ public class PolyphenyForwardResultSet implements ResultSet {
 
     @Override
     public <T> T getObject( String s, Class<T> aClass ) throws SQLException {
-        return a
+        return null;
     }
 
 
