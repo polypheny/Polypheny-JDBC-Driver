@@ -278,9 +278,9 @@ public class MetaResultSetSignatures {
     );
 
     public static final List<MetaResultSetParameter<Column>> BEST_ROW_IDENTIFIER_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>("SCOPE", Types.VARCHAR, Column::getDatabaseName),
+            new MetaResultSetParameter<>("SCOPE", Types.SMALLINT, integerAsShort(p -> DatabaseMetaData.bestRowSession)),
             new MetaResultSetParameter<>("COLUMN_NAME", Types.VARCHAR, Column::getColumnName),
-            new MetaResultSetParameter<>("DATA_TYPE", Types.VARCHAR, p -> TypedValueUtils.getJdbcTypeFromPolyTypeName(p.getTypeName())),
+            new MetaResultSetParameter<>("DATA_TYPE", Types.INTEGER, p -> TypedValueUtils.getJdbcTypeFromPolyTypeName(p.getTypeName())),
             new MetaResultSetParameter<>("TYPE_NAME", Types.VARCHAR, Column::getTypeName),
             new MetaResultSetParameter<>("COLUMN_SIZE", Types.INTEGER, nullIfFalse(Column::getTypeLength, Column::hasTypeLength)),
             new MetaResultSetParameter<>("BUFFER_LENGTH", Types.INTEGER, p -> null),
@@ -308,7 +308,7 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>("FUNCTION_SCHEM", Types.VARCHAR, p -> null),
             new MetaResultSetParameter<>("FUNCTION_NAME", Types.VARCHAR, org.polypheny.jdbc.proto.Function::getName),
             new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, org.polypheny.jdbc.proto.Function::getSyntax),
-            new MetaResultSetParameter<org.polypheny.jdbc.proto.Function>("FUNCTION_TYPE", Types.SMALLINT, p -> p.getIsTableFunction()
+            new MetaResultSetParameter<>("FUNCTION_TYPE", Types.SMALLINT, p -> p.getIsTableFunction()
                     ? DatabaseMetaData.functionReturnsTable
                     : DatabaseMetaData.functionNoTable),
             new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, org.polypheny.jdbc.proto.Function::getName)

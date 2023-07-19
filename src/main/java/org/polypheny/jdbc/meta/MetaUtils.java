@@ -1,7 +1,6 @@
 package org.polypheny.jdbc.meta;
 
-import org.polypheny.jdbc.proto.ColumnMeta;
-import org.polypheny.jdbc.proto.ParameterMeta;
+import org.polypheny.jdbc.proto.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +23,6 @@ public class MetaUtils {
     }
 
     public static String convertToRegex(String jdbcPattern) {
-        return jdbcPattern.replace( "_", "(.)" ).replace( "%", "(.*)" );
+        return jdbcPattern.replace("_", "(.)").replace("%", "(.*)");
     }
-
 }

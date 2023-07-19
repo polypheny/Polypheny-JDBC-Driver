@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -58,6 +59,8 @@ public class MetaResultSetBuilder {
 
 
     public static ResultSet buildFromTables(List<Table> tables) throws SQLException {
+        // jdbc standard about tables: Rows are ordered by TABLE_TYPE, TABLE_CAT, TABLE_SCHEM and TABLE_NAME ascending
+        tables.sort(MetaResultSetComparators.TABLE_COMPARATOR);
         return buildResultSet(
                 "TABLES",
                 tables,
@@ -76,6 +79,8 @@ public class MetaResultSetBuilder {
 
 
     public static ResultSet buildFromNamespaces(List<Namespace> namespaces) throws SQLException {
+        // jdbc standard about schemas: Rows are ordered by TABLE_CATALOG and TABLE_SCHEM ascending
+        namespaces.sort(MetaResultSetComparators.NAMESPACE_COMPARATOR);
         return buildResultSet(
                 "NAMESPACES",
                 namespaces,
@@ -85,6 +90,8 @@ public class MetaResultSetBuilder {
 
 
     public static ResultSet buildFromColumns(List<Column> columns) throws SQLException {
+        // jdbc standard about columns: Rows are ordered by TABLE_CAT, TABLE_SCHEM, TABLE_NAME, and ORDINAL_POSITION
+        columns.sort(MetaResultSetComparators.COLUMN_COMPARATOR);
         return buildResultSet(
                 "COLUMNS",
                 columns,
@@ -97,6 +104,7 @@ public class MetaResultSetBuilder {
         ArrayList<GenericMetaContainer> metaColumns = primaryKeys.stream()
                 .map(MetaResultSetBuilder::expandPrimaryKey)
                 .flatMap(List::stream)
+                .sorted(MetaResultSetComparators.PRIMARY_KEY_COMPARATOR) // jdbc standard about primary keys: Rows are ordered by COLUMN_NAME ascending
                 .collect(toCollection(ArrayList::new));
 
         return buildResultSet(
@@ -120,6 +128,8 @@ public class MetaResultSetBuilder {
 
 
     public static ResultSet buildFromDatabases(List<Database> databases) throws SQLException {
+        // jdbc standard about catalogs: Rows are ordered by TABLE_CAT ascending
+        databases.sort(MetaResultSetComparators.DATABASE_COMPARATOR);
         return buildResultSet(
                 "CATALOGS",
                 databases,
@@ -128,22 +138,26 @@ public class MetaResultSetBuilder {
     }
 
     public static ResultSet buildFromImportedKeys(List<ForeignKey> foreignKeys) throws SQLException {
-        return buildFromForeignKeys(foreignKeys, "IMPORTED_KEYS");
+        // jdbc standard about imported keys: Rows are ordered by PKTABLE_CAT, PKTABLE_SCHEM, PKTABLE_NAME, and KEY_SEQ ascending
+        return buildFromForeignKeys(foreignKeys, "IMPORTED_KEYS", MetaResultSetComparators.IMPORTED_KEYS_COMPARATOR);
     }
 
     public static ResultSet buildFromExportedKeys(List<ForeignKey> foreignKeys) throws SQLException {
-        return buildFromForeignKeys(foreignKeys, "EXPORTED_KEYS");
+        // jdbc standard about exported keys: Rows are ordered by PKTABLE_NAME, PKCOLUMN_NAME, FKTABLE_NAME, and FKEY_SEQ ascending
+        return buildFromForeignKeys(foreignKeys, "EXPORTED_KEYS", MetaResultSetComparators.EXPORTED_KEYS_COMPARATOR);
     }
 
     public static ResultSet buildFromCrossReference(List<ForeignKey> foreignKeys) throws SQLException {
-        return buildFromForeignKeys(foreignKeys, "CROSS_REFERENCE");
+        // jdbc standard about primary keys: Rows are ordered by COLUMN_NAME ascending
+        return buildFromForeignKeys(foreignKeys, "CROSS_REFERENCE", MetaResultSetComparators.CROSS_REFERENCE_COMPARATOR);
     }
 
 
-    public static ResultSet buildFromForeignKeys(List<ForeignKey> foreignKeys, String entityName) throws SQLException {
+    private static ResultSet buildFromForeignKeys(List<ForeignKey> foreignKeys, String entityName, Comparator<GenericMetaContainer> comparator) throws SQLException {
         ArrayList<GenericMetaContainer> metaColumns = foreignKeys.stream()
                 .map(MetaResultSetBuilder::expandForeignKey)
                 .flatMap(List::stream)
+                .sorted(comparator)
                 .collect(toCollection(ArrayList::new));
 
         return buildResultSet(
@@ -165,7 +179,7 @@ public class MetaResultSetBuilder {
                 c.getNamespaceName(),
                 c.getTableName(),
                 c.getColumnName(),
-                sequenceIndex.getAndIncrement(), // ATTENTION: inc sequence index after all accesses to the referenced key columns
+                sequenceIndex.getAndIncrement(), // ATTENTION: inc sequence index after all accesses to the referenced key columns so we access the proper columns (0-indexed) before and set the proper ordinal for jdbc (1-indexed)
                 foreignKey.getUpdateRule(),
                 foreignKey.getDeleteRule(),
                 foreignKey.getKeyName()
@@ -174,6 +188,8 @@ public class MetaResultSetBuilder {
 
 
     public static ResultSet buildFromTypes(List<Type> types) throws SQLException {
+        // jdbc standard about type info: Rows are ordered by DATA_TYPE ascending
+        types = types.stream().sorted(MetaResultSetComparators.TYPE_INFO_COMPARATOR).collect(Collectors.toList());
         return buildResultSet(
                 "TYPE_INFO",
                 types,
@@ -186,6 +202,7 @@ public class MetaResultSetBuilder {
         ArrayList<GenericMetaContainer> metaColumns = indexes.stream()
                 .map(MetaResultSetBuilder::expandIndex)
                 .flatMap(List::stream)
+                .sorted(MetaResultSetComparators.INDEX_COMPARATOR) // jdbc standard about indexes: Rows are ordered by NON_UNIQUE, INDEX_NAME, and ORDINAL_POSITION ascending
                 .collect(toCollection(ArrayList::new));
 
         return buildResultSet(
@@ -229,6 +246,7 @@ public class MetaResultSetBuilder {
         List<GenericMetaContainer> columnPrivileges = columns.stream()
                 .map(c -> createDummyColumnPrivileges(c, userName))
                 .flatMap(List::stream)
+                .sorted(MetaResultSetComparators.COLUMN_PRIVILEGE_COMPARATOR) //jdbc standard on column privileges: Rows are ordered by COLUMN_NAME and PRIVILEGE
                 .collect(Collectors.toList());
 
         return buildResultSet(
@@ -239,7 +257,7 @@ public class MetaResultSetBuilder {
     }
 
     private static List<GenericMetaContainer> createDummyColumnPrivileges(Column colum, String userName) {
-        // This method is used to create a dummy full rights result set for a column.
+        // This method is used to create a dummy full rights result set for a column because the requested information does not exist on the server side.
         List<String> accessRights = Arrays.asList("SELECT", "INSERT", "UPDATE", "REFERENCE");
         return accessRights.stream().map(a -> new GenericMetaContainer(
                 colum.getDatabaseName(),
@@ -253,10 +271,11 @@ public class MetaResultSetBuilder {
         )).collect(Collectors.toList());
     }
 
-    public static <Tables> ResultSet buildFromTablePrivileges(List<Table> tables, String userName) throws SQLException {
+    public static  ResultSet buildFromTablePrivileges(List<Table> tables, String userName) throws SQLException {
         List<GenericMetaContainer> tablePrivileges = tables.stream()
                 .map(t -> createDummyTablePrivileges(t, userName))
                 .flatMap(List::stream)
+                .sorted(MetaResultSetComparators.TABLE_PRIVILEGE_COMPARATOR) //jdbc standard on column privileges: Rows are ordered by TABLE_CAT, TABLE_SCHEM, TABLE_NAME, and PRIVILEGE
                 .collect(Collectors.toList());
 
         return buildResultSet(
@@ -267,7 +286,7 @@ public class MetaResultSetBuilder {
     }
 
     private static List<GenericMetaContainer> createDummyTablePrivileges(Table table, String userName) {
-        // This method is used to create a dummy full rights result set for a table.
+        // This method is used to create a dummy full rights result set for a table because the requested information does not exist on the server side.
         List<String> accessRights = Arrays.asList("SELECT", "INSERT", "UPDATE", "DELETE", "REFERENCE");
         return accessRights.stream().map(a -> new GenericMetaContainer(
                 table.getSourceDatabaseName(),
@@ -291,14 +310,14 @@ public class MetaResultSetBuilder {
 
     public static ResultSet buildFromSuperTypes() throws SQLException {
         return buildEmptyResultSet(
-                "UDTs",
+                "SUPER_TYPES",
                 MetaResultSetSignatures.SUPER_TYPES_EMPTY_SIGNATURE
         );
     }
 
     public static ResultSet buildFromSuperTables() throws SQLException {
         return buildEmptyResultSet(
-                "SUPERTABLES",
+                "SUPER_TABLES",
                 MetaResultSetSignatures.SUPER_TABLES_EMPTY_SIGNATURE
         );
     }
@@ -311,6 +330,8 @@ public class MetaResultSetBuilder {
     }
 
     public static ResultSet buildFromClientInfoPropertyMetas(List<ClientInfoPropertyMeta> metas) throws SQLException {
+        // jdbc standard about client info properties: Rows are ordered by NAME ascending
+        metas.sort(MetaResultSetComparators.CLIENT_INFO_PROPERTY_COMPARATOR);
         return buildResultSet(
                 "CLIENT_INFO_PROPERTIES",
                 metas,
@@ -319,6 +340,8 @@ public class MetaResultSetBuilder {
     }
 
     public static ResultSet buildFromPseudoColumns(List<Column> columns) throws SQLException {
+        // jdbc standard about pseudo columns: Rows are ordered by TABLE_CAT,TABLE_SCHEM, TABLE_NAME and COLUMN_NAME.
+        columns.sort(MetaResultSetComparators.PSEUDO_COLUMN_COMPARATOR);
         return buildResultSet(
                 "PSEUDO_COLUMNS",
                 columns,
@@ -327,6 +350,7 @@ public class MetaResultSetBuilder {
     }
 
     public static ResultSet fromBestRowIdentifiers(List<Column> columns) throws SQLException {
+       // sorting can be ignored as the key is not supported by polypheny and thus set to a constant manually in the client
         return buildResultSet(
                 "BEST_ROW_IDENTIFIERS",
                 columns,
@@ -342,6 +366,8 @@ public class MetaResultSetBuilder {
     }
 
     public static ResultSet fromFunctions(List<org.polypheny.jdbc.proto.Function> functions) throws SQLException {
+        // jdbc standard about functions: Rows are ordered by FUNCTION_CAT, FUNCTION_SCHEM, FUNCTION_NAME and SPECIFIC_NAME ascending
+        functions = functions.stream().sorted(MetaResultSetComparators.FUNCTION_COMPARATOR).collect(Collectors.toList());
         return buildResultSet(
                 "FUNCTIONS",
                 functions,
