@@ -1,6 +1,5 @@
 package org.polypheny.jdbc;
 
-import io.grpc.StatusRuntimeException;
 import lombok.Getter;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.proto.Frame;
@@ -41,19 +40,6 @@ public class PolyphenyStatement implements Statement {
         this.properties.setPolyphenyStatement(this);
         this.statementId = NO_STATEMENT_ID;
         this.currentResult = null;
-    }
-
-
-    protected ResultSet createResultSet(Frame frame) throws SQLException {
-        switch (properties.getResultSetType()) {
-            case ResultSet.TYPE_FORWARD_ONLY:
-                return new PolyphenyForwardResultSet(this, frame, properties.toResultSetProperties());
-            case ResultSet.TYPE_SCROLL_INSENSITIVE:
-            case ResultSet.TYPE_SCROLL_SENSITIVE:
-                return new PolyphenyBidirectionalResultSet(this, frame, properties.toResultSetProperties());
-            default:
-                throw new SQLException("Should never be thrown");
-        }
     }
 
     public boolean hasStatementId() {
@@ -124,7 +110,7 @@ public class PolyphenyStatement implements Statement {
                 }
                 Frame frame = status.getResult().getFrame();
                 throwIfNotRelational(frame);
-                currentResult = createResultSet(frame);
+                currentResult = new PolyhenyResultSet(this, frame, properties.toResultSetProperties());
                 return currentResult;
             }
         } catch (Throwable e) {
@@ -287,7 +273,7 @@ public class PolyphenyStatement implements Statement {
                 }
                 Frame frame = status.getResult().getFrame();
                 throwIfNotRelational(frame);
-                currentResult = createResultSet(frame);
+                currentResult = new PolyhenyResultSet(this, frame, properties.toResultSetProperties());
                 return true;
 
             }

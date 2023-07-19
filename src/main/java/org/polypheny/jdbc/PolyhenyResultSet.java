@@ -31,19 +31,20 @@ import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.types.TypedValue;
 
-public class PolyphenyBidirectionalResultSet implements ResultSet {
+public class PolyhenyResultSet implements ResultSet {
 
     private PolyphenyStatement statement;
 
     private PolyphenyResultSetMetadata metadata;
-    private BidirectionalScrollable<ArrayList<TypedValue>> resultScroller;
+    private Scrollable<ArrayList<TypedValue>> resultScroller;
+    private Class<BidirectionalScroller> bidirectionScrollerClass;
     private TypedValue lastRead;
     private boolean isClosed;
 
     ResultSetProperties properties;
 
 
-    public PolyphenyBidirectionalResultSet(
+    public PolyhenyResultSet(
             PolyphenyStatement statement,
             Frame frame,
             ResultSetProperties properties
@@ -53,13 +54,18 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
         }
         this.statement = statement;
         this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
-        this.resultScroller = new BidirectionalScroller( frame, getClient(), statement.getStatementId(), properties );
+        if (properties.getResultSetType() == ResultSet.TYPE_FORWARD_ONLY) {
+            this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), properties);
+        } else {
+            this.resultScroller = new BidirectionalScroller( frame, getClient(), statement.getStatementId(), properties );
+        }
+        this.bidirectionScrollerClass = BidirectionalScroller.class;
         this.properties = properties;
         this.lastRead = null;
         this.isClosed = false;
     }
 
-    public PolyphenyBidirectionalResultSet(ArrayList<PolyphenyColumnMeta> columnMetas, ArrayList<ArrayList<TypedValue>> rows) {
+    public PolyhenyResultSet(ArrayList<PolyphenyColumnMeta> columnMetas, ArrayList<ArrayList<TypedValue>> rows) {
         this.resultScroller = new MetaScroller<>( rows );
         this.metadata = new PolyphenyResultSetMetadata(columnMetas);
         this.statement = null;
@@ -99,6 +105,13 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
 
     private ProtoInterfaceClient getClient() {
         return statement.getClient();
+    }
+
+    private BidirectionalScroller getBidirectionalScrollerOrThrow() throws SQLException {
+        if (resultScroller instanceof BidirectionalScroller) {
+            return bidirectionScrollerClass.cast(resultScroller);
+        }
+        throw new SQLException("Illegal operation on resultset of type TYPE_FORWARD_ONLY");
     }
 
 
@@ -444,31 +457,31 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
 
     @Override
     public void beforeFirst() throws SQLException {
-        resultScroller.beforeFirst();
+        throwIfClosed();
+        getBidirectionalScrollerOrThrow().beforeFirst();
     }
 
 
     @Override
     public void afterLast() throws SQLException {
-        resultScroller.afterLast();
+        throwIfClosed();
+        getBidirectionalScrollerOrThrow().afterLast();
     }
 
 
     @Override
     public boolean first() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        return getBidirectionalScrollerOrThrow().first();
     }
 
 
     @Override
     public boolean last() throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException( "Feature " + methodName + " not implemented" );
+        try {
+            return getBidirectionalScrollerOrThrow().last();
+        } catch (InterruptedException e) {
+            throw new SQLException(e);
+        }
     }
 
 
@@ -480,19 +493,19 @@ public class PolyphenyBidirectionalResultSet implements ResultSet {
 
     @Override
     public boolean absolute( int i ) throws SQLException {
-        return resultScroller.absolute(i);
+        return getBidirectionalScrollerOrThrow().absolute(i);
     }
 
 
     @Override
     public boolean relative( int i ) throws SQLException {
-        return resultScroller.relative(i);
+        return getBidirectionalScrollerOrThrow().relative(i);
     }
 
 
     @Override
     public boolean previous() throws SQLException {
-        return resultScroller.previous();
+        return getBidirectionalScrollerOrThrow().previous();
     }
 
 

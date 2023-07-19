@@ -107,6 +107,30 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
         currentIndex = data.size();
     }
 
+    @Override
+    public boolean first() {
+        current = null;
+        currentIndex = CURSOR_BEFORE_DATA;
+        if (data.isEmpty()) {
+            return false;
+        }
+        currentIndex = 0;
+        current = data.get(currentIndex);
+        return true;
+    }
+
+    @Override
+    public boolean last() {
+        current = null;
+        currentIndex = CURSOR_BEFORE_DATA;
+        if (data.isEmpty()) {
+            return false;
+        }
+        currentIndex = data.size() - 1;
+        current = data.get(currentIndex);
+        return true;
+    }
+
 
     @Override
     public boolean next() throws InterruptedException, SQLException {

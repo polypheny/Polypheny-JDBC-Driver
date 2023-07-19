@@ -14,4 +14,8 @@ public interface BidirectionalScrollable<T> extends Scrollable<T> {
 
     void afterLast();
 
+    boolean first();
+
+    boolean last() throws InterruptedException;
+
 }

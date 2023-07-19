@@ -54,7 +54,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             }
             Frame frame = result.getFrame();
             throwIfNotRelational(frame);
-            currentResult = createResultSet(frame);
+            currentResult = new PolyhenyResultSet(this, frame, properties.toResultSetProperties());
             return currentResult;
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
@@ -285,7 +285,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             }
             Frame frame = result.getFrame();
             throwIfNotRelational(frame);
-            currentResult = createResultSet(frame);
+            currentResult = new PolyhenyResultSet(this, frame, properties.toResultSetProperties());
             return true;
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());

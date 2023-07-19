@@ -157,6 +157,32 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
         currentRow = null;
     }
 
+    @Override
+    public boolean first() {
+        currentRow = null;
+        currentIndex = INDEX_BEFORE_FIRST;
+        if (values.isEmpty()) {
+            return false;
+        }
+        currentIndex = 0;
+        currentRow = values.get(currentIndex);
+        return true;
+    }
+
+    @Override
+    public boolean last() throws InterruptedException {
+        currentRow = null;
+        if(resultFetcher.isLast()) {
+            currentIndex = values.size() - 1;
+            currentRow = values.get(currentIndex);
+            return true;
+        }
+        fetchAll();
+        currentIndex = values.size() - 1;
+        currentRow = values.get(currentIndex);
+        return true;
+    }
+
 
     @Override
     public boolean next() throws SQLException, InterruptedException {

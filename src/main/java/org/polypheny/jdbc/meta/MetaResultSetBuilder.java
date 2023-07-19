@@ -1,6 +1,6 @@
 package org.polypheny.jdbc.meta;
 
-import org.polypheny.jdbc.PolyphenyBidirectionalResultSet;
+import org.polypheny.jdbc.PolyhenyResultSet;
 import org.polypheny.jdbc.proto.*;
 import org.polypheny.jdbc.types.TypedValue;
 
@@ -17,16 +17,16 @@ import static java.util.stream.Collectors.toCollection;
 
 public class MetaResultSetBuilder {
 
-    private static <T> PolyphenyBidirectionalResultSet buildEmptyResultSet(String entityName, List<MetaResultSetParameter<T>> metaResultSetParameters) throws SQLException {
+    private static <T> PolyhenyResultSet buildEmptyResultSet(String entityName, List<MetaResultSetParameter<T>> metaResultSetParameters) throws SQLException {
         ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas(entityName, metaResultSetParameters);
         ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
-        return new PolyphenyBidirectionalResultSet(columnMetas, rows);
+        return new PolyhenyResultSet(columnMetas, rows);
     }
 
-    private static <T> PolyphenyBidirectionalResultSet buildResultSet(String entityName, List<T> messages, List<MetaResultSetParameter<T>> metaResultSetParameters) throws SQLException {
+    private static <T> PolyhenyResultSet buildResultSet(String entityName, List<T> messages, List<MetaResultSetParameter<T>> metaResultSetParameters) throws SQLException {
         ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas(entityName, metaResultSetParameters);
         ArrayList<ArrayList<TypedValue>> rows = buildRows(messages, metaResultSetParameters);
-        return new PolyphenyBidirectionalResultSet(columnMetas, rows);
+        return new PolyhenyResultSet(columnMetas, rows);
     }
 
 
