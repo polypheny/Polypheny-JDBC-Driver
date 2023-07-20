@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.jdbc.proto.ProtoBigDecimal;
 import org.polypheny.jdbc.proto.ProtoBinary;
 import org.polypheny.jdbc.proto.ProtoBoolean;
@@ -195,7 +194,7 @@ public class ProtoValueSerializer {
 
     private static ProtoValue serializeAsProtoDate( TypedValue typedValue ) throws SQLException {
         ProtoDate protoDate = ProtoDate.newBuilder()
-                .setDate( typedValue.asDate().getTime() / DateTimeUtils.MILLIS_PER_DAY )
+                .setDate( typedValue.asDate().getTime() / 86400000 )  // 86400000 = Milliseconds in a day = 24 * 60 * 60 * 1000
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )

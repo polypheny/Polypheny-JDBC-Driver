@@ -21,12 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import lombok.Getter;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.deserialization.UDTPrototype;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
-    private static String UDT_PROOTYPE_TYPE = "UDT_PROTOTYPE";
+    private static final String UDT_PROOTYPE_TYPE = "UDT_PROTOTYPE";
 
     @Getter
     private final int jdbcType;

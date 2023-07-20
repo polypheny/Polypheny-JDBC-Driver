@@ -13,6 +13,7 @@ import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.DriverProperties;
 
 public class PolyphenyDriver implements java.sql.Driver {
+
     static {
         new PolyphenyDriver().register();
     }
