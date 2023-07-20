@@ -777,11 +777,11 @@ public class PolyhenyResultSet implements ResultSet {
 
 
     @Override
-    public void updateCharacterStream(int columnIndex, Reader x, int legnth) throws SQLException {
+    public void updateCharacterStream(int columnIndex, Reader x, int length) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
         try {
-            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromCharacterStream(x, legnth);
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromCharacterStream(x, length));
         } catch (IOException e) {
             throw new SQLException(e);
         }
