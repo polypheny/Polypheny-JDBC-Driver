@@ -224,6 +224,9 @@ public class TypedValue implements Convertible {
         return nullValue;
     }
 
+    public static TypedValue fromNull() {
+        return fromNull(Types.NULL);
+    }
 
     public static TypedValue fromNull( int sqlType, String typeName ) throws NotImplementedException {
         throw new NotImplementedException( "Not implemented yet..." );
