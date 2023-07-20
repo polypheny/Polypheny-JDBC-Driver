@@ -28,6 +28,10 @@ public class ResultSetProperties {
     @Setter
     private long largeMaxRows;
 
+    public boolean isReadOnly() {
+        return resultSetConcurrency == ResultSet.CONCUR_READ_ONLY;
+    }
+
     public static ResultSetProperties forMetaResultSet() {
         ResultSetProperties properties = new ResultSetProperties();
         properties.setResultSetType( ResultSet.TYPE_SCROLL_INSENSITIVE );
