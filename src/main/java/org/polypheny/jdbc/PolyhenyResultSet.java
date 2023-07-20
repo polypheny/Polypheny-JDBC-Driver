@@ -1,6 +1,5 @@
 package org.polypheny.jdbc;
 
-import org.apache.commons.lang3.reflect.Typed;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
@@ -782,7 +781,7 @@ public class PolyhenyResultSet implements ResultSet {
         throwIfClosed();
         throwIfReadOnly();
         try {
-            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromCharacterStream(x, legnth);
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromCharacterStream(x, legnth));
         } catch (IOException e) {
             throw new SQLException(e);
         }
@@ -793,7 +792,7 @@ public class PolyhenyResultSet implements ResultSet {
     public void updateObject(int columnIndex, Object x, int saleOrLength) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-       // TODO: propert implmentation. scaleOrLength only applies to streams (length) and bigdecimals(scale)
+        // TODO: propert implmentation. scaleOrLength only applies to streams (length) and bigdecimals(scale)
     }
 
 
@@ -806,167 +805,116 @@ public class PolyhenyResultSet implements ResultSet {
 
 
     @Override
-    public void updateNull(String s) throws SQLException {
-        updateNull(metadata.getColumnIndexFromLabel(s));
+    public void updateNull(String columnLabel) throws SQLException {
+        updateNull(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
-    public void updateBoolean(String s, boolean b) throws SQLException {
-        updateBoolean(metadata.getColumnIndexFromLabel(s), b);
+    public void updateBoolean(String columnLabel, boolean x) throws SQLException {
+        updateBoolean(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateByte(String s, byte b) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateByte(String columnLabel, byte x) throws SQLException {
+        updateByte(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateShort(String s, short i) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateShort(String columnLabel, short x) throws SQLException {
+        updateShort(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateInt(String s, int i) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateInt(String columnLabel, int x) throws SQLException {
+        updateInt(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateLong(String s, long l) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateLong(String columnLabel, long x) throws SQLException {
+        updateLong(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateFloat(String s, float v) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateFloat(String columnLabel, float x) throws SQLException {
+        updateFloat(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateDouble(String s, double v) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateDouble(String columnLabel, double x) throws SQLException {
+        updateDouble(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateBigDecimal(String s, BigDecimal bigDecimal) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateBigDecimal(String columnLabel, BigDecimal x) throws SQLException {
+        updateBigDecimal(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateString(String s, String s1) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateString(String columnLabel, String x) throws SQLException {
+        updateString(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateBytes(String s, byte[] bytes) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateBytes(String columnLabel, byte[] x) throws SQLException {
+        updateBytes(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateDate(String s, Date date) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateDate(String columnLabel, Date x) throws SQLException {
+        updateDate(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateTime(String s, Time time) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateTime(String columnLabel, Time x) throws SQLException {
+        updateTime(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateTimestamp(String s, Timestamp timestamp) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateTimestamp(String columnLabel, Timestamp x) throws SQLException {
+        updateTimestamp(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateAsciiStream(String s, InputStream inputStream, int i) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateAsciiStream(String columnLabel, InputStream x, int length) throws SQLException {
+        updateAsciiStream(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateBinaryStream(String s, InputStream inputStream, int i) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
+        updateBinaryStream(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateCharacterStream(String s, Reader reader, int i) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateCharacterStream(String columnLabel, Reader x, int length) throws SQLException {
+        updateCharacterStream(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateObject(String s, Object o, int i) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateObject(String columnLabel, Object x, int scaleOrlength) throws SQLException {
+        updateObject(metadata.getColumnIndexFromLabel(columnLabel), x, scaleOrlength);
     }
 
 
     @Override
-    public void updateObject(String s, Object o) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateObject(String columnLabel, Object x) throws SQLException {
+        updateObject(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
@@ -1065,272 +1013,193 @@ public class PolyhenyResultSet implements ResultSet {
 
     @Override
     public Ref getRef(int columnIndex) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asRef();
     }
 
 
     @Override
     public Blob getBlob(int columnIndex) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asBlob();
     }
 
 
     @Override
     public Clob getClob(int columnIndex) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asClob();
     }
 
 
     @Override
     public Array getArray(int columnIndex) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asArray();
     }
 
 
     @Override
-    public Object getObject(String s, Map<String, Class<?>> map) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Object getObject(String columnLabel, Map<String, Class<?>> map) throws SQLException {
+        return getObject(metadata.getColumnIndexFromLabel(columnLabel), map);
     }
 
 
     @Override
-    public Ref getRef(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Ref getRef(String columnLabel) throws SQLException {
+        return getRef(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
-    public Blob getBlob(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Blob getBlob(String columnLabel) throws SQLException {
+        return getBlob(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
-    public Clob getClob(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Clob getClob(String columnLabel) throws SQLException {
+        return getClob(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
-    public Array getArray(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Array getArray(String columnLabel) throws SQLException {
+        return getArray(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
     public Date getDate(int columnIndex, Calendar calendar) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asDate(calendar);
     }
 
 
     @Override
-    public Date getDate(String s, Calendar calendar) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Date getDate(String columnLabel, Calendar calendar) throws SQLException {
+        return getDate(metadata.getColumnIndexFromLabel(columnLabel), calendar);
     }
 
 
     @Override
     public Time getTime(int columnIndex, Calendar calendar) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        return accessValue(columnIndex).asTime(calendar);
     }
 
 
     @Override
-    public Time getTime(String s, Calendar calendar) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Time getTime(String columnLabel, Calendar calendar) throws SQLException {
+        return getTime(metadata.getColumnIndexFromLabel(columnLabel), calendar);
     }
 
 
     @Override
     public Timestamp getTimestamp(int columnIndex, Calendar calendar) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asTimestamp(calendar);
     }
 
 
     @Override
-    public Timestamp getTimestamp(String s, Calendar calendar) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Timestamp getTimestamp(String columnLabel, Calendar calendar) throws SQLException {
+        return getTimestamp(metadata.getColumnIndexFromLabel(columnLabel), calendar);
     }
 
 
     @Override
     public URL getURL(int columnIndex) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asUrl();
     }
 
 
     @Override
-    public URL getURL(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public URL getURL(String columnLabel) throws SQLException {
+        return getURL(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
-    public void updateRef(int columnIndex, Ref ref) throws SQLException {
+    public void updateRef(int columnIndex, Ref x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromRef(x));
     }
 
 
     @Override
-    public void updateRef(String s, Ref ref) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateRef(String columnLabel, Ref x) throws SQLException {
+        updateRef(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateBlob(int columnIndex, Blob blob) throws SQLException {
+    public void updateBlob(int columnIndex, Blob x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromBlob(x));
     }
 
 
     @Override
-    public void updateBlob(String s, Blob blob) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateBlob(String columnLabel, Blob x) throws SQLException {
+        updateBlob(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateClob(int columnIndex, Clob clob) throws SQLException {
+    public void updateClob(int columnIndex, Clob x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromClob(x));
     }
 
 
     @Override
-    public void updateClob(String s, Clob clob) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateClob(String columnLabel, Clob x) throws SQLException {
+        updateClob(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateArray(int columnIndex, Array array) throws SQLException {
+    public void updateArray(int columnIndex, Array x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromArray(x));
     }
 
 
     @Override
-    public void updateArray(String s, Array array) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateArray(String columnLabel, Array x) throws SQLException {
+        updateArray(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
     public RowId getRowId(int columnIndex) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asRowId();
     }
 
 
     @Override
-    public RowId getRowId(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public RowId getRowId(String columnLabel) throws SQLException {
+        return getRowId(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
-    public void updateRowId(int columnIndex, RowId rowId) throws SQLException {
+    public void updateRowId(int columnIndex, RowId x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromRowId(x));
     }
 
 
     @Override
-    public void updateRowId(String s, RowId rowId) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateRowId(String columnLabel, RowId x) throws SQLException {
+        updateRowId(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
@@ -1348,444 +1217,345 @@ public class PolyhenyResultSet implements ResultSet {
 
 
     @Override
-    public void updateNString(int columnIndex, String s) throws SQLException {
+    public void updateNString(int columnIndex, String x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromNString(x));
     }
 
 
     @Override
-    public void updateNString(String s, String s1) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateNString(String columnLabel, String x) throws SQLException {
+        updateNString(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateNClob(int columnIndex, NClob nClob) throws SQLException {
+    public void updateNClob(int columnIndex, NClob x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromNClob(x));
     }
 
 
     @Override
-    public void updateNClob(String s, NClob nClob) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateNClob(String columnLabel, NClob x) throws SQLException {
+        updateNClob(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
     public NClob getNClob(int columnIndex) throws SQLException {
         throwIfClosed();
-        throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        return accessValue(columnIndex).asNClob();
     }
 
 
     @Override
-    public NClob getNClob(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public NClob getNClob(String columnLabel) throws SQLException {
+        return getNClob(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
     public SQLXML getSQLXML(int columnIndex) throws SQLException {
         throwIfClosed();
-        throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        return accessValue(columnIndex).asSQLXML();
     }
 
 
     @Override
-    public SQLXML getSQLXML(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public SQLXML getSQLXML(String columnLabel) throws SQLException {
+        return getSQLXML(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
-    public void updateSQLXML(int columnIndex, SQLXML sqlxml) throws SQLException {
+    public void updateSQLXML(int columnIndex, SQLXML x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromSQLXML(x));
     }
 
 
     @Override
-    public void updateSQLXML(String s, SQLXML sqlxml) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateSQLXML(String columnLabel, SQLXML x) throws SQLException {
+        updateSQLXML(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
     public String getNString(int columnIndex) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asNString();
     }
 
 
     @Override
-    public String getNString(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public String getNString(String columnLabel) throws SQLException {
+        return getNString(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
     public Reader getNCharacterStream(int columnIndex) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asNCharacterStream();
     }
 
 
     @Override
-    public Reader getNCharacterStream(String s) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public Reader getNCharacterStream(String columnLabel) throws SQLException {
+        return getNCharacterStream(metadata.getColumnIndexFromLabel(columnLabel));
     }
 
 
     @Override
-    public void updateNCharacterStream(int columnIndex, Reader reader, long l) throws SQLException {
+    public void updateNCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromNCharacterStream(x, length));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateNCharacterStream(String s, Reader reader, long l) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateNCharacterStream(String columnLabel, Reader x, long length) throws SQLException {
+        updateNCharacterStream(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateAsciiStream(int columnIndex, InputStream inputStream, long l) throws SQLException {
+    public void updateAsciiStream(int columnIndex, InputStream x, long length) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromAsciiStream(x, length));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateBinaryStream(int columnIndex, InputStream inputStream, long l) throws SQLException {
+    public void updateBinaryStream(int columnIndex, InputStream x, long length) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-// saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromBinaryStream(x, length));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateCharacterStream(int columnIndex, Reader reader, long l) throws SQLException {
+    public void updateCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromCharacterStream(x, length));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateAsciiStream(String s, InputStream inputStream, long l) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
+        updateAsciiStream(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateBinaryStream(String s, InputStream inputStream, long l) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
+        updateBinaryStream(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateCharacterStream(String s, Reader reader, long l) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateCharacterStream(String columnLabel, Reader x, long length) throws SQLException {
+        updateCharacterStream(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateBlob(int columnIndex, InputStream inputStream, long l) throws SQLException {
+    public void updateBlob(int columnIndex, InputStream x, long length) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromBlob(x));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateBlob(String s, InputStream inputStream, long l) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateBlob(String columnLabel, InputStream x, long length) throws SQLException {
+        updateBlob(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateClob(int columnIndex, Reader reader, long l) throws SQLException {
+    public void updateClob(int columnIndex, Reader x, long length) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromClob(x, length));
     }
 
 
     @Override
-    public void updateClob(String s, Reader reader, long l) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateClob(String columnLabel, Reader x, long length) throws SQLException {
+        updateClob(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateNClob(int columnIndex, Reader reader, long l) throws SQLException {
+    public void updateNClob(int columnIndex, Reader x, long length) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromNClob(x, length));
     }
 
 
     @Override
-    public void updateNClob(String s, Reader reader, long l) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateNClob(String columnLabel, Reader x, long length) throws SQLException {
+        updateNClob(metadata.getColumnIndexFromLabel(columnLabel), x, length);
     }
 
 
     @Override
-    public void updateNCharacterStream(int columnIndex, Reader reader) throws SQLException {
+    public void updateNCharacterStream(int columnIndex, Reader x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromNCharacterStream(x));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateNCharacterStream(String s, Reader reader) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateNCharacterStream(String columnLabel, Reader x) throws SQLException {
+        updateNCharacterStream(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
-    public void updateAsciiStream(int columnIndex, InputStream inputStream) throws SQLException {
+    public void updateAsciiStream(int columnIndex, InputStream x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromAsciiStream(x));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateBinaryStream(int columnIndex, InputStream inputStream) throws SQLException {
+    public void updateBinaryStream(int columnIndex, InputStream x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromBinaryStream(x));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateCharacterStream(int columnIndex, Reader reader) throws SQLException {
+    public void updateCharacterStream(int columnIndex, Reader x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromCharacterStream(x));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateAsciiStream(String s, InputStream inputStream) throws SQLException {
+    public void updateAsciiStream(String columnLabel, InputStream x) throws SQLException {
+        updateAsciiStream(metadata.getColumnIndexFromLabel(columnLabel), x);
+    }
+
+
+    @Override
+    public void updateBinaryStream(String columnLabel, InputStream x) throws SQLException {
+        updateBinaryStream(metadata.getColumnIndexFromLabel(columnLabel), x);
+    }
+
+
+    @Override
+    public void updateCharacterStream(String columnLabel, Reader x) throws SQLException {
+        updateCharacterStream(metadata.getColumnIndexFromLabel(columnLabel), x);
+    }
+
+
+    @Override
+    public void updateBlob(int columnIndex, InputStream x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        try {
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromBlob(x));
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
     }
 
 
     @Override
-    public void updateBinaryStream(String s, InputStream inputStream) throws SQLException {
+    public void updateBlob(String columnLabel, InputStream x) throws SQLException {
+        updateBlob(metadata.getColumnIndexFromLabel(columnLabel), x);
+    }
+
+
+    @Override
+    public void updateClob(int columnIndex, Reader x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromClob(x));
     }
 
 
     @Override
-    public void updateCharacterStream(String s, Reader reader) throws SQLException {
+    public void updateClob(String columnLabel, Reader x) throws SQLException {
+        updateClob(metadata.getColumnIndexFromLabel(columnLabel), x);
+    }
+
+
+    @Override
+    public void updateNClob(int columnIndex, Reader x) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        getOrCreateRowUpdate().put(columnIndex, TypedValue.fromNClob(x));
     }
 
 
     @Override
-    public void updateBlob(int columnIndex, InputStream inputStream) throws SQLException {
-        throwIfClosed();
-        throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
-    }
-
-
-    @Override
-    public void updateBlob(String s, InputStream inputStream) throws SQLException {
-        throwIfClosed();
-        throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
-    }
-
-
-    @Override
-    public void updateClob(int columnIndex, Reader reader) throws SQLException {
-        throwIfClosed();
-        throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
-    }
-
-
-    @Override
-    public void updateClob(String s, Reader reader) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
-    }
-
-
-    @Override
-    public void updateNClob(int columnIndex, Reader reader) throws SQLException {
-        throwIfClosed();
-        throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
-    }
-
-
-    @Override
-    public void updateNClob(String s, Reader reader) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public void updateNClob(String columnLabel, Reader x) throws SQLException {
+        updateNClob(metadata.getColumnIndexFromLabel(columnLabel), x);
     }
 
 
     @Override
     public <T> T getObject(int columnIndex, Class<T> aClass) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        throwIfClosed();
+        return accessValue(columnIndex).asObject(aClass);
     }
 
 
     @Override
-    public <T> T getObject(String s, Class<T> aClass) throws SQLException {
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+    public <T> T getObject(String columnLabel, Class<T> aClass) throws SQLException {
+        return getObject(metadata.getColumnIndexFromLabel(columnLabel), aClass);
     }
 
 

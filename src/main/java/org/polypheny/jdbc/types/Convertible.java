@@ -4,18 +4,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.NClob;
-import java.sql.Ref;
-import java.sql.RowId;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-import java.sql.Struct;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -53,7 +42,7 @@ public interface Convertible {
     BigDecimal asBigDecimal() throws SQLException;
 
 
-    BigDecimal asBigDecimal( int scale ) throws SQLException;
+    BigDecimal asBigDecimal(int scale) throws SQLException;
 
 
     byte[] asBytes() throws SQLException;
@@ -87,15 +76,15 @@ public interface Convertible {
 
     Date asDate() throws SQLException;
 
-    Date asDate( Calendar calendar ) throws SQLException;
+    Date asDate(Calendar calendar) throws SQLException;
 
     Time asTime() throws SQLException;
 
-    Time asTime( Calendar calendar ) throws SQLException;
+    Time asTime(Calendar calendar) throws SQLException;
 
-    public Timestamp asTimestamp() throws SQLException;
+    Timestamp asTimestamp() throws SQLException;
 
-    Timestamp asTimestamp( Calendar calendar ) throws SQLException;
+    Timestamp asTimestamp(Calendar calendar) throws SQLException;
 
     Ref asRef() throws SQLException;
 
@@ -116,4 +105,6 @@ public interface Convertible {
     Reader asNCharacterStream() throws SQLException;
 
     Object asObject(Map<String, Class<?>> map) throws SQLException;
+
+    <T> T asObject(Class<T> aClass) throws SQLFeatureNotSupportedException;
 }

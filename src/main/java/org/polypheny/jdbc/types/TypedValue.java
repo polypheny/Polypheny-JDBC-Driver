@@ -298,7 +298,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue setBlob( InputStream stream, long length ) throws NotImplementedException {
+    public static TypedValue fromBlob( InputStream stream, long length ) throws NotImplementedException {
         //TODO TH build BLOB from bytes...
         throw new NotImplementedException( "Not yet implemented..." );
     }
@@ -894,6 +894,10 @@ public class TypedValue implements Convertible {
         }
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }
+
+    public  <T> T asObject(Class<T> aClass) throws SQLFeatureNotSupportedException {
+        throw new SQLFeatureNotSupportedException();
+    };
 
     @Override
     public Object asObject(Map<String,Class<?>> map) throws SQLException {
