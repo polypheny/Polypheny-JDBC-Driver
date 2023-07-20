@@ -1,9 +1,9 @@
 package org.polypheny.jdbc;
 
 import org.junit.*;
-import org.polypheny.jdbc.old.Driver;
 
 import java.sql.SQLException;
+import org.polypheny.jdbc.properties.DriverProperties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -32,7 +32,7 @@ public class PolyphenyDriverTest {
     @Test
     public void acceptsURL_String__CorrectDriverSchema() throws Exception {
         final boolean expected = true;
-        final boolean actual = DRIVER.acceptsURL( Driver.DRIVER_URL_SCHEMA );
+        final boolean actual = DRIVER.acceptsURL( DriverProperties.getDRIVER_URL_SCHEMA() );
 
         assertEquals( expected, actual );
     }

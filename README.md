@@ -8,7 +8,7 @@
 
 # Polypheny JDBC Driver
 
-This repository contains a standards-compliant JDBC driver for Polypheny-DB.
+This repository contains a standards-compliant JDBC driver for Polypheny.
 
 ## Getting Started
 
@@ -16,7 +16,7 @@ This repository contains a standards-compliant JDBC driver for Polypheny-DB.
 - Add `implementation group: 'org.polypheny', name: 'polypheny-jdbc-driver', version: '1.5.3'` .
 - Load the driver `org.polypheny.jdbc.Driver`, for example via
   ```
-  Class.forName( "org.polypheny.jdbc.Driver" );
+  Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
   ```
 - Use the connection URL `jdbc:polypheny:http://localhost/` to connect to [Polypheny-DB](https://github.com/polypheny/Polypheny-DB).
 
@@ -30,8 +30,6 @@ We highly welcome your contributions to the _Polypheny JDBC Driver_. If you woul
 
 Please note that we have a [code of conduct](https://github.com/polypheny/Admin/blob/master/CODE_OF_CONDUCT.md). Please follow it in all your interactions with the project.
 
-## Credits
-This JDBC Driver is based on [Apache Avatica](https://calcite.apache.org/avatica/), a framework for building database drivers. 
 
 ## License
 The Apache 2.0 License
