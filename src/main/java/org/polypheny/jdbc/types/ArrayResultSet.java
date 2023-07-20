@@ -23,7 +23,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 
 public class ArrayResultSet<T> implements ResultSet {

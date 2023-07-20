@@ -782,7 +782,7 @@ public class PolyhenyResultSet implements ResultSet {
         throwIfClosed();
         throwIfReadOnly();
         try {
-            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromCharacterStream(x, legnth);
+            getOrCreateRowUpdate().put(columnIndex, TypedValue.fromCharacterStream(x, legnth) );
         } catch (IOException e) {
             throw new SQLException(e);
         }
