@@ -25,7 +25,7 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
 
     public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties ) {
         this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
-        this.resultFetcher = new ResultFetcher( client, statementId, properties);
+        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size());
         this.resultFetcher.setLast( frame.getIsLast() );
         this.properties = properties;
         this.baseIndex = INDEX_BEFORE_FIRST;

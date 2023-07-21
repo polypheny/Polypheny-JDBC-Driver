@@ -966,10 +966,7 @@ public class PolyhenyResultSet implements ResultSet {
     public void cancelRowUpdates() throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        discardRowUpdates();
     }
 
 
@@ -977,10 +974,7 @@ public class PolyhenyResultSet implements ResultSet {
     public void moveToInsertRow() throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        isInInsertMode = true;
     }
 
 
@@ -988,10 +982,7 @@ public class PolyhenyResultSet implements ResultSet {
     public void moveToCurrentRow() throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // saves time as exceptions don't have to be typed out by hand
-        String methodName = new Object() {
-        }.getClass().getEnclosingMethod().getName();
-        throw new SQLException("Feature " + methodName + " not implemented");
+        isInInsertMode = false;
     }
 
 

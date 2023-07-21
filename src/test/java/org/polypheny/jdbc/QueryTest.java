@@ -42,6 +42,29 @@ public class QueryTest {
     }
 
     @Test
+    public void basicTest() throws ClassNotFoundException {
+        final String DB_URL = "jdbc:polypheny://localhost:20590";
+        final String USER = "pa";
+        final String PASS = "";
+
+        Class.forName("org.polypheny.jdbc.PolyphenyDriver");
+
+        try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS)) {
+
+            String sql = "SELECT ARRAY[1, 2] = ARRAY[1, 2], ARRAY[2, 4] = ARRAY[2, 3]";
+            Statement statement = connection.createStatement();
+            statement.execute(sql);
+
+            System.out.println("Values inserted successfully!");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    @Test
     public void parserCrashesOnValidStatementOnCreateTable() throws ClassNotFoundException {
         final String DB_URL = "jdbc:polypheny://localhost:20590";
         final String USER = "pa";

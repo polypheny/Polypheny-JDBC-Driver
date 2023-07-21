@@ -6,6 +6,7 @@ import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import io.grpc.StatusRuntimeException;
+import lombok.Getter;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
@@ -29,6 +30,9 @@ public class PolyphenyConnection implements Connection {
     private boolean hasRunningTransaction;
 
     private HashSet<Statement> openStatements;
+
+    @Getter
+    private Map<String, Class<?>> typeMap;
 
     private void throwIfClosed() throws SQLException {
         if ( isClosed ) {
