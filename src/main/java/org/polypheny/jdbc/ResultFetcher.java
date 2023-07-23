@@ -18,7 +18,7 @@ public class ResultFetcher implements Runnable {
     @Setter
     @Getter
     private ResultSetProperties properties;
-    private long offset;
+    private long totalFetched;
     @Setter
     @Getter
     private boolean isLast;
@@ -26,34 +26,34 @@ public class ResultFetcher implements Runnable {
     private List<ArrayList<TypedValue>> fetchedValues;
 
 
-    public ResultFetcher( ProtoInterfaceClient client, int statementId, ResultSetProperties properties, long offset ) {
+    public ResultFetcher( ProtoInterfaceClient client, int statementId, ResultSetProperties properties, long totalFetched ) {
         this.client = client;
         this.statementId = statementId;
         this.properties = properties;
-        this.offset = offset;
+        this.totalFetched = totalFetched;
         this.isLast = false;
     }
 
 
     @Override
     public void run() {
-        long fetchEnd = offset + properties.getFetchSize();
+        long fetchEnd = totalFetched + properties.getFetchSize();
         Frame nextFrame = client.fetchResult( statementId, fetchEnd);
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new ProtoInterfaceServiceException( "Illegal result type." );
         }
         List<Row> rows = nextFrame.getRelationalFrame().getRowsList();
         if (fetchEnd > properties.getLargeMaxRows()) {
-            long rowEndIndex = properties.getLargeMaxRows() - offset;
+            long rowEndIndex = properties.getLargeMaxRows() - totalFetched;
             if (rowEndIndex > Integer.MAX_VALUE) {
                 throw new RuntimeException("Should never be thrown");
             }
             rows = rows.subList(0, (int) rowEndIndex);
         }
         fetchedValues = TypedValueUtils.buildRows(rows);
-
+        totalFetched = totalFetched + rows.size();
         isLast = nextFrame.getIsLast();
-        offset = nextFrame.getOffset();
+
     }
 
 }
