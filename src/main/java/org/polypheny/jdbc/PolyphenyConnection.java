@@ -31,8 +31,6 @@ public class PolyphenyConnection implements Connection {
 
     private HashSet<Statement> openStatements;
 
-    private final Timer heartbeatTimer;
-
     @Getter
     private Map<String, Class<?>> typeMap;
 
@@ -56,16 +54,21 @@ public class PolyphenyConnection implements Connection {
         }
     }
 
-
     public PolyphenyConnection(PolyphenyConnectionProperties connectionProperties,
-                               PolyphenyDatabaseMetadata databaseMetaData,
-                               long heartbeatInterval) {
+                               PolyphenyDatabaseMetadata databaseMetaData) {
 
         this.properties = connectionProperties;
         databaseMetaData.setConnection( this );
         this.databaseMetaData = databaseMetaData;
         openStatements = new HashSet<>();
-        this.heartbeatTimer = new Timer();
+    }
+
+    public PolyphenyConnection(PolyphenyConnectionProperties connectionProperties,
+                               PolyphenyDatabaseMetadata databaseMetaData,
+                               long heartbeatInterval) {
+
+        this(connectionProperties, databaseMetaData);
+        Timer heartbeatTimer = new Timer();
         heartbeatTimer.schedule(createNewHeartbeatTask(), 0, heartbeatInterval);
     }
 
