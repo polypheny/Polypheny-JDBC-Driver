@@ -6,11 +6,13 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.proto.ConnectionReply;
 
 public class PolyphenyDriver implements java.sql.Driver {
 
@@ -40,13 +42,12 @@ public class PolyphenyDriver implements java.sql.Driver {
             PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
             PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata(protoInterfaceClient, connectionString);
             try {
-                protoInterfaceClient.register(connectionProperties);
+                long heartbeatInterval = protoInterfaceClient.register(connectionProperties).getHeartbeatInterval();
+                return new PolyphenyConnection(connectionProperties, databaseMetadata, heartbeatInterval);
             } catch (ProtoInterfaceServiceException e) {
                 throw new SQLException(e.getMessage());
             }
-            return new PolyphenyConnection(connectionProperties, databaseMetadata);
     }
-
 
     @Override
     public boolean acceptsURL( String url ) throws SQLException {

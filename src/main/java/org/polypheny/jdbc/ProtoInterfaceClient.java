@@ -67,7 +67,7 @@ public class ProtoInterfaceClient {
         ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
             /* ConnectionCheckResponses are empty messages */
-            blockingStub.withDeadlineAfter(timeout, TimeUnit.SECONDS).checkConnection(request);
+            blockingStub.withDeadlineAfter(timeout, TimeUnit.MILLISECONDS).checkConnection(request);
         } catch (Exception e) {
             return false;
         }
@@ -85,7 +85,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void register(PolyphenyConnectionProperties connectionProperties) throws ProtoInterfaceServiceException {
+    public ConnectionReply register(PolyphenyConnectionProperties connectionProperties) throws ProtoInterfaceServiceException {
         try {
             ConnectionRequest.Builder requestBuilder = ConnectionRequest.newBuilder();
             Optional.ofNullable(connectionProperties.getUsername()).ifPresent(requestBuilder::setUsername);
@@ -100,6 +100,7 @@ public class ProtoInterfaceClient {
                 throw new ProtoInterfaceServiceException("client version " + getClientApiVersionString()
                         + "not compatible with server version " + getServerApiVersionString(connectionReply) + ".");
             }
+            return connectionReply;
         } catch (Exception e) {
             throw new ProtoInterfaceServiceException(e.getMessage());
         }

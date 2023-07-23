@@ -31,6 +31,8 @@ public class PolyphenyConnection implements Connection {
 
     private HashSet<Statement> openStatements;
 
+    private final Timer heartbeatTimer;
+
     @Getter
     private Map<String, Class<?>> typeMap;
 
@@ -55,11 +57,26 @@ public class PolyphenyConnection implements Connection {
     }
 
 
-    public PolyphenyConnection(PolyphenyConnectionProperties connectionProperties, PolyphenyDatabaseMetadata databaseMetaData ) {
+    public PolyphenyConnection(PolyphenyConnectionProperties connectionProperties,
+                               PolyphenyDatabaseMetadata databaseMetaData,
+                               long heartbeatInterval) {
+
         this.properties = connectionProperties;
         databaseMetaData.setConnection( this );
         this.databaseMetaData = databaseMetaData;
         openStatements = new HashSet<>();
+        this.heartbeatTimer = new Timer();
+        heartbeatTimer.schedule(createNewHeartbeatTask(), 0, heartbeatInterval);
+    }
+
+    private TimerTask createNewHeartbeatTask() {
+        Runnable runnable = () -> getProtoInterfaceClient().checkConnection(properties.getNetworkTimeout());
+        return new TimerTask() {
+            @Override
+            public void run() {
+                runnable.run();
+            }
+        };
     }
 
     public void removeStatementFromOpen(Statement statement) {
@@ -403,7 +420,8 @@ public class PolyphenyConnection implements Connection {
         if ( timeout < 0 ) {
             throw new SQLException( "Illegal argument for timeout" );
         }
-        return getProtoInterfaceClient().checkConnection( timeout );
+        // the proto-interface uses milliseconds for timeouts, jdbc uses seconds
+        return getProtoInterfaceClient().checkConnection( timeout * 1000);
     }
 
 
