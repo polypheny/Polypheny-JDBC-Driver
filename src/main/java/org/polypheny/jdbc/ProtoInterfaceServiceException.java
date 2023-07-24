@@ -1,6 +1,9 @@
 package org.polypheny.jdbc;
 
+import io.grpc.Metadata;
+import io.grpc.protobuf.ProtoUtils;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.Optional;
 import org.polypheny.jdbc.proto.ErrorDetails;
 
@@ -20,6 +23,19 @@ import org.polypheny.jdbc.proto.ErrorDetails;
  * limitations under the License.
  */
 public class ProtoInterfaceServiceException extends SQLException{
+    public static final Metadata.Key<ErrorDetails> ERROR_DETAILS_KEY = ProtoUtils.keyForProto( ErrorDetails.getDefaultInstance() );
+
+    public static ProtoInterfaceServiceException fromMetadata(Metadata metadata) throws ProtoInterfaceServiceException {
+        if (metadata == null) {
+            throw new ProtoInterfaceServiceException("Metadata must not be null");
+        }
+        if (!metadata.containsKey( ERROR_DETAILS_KEY )) {
+            throw new ProtoInterfaceServiceException("Metadata must contain error destails");
+        }
+        ErrorDetails errorDetails = metadata.get( ERROR_DETAILS_KEY );
+        return new ProtoInterfaceServiceException( Objects.requireNonNull( errorDetails ));
+    }
+
     public ProtoInterfaceServiceException( String reason, String state, int errorCode ) {
         super( reason, state, errorCode );
     }
