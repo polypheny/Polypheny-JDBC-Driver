@@ -116,7 +116,6 @@ public class ProtoValueSerializer {
                 break;
             case Types.ROWID:
                 return serializeAsProtoRowId(typedValue);
-                break;
             case Types.NCLOB:
                 // TODO TH: find something useful to do here...
                 break;
