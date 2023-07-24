@@ -132,7 +132,7 @@ public class PolyphenyConnectionProperties {
 
 
     private void sync() {
-        protoInterfaceClient.setConnectionProperties(this);
+        protoInterfaceClient.setConnectionProperties(this, getNetworkTimeout());
     }
 
 

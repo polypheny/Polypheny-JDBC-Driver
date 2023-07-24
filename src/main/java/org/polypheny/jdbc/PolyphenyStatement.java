@@ -61,10 +61,14 @@ public class PolyphenyStatement implements Statement {
             currentResult.close();
         }
         if (statementId != NO_STATEMENT_ID) {
-            getClient().closeStatement(statementId);
+            getClient().closeStatement(statementId, getTimeout());
         }
         currentResult = null;
         currentUpdateCount = NO_UPDATE_COUNT;
+    }
+
+    protected int getTimeout() throws SQLException {
+        return Math.min( getConnection().getNetworkTimeout(), properties.getQueryTimeoutSeconds());
     }
 
 
@@ -95,7 +99,7 @@ public class PolyphenyStatement implements Statement {
         discardStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement(properties, statement, callback);
+            getClient().executeUnparameterizedStatement(properties, statement, callback, getTimeout());
             while (true) {
                 StatementStatus status = callback.takeNext();
                 if (!hasStatementId()) {
@@ -126,7 +130,7 @@ public class PolyphenyStatement implements Statement {
         discardStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement(properties, statement, callback);
+            getClient().executeUnparameterizedStatement(properties, statement, callback, getTimeout());
             while (true) {
                 StatementStatus status = callback.takeNext();
                 if (!hasStatementId()) {
@@ -155,7 +159,7 @@ public class PolyphenyStatement implements Statement {
         }
         isClosed = true;
         polyphenyConnection.removeStatementFromOpen(this);
-        getClient().closeStatement(statementId);
+        getClient().closeStatement(statementId, getTimeout());
     }
 
 
@@ -257,7 +261,7 @@ public class PolyphenyStatement implements Statement {
         discardStatementId();
         CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatement(properties, statement, callback);
+            getClient().executeUnparameterizedStatement(properties, statement, callback, getTimeout());
             while (true) {
                 StatementStatus status = callback.takeNext();
                 if (!hasStatementId()) {
@@ -395,7 +399,7 @@ public class PolyphenyStatement implements Statement {
         discardStatementId();
         CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
         try {
-            getClient().executeUnparameterizedStatementBatch(properties, statementBatch, callback);
+            getClient().executeUnparameterizedStatementBatch(properties, statementBatch, callback, getTimeout());
             while (true) {
                 StatementBatchStatus status = callback.takeNext();
                 if (!hasStatementId()) {

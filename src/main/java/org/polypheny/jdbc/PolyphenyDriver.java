@@ -42,7 +42,7 @@ public class PolyphenyDriver implements java.sql.Driver {
             PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
             PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata(protoInterfaceClient, connectionString);
             try {
-                ConnectionReply connectionReply = protoInterfaceClient.register(connectionProperties);
+                ConnectionReply connectionReply = protoInterfaceClient.register(connectionProperties, connectionProperties.getNetworkTimeout());
                 if (connectionReply.hasHeartbeatInterval()) {
                     return new PolyphenyConnection(connectionProperties, databaseMetadata, connectionReply.getHeartbeatInterval());
                 }

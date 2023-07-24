@@ -1,22 +1,39 @@
 package org.polypheny.jdbc;
 
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
-
 import io.grpc.StatusRuntimeException;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Executor;
 import lombok.Getter;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
-import org.polypheny.jdbc.proto.UserDefinedType;
-import org.polypheny.jdbc.proto.UserDefinedTypesRequest;
 import org.polypheny.jdbc.types.PolyphenyArray;
 import org.polypheny.jdbc.types.PolyphenyBlob;
 import org.polypheny.jdbc.types.PolyphenyClob;
-import org.polypheny.jdbc.properties.PropertyUtils;
 
 public class PolyphenyConnection implements Connection {
 
@@ -33,6 +50,7 @@ public class PolyphenyConnection implements Connection {
 
     @Getter
     private Map<String, Class<?>> typeMap;
+
 
     private void throwIfClosed() throws SQLException {
         if ( isClosed ) {
@@ -54,8 +72,10 @@ public class PolyphenyConnection implements Connection {
         }
     }
 
-    public PolyphenyConnection(PolyphenyConnectionProperties connectionProperties,
-                               PolyphenyDatabaseMetadata databaseMetaData) {
+
+    public PolyphenyConnection(
+            PolyphenyConnectionProperties connectionProperties,
+            PolyphenyDatabaseMetadata databaseMetaData ) {
 
         this.properties = connectionProperties;
         databaseMetaData.setConnection( this );
@@ -63,17 +83,20 @@ public class PolyphenyConnection implements Connection {
         openStatements = new HashSet<>();
     }
 
-    public PolyphenyConnection(PolyphenyConnectionProperties connectionProperties,
-                               PolyphenyDatabaseMetadata databaseMetaData,
-                               long heartbeatInterval) {
 
-        this(connectionProperties, databaseMetaData);
+    public PolyphenyConnection(
+            PolyphenyConnectionProperties connectionProperties,
+            PolyphenyDatabaseMetadata databaseMetaData,
+            long heartbeatInterval ) {
+
+        this( connectionProperties, databaseMetaData );
         Timer heartbeatTimer = new Timer();
-        heartbeatTimer.schedule(createNewHeartbeatTask(), 0, heartbeatInterval);
+        heartbeatTimer.schedule( createNewHeartbeatTask(), 0, heartbeatInterval );
     }
 
+
     private TimerTask createNewHeartbeatTask() {
-        Runnable runnable = () -> getProtoInterfaceClient().checkConnection(properties.getNetworkTimeout());
+        Runnable runnable = () -> getProtoInterfaceClient().checkConnection( properties.getNetworkTimeout() );
         return new TimerTask() {
             @Override
             public void run() {
@@ -82,12 +105,14 @@ public class PolyphenyConnection implements Connection {
         };
     }
 
-    public void removeStatementFromOpen(Statement statement) {
-        if (!openStatements.contains(statement)) {
+
+    public void removeStatementFromOpen( Statement statement ) {
+        if ( !openStatements.contains( statement ) ) {
             return;
         }
-        openStatements.remove(statement);
+        openStatements.remove( statement );
     }
+
 
     public ProtoInterfaceClient getProtoInterfaceClient() {
         return properties.getProtoInterfaceClient();
@@ -98,16 +123,16 @@ public class PolyphenyConnection implements Connection {
     public Statement createStatement() throws SQLException {
         throwIfClosed();
         PolyphenyStatement statement = new PolyphenyStatement( this, properties.toStatementProperties() );
-        openStatements.add(statement);
+        openStatements.add( statement );
         return statement;
     }
 
 
     @Override
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql, getNetworkTimeout() );
         PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, properties.toStatementProperties(), signature );
-        openStatements.add(statement);
+        openStatements.add( statement );
         return statement;
     }
 
@@ -149,7 +174,7 @@ public class PolyphenyConnection implements Connection {
         throwIfClosed();
         throwIfAutoCommit();
         try {
-            getProtoInterfaceClient().commitTransaction();
+            getProtoInterfaceClient().commitTransaction( getNetworkTimeout() );
             hasRunningTransaction = false;
         } catch ( ProtoInterfaceServiceException e ) {
             throw new SQLException( e );
@@ -161,17 +186,17 @@ public class PolyphenyConnection implements Connection {
     public void rollback() throws SQLException {
         throwIfClosed();
         throwIfAutoCommit();
-        getProtoInterfaceClient().rollbackTransaction();
+        getProtoInterfaceClient().rollbackTransaction( getNetworkTimeout() );
     }
 
 
     @Override
     public void close() throws SQLException {
-        List<Statement> statements = new ArrayList<>(openStatements);
-        for (Statement statement : statements) {
+        List<Statement> statements = new ArrayList<>( openStatements );
+        for ( Statement statement : statements ) {
             statement.close();
         }
-        getProtoInterfaceClient().unregister();
+        getProtoInterfaceClient().unregister( properties.getNetworkTimeout() );
         isClosed = true;
     }
 
@@ -209,7 +234,7 @@ public class PolyphenyConnection implements Connection {
     public void setCatalog( String catalog ) throws SQLException {
         throwIfClosed();
         // does nothing - just there for consistency
-        properties.setCatalogName(catalog);
+        properties.setCatalogName( catalog );
     }
 
 
@@ -263,7 +288,7 @@ public class PolyphenyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql, getNetworkTimeout() );
         return new PolyphenyPreparedStatement( this, statementProperties, signature );
 
     }
@@ -341,7 +366,7 @@ public class PolyphenyConnection implements Connection {
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatement statement = new PolyphenyStatement( this, statementProperties );
-        openStatements.add(statement);
+        openStatements.add( statement );
         return statement;
     }
 
@@ -351,9 +376,9 @@ public class PolyphenyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql, getNetworkTimeout() );
         PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
-        openStatements.add(statement);
+        openStatements.add( statement );
         return statement;
     }
 
@@ -424,28 +449,28 @@ public class PolyphenyConnection implements Connection {
             throw new SQLException( "Illegal argument for timeout" );
         }
         // the proto-interface uses milliseconds for timeouts, jdbc uses seconds
-        return getProtoInterfaceClient().checkConnection( timeout * 1000);
+        return getProtoInterfaceClient().checkConnection( timeout * 1000 );
     }
 
 
     @Override
     public void setClientInfo( String name, String value ) throws SQLClientInfoException {
-        Properties properties = getClientInfo();
-        properties.setProperty(name, value);
-        getProtoInterfaceClient().setClientInfoProperties(properties);
+        Properties clientInfoProperties = getClientInfo();
+        clientInfoProperties.setProperty( name, value );
+        getProtoInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout()  );
 
     }
 
 
     @Override
-    public void setClientInfo( Properties properties ) throws SQLClientInfoException {
-        getProtoInterfaceClient().setClientInfoProperties(properties);
+    public void setClientInfo( Properties clientInfoProperties ) throws SQLClientInfoException {
+        getProtoInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
     }
 
 
     @Override
     public String getClientInfo( String name ) throws SQLException {
-        return getClientInfo().getProperty(name);
+        return getClientInfo().getProperty( name );
     }
 
 
@@ -453,9 +478,9 @@ public class PolyphenyConnection implements Connection {
     public Properties getClientInfo() throws SQLClientInfoException {
         try {
             Properties properties = new Properties();
-            properties.putAll(getProtoInterfaceClient().getClientInfoProperties());
+            properties.putAll( getProtoInterfaceClient().getClientInfoProperties( getNetworkTimeout() ) );
             return properties;
-        } catch (StatusRuntimeException e) {
+        } catch ( StatusRuntimeException | SQLException e ) {
             throw new SQLClientInfoException();
         }
     }
@@ -484,7 +509,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public void setSchema( String schema ) throws SQLException {
         throwIfClosed();
-        properties.setNamespaceName(schema);
+        properties.setNamespaceName( schema );
     }
 
 
@@ -524,17 +549,18 @@ public class PolyphenyConnection implements Connection {
 
 
     @Override
-    public <T> T unwrap(Class<T> aClass) throws SQLException {
-        if (aClass.isInstance(this)) {
-            return aClass.cast(this);
+    public <T> T unwrap( Class<T> aClass ) throws SQLException {
+        if ( aClass.isInstance( this ) ) {
+            return aClass.cast( this );
         }
-        throw new SQLException("Not a wrapper for " + aClass);
+        throw new SQLException( "Not a wrapper for " + aClass );
     }
 
 
     @Override
-    public boolean isWrapperFor(Class<?> aClass) {
-        return aClass.isInstance(this);
+    public boolean isWrapperFor( Class<?> aClass ) {
+        return aClass.isInstance( this );
 
     }
+
 }

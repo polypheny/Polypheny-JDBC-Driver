@@ -45,9 +45,8 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public ResultSet executeQuery() throws SQLException {
         throwIfClosed();
-        int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executeIndexedStatement(timeout, statementId, parameters);
+            StatementResult result = getClient().executeIndexedStatement(statementId, parameters, getTimeout());
             closeCurrentResult();
             if (!result.hasFrame()) {
                 throw new SQLException("Statement must produce a single ResultSet");
@@ -67,7 +66,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executeIndexedStatement(timeout, statementId, parameters);
+            StatementResult result = getClient().executeIndexedStatement(statementId, parameters, getTimeout());
             closeCurrentResult();
             if (result.hasFrame()) {
                 throw new SQLException("Statement must not produce a ResultSet");
@@ -277,7 +276,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         int timeout = properties.getQueryTimeoutSeconds();
         try {
-            StatementResult result = getClient().executeIndexedStatement(timeout, statementId, parameters);
+            StatementResult result = getClient().executeIndexedStatement(statementId, parameters, getTimeout());
             closeCurrentResult();
             if (!result.hasFrame()) {
                 currentUpdateCount = result.getScalar();
@@ -325,10 +324,9 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
         discardStatementId();
-        int timeout = properties.getQueryTimeoutSeconds();
         CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
         try {
-            StatementBatchStatus status = getClient().executeIndexedStatementBatch(timeout, statementId, parameterBatch);
+            StatementBatchStatus status = getClient().executeIndexedStatementBatch(statementId, parameterBatch, getTimeout());
             return status.getScalarsList();
         } catch (ProtoInterfaceServiceException e) {
             throw new SQLException(e.getMessage());

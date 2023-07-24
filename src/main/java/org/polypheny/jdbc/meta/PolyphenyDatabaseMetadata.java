@@ -59,8 +59,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     }
 
 
-    private void fetchDbmsVersionInfo() {
-        DbmsVersionResponse response = protoInterfaceClient.getDbmsVersion();
+    private void fetchDbmsVersionInfo() throws SQLException {
+        DbmsVersionResponse response = protoInterfaceClient.getDbmsVersion(getConnection().getNetworkTimeout());
         productName = response.getDbmsName();
         productVersion = response.getVersionName();
         databaseMinorVersion = response.getMinorVersion();
@@ -238,31 +238,31 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        return protoInterfaceClient.getSqlKeywords();
+        return protoInterfaceClient.getSqlKeywords(getConnection().getNetworkTimeout());
     }
 
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        return protoInterfaceClient.getSqlNumericFunctions();
+        return protoInterfaceClient.getSqlNumericFunctions(getConnection().getNetworkTimeout());
     }
 
 
     @Override
     public String getStringFunctions() throws SQLException {
-        return protoInterfaceClient.getSqlStringFunctions();
+        return protoInterfaceClient.getSqlStringFunctions(getConnection().getNetworkTimeout());
     }
 
 
     @Override
     public String getSystemFunctions() throws SQLException {
-        return protoInterfaceClient.getSqlSystemFunctions();
+        return protoInterfaceClient.getSqlSystemFunctions(getConnection().getNetworkTimeout());
     }
 
 
     @Override
     public String getTimeDateFunctions() throws SQLException {
-        return protoInterfaceClient.getSqlTimeDateFunctions();
+        return protoInterfaceClient.getSqlTimeDateFunctions(getConnection().getNetworkTimeout());
     }
 
 
@@ -799,7 +799,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern) throws SQLException {
         throwNotSupportedIfStrict();
-        List<Procedure> procedures = protoInterfaceClient.searchProcedures("sql", procedureNamePattern);
+        List<Procedure> procedures = protoInterfaceClient.searchProcedures("sql", procedureNamePattern, getConnection().getNetworkTimeout());
         return MetaResultSetBuilder.buildFromProcedures(procedures);
     }
 
@@ -843,7 +843,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getCatalogs() throws SQLException {
         try {
-            List<Database> databases = protoInterfaceClient.getDatabases();
+            List<Database> databases = protoInterfaceClient.getDatabases(getConnection().getNetworkTimeout());
             return MetaResultSetBuilder.buildFromDatabases(databases);
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
@@ -854,7 +854,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getTableTypes() throws SQLException {
         try {
-            List<TableType> tableTypes = protoInterfaceClient.getTablesTypes();
+            List<TableType> tableTypes = protoInterfaceClient.getTablesTypes(getConnection().getNetworkTimeout());
             return MetaResultSetBuilder.buildFromTableTypes(tableTypes);
         } catch (StatusRuntimeException e) {
             throw new SQLException(e.getMessage());
@@ -865,9 +865,15 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
         try {
-            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name())
+            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout())
                     .stream()
-                    .map(n -> getMatchingColumns(n, tableNamePattern, columnNamePattern))
+                    .map(n -> {
+                        try {
+                            return getMatchingColumns(n, tableNamePattern, columnNamePattern);
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } )
                     .flatMap(List::stream)
                     .collect(Collectors.toList());
             return MetaResultSetBuilder.buildFromColumns(columns);
@@ -876,8 +882,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         }
     }
 
-    private List<Column> getMatchingColumns(Namespace namespace, String tableNamePattern, String columnNamePattern) {
-        Stream<Column> columnStream = protoInterfaceClient.searchEntities(namespace.getNamespaceName(), tableNamePattern).stream()
+    private List<Column> getMatchingColumns(Namespace namespace, String tableNamePattern, String columnNamePattern) throws SQLException {
+        Stream<Column> columnStream = protoInterfaceClient.searchEntities(namespace.getNamespaceName(), tableNamePattern, getConnection().getNetworkTimeout()).stream()
                 .filter(Entity::hasTable)
                 .map(Entity::getTable)
                 .map(Table::getColumnsList)
@@ -907,9 +913,15 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
          */
         throwNotSupportedIfStrict();
         try {
-            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name())
+            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout())
                     .stream()
-                    .map(n -> getMatchingColumns(n, tableNamePattern, columnNamePattern))
+                    .map(n -> {
+                        try {
+                            return getMatchingColumns(n, tableNamePattern, columnNamePattern);
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } )
                     .flatMap(List::stream)
                     .collect(Collectors.toList());
             return MetaResultSetBuilder.buildFromColumnPrivileges(columns, getUserName());
@@ -994,11 +1006,17 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         return MetaResultSetBuilder.buildFromExportedKeys(exportedKeys);
     }
 
-    private Stream<Table> getTableStream(String namespace, String table) {
-        return protoInterfaceClient.searchNamespaces(namespace, MetaUtils.NamespaceTypes.RELATIONAL.name())
+    private Stream<Table> getTableStream(String namespace, String table) throws SQLException {
+        return protoInterfaceClient.searchNamespaces(namespace, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout())
                 .stream()
                 .map(Namespace::getNamespaceName)
-                .map(name -> protoInterfaceClient.searchEntities(name, table))
+                .map(name -> {
+                    try {
+                        return protoInterfaceClient.searchEntities(name, table, getConnection().getNetworkTimeout());
+                    } catch ( SQLException e ) {
+                        throw new RuntimeException( e );
+                    }
+                } )
                 .flatMap(List::stream)
                 .filter(Entity::hasTable)
                 .map(Entity::getTable);
@@ -1037,7 +1055,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
-        List<Type> types = protoInterfaceClient.getTypes();
+        List<Type> types = protoInterfaceClient.getTypes(getConnection().getNetworkTimeout());
         return MetaResultSetBuilder.buildFromTypes(types);
     }
 
@@ -1134,7 +1152,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types) throws SQLException {
         throwNotSupportedIfStrict();
-        List<UserDefinedType> userDefinedTypes = protoInterfaceClient.getUserDefinedTypes();
+        List<UserDefinedType> userDefinedTypes = protoInterfaceClient.getUserDefinedTypes(getConnection().getNetworkTimeout());
         return MetaResultSetBuilder.buildFromUserDefinedTypes(userDefinedTypes);
     }
 
@@ -1260,7 +1278,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
-        List<Namespace> namespaces = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name());
+        List<Namespace> namespaces = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout());
         return MetaResultSetBuilder.buildFromNamespaces(namespaces);
     }
 
@@ -1279,14 +1297,14 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getClientInfoProperties() throws SQLException {
-        List<ClientInfoPropertyMeta> metas = protoInterfaceClient.getClientInfoPropertyMetas();
+        List<ClientInfoPropertyMeta> metas = protoInterfaceClient.getClientInfoPropertyMetas(getConnection().getNetworkTimeout());
         return MetaResultSetBuilder.buildFromClientInfoPropertyMetas(metas);
     }
 
 
     @Override
     public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) throws SQLException {
-        List<Function> functions = protoInterfaceClient.searchFunctions("sql", "SYSTEM")
+        List<Function> functions = protoInterfaceClient.searchFunctions("sql", "SYSTEM", getConnection().getNetworkTimeout())
                 .stream()
                 .filter(f -> f.getName().matches(MetaUtils.convertToRegex(functionNamePattern)))
                 .collect(Collectors.toList());
@@ -1304,9 +1322,15 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
         try {
-            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name())
+            List<Column> columns = protoInterfaceClient.searchNamespaces(schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout())
                     .stream()
-                    .map(n -> getMatchingColumns(n, tableNamePattern, columnNamePattern))
+                    .map(n -> {
+                        try {
+                            return getMatchingColumns(n, tableNamePattern, columnNamePattern);
+                        } catch ( SQLException e ) {
+                            throw new RuntimeException( e );
+                        }
+                    } )
                     .flatMap(List::stream)
                     .filter(Column::getIsHidden)
                     .collect(Collectors.toList());

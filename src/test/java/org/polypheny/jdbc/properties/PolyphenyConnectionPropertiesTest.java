@@ -139,7 +139,7 @@ public class PolyphenyConnectionPropertiesTest {
         connectionProperties.setNamespaceName(namespaceName);
 
         assertEquals(namespaceName, connectionProperties.getNamespaceName());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
@@ -150,7 +150,7 @@ public class PolyphenyConnectionPropertiesTest {
         connectionProperties.setCatalogName(catalogName);
 
         assertEquals(catalogName, connectionProperties.getCatalogName());
-        verify(protoInterfaceClient, times(0)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(0)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
@@ -177,7 +177,7 @@ public class PolyphenyConnectionPropertiesTest {
         }
 
         assertEquals(transactionIsolation, connectionProperties.getTransactionIsolation());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
@@ -187,7 +187,7 @@ public class PolyphenyConnectionPropertiesTest {
 
         connectionProperties.setNetworkTimeout(networkTimeout);
 
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
         assertEquals(connectionProperties.getNetworkTimeout(), networkTimeout);
     }
 
@@ -214,7 +214,7 @@ public class PolyphenyConnectionPropertiesTest {
 
         assertEquals(ResultSet.CLOSE_CURSORS_AT_COMMIT, connectionProperties.getResultSetHoldability());
 
-        verify(protoInterfaceClient, times(0)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(0)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
 
@@ -224,7 +224,7 @@ public class PolyphenyConnectionPropertiesTest {
         connectionProperties.setReadOnly(false);
 
         assertFalse(connectionProperties.isReadOnly());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
@@ -233,7 +233,7 @@ public class PolyphenyConnectionPropertiesTest {
         connectionProperties.setReadOnly(true);
 
         assertTrue(connectionProperties.isReadOnly());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
 
@@ -243,7 +243,7 @@ public class PolyphenyConnectionPropertiesTest {
         connectionProperties.setAutoCommit(false);
 
         assertFalse(connectionProperties.isAutoCommit());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
@@ -252,6 +252,6 @@ public class PolyphenyConnectionPropertiesTest {
         connectionProperties.setAutoCommit(true);
 
         assertTrue(connectionProperties.isAutoCommit());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties);
+        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 }

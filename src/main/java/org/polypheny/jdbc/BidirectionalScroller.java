@@ -22,9 +22,9 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
     int currentIndex;
 
 
-    public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties ) {
+    public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties, int fetchTimeout ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
-        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size() );
+        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.currentIndex = INDEX_BEFORE_FIRST;
         this.properties = properties;

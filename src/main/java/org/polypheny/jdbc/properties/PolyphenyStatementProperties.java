@@ -114,18 +114,18 @@ public class PolyphenyStatementProperties {
         syncIfStatementPresent();
     }
 
-    public void setDoesEscapeProcessing(boolean doesEscapeProcessing) {
+    public void setDoesEscapeProcessing(boolean doesEscapeProcessing) throws SQLException {
         this.doesEscapeProcessing = doesEscapeProcessing;
         syncIfStatementPresent();
     }
 
-    public void setIsPoolable(boolean isPoolable) {
+    public void setIsPoolable(boolean isPoolable) throws SQLException {
         this.isPoolable = isPoolable;
         syncIfStatementPresent();
     }
 
 
-    private void syncIfStatementPresent(){
+    private void syncIfStatementPresent() throws SQLException {
         if (polyphenyStatement == null) {
             // bypass sync during construction
             return;
@@ -134,7 +134,7 @@ public class PolyphenyStatementProperties {
             // no statement on serverside that could hold the properties
             return;
         }
-        protoInterfaceClient.setStatementProperties(this, polyphenyStatement.getStatementId());
+        protoInterfaceClient.setStatementProperties(this, polyphenyStatement.getStatementId(), polyphenyStatement.getQueryTimeout());
     }
 
     public ResultSetProperties toResultSetProperties() {

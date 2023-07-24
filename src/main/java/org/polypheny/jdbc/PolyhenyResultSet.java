@@ -45,9 +45,9 @@ public class PolyhenyResultSet implements ResultSet {
         this.statement = statement;
         this.metadata = new PolyphenyResultSetMetadata(frame.getRelationalFrame().getColumnMetaList());
         if (properties.getResultSetType() == ResultSet.TYPE_FORWARD_ONLY) {
-            this.resultScroller = new ForwardOnlyScroller(frame, getClient(), statement.getStatementId(), properties);
+            this.resultScroller = new ForwardOnlyScroller(frame, getClient(), statement.getStatementId(), properties, statement.getConnection().getNetworkTimeout());
         } else {
-            this.resultScroller = new BidirectionalScroller(frame, getClient(), statement.getStatementId(), properties);
+            this.resultScroller = new BidirectionalScroller(frame, getClient(), statement.getStatementId(), properties, statement.getConnection().getNetworkTimeout());
         }
         this.bidirectionScrollerClass = BidirectionalScroller.class;
         this.properties = properties;
