@@ -34,6 +34,7 @@ public class ProtoValueDeserializer {
                     .put( ValueCase.PATH, new PathDeserializer() )
                     .put( ValueCase.GRAPH, new GraphDeserializer() )
                     .put( ValueCase.ARRAY, new ArrayDeserializer() )
+                    .put( ValueCase.ROWID, new RowIfDeserializer())
                     .build();
 
 

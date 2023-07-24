@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.jdbc.ResultRow;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.deserialization.ProtoValueDeserializer;
 import org.polypheny.jdbc.proto.ProtoValue;
@@ -210,19 +209,17 @@ public class TypedValueUtils {
     }
 
 
-    public static List<ResultRow> buildRows( List<Row> rows ) {
+    public static List<ArrayList<TypedValue>> buildRows( List<Row> rows ) {
         return rows.stream()
                 .map( TypedValueUtils::buildRow )
                 .collect( Collectors.toList() );
     }
 
 
-    public static ResultRow buildRow( Row row ) {
-        ArrayList<TypedValue> values = row.getValuesList().stream()
+    public static ArrayList<TypedValue> buildRow( Row row ) {
+        return row.getValuesList().stream()
                 .map( ProtoValueDeserializer::deserialize )
                 .collect( toCollection( ArrayList::new ) );
-        TypedValue rowId = TypedValue.fromRowId( new PolyphenyRowId( row.getRowId() ) );
-        return new ResultRow( values, rowId );
     }
 
 

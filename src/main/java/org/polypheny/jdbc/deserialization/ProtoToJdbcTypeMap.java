@@ -67,6 +67,7 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoValueType.MULTISET, Types.ARRAY )
                     .put( ProtoValueType.ANY, Types.JAVA_OBJECT )
                     .put( ProtoValueType.USER_DEFINED_TYPE, Types.OTHER )
+                    .put( ProtoValueType.ROW, Types.ROWID)
                     .build();
 
 

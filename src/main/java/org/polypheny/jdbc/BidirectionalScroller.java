@@ -24,7 +24,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
     public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
-        this.resultFetcher = new ResultFetcher( client, statementId, properties );
+        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size() );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.currentIndex = INDEX_BEFORE_FIRST;
         this.properties = properties;
