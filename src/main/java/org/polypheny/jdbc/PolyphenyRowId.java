@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc.utils;
+package org.polypheny.jdbc;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.RowId;
 
 public class PolyphenyRowId implements RowId {
-    long rowId;
+    String rowId;
 
-    public PolyphenyRowId( long rowId ) {
+    public PolyphenyRowId( String rowId ) {
         this.rowId = rowId;
     }
 
 
     @Override
     public byte[] getBytes() {
-        return new byte[0];
+        return rowId.getBytes( StandardCharsets.UTF_8 );
     }
 
     @Override
     public String toString() {
-        return String.valueOf( rowId );
+        return rowId;
     }
 
 }

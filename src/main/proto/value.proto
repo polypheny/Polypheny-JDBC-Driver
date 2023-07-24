@@ -261,5 +261,5 @@ message ProtoGraphPropertyHolder {
 }
 
 message ProtoRowId {
-  int64 rowId = 1;
+  string rowId = 1;
 }

@@ -2,12 +2,16 @@ package org.polypheny.jdbc.serialisation;
 
 import com.google.protobuf.ByteString;
 import java.math.BigDecimal;
+import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.polypheny.jdbc.proto.ProtoArray;
 import org.polypheny.jdbc.proto.ProtoBigDecimal;
 import org.polypheny.jdbc.proto.ProtoBinary;
 import org.polypheny.jdbc.proto.ProtoBoolean;
@@ -17,6 +21,7 @@ import org.polypheny.jdbc.proto.ProtoFloat;
 import org.polypheny.jdbc.proto.ProtoInteger;
 import org.polypheny.jdbc.proto.ProtoLong;
 import org.polypheny.jdbc.proto.ProtoNull;
+import org.polypheny.jdbc.proto.ProtoRowId;
 import org.polypheny.jdbc.proto.ProtoString;
 import org.polypheny.jdbc.proto.ProtoTime;
 import org.polypheny.jdbc.proto.ProtoTime.TimeUnit;
@@ -81,6 +86,8 @@ public class ProtoValueSerializer {
             case Types.BINARY:
             case Types.VARBINARY:
             case Types.LONGVARBINARY:
+            case Types.BLOB:
+                // requires getter conversions to work propertly...
                 return serializeAsProtoBinary( typedValue );
             case Types.NULL:
                 return serializeAsProtoNull( typedValue );
@@ -97,12 +104,7 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
             case Types.ARRAY:
-                serializeAsProtoArray(typedValue);
-                break;
-            case Types.BLOB:
-                // requires getter conversions to work propertly...
-                serializeAsProtoBinary( typedValue );
-                break;
+                return serializeAsProtoArray(typedValue);
             case Types.CLOB:
                 // TODO TH: find something useful to do here...
                 break;
@@ -113,7 +115,7 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
             case Types.ROWID:
-                // TODO TH: find something useful to do here...
+                return serializeAsProtoRowId(typedValue);
                 break;
             case Types.NCLOB:
                 // TODO TH: find something useful to do here...
@@ -135,8 +137,29 @@ public class ProtoValueSerializer {
     }
 
 
-    private static void serializeAsProtoArray( TypedValue typedValue ) {
-        //
+    private static ProtoValue serializeAsProtoRowId( TypedValue typedValue ) throws SQLException {
+        ProtoRowId protoRowId = ProtoRowId.newBuilder()
+                .setRowId( typedValue.asRowId().toString() )
+                .build();
+        return ProtoValue.newBuilder()
+                .setRowId( protoRowId )
+                .setType(getType( typedValue ) )
+                .build();
+    }
+
+
+    private static ProtoValue serializeAsProtoArray( TypedValue typedValue ) throws SQLException {
+        List<ProtoValue> elements = new ArrayList<>();
+        for (Object object : (Object[])typedValue.asArray().getArray()) {
+            elements.add( ProtoValueSerializer.serialize(TypedValue.fromObject( object )));
+        }
+        ProtoArray protoArray = ProtoArray.newBuilder()
+                .addAllElements( elements )
+                .build();
+        return ProtoValue.newBuilder()
+                .setArray( protoArray )
+                .setType( getType( typedValue ) )
+                .build();
     }
 
 

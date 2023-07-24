@@ -44,7 +44,7 @@ public class JdbcToProtoTypeMap {
                     .put( Types.CLOB, ProtoValueType.BINARY )
                     .put( Types.REF, ProtoValueType.UNSPECIFIED )
                     .put( Types.DATALINK, ProtoValueType.UNSPECIFIED )
-                    .put( Types.ROWID, ProtoValueType.UNSPECIFIED )
+                    .put( Types.ROWID, ProtoValueType.ROW_ID )
                     .put( Types.NCLOB, ProtoValueType.BINARY )
                     .put( Types.SQLXML, ProtoValueType.UNSPECIFIED )
                     .put( Types.REF_CURSOR, ProtoValueType.UNSPECIFIED )

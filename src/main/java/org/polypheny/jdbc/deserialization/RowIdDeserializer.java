@@ -22,9 +22,9 @@ import java.sql.Types;
 import org.polypheny.jdbc.proto.ProtoRowId;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.types.TypedValue;
-import org.polypheny.jdbc.utils.PolyphenyRowId;
+import org.polypheny.jdbc.PolyphenyRowId;
 
-public class RowIfDeserializer implements ValueDeserializer {
+public class RowIdDeserializer implements ValueDeserializer {
 
     @Override
     public TypedValue deserialize( ProtoValue value ) throws SQLException {
