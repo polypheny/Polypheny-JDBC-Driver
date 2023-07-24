@@ -40,9 +40,14 @@ public class ResultFetcher implements Runnable {
     @Override
     public void run() {
         long fetchEnd = totalFetched + properties.getFetchSize();
-        Frame nextFrame = client.fetchResult( statementId, fetchTimeout);
+        Frame nextFrame = null;
+        try {
+            nextFrame = client.fetchResult( statementId, fetchTimeout);
+        } catch ( ProtoInterfaceServiceException e ) {
+            throw new RuntimeException( e );
+        }
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
-            throw new ProtoInterfaceServiceException( "Illegal result type." );
+            throw new RuntimeException(new ProtoInterfaceServiceException( "Illegal result type." ));
         }
         List<Row> rows = nextFrame.getRelationalFrame().getRowsList();
         if (fetchEnd > properties.getLargeMaxRows()) {

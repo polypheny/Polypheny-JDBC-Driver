@@ -1,5 +1,7 @@
 package org.polypheny.jdbc;
 
+import java.sql.SQLException;
+
 /*
  * Copyright 2019-2023 The Polypheny Project
  *
@@ -15,7 +17,7 @@ package org.polypheny.jdbc;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class ProtoInterfaceServiceException extends RuntimeException{
+public class ProtoInterfaceServiceException extends SQLException{
     public ProtoInterfaceServiceException(String message) {
         super(message);
     }

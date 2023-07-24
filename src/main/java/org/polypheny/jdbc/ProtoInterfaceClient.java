@@ -39,7 +39,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    private ProtoInterfaceGrpc.ProtoInterfaceBlockingStub getBlockingStub(int timeout) {
+    private ProtoInterfaceGrpc.ProtoInterfaceBlockingStub getBlockingStub(int timeout) throws ProtoInterfaceServiceException {
         if (timeout == 0) {
             return blockingStub;
         }
@@ -51,7 +51,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    private ProtoInterfaceGrpc.ProtoInterfaceStub getAsyncStub(int timeout) {
+    private ProtoInterfaceGrpc.ProtoInterfaceStub getAsyncStub(int timeout) throws ProtoInterfaceServiceException {
         if (timeout == 0) {
             return asyncStub;
         }
@@ -75,7 +75,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public List<String> requestSupportedLanguages(int timeout) {
+    public List<String> requestSupportedLanguages(int timeout) throws ProtoInterfaceServiceException {
         LanguageRequest languageRequest = LanguageRequest.newBuilder().build();
         try {
             return blockingStub.getSupportedLanguages(languageRequest).getLanguageNamesList();
@@ -106,7 +106,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public void unregister(int timeout) {
+    public void unregister(int timeout) throws ProtoInterfaceServiceException {
         DisconnectionRequest request = DisconnectionRequest.newBuilder().build();
         try {
             getBlockingStub( timeout ).disconnect(request);
@@ -139,7 +139,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void executeUnparameterizedStatement(PolyphenyStatementProperties properties, String statement, CallbackQueue<StatementStatus> updateCallback, int timeout) {
+    public void executeUnparameterizedStatement(PolyphenyStatementProperties properties, String statement, CallbackQueue<StatementStatus> updateCallback, int timeout) throws ProtoInterfaceServiceException {
         ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub(properties.getQueryTimeoutSeconds());
         try {
             getAsyncStub( timeout ).executeUnparameterizedStatement(buildUnparameterizedStatement(properties, statement), updateCallback);
@@ -149,7 +149,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void executeUnparameterizedStatementBatch(PolyphenyStatementProperties properties, List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback, int timeout ) {
+    public void executeUnparameterizedStatementBatch(PolyphenyStatementProperties properties, List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback, int timeout ) throws ProtoInterfaceServiceException {
         List<UnparameterizedStatement> batch = statements.
                 stream()
                 .map(s -> buildUnparameterizedStatement(properties, s))
@@ -175,7 +175,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public PreparedStatementSignature prepareIndexedStatement(String statement, int timeout) {
+    public PreparedStatementSignature prepareIndexedStatement(String statement, int timeout) throws ProtoInterfaceServiceException {
         PreparedStatement preparedStatement = PreparedStatement.newBuilder()
                 .setStatement(statement)
                 .setStatementLanguageName(SQL_LANGUAGE_NAME)
@@ -188,7 +188,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public StatementResult executeIndexedStatement(int statementId, List<TypedValue> values, int timeout) {
+    public StatementResult executeIndexedStatement(int statementId, List<TypedValue> values, int timeout) throws ProtoInterfaceServiceException {
         ParameterList parameterList = buildParameterList(values, statementId);
         try {
             return getBlockingStub(timeout).executeIndexedStatement(parameterList);
@@ -198,7 +198,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public StatementBatchStatus executeIndexedStatementBatch(int statementId, List<List<TypedValue>> parameterBatch, int timeout) {
+    public StatementBatchStatus executeIndexedStatementBatch(int statementId, List<List<TypedValue>> parameterBatch, int timeout) throws ProtoInterfaceServiceException {
         List<ParameterList> parameterLists = parameterBatch.
                 stream()
                 .map(p -> buildParameterList(p, statementId))
@@ -223,7 +223,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void commitTransaction(int timeout) {
+    public void commitTransaction(int timeout) throws ProtoInterfaceServiceException {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
         try {
             getBlockingStub( timeout ).commitTransaction(commitRequest);
@@ -232,7 +232,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public void rollbackTransaction(int timeout) {
+    public void rollbackTransaction(int timeout) throws ProtoInterfaceServiceException {
         RollbackRequest rollbackRequest = RollbackRequest.newBuilder().build();
         try {
             getBlockingStub( timeout ).rollbackTransaction(rollbackRequest);
@@ -242,7 +242,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void closeStatement(int statementId, int timeout) {
+    public void closeStatement(int statementId, int timeout) throws ProtoInterfaceServiceException {
         CloseStatementRequest request = CloseStatementRequest.newBuilder()
                 .setStatementId(statementId)
                 .build();
@@ -254,7 +254,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public Frame fetchResult(int statementId, int timeout) {
+    public Frame fetchResult(int statementId, int timeout) throws ProtoInterfaceServiceException {
         FetchRequest fetchRequest = FetchRequest.newBuilder()
                 .setStatementId(statementId)
                 .build();
@@ -277,7 +277,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public DbmsVersionResponse getDbmsVersion(int timeout) {
+    public DbmsVersionResponse getDbmsVersion(int timeout) throws ProtoInterfaceServiceException {
         DbmsVersionRequest dbmsVersionRequest = DbmsVersionRequest.newBuilder().build();
         try {
             return getBlockingStub( timeout ).getDbmsVersion(dbmsVersionRequest);
@@ -287,7 +287,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public List<Database> getDatabases(int timeout) {
+    public List<Database> getDatabases(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getDatabases(DatabasesRequest.newBuilder().build()).getDatabasesList();
         } catch (Exception e) {
@@ -295,7 +295,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas(int timeout) {
+    public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getClientInfoPropertyMetas(ClientInfoPropertyMetaRequest.newBuilder().build()).getClientInfoPropertyMetasList();
         } catch (Exception e) {
@@ -303,7 +303,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public List<Type> getTypes(int timeout) {
+    public List<Type> getTypes(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getTypes(TypesRequest.newBuilder().build()).getTypesList();
         } catch (Exception e) {
@@ -312,7 +312,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public String getSqlStringFunctions(int timeout) {
+    public String getSqlStringFunctions(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getSqlStringFunctions(SqlStringFunctionsRequest.newBuilder().build()).getString();
         } catch (Exception e) {
@@ -320,7 +320,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public String getSqlSystemFunctions(int timeout) {
+    public String getSqlSystemFunctions(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getSqlSystemFunctions(SqlSystemFunctionsRequest.newBuilder().build()).getString();
         } catch (Exception e) {
@@ -328,7 +328,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public String getSqlTimeDateFunctions(int timeout) {
+    public String getSqlTimeDateFunctions(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getSqlTimeDateFunctions(SqlTimeDateFunctionsRequest.newBuilder().build()).getString();
         } catch (Exception e) {
@@ -336,7 +336,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public String getSqlNumericFunctions(int timeout) {
+    public String getSqlNumericFunctions(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getSqlNumericFunctions(SqlNumericFunctionsRequest.newBuilder().build()).getString();
         } catch (Exception e) {
@@ -344,7 +344,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public String getSqlKeywords(int timeout) {
+    public String getSqlKeywords(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getSqlKeywords(SqlKeywordsRequest.newBuilder().build()).getString();
         } catch (Exception e) {
@@ -352,7 +352,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public void setConnectionProperties(PolyphenyConnectionProperties connectionProperties, int timeout) {
+    public void setConnectionProperties(PolyphenyConnectionProperties connectionProperties, int timeout) throws ProtoInterfaceServiceException {
         try {
             getBlockingStub( timeout ).updateConnectionProperties(buildConnectionProperties(connectionProperties));
         } catch (Exception e) {
@@ -360,7 +360,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public void setStatementProperties(PolyphenyStatementProperties statementProperties, int statementId, int timeout) {
+    public void setStatementProperties(PolyphenyStatementProperties statementProperties, int statementId, int timeout) throws ProtoInterfaceServiceException {
         try {
             getBlockingStub( timeout ).updateStatementProperties(buildStatementProperties(statementProperties, statementId));
         } catch (Exception e) {
@@ -368,7 +368,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public List<Procedure> searchProcedures(String languageName, String procedureNamePattern, int timeout) {
+    public List<Procedure> searchProcedures(String languageName, String procedureNamePattern, int timeout) throws ProtoInterfaceServiceException {
         ProceduresRequest.Builder requestBuilder = ProceduresRequest.newBuilder();
         requestBuilder.setLanguage(languageName);
         Optional.ofNullable(procedureNamePattern).ifPresent(requestBuilder::setProcedureNamePattern);
@@ -379,7 +379,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public Map<String, String> getClientInfoProperties(int timeout) {
+    public Map<String, String> getClientInfoProperties(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getClientInfoProperties(ClientInfoPropertiesRequest.newBuilder().build()).getPropertiesMap();
         } catch (Exception e) {
@@ -388,7 +388,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public List<Namespace> searchNamespaces(String schemaPattern, String protoNamespaceType, int timeout) {
+    public List<Namespace> searchNamespaces(String schemaPattern, String protoNamespaceType, int timeout) throws ProtoInterfaceServiceException {
         NamespacesRequest.Builder requestBuilder = NamespacesRequest.newBuilder();
         Optional.ofNullable(schemaPattern).ifPresent(requestBuilder::setNamespacePattern);
         Optional.ofNullable(protoNamespaceType).ifPresent(requestBuilder::setNamespaceType);
@@ -399,7 +399,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public List<Entity> searchEntities(String namespace, String entityNamePattern,int timeout) {
+    public List<Entity> searchEntities(String namespace, String entityNamePattern,int timeout) throws ProtoInterfaceServiceException {
         EntitiesRequest.Builder requestBuilder = EntitiesRequest.newBuilder();
         requestBuilder.setNamespaceName(namespace);
         Optional.ofNullable(entityNamePattern).ifPresent(requestBuilder::setEntityPattern);
@@ -410,7 +410,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public List<TableType> getTablesTypes(int timeout) {
+    public List<TableType> getTablesTypes(int timeout) throws ProtoInterfaceServiceException {
         try {
             return getBlockingStub( timeout ).getTableTypes(TableTypesRequest.newBuilder().build()).getTableTypesList();
         } catch (Exception e) {
@@ -418,7 +418,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public Namespace getNamespace(String namespaceName,int timeout) {
+    public Namespace getNamespace(String namespaceName,int timeout) throws ProtoInterfaceServiceException {
         NamespaceRequest.Builder requestBuilder = NamespaceRequest.newBuilder();
         requestBuilder.setNamespaceName(namespaceName);
         try {
@@ -428,7 +428,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public List<UserDefinedType> getUserDefinedTypes(int timeout) {
+    public List<UserDefinedType> getUserDefinedTypes(int timeout) throws ProtoInterfaceServiceException {
         UserDefinedTypesRequest.Builder requestBuilder = UserDefinedTypesRequest.newBuilder();
         try {
             return getBlockingStub( timeout ).getUserDefinedTypes(requestBuilder.build()).getUserDefinedTypesList();
@@ -437,7 +437,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public void setClientInfoProperties(Properties properties, int timeout ) {
+    public void setClientInfoProperties(Properties properties, int timeout ) throws ProtoInterfaceServiceException {
         ClientInfoProperties.Builder requestBuilder = ClientInfoProperties.newBuilder();
         properties.stringPropertyNames()
                 .forEach(s -> requestBuilder.putProperties(s, properties.getProperty(s)));
@@ -448,7 +448,7 @@ public class ProtoInterfaceClient {
         }
     }
 
-    public List<Function> searchFunctions(String languaheName, String functionCategory, int timeout) {
+    public List<Function> searchFunctions(String languaheName, String functionCategory, int timeout) throws ProtoInterfaceServiceException {
         FunctionsRequest functionsRequest = FunctionsRequest.newBuilder()
                 .setQueryLanguage(languaheName)
                 .setFunctionCategory(functionCategory)
