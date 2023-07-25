@@ -23,14 +23,17 @@ import org.polypheny.jdbc.proto.ErrorDetails;
  * limitations under the License.
  */
 public class ProtoInterfaceServiceException extends SQLException{
+    private static final String STATE_UNSPECIFIED = "UNKNOWN";
+    private static final int ERROR_UNSPECIFIED = -1;
+
     public static final Metadata.Key<ErrorDetails> ERROR_DETAILS_KEY = ProtoUtils.keyForProto( ErrorDetails.getDefaultInstance() );
 
-    public static ProtoInterfaceServiceException fromMetadata(Metadata metadata) throws ProtoInterfaceServiceException {
+    public static ProtoInterfaceServiceException fromMetadata(String message, Metadata metadata) throws ProtoInterfaceServiceException {
         if (metadata == null) {
-            throw new ProtoInterfaceServiceException("Metadata must not be null");
+            throw new ProtoInterfaceServiceException(message);
         }
         if (!metadata.containsKey( ERROR_DETAILS_KEY )) {
-            throw new ProtoInterfaceServiceException("Metadata must contain error destails");
+            throw new ProtoInterfaceServiceException(message, STATE_UNSPECIFIED, ERROR_UNSPECIFIED );
         }
         ErrorDetails errorDetails = metadata.get( ERROR_DETAILS_KEY );
         return new ProtoInterfaceServiceException( Objects.requireNonNull( errorDetails ));
@@ -80,8 +83,8 @@ public class ProtoInterfaceServiceException extends SQLException{
     public ProtoInterfaceServiceException( ErrorDetails errorDetails ) {
         super(
                 errorDetails.hasMessage() ? errorDetails.getMessage() : null,
-                errorDetails.hasState() ? errorDetails.getState() : null,
-                errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : 0
+                errorDetails.hasState() ? errorDetails.getState() : STATE_UNSPECIFIED,
+                errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : ERROR_UNSPECIFIED
         );
     }
 
