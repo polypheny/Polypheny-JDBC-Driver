@@ -88,7 +88,7 @@ public class ProtoInterfaceClient {
             this.blockingStub = ProtoInterfaceGrpc.newBlockingStub( channel );
             this.asyncStub = ProtoInterfaceGrpc.newStub( channel );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -100,7 +100,7 @@ public class ProtoInterfaceClient {
         try {
             return blockingStub.withDeadlineAfter( timeout, TimeUnit.SECONDS );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -134,7 +134,7 @@ public class ProtoInterfaceClient {
         try {
             return blockingStub.getSupportedLanguages( languageRequest ).getLanguageNamesList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -156,7 +156,7 @@ public class ProtoInterfaceClient {
             }
             return connectionReply;
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -166,7 +166,7 @@ public class ProtoInterfaceClient {
         try {
             getBlockingStub( timeout ).disconnect( request );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -201,7 +201,7 @@ public class ProtoInterfaceClient {
         try {
             getAsyncStub( timeout ).executeUnparameterizedStatement( buildUnparameterizedStatement( properties, statement ), updateCallback );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -218,7 +218,7 @@ public class ProtoInterfaceClient {
         try {
             getAsyncStub( timeout ).executeUnparameterizedStatementBatch( unparameterizedStatementBatch, updateCallback );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -240,7 +240,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).prepareIndexedStatement( preparedStatement );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -250,7 +250,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).executeIndexedStatement( parameterList );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -267,7 +267,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).executeIndexedStatementBatch( indexedParameterBatch );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -285,7 +285,7 @@ public class ProtoInterfaceClient {
         try {
             getBlockingStub( timeout ).commitTransaction( commitRequest );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -295,7 +295,7 @@ public class ProtoInterfaceClient {
         try {
             getBlockingStub( timeout ).rollbackTransaction( rollbackRequest );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -307,7 +307,7 @@ public class ProtoInterfaceClient {
         try {
             getBlockingStub( timeout ).closeStatement( request );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -319,7 +319,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).fetchResult( fetchRequest );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -340,7 +340,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getDbmsVersion( dbmsVersionRequest );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -349,7 +349,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getDatabases( DatabasesRequest.newBuilder().build() ).getDatabasesList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -358,7 +358,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getClientInfoPropertyMetas( ClientInfoPropertyMetaRequest.newBuilder().build() ).getClientInfoPropertyMetasList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -367,7 +367,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getTypes( TypesRequest.newBuilder().build() ).getTypesList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -376,7 +376,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getSqlStringFunctions( SqlStringFunctionsRequest.newBuilder().build() ).getString();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -385,7 +385,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getSqlSystemFunctions( SqlSystemFunctionsRequest.newBuilder().build() ).getString();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -394,7 +394,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest.newBuilder().build() ).getString();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -403,7 +403,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getSqlNumericFunctions( SqlNumericFunctionsRequest.newBuilder().build() ).getString();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -412,7 +412,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getSqlKeywords( SqlKeywordsRequest.newBuilder().build() ).getString();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -421,7 +421,7 @@ public class ProtoInterfaceClient {
         try {
             getBlockingStub( timeout ).updateConnectionProperties( buildConnectionProperties( connectionProperties ) );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -430,7 +430,7 @@ public class ProtoInterfaceClient {
         try {
             getBlockingStub( timeout ).updateStatementProperties( buildStatementProperties( statementProperties, statementId ) );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -442,7 +442,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).searchProcedures( requestBuilder.build() ).getProceduresList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -451,7 +451,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build() ).getPropertiesMap();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -463,7 +463,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).searchNamespaces( requestBuilder.build() ).getNamespacesList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -475,7 +475,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).searchEntities( requestBuilder.build() ).getEntitiesList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -484,7 +484,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getTableTypes( TableTypesRequest.newBuilder().build() ).getTableTypesList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -495,7 +495,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getNamespace( requestBuilder.build() );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -505,7 +505,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).getUserDefinedTypes( requestBuilder.build() ).getUserDefinedTypesList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -517,7 +517,7 @@ public class ProtoInterfaceClient {
         try {
             getBlockingStub( timeout ).setClientInfoProperties( requestBuilder.build() );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -530,7 +530,7 @@ public class ProtoInterfaceClient {
         try {
             return getBlockingStub( timeout ).searchFunctions( functionsRequest ).getFunctionsList();
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
