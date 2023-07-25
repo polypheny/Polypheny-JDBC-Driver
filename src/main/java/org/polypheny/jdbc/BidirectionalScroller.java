@@ -86,7 +86,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             currentRow = null;
             return false;
         } catch ( InterruptedException e ) {
-            throw new SQLException( e );
+            throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Fetching of more rows failed", e );
         }
     }
 
@@ -131,7 +131,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
                 return false;
             }
         } catch ( InterruptedException e ) {
-            throw new SQLException( e );
+            throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Fetching more rows failed.",  e );
         }
         throw new ProtoInterfaceServiceException( "Should never be thrown!" );
     }
@@ -185,15 +185,19 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
 
     @Override
-    public boolean next() throws SQLException, InterruptedException {
-        considerPrefetch();
-        syncFetch();
-        currentIndex++;
-        currentRow = values.get( currentIndex );
-        if ( currentRow == null ) {
-            return false;
+    public boolean next() throws ProtoInterfaceServiceException {
+        try {
+            considerPrefetch();
+            syncFetch();
+            currentIndex++;
+            currentRow = values.get( currentIndex );
+            if ( currentRow == null ) {
+                return false;
+            }
+            return true;
+        } catch ( InterruptedException e ) {
+            throw new ProtoInterfaceServiceException(SQLErrors.DRIVER_THREADING_ERROR, "Fetching mor rows from server failed.", e);
         }
-        return true;
     }
 
 

@@ -1,6 +1,8 @@
 package org.polypheny.jdbc.deserialization;
 
 import lombok.Getter;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.SQLErrors;
 import org.polypheny.jdbc.types.TypedValue;
 
 import java.io.InputStream;
@@ -36,18 +38,18 @@ public class UDTPrototype implements SQLInput {
 
     public void addValue(TypedValue value) throws SQLException {
         if (isFinalized) {
-            throw new SQLException("Can't add values to finalized prototype");
+            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Can't add values to finalized prototype.");
         }
         values.add(value);
     }
 
     private TypedValue getNextValue() throws SQLException {
         if (!isFinalized) {
-            throw new SQLException("Can't read value from unfinalized prototype");
+            throw new ProtoInterfaceServiceException(SQLErrors.OPERATION_ILLEGAL, "Can't read value from unfinalized prototype.");
         }
         currentIndex++;
         if (currentIndex >= values.size()) {
-            throw new SQLException("Illegal read out of bounds");
+            throw new ProtoInterfaceServiceException(SQLErrors.UDT_REACHED_END, "Reached end of udt value stream.");
         } else {
             TypedValue currentValue = values.get(currentIndex);
             lastValueWasNull = currentValue.isNull();

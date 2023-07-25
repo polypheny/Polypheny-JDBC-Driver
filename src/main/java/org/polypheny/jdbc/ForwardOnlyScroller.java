@@ -33,15 +33,19 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
 
 
     @Override
-    public boolean next() throws InterruptedException {
-        considerPrefetch();
-        syncFetch();
-        currentRow = values.poll();
-        if ( currentRow == null ) {
-            return false;
+    public boolean next() throws ProtoInterfaceServiceException {
+        try {
+            considerPrefetch();
+            syncFetch();
+            currentRow = values.poll();
+            if ( currentRow == null ) {
+                return false;
+            }
+            baseIndex++;
+            return true;
+        } catch (InterruptedException e) {
+            throw new ProtoInterfaceServiceException(SQLErrors.DRIVER_THREADING_ERROR, "Fetching more columns from server filed.", e);
         }
-        baseIndex++;
-        return true;
     }
 
     private void considerPrefetch() {

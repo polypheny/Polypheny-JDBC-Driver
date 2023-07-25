@@ -6,12 +6,10 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
-import java.util.TimerTask;
 import java.util.logging.Logger;
-
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
-import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.proto.ConnectionReply;
 
 public class PolyphenyDriver implements java.sql.Driver {
@@ -34,29 +32,25 @@ public class PolyphenyDriver implements java.sql.Driver {
 
     @Override
     public Connection connect( String url, Properties properties ) throws SQLException {
-            if (!acceptsURL(url)) {
-                return null;
-            }
-            ConnectionString connectionString = new ConnectionString(url, properties);
-            ProtoInterfaceClient protoInterfaceClient = new ProtoInterfaceClient(connectionString.getTarget());
-            PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
-            PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata(protoInterfaceClient, connectionString);
-            try {
-                ConnectionReply connectionReply = protoInterfaceClient.register(connectionProperties, connectionProperties.getNetworkTimeout());
-                if (connectionReply.hasHeartbeatInterval()) {
-                    return new PolyphenyConnection(connectionProperties, databaseMetadata, connectionReply.getHeartbeatInterval());
-                }
-                return new PolyphenyConnection(connectionProperties, databaseMetadata);
-
-            } catch (ProtoInterfaceServiceException e) {
-                throw new SQLException(e.getMessage());
-            }
+        if ( !acceptsURL( url ) ) {
+            return null;
+        }
+        ConnectionString connectionString = new ConnectionString( url, properties );
+        ProtoInterfaceClient protoInterfaceClient = new ProtoInterfaceClient( connectionString.getTarget() );
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, protoInterfaceClient );
+        PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata( protoInterfaceClient, connectionString );
+        ConnectionReply connectionReply = protoInterfaceClient.register( connectionProperties, connectionProperties.getNetworkTimeout() );
+        if ( connectionReply.hasHeartbeatInterval() ) {
+            return new PolyphenyConnection( connectionProperties, databaseMetadata, connectionReply.getHeartbeatInterval() );
+        }
+        return new PolyphenyConnection( connectionProperties, databaseMetadata );
     }
+
 
     @Override
     public boolean acceptsURL( String url ) throws SQLException {
         if ( url == null ) {
-            throw new SQLException( "URL must no be null." );
+            throw new ProtoInterfaceServiceException(SQLErrors.VALUE_ILLEGAL, "URL must no be null." );
         }
         return url.startsWith( DriverProperties.getDRIVER_URL_SCHEMA() );
     }

@@ -7,6 +7,8 @@ import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.SQLErrors;
 
 public class PolyphenyBlob implements Blob {
 
@@ -46,17 +48,17 @@ public class PolyphenyBlob implements Blob {
 
     private void throwIfIndexOutOfBounds( long index ) throws SQLException {
         if ( index < 0 ) {
-            throw new SQLException( "Index out of bounds" );
+            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Index out of bounds" );
         }
         if ( index >= value.length ) {
-            throw new SQLException( "Index out of bounds" );
+            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Index out of bounds" );
         }
     }
 
 
     private void throwIfFreed() throws SQLException {
         if ( isFreed ) {
-            throw new SQLException( "Illegal operation on freed blob" );
+            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Illegal operation on freed blob" );
         }
     }
 
@@ -86,13 +88,13 @@ public class PolyphenyBlob implements Blob {
     @Override
     public long position( byte[] bytes, long start ) throws SQLException {
         /* Could efficiently be implemented using Knuth-Morris-Pratt-Algorithm */
-        throw new SQLFeatureNotSupportedException("Feature not implemented");
+        throw new SQLFeatureNotSupportedException( "Feature not implemented" );
     }
 
 
     @Override
     public long position( Blob blob, long start ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Feature not implemented");
+        throw new SQLFeatureNotSupportedException( "Feature not implemented" );
     }
 
 
@@ -127,7 +129,7 @@ public class PolyphenyBlob implements Blob {
     public void truncate( long len ) throws SQLException {
         throwIfFreed();
         if ( len < 0 ) {
-            throw new SQLException( "Illegal argument for len" );
+            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal argument for len" );
         }
         len = Math.min( len, value.length );
         value = Arrays.copyOf( value, longToInt( len ) );

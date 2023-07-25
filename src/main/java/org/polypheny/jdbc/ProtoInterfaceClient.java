@@ -112,7 +112,7 @@ public class ProtoInterfaceClient {
         try {
             return asyncStub.withDeadlineAfter( timeout, TimeUnit.SECONDS );
         } catch ( StatusRuntimeException e ) {
-            throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
@@ -533,4 +533,5 @@ public class ProtoInterfaceClient {
             throw ProtoInterfaceServiceException.fromMetadata( Status.trailersFromThrowable( e ) );
         }
     }
+
 }

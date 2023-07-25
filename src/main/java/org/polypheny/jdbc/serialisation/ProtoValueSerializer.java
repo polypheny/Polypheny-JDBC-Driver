@@ -2,15 +2,14 @@ package org.polypheny.jdbc.serialisation;
 
 import com.google.protobuf.ByteString;
 import java.math.BigDecimal;
-import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.SQLErrors;
 import org.polypheny.jdbc.proto.ProtoArray;
 import org.polypheny.jdbc.proto.ProtoBigDecimal;
 import org.polypheny.jdbc.proto.ProtoBinary;
@@ -39,14 +38,15 @@ public class ProtoValueSerializer {
 
 
     public static List<ProtoValue> serializeParameterList( List<TypedValue> values ) {
-        return values.stream().map(ProtoValueSerializer::saveSerialize).collect(Collectors.toList());
+        return values.stream().map( ProtoValueSerializer::saveSerialize ).collect( Collectors.toList() );
     }
 
-    private static ProtoValue saveSerialize(TypedValue typedValue) throws RuntimeException {
+
+    private static ProtoValue saveSerialize( TypedValue typedValue ) throws RuntimeException {
         try {
-            return serialize(typedValue);
-        } catch (SQLException e) {
-            throw new RuntimeException(e.getMessage());
+            return serialize( typedValue );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e.getMessage() );
         }
     }
 
@@ -104,7 +104,7 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
             case Types.ARRAY:
-                return serializeAsProtoArray(typedValue);
+                return serializeAsProtoArray( typedValue );
             case Types.CLOB:
                 // TODO TH: find something useful to do here...
                 break;
@@ -115,7 +115,7 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
             case Types.ROWID:
-                return serializeAsProtoRowId(typedValue);
+                return serializeAsProtoRowId( typedValue );
             case Types.NCLOB:
                 // TODO TH: find something useful to do here...
                 break;
@@ -132,7 +132,7 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
         }
-        throw new SQLException( "Serialization of jdbc type " + typedValue.getJdbcType() + " not known" );
+        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Serialization of jdbc type " + typedValue.getJdbcType() + " not known" );
     }
 
 
@@ -142,15 +142,15 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setRowId( protoRowId )
-                .setType(getType( typedValue ) )
+                .setType( getType( typedValue ) )
                 .build();
     }
 
 
     private static ProtoValue serializeAsProtoArray( TypedValue typedValue ) throws SQLException {
         List<ProtoValue> elements = new ArrayList<>();
-        for (Object object : (Object[])typedValue.asArray().getArray()) {
-            elements.add( ProtoValueSerializer.serialize(TypedValue.fromObject( object )));
+        for ( Object object : (Object[]) typedValue.asArray().getArray() ) {
+            elements.add( ProtoValueSerializer.serialize( TypedValue.fromObject( object ) ) );
         }
         ProtoArray protoArray = ProtoArray.newBuilder()
                 .addAllElements( elements )

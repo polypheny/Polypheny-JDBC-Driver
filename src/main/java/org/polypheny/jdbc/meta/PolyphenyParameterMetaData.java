@@ -4,6 +4,8 @@ import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.SQLErrors;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
 
 public class PolyphenyParameterMetaData implements ParameterMetaData {
@@ -22,10 +24,10 @@ public class PolyphenyParameterMetaData implements ParameterMetaData {
         /* jdbc indexes start with 1 */
         param--;
         if ( param < 0 ) {
-            throw new SQLException( "Index out of Bounds." );
+            throw new ProtoInterfaceServiceException( SQLErrors.PARAMETER_NOT_EXISTS, "Index out of Bounds." );
         }
         if ( param >= parameterCount ) {
-            throw new SQLException( "Index out of Bounds." );
+            throw new ProtoInterfaceServiceException( SQLErrors.PARAMETER_NOT_EXISTS, "Index out of Bounds." );
         }
     }
 
@@ -95,7 +97,7 @@ public class PolyphenyParameterMetaData implements ParameterMetaData {
         if (aClass.isInstance(this)) {
             return aClass.cast(this);
         }
-        throw new SQLException("Not a wrapper for " + aClass);
+        throw new ProtoInterfaceServiceException(SQLErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass);
     }
 
 

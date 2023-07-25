@@ -4,6 +4,7 @@ import org.polypheny.jdbc.BidirectionalScrollable;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
@@ -133,7 +134,7 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
 
     @Override
-    public boolean next() throws InterruptedException, SQLException {
+    public boolean next() throws ProtoInterfaceServiceException {
         current = null;
         currentIndex++;
         if ( currentIndex >= data.size() ) {

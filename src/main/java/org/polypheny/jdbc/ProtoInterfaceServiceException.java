@@ -22,22 +22,37 @@ import org.polypheny.jdbc.proto.ErrorDetails;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class ProtoInterfaceServiceException extends SQLException{
-    private static final String STATE_UNSPECIFIED = "UNKNOWN";
-    private static final int ERROR_UNSPECIFIED = -1;
+public class ProtoInterfaceServiceException extends SQLException {
+
+    private enum ErrorCodes {
+
+    }
+
 
     public static final Metadata.Key<ErrorDetails> ERROR_DETAILS_KEY = ProtoUtils.keyForProto( ErrorDetails.getDefaultInstance() );
 
-    public static ProtoInterfaceServiceException fromMetadata(String message, Metadata metadata) throws ProtoInterfaceServiceException {
-        if (metadata == null) {
-            throw new ProtoInterfaceServiceException(message);
+
+    public static ProtoInterfaceServiceException fromMetadata( String message, Metadata metadata ) throws ProtoInterfaceServiceException {
+        if ( metadata == null ) {
+            throw new ProtoInterfaceServiceException( message );
         }
-        if (!metadata.containsKey( ERROR_DETAILS_KEY )) {
-            throw new ProtoInterfaceServiceException(message, STATE_UNSPECIFIED, ERROR_UNSPECIFIED );
+        if ( !metadata.containsKey( ERROR_DETAILS_KEY ) ) {
+            throw new ProtoInterfaceServiceException( message, SQLErrors.UNSPECIFIED.state, SQLErrors.UNSPECIFIED.errorCode );
         }
         ErrorDetails errorDetails = metadata.get( ERROR_DETAILS_KEY );
-        return new ProtoInterfaceServiceException( Objects.requireNonNull( errorDetails ));
+        return new ProtoInterfaceServiceException( Objects.requireNonNull( errorDetails ) );
     }
+
+
+    public ProtoInterfaceServiceException( SQLErrors sqlError, String message ) {
+        this( message, sqlError.state, sqlError.errorCode );
+    }
+
+
+    public ProtoInterfaceServiceException( SQLErrors sqlError, String message, Throwable cause ) {
+        this( message, sqlError.state, sqlError.errorCode, cause );
+    }
+
 
     public ProtoInterfaceServiceException( String reason, String state, int errorCode ) {
         super( reason, state, errorCode );
@@ -51,7 +66,7 @@ public class ProtoInterfaceServiceException extends SQLException{
 
 
     public ProtoInterfaceServiceException( String reason ) {
-        super( reason );
+        super(reason, SQLErrors.UNSPECIFIED.state, SQLErrors.UNSPECIFIED.errorCode );
     }
 
 
@@ -61,7 +76,7 @@ public class ProtoInterfaceServiceException extends SQLException{
 
 
     public ProtoInterfaceServiceException( Throwable cause ) {
-        super( cause );
+        super(cause.getMessage(), SQLErrors.UNSPECIFIED.state, SQLErrors.UNSPECIFIED.errorCode, cause );
     }
 
 
@@ -83,8 +98,8 @@ public class ProtoInterfaceServiceException extends SQLException{
     public ProtoInterfaceServiceException( ErrorDetails errorDetails ) {
         super(
                 errorDetails.hasMessage() ? errorDetails.getMessage() : null,
-                errorDetails.hasState() ? errorDetails.getState() : STATE_UNSPECIFIED,
-                errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : ERROR_UNSPECIFIED
+                errorDetails.hasState() ? errorDetails.getState() : SQLErrors.UNSPECIFIED.state,
+                errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : SQLErrors.UNSPECIFIED.errorCode
         );
     }
 
@@ -96,4 +111,5 @@ public class ProtoInterfaceServiceException extends SQLException{
         Optional.ofNullable( getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
         return errorDetailsBuilder.build();
     }
+
 }

@@ -4,7 +4,7 @@ import java.sql.SQLException;
 
 public interface Scrollable<T> {
 
-    boolean next() throws InterruptedException, SQLException;
+    boolean next() throws ProtoInterfaceServiceException;
 
     T current();
 
