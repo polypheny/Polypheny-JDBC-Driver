@@ -1,11 +1,14 @@
 package org.polypheny.jdbc.utils;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.SQLErrors;
 
 public class CallbackQueue<T> implements StreamObserver<T> {
 
@@ -13,7 +16,7 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     private final Condition hasNext = queueLock.newCondition();
     private final Condition isCompleted = queueLock.newCondition();
     private LinkedList<T> messageQueue;
-    private Throwable propagatedException;
+    private ProtoInterfaceServiceException propagatedException;
     private boolean bIsCompleted;
 
 
@@ -31,10 +34,14 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     }
 
 
-    public T takeNext() throws Throwable {
+    public T takeNext() throws ProtoInterfaceServiceException {
         queueLock.lock();
         while ( messageQueue.isEmpty() ) {
-            hasNext.await();
+            try {
+                hasNext.await();
+            }catch (InterruptedException e) {
+                throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e);
+            }
             throwReceivedException();
         }
         T message = messageQueue.remove();
@@ -43,7 +50,7 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     }
 
 
-    private void throwReceivedException() throws Throwable {
+    private void throwReceivedException() throws ProtoInterfaceServiceException {
         if ( propagatedException != null ) {
             throw propagatedException;
         }
@@ -62,7 +69,18 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     @Override
     public void onError( Throwable propagatedException ) {
         queueLock.lock();
-        this.propagatedException = propagatedException;
+        if (propagatedException instanceof StatusRuntimeException ) {
+            StatusRuntimeException statusRuntimeException = (StatusRuntimeException) propagatedException;
+            try {
+                this.propagatedException = ProtoInterfaceServiceException.fromMetadata(
+                        statusRuntimeException.getMessage(),
+                        Status.trailersFromThrowable(statusRuntimeException));
+            } catch ( ProtoInterfaceServiceException e ) {
+                this.propagatedException = e;
+            }
+        } else {
+            this.propagatedException = new ProtoInterfaceServiceException(propagatedException);
+        }
         hasNext.signal();
         queueLock.unlock();
     }
