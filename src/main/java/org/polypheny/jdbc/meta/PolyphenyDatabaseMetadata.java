@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.polypheny.jdbc.ConnectionString;
@@ -908,7 +909,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         if ( namespace.getIsCaseSensitive() ) {
             return column.getColumnName().matches( MetaUtils.convertToRegex( columnNamePattern ) );
         }
-        return column.getColumnName().toLowerCase().matches( MetaUtils.convertToRegex( columnNamePattern.toLowerCase() ) );
+        return Pattern.compile( MetaUtils.convertToRegex( columnNamePattern ), Pattern.CASE_INSENSITIVE )
+                .matcher( column.getColumnName().toLowerCase() ).find();
     }
 
 
