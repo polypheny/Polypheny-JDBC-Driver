@@ -93,13 +93,13 @@ public class PolyphenyConnectionProperties {
     private String namespaceName;
 
 
-    public void setAutoCommit( boolean isAutoCommit ) {
+    public void setAutoCommit( boolean isAutoCommit ) throws ProtoInterfaceServiceException {
         this.isAutoCommit = isAutoCommit;
         sync();
     }
 
 
-    public void setReadOnly( boolean isReadOnly ) {
+    public void setReadOnly( boolean isReadOnly ) throws ProtoInterfaceServiceException {
         this.isReadOnly = isReadOnly;
         sync();
     }
@@ -114,7 +114,7 @@ public class PolyphenyConnectionProperties {
     }
 
 
-    public void setNetworkTimeout( int networkTimeout ) {
+    public void setNetworkTimeout( int networkTimeout ) throws ProtoInterfaceServiceException {
         this.networkTimeout = networkTimeout;
         sync();
     }
@@ -135,13 +135,13 @@ public class PolyphenyConnectionProperties {
     }
 
 
-    public void setNamespaceName( String namespaceName ) {
+    public void setNamespaceName( String namespaceName ) throws ProtoInterfaceServiceException {
         this.namespaceName = namespaceName;
         sync();
     }
 
 
-    private void sync() {
+    private void sync() throws ProtoInterfaceServiceException {
         protoInterfaceClient.setConnectionProperties( this, getNetworkTimeout() );
     }
 
