@@ -39,9 +39,6 @@ public class PolyphenyDriverTest {
     }
 
 
-    /**
-     * Should return the correct property info when valid url and properties are provided
-     */
     @Test
     public void getPropertyInfoWithValidUrlAndProperties() {
         String url = "jdbc:polypheny://testuser:testpassword@localhost:20591/database";
@@ -91,9 +88,6 @@ public class PolyphenyDriverTest {
     }
 
 
-    /**
-     * Should return the property info with default values when properties are not provided
-     */
     @Test
     public void getPropertyInfoWithDefaultValuesWhenPropertiesNotProvided() {
         String url = "jdbc:polypheny://localhost:20591/database";
@@ -144,9 +138,6 @@ public class PolyphenyDriverTest {
     }
 
 
-    /**
-     * Should return the property info with user specified values when properties are provided
-     */
     @Test
     public void getPropertyInfoWithUserSpecifiedValuesWhenPropertiesProvided() {
         String url = "jdbc:polypheny://localhost:20591/database";
