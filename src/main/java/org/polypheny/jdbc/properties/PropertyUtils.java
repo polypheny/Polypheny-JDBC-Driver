@@ -82,6 +82,30 @@ public class PropertyUtils {
     @Getter
     private static final String TRANSACTION_ISOLATION_KEY = "isolation";
 
+    public static String getHoldabilityName(int resultSetHoldability) throws ProtoInterfaceServiceException {
+        switch ( resultSetHoldability ) {
+            case ResultSet.CLOSE_CURSORS_AT_COMMIT:
+                return "CLOSE";
+            case ResultSet.HOLD_CURSORS_OVER_COMMIT:
+                return "HOLD";
+        }
+        throw new ProtoInterfaceServiceException(SQLErrors.VALUE_ILLEGAL, "The passed integer value does not match a result holdability.");
+    }
+
+    public static String getTransactionIsolationName(int transactionIsolation) throws ProtoInterfaceServiceException {
+        switch ( transactionIsolation ) {
+            case Connection.TRANSACTION_READ_UNCOMMITTED:
+                return "DIRTY";
+            case Connection.TRANSACTION_READ_COMMITTED:
+                return "COMMITTED";
+            case Connection.TRANSACTION_SERIALIZABLE:
+                return "SERIALIZABLE";
+            case Connection.TRANSACTION_REPEATABLE_READ:
+                return "REPEATABLE_READ";
+        }
+        throw new ProtoInterfaceServiceException(SQLErrors.VALUE_ILLEGAL, "The passed integer value does not match a transaction isolation level.");
+    }
+
     // Methods for input checking
     private static final Map<Integer, List<Integer>> SUPPORTED_CONCURRENCIES =
             ImmutableMap.<Integer, List<Integer>>builder()

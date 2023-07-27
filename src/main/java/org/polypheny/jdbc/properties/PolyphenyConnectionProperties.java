@@ -44,7 +44,7 @@ public class PolyphenyConnectionProperties {
     }
 
 
-    private int parseTransactionIsolation( String string ) throws SQLException {
+    private static int parseTransactionIsolation( String string ) throws SQLException {
         switch ( string ) {
             case "COMMITTED":
                 return Connection.TRANSACTION_READ_COMMITTED;
