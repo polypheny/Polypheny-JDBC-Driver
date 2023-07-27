@@ -38,7 +38,6 @@ public class ConnectionString {
 
     private HashMap<String, String> importPropertiesMap( Properties properties ) {
         if ( properties == null ) {
-            log.error( "Properties map is null." );
             return new HashMap<>();
         }
         return properties.entrySet().stream().collect( Collectors.toMap(

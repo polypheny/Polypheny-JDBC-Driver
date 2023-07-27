@@ -1,15 +1,24 @@
 package org.polypheny.jdbc;
 
-import org.junit.*;
-
-import java.sql.SQLException;
-import org.polypheny.jdbc.properties.DriverProperties;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.sql.DriverPropertyInfo;
+import java.sql.SQLException;
+import java.util.Properties;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
+
 public class PolyphenyDriverTest {
+
     private static final PolyphenyDriver DRIVER = new PolyphenyDriver();
+
+
     @BeforeClass
     public static void setUpClass() {
     }
@@ -28,6 +37,172 @@ public class PolyphenyDriverTest {
     @After
     public void tearDown() {
     }
+
+
+    /**
+     * Should return the correct property info when valid url and properties are provided
+     */
+    @Test
+    public void getPropertyInfoWithValidUrlAndProperties() {
+        String url = "jdbc:polypheny://testuser:testpassword@localhost:20591/database";
+
+        try {
+            DriverPropertyInfo[] propertyInfo = DRIVER.getPropertyInfo( url, null );
+
+            assertEquals( 7, propertyInfo.length );
+
+            assertEquals( "user", propertyInfo[0].name );
+            assertEquals( "testuser", propertyInfo[0].value );
+            assertEquals( "Specifies the username for authentication. If not specified, the database uses the default user.", propertyInfo[0].description );
+            assertEquals( false, propertyInfo[0].required );
+
+            assertEquals( "password", propertyInfo[1].name );
+            assertEquals( "testpassword", propertyInfo[1].value );
+            assertEquals( "Specifies the password associated with the given username. If not specified the database assumes that the user does not have a password.", propertyInfo[1].description );
+            assertEquals( false, propertyInfo[1].required );
+
+            assertEquals( "autocommit", propertyInfo[2].name );
+            assertEquals( "true", propertyInfo[2].value );
+            assertEquals( "Determines if each SQL statement is treated as a transaction.", propertyInfo[2].description );
+            assertEquals( new String[]{ "true", "false" }, propertyInfo[2].choices );
+
+            assertEquals( "readonly", propertyInfo[3].name );
+            assertEquals( "false", propertyInfo[3].value );
+            assertEquals( "Indicates if the connection is in read-only mode. Currently ignored, reserved for future use.", propertyInfo[3].description );
+            assertEquals( new String[]{ "true", "false" }, propertyInfo[3].choices );
+
+            assertEquals( "holdability", propertyInfo[4].name );
+            assertEquals( "CLOSE", propertyInfo[4].value );
+            assertEquals( "Specifies the holdability of ResultSet objects.", propertyInfo[4].description );
+            assertEquals( new String[]{ "HOLD", "CLOSE" }, propertyInfo[4].choices );
+
+            assertEquals( "isolation", propertyInfo[5].name );
+            assertEquals( "COMMITTED", propertyInfo[5].value );
+            assertEquals( "Indicates the transaction isolation level.", propertyInfo[5].description );
+            assertEquals( new String[]{ "COMMITTED", "DIRTY", "SERIALIZABLE", "REPEATABLE_READ" }, propertyInfo[5].choices );
+
+            assertEquals( "nwtimeout", propertyInfo[6].name );
+            assertEquals( "0", propertyInfo[6].value );
+            assertEquals( "Specifies the network timeout in seconds. Corresponds to the JDBC network timeout.", propertyInfo[6].description );
+
+        } catch ( SQLException e ) {
+            fail( "An exception occurred: " + e.getMessage() );
+        }
+    }
+
+
+    /**
+     * Should return the property info with default values when properties are not provided
+     */
+    @Test
+    public void getPropertyInfoWithDefaultValuesWhenPropertiesNotProvided() {
+        String url = "jdbc:polypheny://localhost:20591/database";
+        Properties properties = new Properties();
+
+        try {
+            DriverPropertyInfo[] infoProperties = DRIVER.getPropertyInfo( url, properties );
+
+            assertEquals( 7, infoProperties.length );
+
+            assertEquals( PropertyUtils.getUSERNAME_KEY(), infoProperties[0].name );
+            assertEquals( null, infoProperties[0].value );
+            assertEquals( "Specifies the username for authentication. If not specified, the database uses the default user.", infoProperties[0].description );
+            assertEquals( false, infoProperties[0].required );
+
+            assertEquals( PropertyUtils.getPASSWORD_KEY(), infoProperties[1].name );
+            assertEquals( null, infoProperties[1].value );
+            assertEquals( "Specifies the password associated with the given username. If not specified the database assumes that the user does not have a password.", infoProperties[1].description );
+            assertEquals( false, infoProperties[1].required );
+
+            assertEquals( PropertyUtils.getAUTOCOMMIT_KEY(), infoProperties[2].name );
+            assertEquals( String.valueOf( PropertyUtils.isDEFAULT_AUTOCOMMIT() ), infoProperties[2].value );
+            assertEquals( "Determines if each SQL statement is treated as a transaction.", infoProperties[2].description );
+            assertEquals( new String[]{ "true", "false" }, infoProperties[2].choices );
+
+            assertEquals( PropertyUtils.getREAD_ONLY_KEY(), infoProperties[3].name );
+            assertEquals( String.valueOf( PropertyUtils.isDEFAULT_READ_ONLY() ), infoProperties[3].value );
+            assertEquals( "Indicates if the connection is in read-only mode. Currently ignored, reserved for future use.", infoProperties[3].description );
+            assertEquals( new String[]{ "true", "false" }, infoProperties[3].choices );
+
+            assertEquals( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY(), infoProperties[4].name );
+            assertEquals( PropertyUtils.getHoldabilityName( PropertyUtils.getDEFAULT_RESULTSET_HOLDABILITY() ), infoProperties[4].value );
+            assertEquals( "Specifies the holdability of ResultSet objects.", infoProperties[4].description );
+            assertEquals( new String[]{ "HOLD", "CLOSE" }, infoProperties[4].choices );
+
+            assertEquals( PropertyUtils.getTRANSACTION_ISOLATION_KEY(), infoProperties[5].name );
+            assertEquals( PropertyUtils.getTransactionIsolationName( PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION() ), infoProperties[5].value );
+            assertEquals( "Indicates the transaction isolation level.", infoProperties[5].description );
+            assertEquals( new String[]{ "COMMITTED", "DIRTY", "SERIALIZABLE", "REPEATABLE_READ" }, infoProperties[5].choices );
+
+            assertEquals( PropertyUtils.getNETWORK_TIMEOUT_KEY(), infoProperties[6].name );
+            assertEquals( String.valueOf( PropertyUtils.getDEFAULT_NETWORK_TIMEOUT() ), infoProperties[6].value );
+            assertEquals( "Specifies the network timeout in seconds. Corresponds to the JDBC network timeout.", infoProperties[6].description );
+
+        } catch ( SQLException e ) {
+            fail( "An exception occurred: " + e.getMessage() );
+        }
+    }
+
+
+    /**
+     * Should return the property info with user specified values when properties are provided
+     */
+    @Test
+    public void getPropertyInfoWithUserSpecifiedValuesWhenPropertiesProvided() {
+        String url = "jdbc:polypheny://localhost:20591/database";
+        Properties properties = new Properties();
+        properties.setProperty( "user", "testuser" );
+        properties.setProperty( "password", "testpassword" );
+        properties.setProperty( "autocommit", "false" );
+        properties.setProperty( "readonly", "true" );
+        properties.setProperty( "holdability", "HOLD" );
+        properties.setProperty( "isolation", "DIRTY" );
+        properties.setProperty( "nwtimeout", "10" );
+
+        try {
+            DriverPropertyInfo[] propertyInfo = DRIVER.getPropertyInfo( url, properties );
+
+            assertEquals( 7, propertyInfo.length );
+
+            assertEquals( "user", propertyInfo[0].name );
+            assertEquals( "testuser", propertyInfo[0].value );
+            assertEquals( "Specifies the username for authentication. If not specified, the database uses the default user.", propertyInfo[0].description );
+            assertEquals( false, propertyInfo[0].required );
+
+            assertEquals( "password", propertyInfo[1].name );
+            assertEquals( "testpassword", propertyInfo[1].value );
+            assertEquals( "Specifies the password associated with the given username. If not specified the database assumes that the user does not have a password.", propertyInfo[1].description );
+            assertEquals( false, propertyInfo[1].required );
+
+            assertEquals( "autocommit", propertyInfo[2].name );
+            assertEquals( "false", propertyInfo[2].value );
+            assertEquals( "Determines if each SQL statement is treated as a transaction.", propertyInfo[2].description );
+            assertEquals( new String[]{ "true", "false" }, propertyInfo[2].choices );
+
+            assertEquals( "readonly", propertyInfo[3].name );
+            assertEquals( "true", propertyInfo[3].value );
+            assertEquals( "Indicates if the connection is in read-only mode. Currently ignored, reserved for future use.", propertyInfo[3].description );
+            assertEquals( new String[]{ "true", "false" }, propertyInfo[3].choices );
+
+            assertEquals( "holdability", propertyInfo[4].name );
+            assertEquals( "HOLD", propertyInfo[4].value );
+            assertEquals( "Specifies the holdability of ResultSet objects.", propertyInfo[4].description );
+            assertEquals( new String[]{ "HOLD", "CLOSE" }, propertyInfo[4].choices );
+
+            assertEquals( "isolation", propertyInfo[5].name );
+            assertEquals( "DIRTY", propertyInfo[5].value );
+            assertEquals( "Indicates the transaction isolation level.", propertyInfo[5].description );
+            assertEquals( new String[]{ "COMMITTED", "DIRTY", "SERIALIZABLE", "REPEATABLE_READ" }, propertyInfo[5].choices );
+
+            assertEquals( "nwtimeout", propertyInfo[6].name );
+            assertEquals( "10", propertyInfo[6].value );
+            assertEquals( "Specifies the network timeout in seconds. Corresponds to the JDBC network timeout.", propertyInfo[6].description );
+
+        } catch ( SQLException e ) {
+            fail( "An exception occurred: " + e.getMessage() );
+        }
+    }
+
 
     @Test
     public void acceptsURL_String__CorrectDriverSchema() throws Exception {
@@ -88,6 +263,7 @@ public class PolyphenyDriverTest {
 
         assertEquals( expected, actual );
     }
+
 
     @Test
     public void acceptsURL_String__MissingCredentials() throws Exception {
@@ -186,4 +362,5 @@ public class PolyphenyDriverTest {
 
         assertEquals( expected, actual );
     }
+
 }
