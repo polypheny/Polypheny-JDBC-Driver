@@ -82,7 +82,7 @@ public class PolyphenyDriver implements java.sql.Driver {
 
     @Override
     public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
 }

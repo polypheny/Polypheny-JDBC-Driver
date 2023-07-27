@@ -113,15 +113,22 @@ public class ConnectionString {
     private void parseUserInfo( String userInformation ) throws SQLException {
         log.debug( "Parsing user info: \"" + userInformation + "\"" );
         final int firstColumnPosition = userInformation.indexOf( ':' );
-        String username = substringBefore( firstColumnPosition, userInformation );
-        String password = substringAfter( firstColumnPosition, userInformation );
+        String username;
+        if (firstColumnPosition == -1) {
+            // no password given
+            username = substringBefore( userInformation.length(), userInformation );
+            if ( username.isEmpty() ) {
+                return;
+            }
+            parameters.put( PropertyUtils.getUSERNAME_KEY(), username );
+            return;
+        }
+        username = substringBefore( firstColumnPosition, userInformation );
         if ( username.isEmpty() ) {
             return;
         }
         parameters.put( PropertyUtils.getUSERNAME_KEY(), username );
-        if ( password.isEmpty() ) {
-            return;
-        }
+        String password = substringAfter( firstColumnPosition, userInformation );
         parameters.put( PropertyUtils.getPASSWORD_KEY(), password );
     }
 

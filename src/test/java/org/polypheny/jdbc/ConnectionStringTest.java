@@ -85,6 +85,21 @@ public class ConnectionStringTest {
         assertEquals( expectedTarget, cs.getTarget() );
     }
 
+    @Test
+    public void connecitonString_String__NoUsername() throws Exception {
+
+    }
+
+    @Test
+    public void connecitonString_String__NoPassword() throws Exception {
+        final String expectedUsername = "username";
+
+        final String url = "jdbc:polypheny://username@localhost:20569";
+        final ConnectionString cs = new ConnectionString( url );
+
+        assertEquals( expectedUsername, cs.getUser() );
+    }
+
 
     @Test
     public void connectionString_String__AcceptableUrl() throws Exception {
