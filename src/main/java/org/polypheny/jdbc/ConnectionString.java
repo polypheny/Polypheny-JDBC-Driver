@@ -178,4 +178,8 @@ public class ConnectionString {
         return parameters;
     }
 
+    public String getParameter(String parameterName) {
+        return parameters.get( parameterName );
+    }
+
 }
