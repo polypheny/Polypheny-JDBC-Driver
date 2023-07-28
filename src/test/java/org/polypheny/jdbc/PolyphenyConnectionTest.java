@@ -38,6 +38,35 @@ public class PolyphenyConnectionTest {
 
 
     @Test
+    public void getAutoCommitWhenConnectionIsNotClosed() {
+        properties = mock( PolyphenyConnectionProperties.class );
+        databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
+        connection = new PolyphenyConnection( properties, databaseMetaData );
+
+        try {
+            connection.getAutoCommit();
+        } catch ( SQLException e ) {
+            fail( "Should not throw an exception" );
+        }
+
+        verify( properties, times( 1 ) ).isAutoCommit();
+    }
+
+
+    @Test
+    public void getAutoCommitWhenConnectionIsClosedThenThrowException() throws SQLException {
+        properties = mock( PolyphenyConnectionProperties.class );
+        ProtoInterfaceClient protoInterfaceClient = mock( ProtoInterfaceClient.class );
+        when( properties.getProtoInterfaceClient() ).thenReturn( protoInterfaceClient );
+        databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
+        connection = new PolyphenyConnection( properties, databaseMetaData );
+        connection.close();
+
+        assertThrows( SQLException.class, () -> connection.getAutoCommit() );
+    }
+
+
+    @Test
     public void setAutoCommitWhenConnectionIsClosedThenThrowException() throws SQLException {
         properties = mock( PolyphenyConnectionProperties.class );
         ProtoInterfaceClient protoInterfaceClient = mock( ProtoInterfaceClient.class );
