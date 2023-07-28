@@ -127,7 +127,6 @@ public class PropertyUtils {
             .build();
 
     private static final Set<Integer> RESULT_SET_HOLDABILITIES = ImmutableSet.<Integer>builder()
-            .add( ResultSet.HOLD_CURSORS_OVER_COMMIT )
             .add( ResultSet.CLOSE_CURSORS_AT_COMMIT )
             .build();
 
