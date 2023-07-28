@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -36,6 +37,42 @@ public class PolyphenyDriverTest {
 
     @After
     public void tearDown() {
+    }
+
+
+    @Test
+    public void getParentLoggerThrowsException() {
+        try {
+            DRIVER.getParentLogger();
+            fail( "Expected SQLFeatureNotSupportedException to be thrown" );
+        } catch ( SQLFeatureNotSupportedException e ) {
+            assertEquals( "Not supported", e.getMessage() );
+        }
+    }
+
+
+    @Test
+    public void jdbcCompliantWhenDriverIsJdbcCompliant() {
+        boolean jdbcCompliant = DRIVER.jdbcCompliant();
+        assertEquals( DriverProperties.isJDBC_COMPLIANT(), jdbcCompliant );
+    }
+
+
+    @Test
+    public void getMinorVersionReturnsCorrectVersion() {
+        int expectedMinorVersion = DriverProperties.getDRIVER_MINOR_VERSION();
+        int actualMinorVersion = DRIVER.getMinorVersion();
+
+        assertEquals( expectedMinorVersion, actualMinorVersion );
+    }
+
+
+    @Test
+    public void getMajorVersionReturnsCorrectVersion() {
+        int expectedMajorVersion = DriverProperties.getDRIVER_MAJOR_VERSION();
+        int actualMajorVersion = DRIVER.getMajorVersion();
+
+        assertEquals( expectedMajorVersion, actualMajorVersion );
     }
 
 
