@@ -33,6 +33,7 @@ import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
+import org.polypheny.jdbc.proto.TypeMeta;
 import org.polypheny.jdbc.types.PolyphenyArray;
 import org.polypheny.jdbc.types.PolyphenyBlob;
 import org.polypheny.jdbc.types.PolyphenyClob;
@@ -83,7 +84,8 @@ public class PolyphenyConnection implements Connection {
         this.properties = connectionProperties;
         databaseMetaData.setConnection( this );
         this.databaseMetaData = databaseMetaData;
-        openStatements = new HashSet<>();
+        this.openStatements = new HashSet<>();
+        this.typeMap = new HashMap<>();
     }
 
 
@@ -303,13 +305,13 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public Map<String, Class<?>> getTypeMap() throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        return typeMap;
     }
 
 
     @Override
     public void setTypeMap( Map<String, Class<?>> map ) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        this.typeMap = map;
     }
 
 
