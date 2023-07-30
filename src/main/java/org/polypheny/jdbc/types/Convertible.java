@@ -7,6 +7,7 @@ import java.net.URL;
 import java.sql.*;
 import java.util.Calendar;
 import java.util.Map;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 public interface Convertible {
 
@@ -106,5 +107,5 @@ public interface Convertible {
 
     Object asObject(Map<String, Class<?>> map) throws SQLException;
 
-    <T> T asObject(Class<T> aClass) throws SQLFeatureNotSupportedException;
+    <T> T asObject(Class<T> aClass) throws SQLFeatureNotSupportedException, ProtoInterfaceServiceException;
 }

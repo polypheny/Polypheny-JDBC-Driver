@@ -839,7 +839,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    public UDTPrototype getUdtPrototype() throws SQLException {
+    public UDTPrototype getUdtPrototype() throws ProtoInterfaceServiceException {
         if ( !isUdtPrototype() ) {
             throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
         }
@@ -918,12 +918,12 @@ public class TypedValue implements Convertible {
     }
 
 
-    public <T> T asObject( Class<T> aClass ) throws SQLFeatureNotSupportedException {
-        throw new SQLFeatureNotSupportedException();
+    public <T> T asObject( Class<T> aClass ) throws ProtoInterfaceServiceException {
+        if ( !isUdtPrototype() ) {
+            throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
+        }
+        return aClass.cast( buildFromUdtPrototype( aClass, getUdtPrototype() ) );
     }
-
-
-    ;
 
 
     @Override
@@ -938,6 +938,11 @@ public class TypedValue implements Convertible {
         }
         UDTPrototype prototype = getUdtPrototype();
         Class<?> udtClass = map.get( prototype.getTypeName() );
+        return buildFromUdtPrototype( udtClass, prototype );
+    }
+
+
+    private <T> Object buildFromUdtPrototype( Class<T> udtClass, UDTPrototype prototype ) throws ProtoInterfaceServiceException {
         if ( udtClass == null ) {
             throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Type-map contains no type for internal type " + prototype.getTypeName() );
         }
