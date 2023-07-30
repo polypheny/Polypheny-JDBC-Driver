@@ -36,6 +36,7 @@ import org.polypheny.jdbc.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.types.PolyphenyArray;
 import org.polypheny.jdbc.types.PolyphenyBlob;
 import org.polypheny.jdbc.types.PolyphenyClob;
+import org.polypheny.jdbc.types.PolyphenyStruct;
 
 public class PolyphenyConnection implements Connection {
 
@@ -337,16 +338,12 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public Savepoint setSavepoint( String name ) throws SQLException {
-        throwIfClosed();
-        throwIfAutoCommit();
         throw new SQLFeatureNotSupportedException();
     }
 
 
     @Override
     public void rollback( Savepoint savepoint ) throws SQLException {
-        throwIfClosed();
-        throwIfAutoCommit();
         throw new SQLFeatureNotSupportedException();
     }
 
@@ -501,13 +498,7 @@ public class PolyphenyConnection implements Connection {
     @Override
     public Struct createStruct( String typeName, Object[] attributes ) throws SQLException {
         throwIfClosed();
-        String methodName = new Object() {
-        }
-                .getClass()
-                .getEnclosingMethod()
-                .getName();
-        throw new SQLFeatureNotSupportedException();
-
+        return new PolyphenyStruct( typeName, attributes );
     }
 
 

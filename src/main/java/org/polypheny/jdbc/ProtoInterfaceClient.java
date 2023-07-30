@@ -98,7 +98,7 @@ public class ProtoInterfaceClient {
             return blockingStub;
         }
         try {
-            return blockingStub.withDeadlineAfter( timeout, TimeUnit.SECONDS );
+            return blockingStub.withDeadlineAfter( timeout, TimeUnit.MILLISECONDS );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -110,7 +110,7 @@ public class ProtoInterfaceClient {
             return asyncStub;
         }
         try {
-            return asyncStub.withDeadlineAfter( timeout, TimeUnit.SECONDS );
+            return asyncStub.withDeadlineAfter( timeout, TimeUnit.MILLISECONDS );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -121,8 +121,8 @@ public class ProtoInterfaceClient {
         ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
             /* ConnectionCheckResponses are empty messages */
-            blockingStub.withDeadlineAfter( timeout, TimeUnit.MILLISECONDS ).checkConnection( request );
-        } catch ( StatusRuntimeException e ) {
+            getBlockingStub( timeout ).checkConnection( request );
+        } catch ( StatusRuntimeException | ProtoInterfaceServiceException e ) {
             return false;
         }
         return true;

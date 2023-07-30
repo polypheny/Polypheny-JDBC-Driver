@@ -75,7 +75,7 @@ public class PolyphenyStatement implements Statement {
 
 
     protected int getTimeout() throws SQLException {
-        return Math.min( getConnection().getNetworkTimeout(), properties.getQueryTimeoutSeconds() );
+        return Math.min( getConnection().getNetworkTimeout(), properties.getQueryTimeoutSeconds() * 1000 );
     }
 
 
