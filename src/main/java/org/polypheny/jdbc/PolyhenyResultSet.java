@@ -407,7 +407,11 @@ public class PolyhenyResultSet implements ResultSet {
     @Override
     public Object getObject( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asObject();
+        TypedValue typedValue = accessValue( columnIndex );
+        if (typedValue.isUdtPrototype()) {
+            return typedValue.asObject(getStatement().getConnection().getTypeMap());
+        }
+        return typedValue.asObject();
     }
 
 

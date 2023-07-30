@@ -834,7 +834,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    private boolean isUdtPrototype() {
+    public boolean isUdtPrototype() {
         return internalType.equals( UDT_PROOTYPE_TYPE );
     }
 
