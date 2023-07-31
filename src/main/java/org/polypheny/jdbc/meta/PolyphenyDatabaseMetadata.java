@@ -124,7 +124,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean isReadOnly() throws SQLException {
-        return PropertyUtils.isDEFAULT_AUTOCOMMIT();
+        return PropertyUtils.isDEFAULT_READ_ONLY();
     }
 
 
@@ -328,7 +328,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsConvert() throws SQLException {
-        //TODO TH: change upon implementation
+        // This is independent of the conversion used for set or get Object. This is related to the CONVERT keyword in JDBC
         return false;
     }
 
