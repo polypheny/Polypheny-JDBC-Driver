@@ -18,6 +18,7 @@ import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class PolyphenyStatement implements Statement {
 
+    @Getter
     private PolyphenyConnection polyphenyConnection;
     protected ResultSet currentResult;
     protected long currentUpdateCount;
@@ -68,6 +69,7 @@ public class PolyphenyStatement implements Statement {
         }
         if ( statementId != NO_STATEMENT_ID ) {
             getClient().closeStatement( statementId, getTimeout() );
+            getPolyphenyConnection().removeStatement( this );
         }
         currentResult = null;
         currentUpdateCount = NO_UPDATE_COUNT;

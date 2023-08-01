@@ -76,6 +76,10 @@ public class PolyphenyConnection implements Connection {
         }
     }
 
+    public void removeStatement(Statement polyphenyStatement) {
+        openStatements.remove( polyphenyStatement );
+    }
+
 
     public PolyphenyConnection(
             PolyphenyConnectionProperties connectionProperties,
