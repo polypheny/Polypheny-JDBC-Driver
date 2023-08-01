@@ -1014,5 +1014,4 @@ public class TypedValueUtils {
     public static TypedValue fromObject( Object value, int targetSqlType, int scaleOrLength ) throws NotImplementedException {
         throw new NotImplementedException( "Not yet implemented..." );
     }
-
 }

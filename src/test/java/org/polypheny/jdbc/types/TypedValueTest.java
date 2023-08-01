@@ -321,11 +321,37 @@ public class TypedValueTest {
         fail( "NullPointerException not thrown" );
     }
 
+
     @Test
     public void timeZoneTest() {
         Time input = new Time( 123456 );
-        Time input2 = new Time(input.getTime());
+        Time input2 = new Time( input.getTime() );
         assertEquals( input, input2 );
+    }
+
+
+    @Test
+    public void stringTrimmingTest() throws SQLException {
+        TypedValue value = TypedValue.fromString( "123456789" );
+        TypedValue trimmed = value.getTrimmed( 4 );
+        assertEquals( "1234", trimmed.asString() );
+    }
+
+
+    @Test
+    public void binaryTrimmingTest() throws SQLException {
+        byte[] data = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        byte[] expected = {1, 2, 3, 4 };
+        TypedValue value = TypedValue.fromBytes( data );
+        TypedValue trimmed = value.getTrimmed( 4 );
+        assertArrayEquals(expected, trimmed.asBytes() );
+    }
+
+    @Test
+    public void asBytesReturnsPropertValue() throws SQLException {
+        byte[] data = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        TypedValue value = TypedValue.fromBytes( data );
+        assertArrayEquals(data, value.asBytes() );
     }
 
 
@@ -613,4 +639,5 @@ public class TypedValueTest {
         assertEquals( Types.BOOLEAN, typedValue.getJdbcType() );
         assertEquals( true, typedValue.getValue() );
     }
+
 }

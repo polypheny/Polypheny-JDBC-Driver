@@ -30,6 +30,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -368,6 +369,24 @@ public class TypedValue implements Convertible {
     }
 
 
+    public int getLength() throws SQLException {
+        switch ( jdbcType ) {
+            case Types.BINARY:
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
+                return ((byte[]) value).length;
+            case Types.CHAR:
+            case Types.NCHAR:
+            case Types.VARCHAR:
+            case Types.NVARCHAR:
+            case Types.LONGNVARCHAR:
+            case Types.LONGVARCHAR:
+                return ((String) value).length();
+        }
+        return 0;
+    }
+
+
     @Override
     public boolean isSqlNull() {
         return jdbcType == Types.NULL;
@@ -569,8 +588,8 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() || isNull() ) {
             return null;
         }
-        if ( TypedValueUtils.isBinaryRepresented( jdbcType ) ) {
-            return (byte[]) value;
+        if ( value instanceof byte[]) {
+            return (byte[])  value;
         }
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -705,7 +724,7 @@ public class TypedValue implements Convertible {
     }
 
 
-public Time asTime() throws SQLException {
+    public Time asTime() throws SQLException {
         if ( isSqlNull() || isNull() ) {
             return null;
         }
@@ -986,4 +1005,26 @@ public Time asTime() throws SQLException {
         return TypedValueUtils.fromObject( value, targetSqlType, scaleOrLength );
     }
 
+
+    public TypedValue getTrimmed( int length ) {
+        switch ( jdbcType ) {
+            case Types.BINARY:
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
+                byte[] binaryData = Arrays.copyOfRange( (byte[]) value, 0, length );
+                return TypedValue.fromBytes( binaryData );
+            case Types.CHAR:
+            case Types.NCHAR:
+            case Types.VARCHAR:
+            case Types.NVARCHAR:
+            case Types.LONGNVARCHAR:
+            case Types.LONGVARCHAR:
+                String stringData = ((String) value).substring( 0, length );
+                return TypedValue.fromString( stringData );
+        }
+        return this;
+    }
+
 }
+
+
