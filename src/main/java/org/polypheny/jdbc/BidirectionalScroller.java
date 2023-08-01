@@ -5,7 +5,7 @@ import static java.lang.Math.min;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import org.polypheny.jdbc.properties.ResultSetProperties;
+import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
@@ -17,12 +17,12 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
     private ArrayList<ArrayList<TypedValue>> values;
     private ArrayList<TypedValue> currentRow;
     private ResultFetcher resultFetcher;
-    private ResultSetProperties properties;
+    private PolyphenyResultSetProperties properties;
     private Thread fetcherThread;
     int currentIndex;
 
 
-    public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties, int fetchTimeout ) {
+    public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
         this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
         this.resultFetcher.setLast( frame.getIsLast() );

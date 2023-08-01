@@ -25,10 +25,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.Getter;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
-import org.polypheny.jdbc.properties.ResultSetProperties;
+import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.types.TypedValue;
@@ -45,13 +46,13 @@ public class PolyhenyResultSet implements ResultSet {
     private LinkedHashMap<Integer, TypedValue> rowUpdates;
     private boolean isInInsertMode;
 
-    ResultSetProperties properties;
+    PolyphenyResultSetProperties properties;
 
 
     public PolyhenyResultSet(
             PolyphenyStatement statement,
             Frame frame,
-            ResultSetProperties properties
+            PolyphenyResultSetProperties properties
     ) throws SQLException {
         if ( frame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new ProtoInterfaceServiceException( SQLErrors.RESULT_TYPE_INVALID, "Invalid frame type " + frame.getResultCase().name() );
@@ -75,7 +76,7 @@ public class PolyhenyResultSet implements ResultSet {
         this.resultScroller = new MetaScroller<>( rows );
         this.metadata = new PolyphenyResultSetMetadata( columnMetas );
         this.statement = null;
-        this.properties = ResultSetProperties.forMetaResultSet();
+        this.properties = PolyphenyResultSetProperties.forMetaResultSet();
         this.lastRead = null;
         this.isClosed = false;
         this.isInInsertMode = false;
@@ -86,7 +87,7 @@ public class PolyhenyResultSet implements ResultSet {
         if ( !isInInsertMode ) {
             try {
                 lastRead = resultScroller.current().get( column - 1 );
-                if ( lastRead.getLength() > properties.getMaxFieldSize() ) {
+                if (properties.getMaxFieldSize() != 0 && lastRead.getLength() > properties.getMaxFieldSize() ) {
                     return lastRead.getTrimmed( properties.getMaxFieldSize() );
                 }
                 return lastRead;

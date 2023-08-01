@@ -151,8 +151,8 @@ public class PolyphenyStatementProperties {
     }
 
 
-    public ResultSetProperties toResultSetProperties() {
-        ResultSetProperties properties = new ResultSetProperties();
+    public PolyphenyResultSetProperties toResultSetProperties() {
+        PolyphenyResultSetProperties properties = new PolyphenyResultSetProperties();
         properties.setResultSetType( resultSetType );
         properties.setResultSetConcurrency( resultSetConcurrency );
         properties.setResultSetHoldability( resultSetHoldability );

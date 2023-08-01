@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import lombok.Getter;
 import lombok.Setter;
 
-public class ResultSetProperties {
+public class PolyphenyResultSetProperties {
 
     @Getter
     @Setter
@@ -32,8 +32,8 @@ public class ResultSetProperties {
         return resultSetConcurrency == ResultSet.CONCUR_READ_ONLY;
     }
 
-    public static ResultSetProperties forMetaResultSet() {
-        ResultSetProperties properties = new ResultSetProperties();
+    public static PolyphenyResultSetProperties forMetaResultSet() {
+        PolyphenyResultSetProperties properties = new PolyphenyResultSetProperties();
         properties.setResultSetType( ResultSet.TYPE_SCROLL_INSENSITIVE );
         properties.setResultSetConcurrency( ResultSet.CONCUR_READ_ONLY);
         properties.setResultSetHoldability( ResultSet.CLOSE_CURSORS_AT_COMMIT );

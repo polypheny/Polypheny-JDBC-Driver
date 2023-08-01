@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
-import org.polypheny.jdbc.properties.ResultSetProperties;
+import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
@@ -20,10 +20,10 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
     private ArrayList<TypedValue> currentRow;
     private ResultFetcher resultFetcher;
     private Thread fetcherThread;
-    private ResultSetProperties properties;
+    private PolyphenyResultSetProperties properties;
     private int baseIndex;
 
-    public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, ResultSetProperties properties, int fetchTimeout) {
+    public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout) {
         this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
         this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout);
         this.resultFetcher.setLast( frame.getIsLast() );

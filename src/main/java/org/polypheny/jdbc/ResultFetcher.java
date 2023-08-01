@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.jdbc.properties.ResultSetProperties;
+import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.proto.Row;
@@ -17,7 +17,7 @@ public class ResultFetcher implements Runnable {
     private int statementId;
     @Setter
     @Getter
-    private ResultSetProperties properties;
+    private PolyphenyResultSetProperties properties;
     private int fetchTimeout;
     private long totalFetched;
     @Setter
@@ -27,7 +27,7 @@ public class ResultFetcher implements Runnable {
     private List<ArrayList<TypedValue>> fetchedValues;
 
 
-    public ResultFetcher( ProtoInterfaceClient client, int statementId, ResultSetProperties properties, long totalFetched, int fetchTimeout ) {
+    public ResultFetcher( ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, long totalFetched, int fetchTimeout ) {
         this.fetchTimeout = fetchTimeout;
         this.client = client;
         this.statementId = statementId;
