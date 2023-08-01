@@ -40,14 +40,10 @@ public class PolyphenyDriverTest {
     }
 
 
-    @Test
-    public void getParentLoggerThrowsException() {
-        try {
-            DRIVER.getParentLogger();
-            fail( "Expected SQLFeatureNotSupportedException to be thrown" );
-        } catch ( SQLFeatureNotSupportedException e ) {
-            assertEquals( "Not supported", e.getMessage() );
-        }
+    @Test(expected = SQLFeatureNotSupportedException.class)
+    public void getParentLoggerThrowsException() throws SQLFeatureNotSupportedException {
+        DRIVER.getParentLogger();
+        fail( "Expected SQLFeatureNotSupportedException to be thrown" );
     }
 
 

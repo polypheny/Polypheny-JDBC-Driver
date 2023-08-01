@@ -35,8 +35,8 @@ public class PolyphenyConnectionPropertiesTest {
         expectedProperties.setProtoInterfaceClient(protoInterfaceClient);
         expectedProperties.setQueryTimeoutSeconds(PropertyUtils.getDEFAULT_QUERY_TIMEOUT_SECONDS());
         expectedProperties.setResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE);
-        expectedProperties.setResultSetConcurrency(ResultSet.CONCUR_UPDATABLE);
-        expectedProperties.setResultSetHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
+        expectedProperties.setResultSetConcurrency(ResultSet.CONCUR_READ_ONLY);
+        expectedProperties.setResultSetHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
         expectedProperties.setFetchSize(PropertyUtils.getDEFAULT_FETCH_SIZE());
         expectedProperties.setFetchDirection(PropertyUtils.getDEFAULT_FETCH_DIRECTION());
         expectedProperties.setMaxFieldSize(PropertyUtils.getDEFAULT_MAX_FIELD_SIZE());
@@ -46,8 +46,8 @@ public class PolyphenyConnectionPropertiesTest {
 
         PolyphenyStatementProperties actualProperties = connectionProperties.toStatementProperties(
                 ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_UPDATABLE,
-                ResultSet.HOLD_CURSORS_OVER_COMMIT
+                ResultSet.CONCUR_READ_ONLY,
+                ResultSet.CLOSE_CURSORS_AT_COMMIT
         );
         actualProperties.setPolyphenyStatement(polyphenyStatement);
         assertEquals(expectedProperties.getQueryTimeoutSeconds(), actualProperties.getQueryTimeoutSeconds());

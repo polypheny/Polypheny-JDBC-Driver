@@ -144,7 +144,6 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public CallableStatement prepareCall( String sql ) throws SQLException {
-        throwIfClosed();
         throw new SQLFeatureNotSupportedException();
 
     }
