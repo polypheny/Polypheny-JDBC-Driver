@@ -23,6 +23,7 @@ import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
 import java.sql.RowId;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Types;
 import java.util.Calendar;
@@ -422,9 +423,15 @@ public class TypedValueTest {
     @Test
     public void fromDateWithValidDate() {
         Date date = Date.valueOf( "2022-01-01" );
-
         TypedValue typedValue = TypedValue.fromDate( date );
+        assertEquals( Types.DATE, typedValue.getJdbcType() );
+        assertEquals( date, typedValue.getValue() );
+    }
 
+    @Test
+    public void fromObjectWithValidDate() throws SQLException {
+        Date date = Date.valueOf( "2022-01-01" );
+        TypedValue typedValue = TypedValue.fromObject( date );
         assertEquals( Types.DATE, typedValue.getJdbcType() );
         assertEquals( date, typedValue.getValue() );
     }
