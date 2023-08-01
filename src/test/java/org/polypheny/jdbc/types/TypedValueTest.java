@@ -321,6 +321,13 @@ public class TypedValueTest {
         fail( "NullPointerException not thrown" );
     }
 
+    @Test
+    public void timeZoneTest() {
+        Time input = new Time( 123456 );
+        Time input2 = new Time(input.getTime());
+        assertEquals( input, input2 );
+    }
+
 
     @Test
     public void fromTimeWithValidTimeAndCalendar() {

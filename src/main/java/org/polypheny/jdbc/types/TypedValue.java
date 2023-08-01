@@ -705,7 +705,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    public Time asTime() throws SQLException {
+public Time asTime() throws SQLException {
         if ( isSqlNull() || isNull() ) {
             return null;
         }

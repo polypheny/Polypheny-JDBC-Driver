@@ -193,6 +193,9 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public void close() throws SQLException {
+        if (isClosed()) {
+            return;
+        }
         List<Statement> statements = new ArrayList<>( openStatements );
         for ( Statement statement : statements ) {
             statement.close();
