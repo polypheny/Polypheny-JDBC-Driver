@@ -56,7 +56,6 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoValueType.FILE, Types.BINARY )
                     .put( ProtoValueType.DISTINCT, Types.DISTINCT )
                     .put( ProtoValueType.STRUCTURED, Types.STRUCT )
-                    .put( ProtoValueType.ROW, Types.STRUCT )
                     .put( ProtoValueType.OTHER, Types.OTHER )
                     .put( ProtoValueType.CURSOR, Types.REF_CURSOR )
                     .put( ProtoValueType.COLUMN_LIST, Types.OTHER + 2 )

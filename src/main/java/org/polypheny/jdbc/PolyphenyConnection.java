@@ -64,14 +64,14 @@ public class PolyphenyConnection implements Connection {
 
 
     private void throwIfAutoCommit() throws SQLException {
-        if ( isClosed ) {
+        if ( properties.isAutoCommit() ) {
             throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Illegal operation on auto committing connection." );
         }
     }
 
 
     private void throwIfRunningTransaction() throws SQLException {
-        if ( isClosed ) {
+        if ( hasRunningTransaction ) {
             throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Illegal operation during running transaction." );
         }
     }
@@ -257,7 +257,6 @@ public class PolyphenyConnection implements Connection {
     public int getTransactionIsolation() throws SQLException {
         throwIfClosed();
         return properties.getTransactionIsolation();
-
     }
 
 
@@ -332,8 +331,6 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public Savepoint setSavepoint() throws SQLException {
-        throwIfClosed();
-        throwIfAutoCommit();
         throw new SQLFeatureNotSupportedException();
     }
 
@@ -352,7 +349,6 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public void releaseSavepoint( Savepoint savepoint ) throws SQLException {
-        throwIfClosed();
         throw new SQLFeatureNotSupportedException();
     }
 
@@ -530,9 +526,6 @@ public class PolyphenyConnection implements Connection {
         throwIfClosed();
         if ( milliseconds < 0 ) {
             throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
-        }
-        if ( executor == null ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Executor must not be null" );
         }
         properties.setNetworkTimeout( milliseconds );
     }

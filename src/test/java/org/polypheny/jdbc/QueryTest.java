@@ -41,6 +41,7 @@ public class QueryTest {
         }
     }
 
+
     @Test
     public void basicTest() throws ClassNotFoundException {
         final String DB_URL = "jdbc:polypheny://localhost:20590";

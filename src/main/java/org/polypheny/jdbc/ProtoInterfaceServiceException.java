@@ -97,7 +97,7 @@ public class ProtoInterfaceServiceException extends SQLException {
 
     public ProtoInterfaceServiceException( ErrorDetails errorDetails ) {
         super(
-                errorDetails.hasMessage() ? errorDetails.getMessage() : null,
+                errorDetails.hasMessage() ? errorDetails.getMessage() : "No message provided.",
                 errorDetails.hasState() ? errorDetails.getState() : SQLErrors.UNSPECIFIED.state,
                 errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : SQLErrors.UNSPECIFIED.errorCode
         );

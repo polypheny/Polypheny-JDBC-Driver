@@ -20,6 +20,7 @@ public class PolyphenyConnectionProperties {
         this.resultSetHoldability = PropertyUtils.getDEFAULT_RESULTSET_HOLDABILITY();
         this.networkTimeout = PropertyUtils.getDEFAULT_NETWORK_TIMEOUT();
         this.transactionIsolation = PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION();
+        this.catalogName = null;
 
         Map<String, String> parameters = connectionString.getParameters();
         Optional.ofNullable( parameters.get( PropertyUtils.getUSERNAME_KEY() ) ).ifPresent( p -> this.username = p );
@@ -34,12 +35,14 @@ public class PolyphenyConnectionProperties {
             if ( !PropertyUtils.isValidResultSetHoldability( resultSetHoldability ) ) {
                 throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Result set holdability not supported:" + resultSetHoldability );
             }
+            this.resultSetHoldability = resultSetHoldability;
         }
         if ( parameters.containsKey( PropertyUtils.getTRANSACTION_ISOLATION_KEY() ) ) {
             int transactionIsolation = parseTransactionIsolation( parameters.get( PropertyUtils.getTRANSACTION_ISOLATION_KEY() ) );
             if ( !PropertyUtils.isValidIsolationLevel( transactionIsolation ) ) {
                 throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Transaction isolation level not supported: " + transactionIsolation );
             }
+            this.transactionIsolation = transactionIsolation;
         }
     }
 
