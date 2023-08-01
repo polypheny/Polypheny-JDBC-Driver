@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import lombok.Getter;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
@@ -87,7 +86,7 @@ public class PolyhenyResultSet implements ResultSet {
         if ( !isInInsertMode ) {
             try {
                 lastRead = resultScroller.current().get( column - 1 );
-                if (properties.getMaxFieldSize() > 0 && lastRead.getLength() > properties.getMaxFieldSize() ) {
+                if ( properties.getMaxFieldSize() > 0 && lastRead.getLength() > properties.getMaxFieldSize() ) {
                     return lastRead.getTrimmed( properties.getMaxFieldSize() );
                 }
                 return lastRead;
@@ -166,6 +165,12 @@ public class PolyhenyResultSet implements ResultSet {
 
     @Override
     public void close() throws SQLException {
+        if (isClosed) {
+            return;
+        }
+        if ( getStatement().isCloseOnCompletion() ) {
+            getStatement().unwrap( PolyphenyStatement.class ).closeStatementOnly();
+        }
         isClosed = true;
     }
 

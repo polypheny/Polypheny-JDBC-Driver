@@ -94,7 +94,10 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
 
     @Override
     public void close() {
-
+        if (fetcherThread == null) {
+            return;
+        }
+        fetcherThread.interrupt();
     }
 
 

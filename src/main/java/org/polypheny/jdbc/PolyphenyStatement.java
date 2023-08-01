@@ -160,9 +160,18 @@ public class PolyphenyStatement implements Statement {
         }
     }
 
+    public void closeStatementOnly() throws SQLException {
+        this.statementId = NO_STATEMENT_ID;
+        this.currentResult = null;
+        close();
+    }
+
 
     @Override
     public void close() throws SQLException {
+        if (isClosed) {
+            return;
+        }
         if ( currentResult != null ) {
             currentResult.close();
         }
@@ -438,6 +447,9 @@ public class PolyphenyStatement implements Statement {
     public boolean getMoreResults( int i ) throws SQLException {
         if ( i == KEEP_CURRENT_RESULT || i == CLOSE_ALL_RESULTS ) {
             throw new SQLFeatureNotSupportedException();
+        }
+        if (i != CLOSE_CURRENT_RESULT) {
+            throw new ProtoInterfaceServiceException(SQLErrors.VALUE_ILLEGAL, "Illegal value for closing behaviour: " + i);
         }
         throwIfClosed();
         closeCurrentResult();

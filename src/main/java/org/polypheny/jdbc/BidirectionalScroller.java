@@ -4,7 +4,6 @@ import static java.lang.Math.min;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.types.TypedValue;
@@ -24,7 +23,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
     public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
-        if (properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows()) {
+        if ( properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows() ) {
             values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
         }
         this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
@@ -33,9 +32,11 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
         this.properties = properties;
     }
 
+
     protected int longToInt( long longNumber ) {
         return Math.toIntExact( longNumber );
     }
+
 
     private boolean fetchUpTo( int rowIndex ) throws InterruptedException {
         while ( values.size() < rowIndex ) {
@@ -137,7 +138,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
                 return false;
             }
         } catch ( InterruptedException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Fetching more rows failed.",  e );
+            throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Fetching more rows failed.", e );
         }
         throw new ProtoInterfaceServiceException( "Should never be thrown!" );
     }
@@ -151,7 +152,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
     @Override
     public void beforeFirst() throws SQLException {
-        absolute(0);
+        absolute( 0 );
     }
 
 
@@ -163,29 +164,31 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
         currentRow = null;
     }
 
+
     @Override
     public boolean first() {
         currentRow = null;
         currentIndex = INDEX_BEFORE_FIRST;
-        if (values.isEmpty()) {
+        if ( values.isEmpty() ) {
             return false;
         }
         currentIndex = 0;
-        currentRow = values.get(currentIndex);
+        currentRow = values.get( currentIndex );
         return true;
     }
+
 
     @Override
     public boolean last() throws InterruptedException {
         currentRow = null;
-        if(resultFetcher.isLast()) {
+        if ( resultFetcher.isLast() ) {
             currentIndex = values.size() - 1;
-            currentRow = values.get(currentIndex);
+            currentRow = values.get( currentIndex );
             return true;
         }
         fetchAll();
         currentIndex = values.size() - 1;
-        currentRow = values.get(currentIndex);
+        currentRow = values.get( currentIndex );
         return true;
     }
 
@@ -202,7 +205,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             }
             return true;
         } catch ( InterruptedException e ) {
-            throw new ProtoInterfaceServiceException(SQLErrors.DRIVER_THREADING_ERROR, "Fetching mor rows from server failed.", e);
+            throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Fetching mor rows from server failed.", e );
         }
     }
 
@@ -245,7 +248,10 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
     @Override
     public void close() {
-
+        if ( fetcherThread == null ) {
+            return;
+        }
+        fetcherThread.interrupt();
     }
 
 
