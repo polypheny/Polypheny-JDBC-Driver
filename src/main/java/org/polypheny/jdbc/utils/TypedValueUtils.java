@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
@@ -42,8 +43,21 @@ import org.polypheny.jdbc.types.TypedValue;
 
 public class TypedValueUtils {
 
-    private static final SimpleDateFormat SQL_DATE_FORMAT = new SimpleDateFormat( "dd MMM yyyy" );
-    private static final SimpleDateFormat SQL_TIME_FORMAT = new SimpleDateFormat( "HH:mm:ss" );
+
+    private static SimpleDateFormat SQL_DATE_FORMAT;
+    private static SimpleDateFormat SQL_TIME_FORMAT;
+
+
+    static {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat( "dd MMM yyyy" );
+        simpleDateFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
+        SQL_DATE_FORMAT = simpleDateFormat;
+
+        SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat( "HH:mm:ss" );
+        simpleDateFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
+        SQL_TIME_FORMAT = simpleDateFormat1;
+    }
+
 
     private static final Set<Integer> NUMERIC_RETURNING_TYPES =
             ImmutableSet.<Integer>builder()
@@ -76,7 +90,6 @@ public class TypedValueUtils {
                     .add( Types.BIT )
                     .add( Types.BOOLEAN )
                     .build();
-
 
     private static final Set<Integer> CLOB_RETURNING_TYPES =
             ImmutableSet.<Integer>builder()
@@ -176,6 +189,11 @@ public class TypedValueUtils {
 
     private static Time getTimeFromOffsetTime( OffsetTime offsetTime ) {
         return Time.valueOf( offsetTime.toLocalTime() );
+    }
+
+
+    public static Time getTimeFromDate( Date date ) {
+        return TypedValueUtils.getTimeFromTimestamp( TypedValueUtils.getTimestampFromDate( date ) );
     }
 
 

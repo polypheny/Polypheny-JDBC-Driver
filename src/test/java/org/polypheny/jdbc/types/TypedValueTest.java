@@ -374,6 +374,7 @@ public class TypedValueTest {
         assertEquals( time, typedValue.getValue() );
     }
 
+
     @Test
     public void asTimeWithValidValue() throws SQLException {
         Time time = new Time( 12, 30, 0 );
@@ -434,6 +435,7 @@ public class TypedValueTest {
         assertEquals( Types.DATE, typedValue.getJdbcType() );
         assertEquals( date, typedValue.getValue() );
     }
+
 
     @Test
     public void fromObjectWithValidDate() throws SQLException {
@@ -604,5 +606,4 @@ public class TypedValueTest {
         assertEquals( Types.BOOLEAN, typedValue.getJdbcType() );
         assertEquals( true, typedValue.getValue() );
     }
-
 }
