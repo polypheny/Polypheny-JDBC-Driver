@@ -166,9 +166,9 @@ public class PolyphenyStatement implements Statement {
         if ( currentResult != null ) {
             currentResult.close();
         }
-        isClosed = true;
         polyphenyConnection.removeStatementFromOpen( this );
         getClient().closeStatement( statementId, getTimeout() );
+        isClosed = true;
     }
 
 

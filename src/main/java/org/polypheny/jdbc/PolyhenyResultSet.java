@@ -163,6 +163,7 @@ public class PolyhenyResultSet implements ResultSet {
 
     @Override
     public void close() throws SQLException {
+        isClosed = true;
     }
 
 
