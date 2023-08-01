@@ -374,6 +374,13 @@ public class TypedValueTest {
         assertEquals( time, typedValue.getValue() );
     }
 
+    @Test
+    public void asTimeWithValidValue() throws SQLException {
+        Time time = new Time( 12, 30, 0 );
+        TypedValue typedValue = TypedValue.fromTime( time );
+        assertEquals( time, typedValue.asTime() );
+    }
+
 
     @Test(expected = NullPointerException.class)
     public void fromDateWhenNullCalendarProvidedThenThrowException() {

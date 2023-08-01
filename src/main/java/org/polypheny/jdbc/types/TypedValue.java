@@ -24,6 +24,7 @@ import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLInput;
+import java.sql.SQLType;
 import java.sql.SQLXML;
 import java.sql.Struct;
 import java.sql.Time;
@@ -704,14 +705,15 @@ public class TypedValue implements Convertible {
         return TypedValueUtils.getDateInCalendar( asDate(), calendar );
     }
 
-
     public Time asTime() throws SQLException {
         if ( isSqlNull() || isNull() ) {
             return null;
         }
         switch ( jdbcType ) {
-            case Types.DATE:
+            case Types.TIME:
                 return (Time) value;
+            case Types.DATE:
+                return TypedValueUtils.getTimeFromTimestamp( TypedValueUtils.getTimestampFromDate( (Date) value ) );
             case Types.TIMESTAMP:
                 return TypedValueUtils.getTimeFromTimestamp( (Timestamp) value );
         }
@@ -721,7 +723,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( ParseException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time" );
+        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time " + value + "with type " + jdbcType );
     }
 
 
@@ -835,6 +837,9 @@ public class TypedValue implements Convertible {
 
 
     public boolean isUdtPrototype() {
+        if (internalType == null) {
+            return false;
+        }
         return internalType.equals( UDT_PROOTYPE_TYPE );
     }
 

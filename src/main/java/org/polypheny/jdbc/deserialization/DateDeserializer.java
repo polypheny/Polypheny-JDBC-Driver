@@ -21,8 +21,8 @@ public class DateDeserializer implements ValueDeserializer {
     }
 
 
-    private Date deserializeToSqlDate( ProtoDate polyDate ) {
-        return new Date(polyDate.getDate() );
+    private Date deserializeToSqlDate( ProtoDate protoDate ) {
+        return new Date(protoDate.getDate() );
     }
 
 }

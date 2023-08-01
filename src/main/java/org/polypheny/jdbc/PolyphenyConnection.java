@@ -86,6 +86,7 @@ public class PolyphenyConnection implements Connection {
         this.databaseMetaData = databaseMetaData;
         this.openStatements = new HashSet<>();
         this.typeMap = new HashMap<>();
+        this.isClosed = false;
     }
 
 
