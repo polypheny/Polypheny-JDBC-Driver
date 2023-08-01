@@ -24,12 +24,18 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
     public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
+        if (properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows()) {
+            values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
+        }
         this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.currentIndex = INDEX_BEFORE_FIRST;
         this.properties = properties;
     }
 
+    protected int longToInt( long longNumber ) {
+        return Math.toIntExact( longNumber );
+    }
 
     private boolean fetchUpTo( int rowIndex ) throws InterruptedException {
         while ( values.size() < rowIndex ) {

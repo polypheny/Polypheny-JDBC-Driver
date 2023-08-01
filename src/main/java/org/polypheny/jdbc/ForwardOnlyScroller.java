@@ -25,12 +25,18 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
 
     public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout) {
         this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
+        if (properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows()) {
+            values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
+        }
         this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout);
         this.resultFetcher.setLast( frame.getIsLast() );
         this.properties = properties;
         this.baseIndex = INDEX_BEFORE_FIRST;
     }
 
+    protected int longToInt( long longNumber ) {
+        return Math.toIntExact( longNumber );
+    }
 
     @Override
     public boolean next() throws ProtoInterfaceServiceException {
