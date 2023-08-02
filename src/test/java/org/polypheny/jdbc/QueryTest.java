@@ -35,6 +35,8 @@ public class QueryTest {
             preparedStatement.setInt(1, 1);
             preparedStatement.setString(2, "John Doe");
 
+            preparedStatement.execute();
+
             System.out.println("Values inserted successfully!");
 
         } catch (SQLException e) {
