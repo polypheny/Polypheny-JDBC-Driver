@@ -52,6 +52,9 @@ public class ProtoValueSerializer {
 
 
     public static ProtoValue serialize( TypedValue typedValue ) throws SQLException {
+        if (typedValue.isNull()) {
+            return serializeAsProtoNull(typedValue);
+        }
         switch ( typedValue.getJdbcType() ) {
             case Types.TINYINT:
             case Types.SMALLINT:
