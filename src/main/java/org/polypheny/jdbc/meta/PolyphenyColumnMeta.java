@@ -104,7 +104,7 @@ public class PolyphenyColumnMeta {
         this.signed = false;
         this.displaySize = -1;
         this.columnLabel = columnLabel;
-        this.columnName = null;
+        this.columnName = columnLabel;
         this.namespace = null;
         this.precision = -1;
         this.scale = 1;
