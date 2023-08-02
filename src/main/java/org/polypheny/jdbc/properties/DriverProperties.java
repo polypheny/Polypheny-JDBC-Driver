@@ -1,8 +1,10 @@
 package org.polypheny.jdbc.properties;
 
+import java.util.TimeZone;
 import lombok.Getter;
 
 public class DriverProperties {
+
     @Getter
     private static final String DRIVER_NAME = "JDBC driver for PolyphenyDB";
     @Getter
@@ -20,7 +22,8 @@ public class DriverProperties {
     private static final boolean JDBC_COMPLIANT = false;
     @Getter
     private static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
-
+    @Getter
+    private static final TimeZone DEFAULT_TIMEZONE = TimeZone.getTimeZone("UTC");
     @Getter
     private static final boolean STRICT_MODE = false;
     @Getter
@@ -28,4 +31,5 @@ public class DriverProperties {
     private static final boolean BACKDOOR_ENABLED = true;
     @Getter
     private static final String BACKDOR_STRING = "dasKannKeinEmptyString";
+
 }

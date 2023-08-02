@@ -1,8 +1,10 @@
 package org.polypheny.jdbc.properties;
 
 import java.sql.SQLException;
+import java.util.Calendar;
 import lombok.Getter;
 import lombok.Setter;
+import org.checkerframework.checker.units.qual.C;
 import org.polypheny.jdbc.PolyphenyStatement;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
@@ -35,6 +37,9 @@ public class PolyphenyStatementProperties {
     private boolean doesEscapeProcessing;
     @Getter
     private boolean isPoolable;
+    @Getter
+    @Setter
+    private Calendar calendar;
 
 
     public void setPolyphenyStatement( PolyphenyStatement polyphenyStatement ) throws SQLException {
@@ -160,6 +165,7 @@ public class PolyphenyStatementProperties {
         properties.setFetchSize( fetchSize );
         properties.setMaxFieldSize( maxFieldSize );
         properties.setLargeMaxRows( largeMaxRows );
+        properties.setCalendar(calendar);
         return properties;
     }
 

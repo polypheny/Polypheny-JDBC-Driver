@@ -81,6 +81,8 @@ public class PropertyUtils {
     private static final String NETWORK_TIMEOUT_KEY = "nwtimeout";
     @Getter
     private static final String TRANSACTION_ISOLATION_KEY = "isolation";
+    @Getter
+    private static final String TIMEZONE_KEY = "timezone";
 
     public static String getHoldabilityName(int resultSetHoldability) throws ProtoInterfaceServiceException {
         switch ( resultSetHoldability ) {

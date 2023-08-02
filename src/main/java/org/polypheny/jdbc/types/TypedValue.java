@@ -39,6 +39,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.SQLErrors;
 import org.polypheny.jdbc.deserialization.UDTPrototype;
+import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
@@ -703,7 +704,7 @@ public class TypedValue implements Convertible {
             case Types.DATE:
                 return (Date) value;
             case Types.TIMESTAMP:
-                return TypedValueUtils.getDateFromTimestamp( (Timestamp) value );
+                return  TypedValueUtils.getDateFromTimestamp( (Timestamp) value );
         }
         try {
             if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
@@ -720,7 +721,9 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() || isNull() ) {
             return null;
         }
-        return TypedValueUtils.getDateInCalendar( asDate(), calendar );
+        Date date = asDate();
+        return TypedValueUtils.getDateInCalendar( date, calendar );
+
     }
 
 

@@ -1,5 +1,6 @@
 package org.polypheny.jdbc;
 
+import java.awt.peer.CanvasPeer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
@@ -255,21 +257,21 @@ public class PolyhenyResultSet implements ResultSet {
     @Override
     public Date getDate( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asDate( Calendar.getInstance() );
+        return accessValue( columnIndex ).asDate( properties.getCalendar() );
     }
 
 
     @Override
     public Time getTime( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asTime( Calendar.getInstance() );
+        return accessValue( columnIndex ).asTime( properties.getCalendar() );
     }
 
 
     @Override
     public Timestamp getTimestamp( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asTimestamp( Calendar.getInstance() );
+        return accessValue( columnIndex ).asTimestamp( properties.getCalendar() );
     }
 
 

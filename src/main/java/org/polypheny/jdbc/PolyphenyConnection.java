@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
@@ -33,7 +34,6 @@ import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
-import org.polypheny.jdbc.proto.TypeMeta;
 import org.polypheny.jdbc.types.PolyphenyArray;
 import org.polypheny.jdbc.types.PolyphenyBlob;
 import org.polypheny.jdbc.types.PolyphenyClob;
@@ -54,7 +54,6 @@ public class PolyphenyConnection implements Connection {
 
     @Getter
     private Map<String, Class<?>> typeMap;
-
 
     private void throwIfClosed() throws SQLException {
         if ( isClosed ) {

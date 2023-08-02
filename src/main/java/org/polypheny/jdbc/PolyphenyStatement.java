@@ -36,6 +36,11 @@ public class PolyphenyStatement implements Statement {
     protected List<String> statementBatch;
 
 
+    public PolyphenyConnection getPolyphenyConnection() {
+        return polyphenyConnection;
+    }
+
+
     public PolyphenyStatement( PolyphenyConnection connection, PolyphenyStatementProperties properties ) throws SQLException {
         this.polyphenyConnection = connection;
         this.properties = properties;

@@ -3,8 +3,11 @@ package org.polypheny.jdbc.properties;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 import lombok.Getter;
 import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.ProtoInterfaceClient;
@@ -20,6 +23,7 @@ public class PolyphenyConnectionProperties {
         this.resultSetHoldability = PropertyUtils.getDEFAULT_RESULTSET_HOLDABILITY();
         this.networkTimeout = PropertyUtils.getDEFAULT_NETWORK_TIMEOUT();
         this.transactionIsolation = PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION();
+        this.calendar = Calendar.getInstance(DriverProperties.getDEFAULT_TIMEZONE(), Locale.ROOT);
         this.catalogName = null;
 
         Map<String, String> parameters = connectionString.getParameters();
@@ -29,6 +33,7 @@ public class PolyphenyConnectionProperties {
         Optional.ofNullable( parameters.get( PropertyUtils.getREAD_ONLY_KEY() ) ).ifPresent( p -> this.isReadOnly = Boolean.parseBoolean( p ) );
         Optional.ofNullable( parameters.get( PropertyUtils.getNETWORK_TIMEOUT_KEY() ) ).ifPresent( p -> this.networkTimeout = Integer.parseInt( p ) );
         Optional.ofNullable( parameters.get( PropertyUtils.getNAMESPACE_KEY() ) ).ifPresent( p -> this.namespaceName = p );
+        Optional.ofNullable( parameters.get( PropertyUtils.getTIMEZONE_KEY() ) ).ifPresent( p -> this.calendar = Calendar.getInstance(TimeZone.getTimeZone( p ), Locale.ROOT ));
 
         if ( parameters.containsKey( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY() ) ) {
             int resultSetHoldability = parseResultSetHoldability( parameters.get( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY() ) );
@@ -94,6 +99,8 @@ public class PolyphenyConnectionProperties {
     private String catalogName;
     @Getter
     private String namespaceName;
+    @Getter
+    private Calendar calendar;
 
 
     public void setAutoCommit( boolean isAutoCommit ) throws ProtoInterfaceServiceException {
@@ -164,6 +171,7 @@ public class PolyphenyConnectionProperties {
 
     public PolyphenyStatementProperties toStatementProperties( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         PolyphenyStatementProperties properties = new PolyphenyStatementProperties();
+        properties.setCalendar(calendar);
         properties.setProtoInterfaceClient( protoInterfaceClient );
         properties.setQueryTimeoutSeconds( PropertyUtils.getDEFAULT_QUERY_TIMEOUT_SECONDS() );
         properties.setResultSetType( resultSetType );
