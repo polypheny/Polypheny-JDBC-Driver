@@ -23,7 +23,7 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>("TABLE_SCHEM", Types.VARCHAR, Table::getNamespaceName),
             new MetaResultSetParameter<>("TABLE_NAME", Types.VARCHAR, Table::getTableName),
             new MetaResultSetParameter<>("TABLE_TYPE", Types.VARCHAR, Table::getTableType),
-            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, p -> null),
+            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, p -> ""),
             new MetaResultSetParameter<>("TYPE_CAT", Types.VARCHAR, p -> null),
             new MetaResultSetParameter<>("TYPE_SCHEM", Types.VARCHAR, p -> null),
             new MetaResultSetParameter<>("TYPE_NAME", Types.VARCHAR, p -> null),
