@@ -118,6 +118,22 @@ public class ConnectionStringTest {
         assertEquals( expectedTarget, cs.getTarget() );
     }
 
+    @Test
+    public void connectionString_String__AcceptableUrlNoNamespace() throws Exception {
+        final HashMap<String, String> expected = new HashMap<>();
+        expected.put( PropertyUtils.getUSERNAME_KEY(), "username" );
+        expected.put( PropertyUtils.getPASSWORD_KEY(), "password" );
+        expected.put( "k1", "v1" );
+        expected.put( "k2", "v2" );
+        final String expectedTarget = "localhost:20569";
+
+        final String url = "jdbc:polypheny://username:password@localhost:20569?k1=v1&k2=v2";
+        final ConnectionString cs = new ConnectionString( url );
+
+        assertEquals( expected, cs.getParameters() );
+        assertEquals( expectedTarget, cs.getTarget() );
+    }
+
 
     @Test
     public void connectionString_String__ColumnInPassword() throws Exception {
