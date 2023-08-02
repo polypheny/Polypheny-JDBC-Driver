@@ -25,6 +25,7 @@ public class PolyphenyConnectionProperties {
         this.transactionIsolation = PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION();
         this.calendar = Calendar.getInstance(DriverProperties.getDEFAULT_TIMEZONE(), Locale.ROOT);
         this.catalogName = null;
+        this.isStrict = true;
 
         Map<String, String> parameters = connectionString.getParameters();
         Optional.ofNullable( parameters.get( PropertyUtils.getUSERNAME_KEY() ) ).ifPresent( p -> this.username = p );
@@ -34,6 +35,7 @@ public class PolyphenyConnectionProperties {
         Optional.ofNullable( parameters.get( PropertyUtils.getNETWORK_TIMEOUT_KEY() ) ).ifPresent( p -> this.networkTimeout = Integer.parseInt( p ) );
         Optional.ofNullable( parameters.get( PropertyUtils.getNAMESPACE_KEY() ) ).ifPresent( p -> this.namespaceName = p );
         Optional.ofNullable( parameters.get( PropertyUtils.getTIMEZONE_KEY() ) ).ifPresent( p -> this.calendar = Calendar.getInstance(TimeZone.getTimeZone( p ), Locale.ROOT ));
+        Optional.ofNullable( parameters.get( PropertyUtils.getSTRICT_MODE_KEY() ) ).ifPresent( p -> this.isStrict = Boolean.parseBoolean( p ) );
 
         if ( parameters.containsKey( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY() ) ) {
             int resultSetHoldability = parseResultSetHoldability( parameters.get( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY() ) );
@@ -101,6 +103,8 @@ public class PolyphenyConnectionProperties {
     private String namespaceName;
     @Getter
     private Calendar calendar;
+    @Getter
+    private boolean isStrict;
 
 
     public void setAutoCommit( boolean isAutoCommit ) throws ProtoInterfaceServiceException {

@@ -83,6 +83,8 @@ public class PropertyUtils {
     private static final String TRANSACTION_ISOLATION_KEY = "isolation";
     @Getter
     private static final String TIMEZONE_KEY = "timezone";
+    @Getter
+    private static final String STRICT_MODE_KEY = "strict";
 
     public static String getHoldabilityName(int resultSetHoldability) throws ProtoInterfaceServiceException {
         switch ( resultSetHoldability ) {

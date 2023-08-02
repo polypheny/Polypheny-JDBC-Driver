@@ -186,7 +186,7 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>("TABLE_NAME", Types.VARCHAR, p -> p.getValue(2)),
             new MetaResultSetParameter<>("COLUMN_NAME", Types.VARCHAR, p -> p.getValue(3)),
             new MetaResultSetParameter<>("GRANTOR", Types.TINYINT, p -> p.getValue(4)),
-            new MetaResultSetParameter<>("GRANTEE ", Types.INTEGER, p -> p.getValue(5)),
+            new MetaResultSetParameter<>("GRANTEE", Types.INTEGER, p -> p.getValue(5)),
             new MetaResultSetParameter<>("PRIVILEGE", Types.VARCHAR, p -> p.getValue(6)),
             new MetaResultSetParameter<>("IS_GRANTABLE", Types.INTEGER, p -> p.getValue(7))
     );

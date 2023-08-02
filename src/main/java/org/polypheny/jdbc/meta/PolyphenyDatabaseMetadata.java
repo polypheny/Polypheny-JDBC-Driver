@@ -71,7 +71,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     private void throwNotSupportedIfStrict() throws SQLFeatureNotSupportedException {
-        if ( !DriverProperties.isSTRICT_MODE() ) {
+        if ( !polyphenyConnection.isStrict() ) {
             return;
         }
         throw new SQLFeatureNotSupportedException();
@@ -791,8 +791,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsTransactionIsolationLevel( int level ) throws SQLException {
-        // This is the only supported isolation level
-        return level == PropertyUtils.getDEFAULT_TRANSACTION_ISOLATION();
+        return PropertyUtils.isValidIsolationLevel( level );
     }
 
 

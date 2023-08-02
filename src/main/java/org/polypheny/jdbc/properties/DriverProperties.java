@@ -25,8 +25,6 @@ public class DriverProperties {
     @Getter
     private static final TimeZone DEFAULT_TIMEZONE = TimeZone.getTimeZone("GMT+1");
     @Getter
-    private static final boolean STRICT_MODE = false;
-    @Getter
     // This feature is for testing purposes only!
     private static final boolean BACKDOOR_ENABLED = true;
     @Getter

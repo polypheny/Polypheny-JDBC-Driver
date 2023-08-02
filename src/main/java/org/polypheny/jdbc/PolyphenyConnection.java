@@ -102,6 +102,9 @@ public class PolyphenyConnection implements Connection {
         heartbeatTimer.schedule( createNewHeartbeatTask(), 0, heartbeatInterval );
     }
 
+    public boolean isStrict() {
+        return properties.isStrict();
+    }
 
     private TimerTask createNewHeartbeatTask() {
         Runnable runnable = () -> getProtoInterfaceClient().checkConnection( properties.getNetworkTimeout() );
