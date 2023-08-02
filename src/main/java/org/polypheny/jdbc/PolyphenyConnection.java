@@ -52,7 +52,6 @@ public class PolyphenyConnection implements Connection {
 
     private HashSet<Statement> openStatements;
 
-    @Getter
     private Map<String, Class<?>> typeMap;
 
     private void throwIfClosed() throws SQLException {

@@ -1,5 +1,6 @@
 package org.polypheny.jdbc;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.polypheny.jdbc.properties.PropertyUtils;
 

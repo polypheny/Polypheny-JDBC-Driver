@@ -422,7 +422,7 @@ public class PolyhenyResultSet implements ResultSet {
         if ( typedValue.isUdtPrototype() ) {
             return typedValue.asObject( getStatement().getConnection().getTypeMap() );
         }
-        return typedValue.asObject();
+        return typedValue.asObject(properties.getCalendar());
     }
 
 

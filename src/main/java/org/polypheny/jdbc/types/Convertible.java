@@ -107,5 +107,7 @@ public interface Convertible {
 
     Object asObject(Map<String, Class<?>> map) throws SQLException;
 
+    Object asObject( Calendar calendar ) throws SQLException;
+
     <T> T asObject(Class<T> aClass) throws SQLFeatureNotSupportedException, ProtoInterfaceServiceException;
 }

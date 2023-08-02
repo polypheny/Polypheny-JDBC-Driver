@@ -23,7 +23,7 @@ public class DriverProperties {
     @Getter
     private static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
     @Getter
-    private static final TimeZone DEFAULT_TIMEZONE = TimeZone.getTimeZone("UTC");
+    private static final TimeZone DEFAULT_TIMEZONE = TimeZone.getTimeZone("GMT+1");
     @Getter
     private static final boolean STRICT_MODE = false;
     @Getter

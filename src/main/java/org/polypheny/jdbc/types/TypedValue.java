@@ -39,7 +39,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.SQLErrors;
 import org.polypheny.jdbc.deserialization.UDTPrototype;
-import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
@@ -917,6 +916,73 @@ public class TypedValue implements Convertible {
                 return asTime();
             case Types.TIMESTAMP:
                 return asTimestamp();
+            case Types.DISTINCT:
+                // should return object type of underlying type
+                throw new IllegalArgumentException( "Retrieval of Types.DISTINCT not implemented" );
+            case Types.CLOB:
+                return asClob();
+            case Types.BLOB:
+                return asBlob();
+            case Types.ARRAY:
+                return asArray();
+            case Types.STRUCT:
+                return asStruct();
+            case Types.REF:
+                return asRef();
+            case Types.DATALINK:
+                return asUrl();
+            case Types.JAVA_OBJECT:
+                return getValue();
+            case Types.ROWID:
+                return asRowId();
+            case Types.NCLOB:
+                return asNClob();
+            case Types.SQLXML:
+                return asSQLXML();
+        }
+        throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
+    }
+
+    @Override
+    public Object asObject( Calendar calendar ) throws SQLException {
+        if ( isSqlNull() || isNull() ) {
+            return null;
+        }
+        switch ( jdbcType ) {
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGVARCHAR:
+            case Types.NCHAR:
+            case Types.NVARCHAR:
+            case Types.LONGNVARCHAR:
+                return asString();
+            case Types.NUMERIC:
+            case Types.DECIMAL:
+                return asBigDecimal();
+            case Types.BIT:
+            case Types.BOOLEAN:
+                return asBoolean();
+            case Types.TINYINT:
+            case Types.SMALLINT:
+            case Types.INTEGER:
+                return asInt();
+            case Types.BIGINT:
+                return asLong();
+            case Types.REAL:
+                return asFloat();
+            case Types.FLOAT:
+            case Types.DOUBLE:
+                return asDouble();
+            case Types.BINARY:
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
+                return asBytes();
+            case Types.DATE:
+                return asDate(calendar);
+            case Types.TIME:
+                return asTime(calendar);
+            case Types.TIMESTAMP:
+                return asTimestamp(calendar);
             case Types.DISTINCT:
                 // should return object type of underlying type
                 throw new IllegalArgumentException( "Retrieval of Types.DISTINCT not implemented" );
