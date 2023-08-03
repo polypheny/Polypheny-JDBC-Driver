@@ -48,19 +48,19 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>("TABLE_SCHEM", Types.VARCHAR, Column::getNamespaceName),
             new MetaResultSetParameter<>("TABLE_NAME", Types.VARCHAR, Column::getTableName),
             new MetaResultSetParameter<>("COLUMN_NAME", Types.VARCHAR, Column::getColumnName),
-            new MetaResultSetParameter<>("DATA_TYPE", Types.VARCHAR, p -> TypedValueUtils.getJdbcTypeFromPolyTypeName(p.getTypeName())),
+            new MetaResultSetParameter<>("DATA_TYPE", Types.INTEGER, p -> TypedValueUtils.getJdbcTypeFromPolyTypeName(p.getTypeName())),
             new MetaResultSetParameter<>("TYPE_NAME", Types.VARCHAR, Column::getTypeName),
             new MetaResultSetParameter<>("COLUMN_SIZE", Types.INTEGER, nullIfFalse(Column::getTypeLength, Column::hasTypeLength)),
             new MetaResultSetParameter<>("BUFFER_LENGTH", Types.INTEGER, p -> null),
             new MetaResultSetParameter<>("DECIMAL_DIGITS", Types.INTEGER, nullIfFalse(convertScale(Column::getTypeScale), Column::hasTypeScale)),
             new MetaResultSetParameter<>("NUM_PREC_RADIX", Types.INTEGER, p -> null),
-            new MetaResultSetParameter<>("NULLABLE", Types.VARCHAR, p -> p.getIsNullable() ? 1 : 0),
-            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, p -> null),
+            new MetaResultSetParameter<>("NULLABLE", Types.INTEGER, p -> p.getIsNullable() ? 1 : 0),
+            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, p -> ""),
             new MetaResultSetParameter<>("COLUMN_DEF", Types.VARCHAR, nullIfFalse(Column::getDefaultValueAsString, Column::hasDefaultValueAsString)),
             new MetaResultSetParameter<>("SQL_DATA_TYPE", Types.INTEGER, p -> null),
             new MetaResultSetParameter<>("SQL_DATETIME_SUB", Types.INTEGER, p -> null),
             new MetaResultSetParameter<>("CHAR_OCTET_LENGTH", Types.INTEGER, p -> null),
-            new MetaResultSetParameter<>("ORDINAL_POSITION", Types.VARCHAR, Column::getColumnIndex),
+            new MetaResultSetParameter<>("ORDINAL_POSITION", Types.INTEGER, Column::getColumnIndex),
             new MetaResultSetParameter<>("IS_NULLABLE", Types.VARCHAR, p -> p.getIsNullable() ? "YES" : "NO"),
             new MetaResultSetParameter<>("SCOPE_CATALOG", Types.VARCHAR, p -> null),
             new MetaResultSetParameter<>("SCOPE_SCHEMA", Types.VARCHAR, p -> null),
@@ -100,7 +100,7 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>("UPDATE_RULE", Types.SMALLINT, p -> p.getValue(9)),
             new MetaResultSetParameter<>("DELETE_RULE", Types.SMALLINT, p -> p.getValue(10)),
             new MetaResultSetParameter<>("FK_NAME", Types.VARCHAR, p -> p.getValue(11)),
-            new MetaResultSetParameter<>("PK_NAME", Types.VARCHAR, p -> p.getValue(12)),
+            new MetaResultSetParameter<>("PK_NAME", Types.VARCHAR, p -> null),
             new MetaResultSetParameter<>("DEFERRABILITY", Types.SMALLINT, p -> null)
     );
 
@@ -185,20 +185,20 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>("TABLE_SCHEM", Types.VARCHAR, p -> p.getValue(1)),
             new MetaResultSetParameter<>("TABLE_NAME", Types.VARCHAR, p -> p.getValue(2)),
             new MetaResultSetParameter<>("COLUMN_NAME", Types.VARCHAR, p -> p.getValue(3)),
-            new MetaResultSetParameter<>("GRANTOR", Types.TINYINT, p -> p.getValue(4)),
-            new MetaResultSetParameter<>("GRANTEE", Types.INTEGER, p -> p.getValue(5)),
+            new MetaResultSetParameter<>("GRANTOR", Types.VARCHAR, p -> p.getValue(4)),
+            new MetaResultSetParameter<>("GRANTEE", Types.VARCHAR, p -> p.getValue(5)),
             new MetaResultSetParameter<>("PRIVILEGE", Types.VARCHAR, p -> p.getValue(6)),
-            new MetaResultSetParameter<>("IS_GRANTABLE", Types.INTEGER, p -> p.getValue(7))
+            new MetaResultSetParameter<>("IS_GRANTABLE", Types.VARCHAR, p -> p.getValue(7))
     );
 
     public static final List<MetaResultSetParameter<GenericMetaContainer>> TABLE_PRIVILEGES_GMC_SIGNATURE = Arrays.asList(
             new MetaResultSetParameter<>("TABLE_CAT", Types.VARCHAR, p -> p.getValue(0)),
             new MetaResultSetParameter<>("TABLE_SCHEM", Types.VARCHAR, p -> p.getValue(1)),
             new MetaResultSetParameter<>("TABLE_NAME", Types.VARCHAR, p -> p.getValue(2)),
-            new MetaResultSetParameter<>("GRANTOR", Types.TINYINT, p -> p.getValue(3)),
+            new MetaResultSetParameter<>("GRANTOR", Types.VARCHAR, p -> p.getValue(3)),
             new MetaResultSetParameter<>("GRANTEE ", Types.VARCHAR, p -> p.getValue(4)),
             new MetaResultSetParameter<>("PRIVILEGE", Types.VARCHAR, p -> p.getValue(5)),
-            new MetaResultSetParameter<>("IS_GRANTABLE", Types.INTEGER, p -> p.getValue(6))
+            new MetaResultSetParameter<>("IS_GRANTABLE", Types.VARCHAR, p -> p.getValue(6))
     );
 
     public static final List<MetaResultSetParameter<Column>> VERSION_COLUMN_SIGNATURE = Arrays.asList(
@@ -272,7 +272,7 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>("DECIMAL_DIGITS", Types.INTEGER, nullIfFalse(convertScale(Column::getTypeScale), Column::hasTypeScale)),
             new MetaResultSetParameter<>("NUM_PREC_RADIX", Types.INTEGER, p -> null),
             new MetaResultSetParameter<>("COLUMN_USAGE", Types.VARCHAR, p -> PseudoColumnUsage.USAGE_UNKNOWN),
-            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, p -> null),
+            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, p -> ""),
             new MetaResultSetParameter<>("CHAR_OCTET_LENGTH", Types.INTEGER, p -> null),
             new MetaResultSetParameter<>("IS_NULLABLE", Types.VARCHAR, p -> p.getIsNullable() ? "YES" : "NO")
     );

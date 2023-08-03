@@ -26,7 +26,7 @@ public class MetaResultSetComparators {
             .comparing((GenericMetaContainer g) -> (String) (g.getValue(4)))
             .thenComparing((GenericMetaContainer g) -> (String) (g.getValue(5)))
             .thenComparing((GenericMetaContainer g) -> (String) (g.getValue(6)))
-            .thenComparing((GenericMetaContainer g) -> (String) (g.getValue(8)));
+            .thenComparing((GenericMetaContainer g) -> (Integer) (g.getValue(8)));
     // Both use the same ordering according to JDBC standard
     public static final Comparator<GenericMetaContainer> CROSS_REFERENCE_COMPARATOR = EXPORTED_KEYS_COMPARATOR;
     public static final Comparator<Function> FUNCTION_COMPARATOR = Comparator
