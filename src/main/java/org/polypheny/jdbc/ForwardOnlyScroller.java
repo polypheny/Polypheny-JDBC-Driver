@@ -55,7 +55,7 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
     }
 
     private void considerPrefetch() {
-        int prefetch_count = min(DEFAULT_PREFETCH_COUNT, properties.getFetchSize());
+        int prefetch_count = min(DEFAULT_PREFETCH_COUNT, properties.getStatementFetchSize());
         if ( values.size() > prefetch_count ) {
             return;
         }
@@ -131,6 +131,12 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
             return 0;
         }
         return baseIndex + 1;
+    }
+
+
+    @Override
+    public boolean hasCurrent() {
+        return currentRow != null;
     }
 
 }

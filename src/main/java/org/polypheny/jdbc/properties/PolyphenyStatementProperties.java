@@ -4,7 +4,6 @@ import java.sql.SQLException;
 import java.util.Calendar;
 import lombok.Getter;
 import lombok.Setter;
-import org.checkerframework.checker.units.qual.C;
 import org.polypheny.jdbc.PolyphenyStatement;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
@@ -162,7 +161,7 @@ public class PolyphenyStatementProperties {
         properties.setResultSetConcurrency( resultSetConcurrency );
         properties.setResultSetHoldability( resultSetHoldability );
         properties.setFetchDirection( fetchDirection );
-        properties.setFetchSize( fetchSize );
+        properties.setStatementFetchSize( fetchSize );
         properties.setMaxFieldSize( maxFieldSize );
         properties.setLargeMaxRows( largeMaxRows );
         properties.setCalendar(calendar);

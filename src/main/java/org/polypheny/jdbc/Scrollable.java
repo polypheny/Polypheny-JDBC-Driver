@@ -20,4 +20,6 @@ public interface Scrollable<T> {
 
     int getRow();
 
+    boolean hasCurrent();
+
 }

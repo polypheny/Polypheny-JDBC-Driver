@@ -193,4 +193,10 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
         return indexToRow( currentIndex );
     }
 
+
+    @Override
+    public boolean hasCurrent() {
+        return current != null;
+    }
+
 }

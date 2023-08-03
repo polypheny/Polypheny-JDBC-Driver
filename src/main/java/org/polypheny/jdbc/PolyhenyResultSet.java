@@ -1,6 +1,5 @@
 package org.polypheny.jdbc;
 
-import java.awt.peer.CanvasPeer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -26,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.TimeZone;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
@@ -87,6 +85,9 @@ public class PolyhenyResultSet implements ResultSet {
     private TypedValue accessValue( int column ) throws SQLException {
         if ( !isInInsertMode ) {
             try {
+                if ( !resultScroller.hasCurrent() ) {
+                    throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "No current row to read from." );
+                }
                 lastRead = resultScroller.current().get( column - 1 );
                 if ( properties.getMaxFieldSize() > 0 && lastRead.getLength() > properties.getMaxFieldSize() ) {
                     return lastRead.getTrimmed( properties.getMaxFieldSize() );
@@ -167,9 +168,10 @@ public class PolyhenyResultSet implements ResultSet {
 
     @Override
     public void close() throws SQLException {
-        if (isClosed) {
+        if ( isClosed ) {
             return;
         }
+        getStatement().setFetchSize( properties.getStatementFetchSize() );
         if ( getStatement().isCloseOnCompletion() ) {
             getStatement().unwrap( PolyphenyStatement.class ).closeStatementOnly();
         }
@@ -422,7 +424,7 @@ public class PolyhenyResultSet implements ResultSet {
         if ( typedValue.isUdtPrototype() ) {
             return typedValue.asObject( getStatement().getConnection().getTypeMap() );
         }
-        return typedValue.asObject(properties.getCalendar());
+        return typedValue.asObject( properties.getCalendar() );
     }
 
 
@@ -579,6 +581,7 @@ public class PolyhenyResultSet implements ResultSet {
             throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for fetch size. fetchSize >= 0 must hold." );
         }
         properties.setFetchSize( fetchSize );
+        getStatement().setFetchSize( fetchSize );
     }
 
 

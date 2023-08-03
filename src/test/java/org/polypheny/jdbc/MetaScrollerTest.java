@@ -45,6 +45,7 @@ public class MetaScrollerTest {
     public void indexInitPosition__empty_beforeFirst() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertTrue( scroller.isBeforeFirst() );
+        assertFalse( scroller.hasCurrent() );
     }
 
 

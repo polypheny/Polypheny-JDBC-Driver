@@ -69,7 +69,13 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             if ( rowIndex < 0 ) {
                 fetchAll();
                 currentIndex = values.size() + rowIndex;
+                if (currentIndex < 1) {
+                    currentIndex = INDEX_BEFORE_FIRST;
+                    currentRow = null;
+                    return false;
+                }
                 currentRow = values.get( currentIndex );
+                return true;
             }
             if ( rowIndex == 0 ) {
                 currentIndex = INDEX_BEFORE_FIRST;
@@ -117,7 +123,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             if ( currentIndex + offset < 0 ) {
                 currentIndex = INDEX_BEFORE_FIRST;
                 currentRow = null;
-                return true;
+                return false;
             }
             if ( currentIndex + offset < values.size() ) {
                 currentIndex += offset;
@@ -211,7 +217,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
 
     private void considerPrefetch() {
-        int prefetch_count = min( DEFAULT_PREFETCH_COUNT, properties.getFetchSize() );
+        int prefetch_count = min( DEFAULT_PREFETCH_COUNT, properties.getStatementFetchSize() );
         if ( values.size() > prefetch_count ) {
             return;
         }
@@ -282,6 +288,12 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
     @Override
     public int getRow() {
         return indexToRow( currentIndex );
+    }
+
+
+    @Override
+    public boolean hasCurrent() {
+        return currentRow != null;
     }
 
 }

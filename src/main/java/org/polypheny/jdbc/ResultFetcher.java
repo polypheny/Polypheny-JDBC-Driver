@@ -39,7 +39,7 @@ public class ResultFetcher implements Runnable {
 
     @Override
     public void run() {
-        long fetchEnd = totalFetched + properties.getFetchSize();
+        long fetchEnd = totalFetched + properties.getStatementFetchSize();
         Frame nextFrame = null;
         try {
             nextFrame = client.fetchResult( statementId, fetchTimeout);

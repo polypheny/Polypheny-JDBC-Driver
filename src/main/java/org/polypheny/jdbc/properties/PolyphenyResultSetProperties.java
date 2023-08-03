@@ -22,8 +22,8 @@ public class PolyphenyResultSetProperties {
     @Setter
     private int fetchDirection;
     @Getter
-    @Setter
-    private int fetchSize;
+    private int statementFetchSize;
+    private int resultSetFetchSize;
     @Getter
     @Setter
     private int maxFieldSize;
@@ -47,11 +47,26 @@ public class PolyphenyResultSetProperties {
         properties.setResultSetConcurrency( ResultSet.CONCUR_READ_ONLY );
         properties.setResultSetHoldability( ResultSet.CLOSE_CURSORS_AT_COMMIT );
         properties.setFetchDirection( ResultSet.FETCH_FORWARD );
-        properties.setFetchSize( 0 );
+        properties.setStatementFetchSize( 0 );
         properties.setMaxFieldSize( 0 );
         properties.setLargeMaxRows( 0 );
-        properties.setCalendar( Calendar.getInstance( TimeZone.getDefault(), Locale.ROOT) );
+        properties.setCalendar( Calendar.getInstance( TimeZone.getDefault(), Locale.ROOT ) );
         return properties;
+    }
+
+
+    public void setStatementFetchSize( int fetchSize ) {
+        statementFetchSize = fetchSize;
+        resultSetFetchSize = fetchSize;
+    }
+
+
+    public void setFetchSize( int fetchSize ) {
+        resultSetFetchSize = fetchSize;
+    }
+
+    public int getFetchSize() {
+        return resultSetFetchSize;
     }
 
 }
