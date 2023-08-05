@@ -12,7 +12,7 @@ import lombok.Getter;
 import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.SQLErrors;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
 
 public class PolyphenyConnectionProperties {
 
@@ -40,14 +40,14 @@ public class PolyphenyConnectionProperties {
         if ( parameters.containsKey( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY() ) ) {
             int resultSetHoldability = parseResultSetHoldability( parameters.get( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY() ) );
             if ( !PropertyUtils.isValidResultSetHoldability( resultSetHoldability ) ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Result set holdability not supported:" + resultSetHoldability );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Result set holdability not supported:" + resultSetHoldability );
             }
             this.resultSetHoldability = resultSetHoldability;
         }
         if ( parameters.containsKey( PropertyUtils.getTRANSACTION_ISOLATION_KEY() ) ) {
             int transactionIsolation = parseTransactionIsolation( parameters.get( PropertyUtils.getTRANSACTION_ISOLATION_KEY() ) );
             if ( !PropertyUtils.isValidIsolationLevel( transactionIsolation ) ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Transaction isolation level not supported: " + transactionIsolation );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Transaction isolation level not supported: " + transactionIsolation );
             }
             this.transactionIsolation = transactionIsolation;
         }
@@ -65,7 +65,7 @@ public class PolyphenyConnectionProperties {
             case "REPEATABLE_READ":
                 return Connection.TRANSACTION_REPEATABLE_READ;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Invalid value for transaction isolation: " + string );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Invalid value for transaction isolation: " + string );
     }
 
 
@@ -76,7 +76,7 @@ public class PolyphenyConnectionProperties {
             case "CLOSE":
                 return ResultSet.CLOSE_CURSORS_AT_COMMIT;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Invalid value for result set holdability: " + string );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Invalid value for result set holdability: " + string );
     }
 
 
@@ -121,7 +121,7 @@ public class PolyphenyConnectionProperties {
 
     public void setResultSetHoldability( int resultSetHoldability ) throws SQLException {
         if ( !PropertyUtils.isValidResultSetHoldability( resultSetHoldability ) ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Invalid value for result set holdability" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Invalid value for result set holdability" );
         }
         this.resultSetHoldability = resultSetHoldability;
         // not transmitted to server -> no sync()
@@ -136,7 +136,7 @@ public class PolyphenyConnectionProperties {
 
     public void setTransactionIsolation( int transactionIsolation ) throws SQLException {
         if ( !PropertyUtils.isValidIsolationLevel( transactionIsolation ) ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Invalid value for transaction isolation" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Invalid value for transaction isolation" );
         }
         this.transactionIsolation = transactionIsolation;
         sync();

@@ -16,7 +16,7 @@
 
 package org.polypheny.jdbc;
 
-public enum SQLErrors {
+public enum ProtoInterfaceErrors {
     UNSPECIFIED( "UNSPECIFIED", -1 ),
     DRIVER_THREADING_ERROR( "I1001", 1 ),
     URL_PARSING_INVALID( "I2001", 2 ),
@@ -34,14 +34,15 @@ public enum SQLErrors {
     OPTION_NOT_SUPPORTED( "0A000", 14 ),
     DATA_TYPE_MISSMATCH( "42S22", 17 ),
     MISSING_INTERFACE("I4003", 18),
-    UDT_CONSTRUCTION_FAILED("I4003", 19);
+    UDT_CONSTRUCTION_FAILED("I4003", 19),
+    ENTRY_NOT_EXISTS("I5001", 20);
 
 
     public final String state;
     public final int errorCode;
 
 
-    SQLErrors( String state, int errorCode ) {
+    ProtoInterfaceErrors( String state, int errorCode ) {
         this.state = state;
         this.errorCode = errorCode;
     }

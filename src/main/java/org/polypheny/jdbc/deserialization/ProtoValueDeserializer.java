@@ -38,12 +38,11 @@ public class ProtoValueDeserializer {
                     .build();
 
 
-    public static TypedValue deserialize( ProtoValue value ) {
+    public static TypedValue deserializeToTypedValue( ProtoValue value ) {
         try {
-            return VALUE_DESERIALIZERS.get( value.getValueCase() ).deserialize( value );
+            return VALUE_DESERIALIZERS.get( value.getValueCase() ).deserializeToTypedValue( value );
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
     }
-
 }

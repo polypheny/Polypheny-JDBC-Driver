@@ -1,9 +1,7 @@
 package org.polypheny.jdbc.meta;
 
-import org.polypheny.jdbc.BidirectionalScrollable;
-
-import java.sql.SQLException;
 import java.util.ArrayList;
+import org.polypheny.jdbc.BidirectionalScrollable;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 public class MetaScroller<T> implements BidirectionalScrollable<T> {
@@ -33,7 +31,7 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
 
     @Override
-    public boolean absolute( int rowIndex ) throws SQLException {
+    public boolean absolute( int rowIndex ) {
         if ( rowIndex == 0 ) {
             current = null;
             currentIndex = CURSOR_BEFORE_DATA;
@@ -66,7 +64,7 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
 
     @Override
-    public boolean relative( int offset ) throws SQLException {
+    public boolean relative( int offset ) {
         current = null;
         currentIndex += offset;
         if ( currentIndex < 0 ) {
@@ -83,7 +81,7 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
 
     @Override
-    public boolean previous() throws SQLException {
+    public boolean previous() {
         current = null;
         currentIndex--;
         if ( currentIndex > CURSOR_BEFORE_DATA && currentIndex < data.size() ) {
@@ -96,7 +94,7 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
 
     @Override
-    public void beforeFirst() throws SQLException {
+    public void beforeFirst() {
         current = null;
         currentIndex = CURSOR_BEFORE_DATA;
     }
@@ -108,27 +106,29 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
         currentIndex = data.size();
     }
 
+
     @Override
     public boolean first() {
         current = null;
         currentIndex = CURSOR_BEFORE_DATA;
-        if (data.isEmpty()) {
+        if ( data.isEmpty() ) {
             return false;
         }
         currentIndex = 0;
-        current = data.get(currentIndex);
+        current = data.get( currentIndex );
         return true;
     }
+
 
     @Override
     public boolean last() {
         current = null;
         currentIndex = CURSOR_BEFORE_DATA;
-        if (data.isEmpty()) {
+        if ( data.isEmpty() ) {
             return false;
         }
         currentIndex = data.size() - 1;
-        current = data.get(currentIndex);
+        current = data.get( currentIndex );
         return true;
     }
 

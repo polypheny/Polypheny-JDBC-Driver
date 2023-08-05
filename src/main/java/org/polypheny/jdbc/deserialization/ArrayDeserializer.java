@@ -14,7 +14,7 @@ import org.polypheny.jdbc.types.TypedValue;
 public class ArrayDeserializer implements ValueDeserializer {
 
     @Override
-    public TypedValue deserialize( ProtoValue value ) throws SQLException {
+    public TypedValue deserializeToTypedValue( ProtoValue value ) throws SQLException {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.ARRAY:
@@ -29,7 +29,7 @@ public class ArrayDeserializer implements ValueDeserializer {
         ProtoValueType baseType = protoArray.getElements( 0 ).getType();
         List<TypedValue> values = new LinkedList<>();
         for ( ProtoValue protoValue : protoArray.getElementsList() ) {
-            values.add( ProtoValueDeserializer.deserialize( protoValue ) );
+            values.add( ProtoValueDeserializer.deserializeToTypedValue( protoValue ) );
         }
         return new PolyphenyArray( baseType.name(), values );
     }

@@ -87,7 +87,7 @@ public class PolyphenyStatement implements Statement {
 
     protected void throwIfClosed() throws SQLException {
         if ( isClosed ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Illegal operation for a closed statement" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation for a closed statement" );
         }
     }
 
@@ -96,7 +96,7 @@ public class PolyphenyStatement implements Statement {
         if ( frame.getResultCase() == ResultCase.RELATIONAL_FRAME ) {
             return;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.RESULT_TYPE_INVALID, "Statement must produce a relational result" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a relational result" );
     }
 
 
@@ -118,10 +118,10 @@ public class PolyphenyStatement implements Statement {
             try {
                 callback.awaitCompletion();
             } catch ( InterruptedException e ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
             if ( !status.getResult().hasFrame() ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
             }
             Frame frame = status.getResult().getFrame();
             throwIfNotRelational( frame );
@@ -149,10 +149,10 @@ public class PolyphenyStatement implements Statement {
             try {
                 callback.awaitCompletion();
             } catch ( InterruptedException e ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
             if ( status.getResult().hasFrame() ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
             }
             currentUpdateCount = status.getResult().getScalar();
             return longToInt( currentUpdateCount );
@@ -239,7 +239,7 @@ public class PolyphenyStatement implements Statement {
     public void setQueryTimeout( int seconds ) throws SQLException {
         throwIfClosed();
         if ( seconds < 0 ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal argument for max" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for max" );
         }
         properties.setQueryTimeoutSeconds( seconds );
     }
@@ -289,7 +289,7 @@ public class PolyphenyStatement implements Statement {
             try {
                 callback.awaitCompletion();
             } catch ( InterruptedException e ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
             if ( !status.getResult().hasFrame() ) {
                 currentUpdateCount = longToInt( status.getResult().getScalar() );
@@ -299,7 +299,6 @@ public class PolyphenyStatement implements Statement {
             throwIfNotRelational( frame );
             currentResult = new PolyhenyResultSet( this, frame, properties.toResultSetProperties() );
             return true;
-
         }
     }
 
@@ -427,7 +426,7 @@ public class PolyphenyStatement implements Statement {
             try {
                 callback.awaitCompletion();
             } catch ( InterruptedException e ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
             return status.getScalarsList();
         }
@@ -448,7 +447,7 @@ public class PolyphenyStatement implements Statement {
             throw new SQLFeatureNotSupportedException();
         }
         if (i != CLOSE_CURRENT_RESULT) {
-            throw new ProtoInterfaceServiceException(SQLErrors.VALUE_ILLEGAL, "Illegal value for closing behaviour: " + i);
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for closing behaviour: " + i);
         }
         throwIfClosed();
         closeCurrentResult();
@@ -566,7 +565,7 @@ public class PolyphenyStatement implements Statement {
         if ( aClass.isInstance( this ) ) {
             return aClass.cast( this );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
     }
 
 

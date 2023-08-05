@@ -50,7 +50,7 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
             baseIndex++;
             return true;
         } catch (InterruptedException e) {
-            throw new ProtoInterfaceServiceException(SQLErrors.DRIVER_THREADING_ERROR, "Fetching more columns from server filed.", e);
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more columns from server filed.", e);
         }
     }
 

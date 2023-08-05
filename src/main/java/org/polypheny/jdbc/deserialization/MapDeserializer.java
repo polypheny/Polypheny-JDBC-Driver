@@ -15,12 +15,11 @@ public class MapDeserializer implements ValueDeserializer {
 
 
     @Override
-    public TypedValue deserialize( ProtoValue value ) {
+    public TypedValue deserializeToTypedValue( ProtoValue value ) {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.OTHER:
                 return deserializeAsUdtPrototype(value.getMap(), value.getType().name());
-            //TODO implementation
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto map." );
     }
@@ -35,8 +34,8 @@ public class MapDeserializer implements ValueDeserializer {
 
     private List<TypedValue> splitMapEntry(ProtoEntry entry) {
         List<TypedValue> values = new LinkedList<>();
-        values.add(ProtoValueDeserializer.deserialize(entry.getKey()));
-        values.add(ProtoValueDeserializer.deserialize(entry.getValue()));
+        values.add(ProtoValueDeserializer.deserializeToTypedValue(entry.getKey()));
+        values.add(ProtoValueDeserializer.deserializeToTypedValue(entry.getValue()));
         return values;
     }
 

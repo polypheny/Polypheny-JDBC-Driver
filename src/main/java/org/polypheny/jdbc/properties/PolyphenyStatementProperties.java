@@ -7,7 +7,7 @@ import lombok.Setter;
 import org.polypheny.jdbc.PolyphenyStatement;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.SQLErrors;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
 
 public class PolyphenyStatementProperties {
 
@@ -43,7 +43,7 @@ public class PolyphenyStatementProperties {
 
     public void setPolyphenyStatement( PolyphenyStatement polyphenyStatement ) throws SQLException {
         if ( this.polyphenyStatement != null ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Can't change polyphenyStatement" + polyphenyStatement );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Can't change polyphenyStatement" + polyphenyStatement );
         }
         this.polyphenyStatement = polyphenyStatement;
     }
@@ -51,7 +51,7 @@ public class PolyphenyStatementProperties {
 
     public void setQueryTimeoutSeconds( int queryTimeoutSeconds ) throws SQLException {
         if ( queryTimeoutSeconds < 0 ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for max" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for max" );
         }
         this.queryTimeoutSeconds = queryTimeoutSeconds;
         syncIfStatementPresent();
@@ -61,10 +61,10 @@ public class PolyphenyStatementProperties {
 
     public void setResultSetType( int resultSetType ) throws SQLException {
         if ( this.resultSetType != UNSET_INT ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Can't change result set type" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Can't change result set type" );
         }
         if ( !PropertyUtils.isValidResultSetType( resultSetType ) ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for result set type" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set type" );
         }
         this.resultSetType = resultSetType;
     }
@@ -72,10 +72,10 @@ public class PolyphenyStatementProperties {
 
     public void setResultSetConcurrency( int resultSetConcurrency ) throws SQLException {
         if ( this.resultSetConcurrency != UNSET_INT ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Can't change result set type" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Can't change result set type" );
         }
         if ( !PropertyUtils.isValidResultSetConcurrency( resultSetConcurrency ) ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for result set concurrency" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set concurrency" );
         }
         this.resultSetConcurrency = resultSetConcurrency;
         syncIfStatementPresent();
@@ -84,10 +84,10 @@ public class PolyphenyStatementProperties {
 
     public void setResultSetHoldability( int resultSetHoldability ) throws SQLException {
         if ( this.resultSetHoldability != UNSET_INT ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Can't change result set type" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Can't change result set type" );
         }
         if ( !PropertyUtils.isValidResultSetHoldability( resultSetHoldability ) ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for result set concurrency" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set concurrency" );
         }
         this.resultSetHoldability = resultSetHoldability;
         // not transmitted to server -> no sync()
@@ -96,7 +96,7 @@ public class PolyphenyStatementProperties {
 
     public void setFetchSize( int fetchSize ) throws SQLException {
         if ( fetchSize < 0 ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for fetch size" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for fetch size" );
         }
         this.fetchSize = fetchSize;
         syncIfStatementPresent();
@@ -105,7 +105,7 @@ public class PolyphenyStatementProperties {
 
     public void setFetchDirection( int fetchDirection ) throws SQLException {
         if ( PropertyUtils.isInvalidFetchDdirection( fetchDirection ) ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for fetch direction" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for fetch direction" );
         }
         this.fetchDirection = fetchDirection;
         syncIfStatementPresent();
@@ -114,7 +114,7 @@ public class PolyphenyStatementProperties {
 
     public void setMaxFieldSize( int maxFieldSize ) throws SQLException {
         if ( maxFieldSize < 0 ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Illegal argument for max field size" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Illegal argument for max field size" );
         }
         this.maxFieldSize = maxFieldSize;
         syncIfStatementPresent();
@@ -123,7 +123,7 @@ public class PolyphenyStatementProperties {
 
     public void setLargeMaxRows( long largeMaxRows ) throws SQLException {
         if ( largeMaxRows < 0 ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for large max rows" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for large max rows" );
         }
         this.largeMaxRows = largeMaxRows;
         syncIfStatementPresent();

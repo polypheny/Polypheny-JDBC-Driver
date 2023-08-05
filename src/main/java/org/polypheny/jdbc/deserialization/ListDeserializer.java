@@ -11,7 +11,7 @@ import org.polypheny.jdbc.types.TypedValue;
 public class ListDeserializer implements ValueDeserializer {
 
     @Override
-    public TypedValue deserialize( ProtoValue value ) {
+    public TypedValue deserializeToTypedValue( ProtoValue value ) {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.ARRAY:
@@ -22,7 +22,7 @@ public class ListDeserializer implements ValueDeserializer {
 
     private TypedValue asUdtPrototype(ProtoList list, String typeName) {
         ArrayList<TypedValue> values = list.getValuesList().stream()
-                .map(ProtoValueDeserializer::deserialize)
+                .map(ProtoValueDeserializer::deserializeToTypedValue )
                 .collect(Collectors.toCollection(ArrayList::new));
         return TypedValue.fromUdtPrototype(new UDTPrototype(typeName, values));
     }

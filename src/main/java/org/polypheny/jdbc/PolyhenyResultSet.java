@@ -54,7 +54,7 @@ public class PolyhenyResultSet implements ResultSet {
             PolyphenyResultSetProperties properties
     ) throws SQLException {
         if ( frame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.RESULT_TYPE_INVALID, "Invalid frame type " + frame.getResultCase().name() );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Invalid frame type " + frame.getResultCase().name() );
         }
         this.statement = statement;
         this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
@@ -86,7 +86,7 @@ public class PolyhenyResultSet implements ResultSet {
         if ( !isInInsertMode ) {
             try {
                 if ( !resultScroller.hasCurrent() ) {
-                    throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "No current row to read from." );
+                    throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "No current row to read from." );
                 }
                 lastRead = resultScroller.current().get( column - 1 );
                 if ( properties.getMaxFieldSize() > 0 && lastRead.getLength() > properties.getMaxFieldSize() ) {
@@ -94,12 +94,12 @@ public class PolyhenyResultSet implements ResultSet {
                 }
                 return lastRead;
             } catch ( IndexOutOfBoundsException e ) {
-                throw new ProtoInterfaceServiceException( SQLErrors.COLUMN_NOT_EXISTS, "Column index out of bounds." );
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.COLUMN_NOT_EXISTS, "Column index out of bounds." );
             }
         }
         TypedValue value = rowUpdates.get( column );
         if ( value == null ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.COLUMN_ACCESS_ILLEGAL, "Can't access unset colum" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.COLUMN_ACCESS_ILLEGAL, "Can't access unset colum" );
         }
         return value;
     }
@@ -107,24 +107,24 @@ public class PolyhenyResultSet implements ResultSet {
 
     private void throwIfClosed() throws SQLException {
         if ( isClosed ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "This operation cannot be applied to a closed result set." );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "This operation cannot be applied to a closed result set." );
         }
     }
 
 
     private void throwIfColumnIndexOutOfBounds( int columnIndex ) throws SQLException {
         if ( columnIndex < 1 ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.COLUMN_NOT_EXISTS, "Column index must be greater than 0" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.COLUMN_NOT_EXISTS, "Column index must be greater than 0" );
         }
         if ( columnIndex > metadata.getColumnCount() ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.COLUMN_NOT_EXISTS, "Column index out of bounds" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.COLUMN_NOT_EXISTS, "Column index out of bounds" );
         }
     }
 
 
     private void throwIfReadOnly() throws SQLException {
         if ( properties.isReadOnly() ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.MODIFICATION_NOT_PERMITED, "Modification of result sets in read only mode is not permitted" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.MODIFICATION_NOT_PERMITED, "Modification of result sets in read only mode is not permitted" );
         }
     }
 
@@ -162,7 +162,7 @@ public class PolyhenyResultSet implements ResultSet {
         if ( resultScroller instanceof BidirectionalScroller ) {
             return bidirectionScrollerClass.cast( resultScroller );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Illegal operation on resultset of type TYPE_FORWARD_ONLY" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on resultset of type TYPE_FORWARD_ONLY" );
     }
 
 
@@ -522,7 +522,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             return getBidirectionalScrollerOrThrow().last();
         } catch ( InterruptedException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Fetching more rows from server failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more rows from server failed.", e );
         }
     }
 
@@ -561,7 +561,7 @@ public class PolyhenyResultSet implements ResultSet {
     public void setFetchDirection( int fetchDirection ) throws SQLException {
         throwIfClosed();
         if ( properties.getResultSetType() == ResultSet.TYPE_FORWARD_ONLY && fetchDirection != ResultSet.FETCH_FORWARD ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Illegal fetch direction for resultset of TYPE_FORWARD_ONLY." );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Illegal fetch direction for resultset of TYPE_FORWARD_ONLY." );
         }
         properties.setFetchDirection( fetchDirection );
     }
@@ -578,7 +578,7 @@ public class PolyhenyResultSet implements ResultSet {
     public void setFetchSize( int fetchSize ) throws SQLException {
         throwIfClosed();
         if ( fetchSize < 0 ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Illegal value for fetch size. fetchSize >= 0 must hold." );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for fetch size. fetchSize >= 0 must hold." );
         }
         properties.setFetchSize( fetchSize );
         getStatement().setFetchSize( fetchSize );
@@ -758,7 +758,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x, length ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
         }
     }
 
@@ -770,7 +770,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x, length ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
         }
     }
 
@@ -782,7 +782,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x, length ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
         }
     }
 
@@ -1295,7 +1295,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromNCharacterStream( x, length ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1313,7 +1313,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x, length ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1325,7 +1325,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x, length ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1337,7 +1337,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x, length ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1367,7 +1367,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBlob( x ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1413,7 +1413,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromNCharacterStream( x ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1431,7 +1431,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1443,7 +1443,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1455,7 +1455,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1485,7 +1485,7 @@ public class PolyhenyResultSet implements ResultSet {
         try {
             getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBlob( x ) );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Handling of stream failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
         }
     }
 
@@ -1542,7 +1542,7 @@ public class PolyhenyResultSet implements ResultSet {
         if ( aClass.isInstance( this ) ) {
             return aClass.cast( this );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
     }
 
 

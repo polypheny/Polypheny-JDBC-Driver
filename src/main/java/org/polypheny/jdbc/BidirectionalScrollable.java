@@ -4,13 +4,13 @@ import java.sql.SQLException;
 
 public interface BidirectionalScrollable<T> extends Scrollable<T> {
 
-    boolean absolute( int rowIndex ) throws SQLException;
+    boolean absolute( int rowIndex ) throws ProtoInterfaceServiceException;
 
-    boolean relative( int offset ) throws SQLException;
+    boolean relative( int offset ) throws ProtoInterfaceServiceException;
 
-    boolean previous() throws SQLException;
+    boolean previous() throws ProtoInterfaceServiceException;
 
-    void beforeFirst() throws SQLException;
+    void beforeFirst() throws ProtoInterfaceServiceException;
 
     void afterLast();
 

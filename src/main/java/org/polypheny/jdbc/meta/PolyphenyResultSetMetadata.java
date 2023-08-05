@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.SQLErrors;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.proto.ColumnMeta;
 
 public class PolyphenyResultSetMetadata implements ResultSetMetaData {
@@ -34,7 +34,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
         try {
             return columnMetas.get( columnIndex - 1 );
         } catch ( IndexOutOfBoundsException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "Column index out of bounds", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Column index out of bounds", e );
         }
     }
 
@@ -42,7 +42,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
     public int getColumnIndexFromLabel( String columnLabel ) throws SQLException {
         Integer columnIndex = columnIndexes.get( columnLabel );
         if ( columnIndex == null ) {
-            throw new ProtoInterfaceServiceException(SQLErrors.COLUMN_NOT_EXISTS,  "Invalid column label: " + columnLabel );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.COLUMN_NOT_EXISTS,  "Invalid column label: " + columnLabel );
         }
         return columnIndex;
     }
@@ -179,7 +179,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
         if (aClass.isInstance(this)) {
             return aClass.cast(this);
         }
-        throw new ProtoInterfaceServiceException(SQLErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass);
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass);
     }
 
 

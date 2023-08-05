@@ -8,7 +8,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.SQLErrors;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
 
 public class CallbackQueue<T> implements StreamObserver<T> {
 
@@ -40,7 +40,7 @@ public class CallbackQueue<T> implements StreamObserver<T> {
             try {
                 hasNext.await();
             }catch (InterruptedException e) {
-                throw new ProtoInterfaceServiceException( SQLErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e);
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e);
             }
             throwReceivedException();
         }

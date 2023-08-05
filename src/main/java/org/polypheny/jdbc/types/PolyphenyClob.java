@@ -12,7 +12,7 @@ import java.sql.NClob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.SQLErrors;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
 
 public class PolyphenyClob implements Clob, NClob {
 
@@ -22,7 +22,7 @@ public class PolyphenyClob implements Clob, NClob {
 
     private void throwIfFreed() throws SQLException {
         if ( isFreed ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.OPERATION_ILLEGAL, "Illegal operation on freed blob" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on freed blob" );
         }
     }
 

@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public class UserDefinedTypeDeserializer implements ValueDeserializer {
 
     @Override
-    public TypedValue deserialize(ProtoValue value) {
+    public TypedValue deserializeToTypedValue(ProtoValue value) {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto(value.getType());
         switch (jdbcType) {
             case Types.OTHER:
@@ -22,7 +22,7 @@ public class UserDefinedTypeDeserializer implements ValueDeserializer {
 
     private TypedValue deserializeToUdtPrototype(ProtoUserDefinedType userDefinedType, String typeName) {
         ArrayList<TypedValue> values = userDefinedType.getValueMap().values().stream()
-                .map(ProtoValueDeserializer::deserialize)
+                .map(ProtoValueDeserializer::deserializeToTypedValue )
                 .collect(Collectors.toCollection(ArrayList::new));
         return TypedValue.fromUdtPrototype(new UDTPrototype(typeName, values));
     }

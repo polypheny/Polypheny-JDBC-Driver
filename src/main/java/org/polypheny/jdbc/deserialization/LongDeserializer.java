@@ -9,7 +9,7 @@ import org.polypheny.jdbc.types.TypedValue;
 public class LongDeserializer implements ValueDeserializer {
 
     @Override
-    public TypedValue deserialize( ProtoValue value ) throws SQLException {
+    public TypedValue deserializeToTypedValue( ProtoValue value ) throws SQLException {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.BIGINT:

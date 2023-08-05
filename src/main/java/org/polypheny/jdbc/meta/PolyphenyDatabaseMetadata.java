@@ -17,7 +17,7 @@ import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.PolyphenyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.SQLErrors;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.ClientInfoPropertyMeta;
@@ -1347,7 +1347,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         if ( aClass.isInstance( this ) ) {
             return aClass.cast( this );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
     }
 
 

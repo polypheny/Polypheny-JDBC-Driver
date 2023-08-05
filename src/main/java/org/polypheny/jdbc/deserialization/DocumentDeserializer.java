@@ -8,14 +8,13 @@ import java.util.stream.Collectors;
 
 import org.polypheny.jdbc.proto.ProtoDocument;
 import org.polypheny.jdbc.proto.ProtoEntry;
-import org.polypheny.jdbc.proto.ProtoList;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class DocumentDeserializer implements ValueDeserializer {
 
     @Override
-    public TypedValue deserialize( ProtoValue value ) {
+    public TypedValue deserializeToTypedValue( ProtoValue value ) {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.STRUCT:
@@ -35,8 +34,8 @@ public class DocumentDeserializer implements ValueDeserializer {
 
     private List<TypedValue> splitDocumentEntry(ProtoEntry entry) {
         List<TypedValue> values = new LinkedList<>();
-        values.add(ProtoValueDeserializer.deserialize(entry.getKey()));
-        values.add(ProtoValueDeserializer.deserialize(entry.getValue()));
+        values.add(ProtoValueDeserializer.deserializeToTypedValue(entry.getKey()));
+        values.add(ProtoValueDeserializer.deserializeToTypedValue(entry.getValue()));
         return values;
     }
 

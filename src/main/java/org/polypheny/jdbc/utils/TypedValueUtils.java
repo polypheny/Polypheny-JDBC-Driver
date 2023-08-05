@@ -236,7 +236,7 @@ public class TypedValueUtils {
 
     public static ArrayList<TypedValue> buildRow( Row row ) {
         return row.getValuesList().stream()
-                .map( ProtoValueDeserializer::deserialize )
+                .map( ProtoValueDeserializer::deserializeToTypedValue )
                 .collect( toCollection( ArrayList::new ) );
     }
 

@@ -197,19 +197,35 @@ public class ProtoInterfaceClient {
 
 
     public void executeUnparameterizedStatement( PolyphenyStatementProperties properties, String statement, CallbackQueue<StatementStatus> updateCallback, int timeout ) throws ProtoInterfaceServiceException {
-        ProtoInterfaceGrpc.ProtoInterfaceStub stub = getAsyncStub( properties.getQueryTimeoutSeconds() );
         try {
-            getAsyncStub( timeout ).executeUnparameterizedStatement( buildUnparameterizedStatement( properties, statement ), updateCallback );
+            getAsyncStub( timeout ).executeUnparameterizedStatement( buildUnparameterizedSqlStatement( properties, statement ), updateCallback );
+        } catch ( StatusRuntimeException e ) {
+            throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
+        }
+    }
+
+    public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementStatus> callback, int timeout ) throws ProtoInterfaceServiceException {
+        try {
+            getAsyncStub( timeout ).executeUnparameterizedStatement( buildProtoStatement( namespaceName, languageName, statement ), callback );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
 
 
+    private UnparameterizedStatement buildProtoStatement( String namespaceName, String languageName, String statement ) {
+        return UnparameterizedStatement.newBuilder()
+                .setNamespaceName(namespaceName)
+                .setStatementLanguageName( languageName )
+                .setStatement( statement )
+                .build();
+    }
+
+
     public void executeUnparameterizedStatementBatch( PolyphenyStatementProperties properties, List<String> statements, CallbackQueue<StatementBatchStatus> updateCallback, int timeout ) throws ProtoInterfaceServiceException {
         List<UnparameterizedStatement> batch = statements.
                 stream()
-                .map( s -> buildUnparameterizedStatement( properties, s ) )
+                .map( s -> buildUnparameterizedSqlStatement( properties, s ) )
                 .collect( Collectors.toList() );
         UnparameterizedStatementBatch unparameterizedStatementBatch = UnparameterizedStatementBatch.newBuilder()
                 .addAllStatements( batch )
@@ -223,7 +239,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    private UnparameterizedStatement buildUnparameterizedStatement( PolyphenyStatementProperties properties, String statement ) {
+    private UnparameterizedStatement buildUnparameterizedSqlStatement( PolyphenyStatementProperties properties, String statement ) {
         return UnparameterizedStatement.newBuilder()
                 .setStatement( statement )
                 .setStatementLanguageName( SQL_LANGUAGE_NAME )
@@ -533,5 +549,4 @@ public class ProtoInterfaceClient {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
-
 }

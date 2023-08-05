@@ -37,19 +37,19 @@ public class ProtoInterfaceServiceException extends SQLException {
             throw new ProtoInterfaceServiceException( message );
         }
         if ( !metadata.containsKey( ERROR_DETAILS_KEY ) ) {
-            throw new ProtoInterfaceServiceException( message, SQLErrors.UNSPECIFIED.state, SQLErrors.UNSPECIFIED.errorCode );
+            throw new ProtoInterfaceServiceException( message, ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode );
         }
         ErrorDetails errorDetails = metadata.get( ERROR_DETAILS_KEY );
         return new ProtoInterfaceServiceException( Objects.requireNonNull( errorDetails ) );
     }
 
 
-    public ProtoInterfaceServiceException( SQLErrors sqlError, String message ) {
+    public ProtoInterfaceServiceException( ProtoInterfaceErrors sqlError, String message ) {
         this( message, sqlError.state, sqlError.errorCode );
     }
 
 
-    public ProtoInterfaceServiceException( SQLErrors sqlError, String message, Throwable cause ) {
+    public ProtoInterfaceServiceException( ProtoInterfaceErrors sqlError, String message, Throwable cause ) {
         this( message, sqlError.state, sqlError.errorCode, cause );
     }
 
@@ -66,7 +66,7 @@ public class ProtoInterfaceServiceException extends SQLException {
 
 
     public ProtoInterfaceServiceException( String reason ) {
-        super(reason, SQLErrors.UNSPECIFIED.state, SQLErrors.UNSPECIFIED.errorCode );
+        super(reason, ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode );
     }
 
 
@@ -76,7 +76,7 @@ public class ProtoInterfaceServiceException extends SQLException {
 
 
     public ProtoInterfaceServiceException( Throwable cause ) {
-        super(cause.getMessage(), SQLErrors.UNSPECIFIED.state, SQLErrors.UNSPECIFIED.errorCode, cause );
+        super(cause.getMessage(), ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode, cause );
     }
 
 
@@ -98,8 +98,8 @@ public class ProtoInterfaceServiceException extends SQLException {
     public ProtoInterfaceServiceException( ErrorDetails errorDetails ) {
         super(
                 errorDetails.hasMessage() ? errorDetails.getMessage() : "No message provided.",
-                errorDetails.hasState() ? errorDetails.getState() : SQLErrors.UNSPECIFIED.state,
-                errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : SQLErrors.UNSPECIFIED.errorCode
+                errorDetails.hasState() ? errorDetails.getState() : ProtoInterfaceErrors.UNSPECIFIED.state,
+                errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : ProtoInterfaceErrors.UNSPECIFIED.errorCode
         );
     }
 

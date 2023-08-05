@@ -37,7 +37,7 @@ import java.util.Map;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.SQLErrors;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.deserialization.UDTPrototype;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
@@ -423,7 +423,7 @@ public class TypedValue implements Convertible {
         if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
             return TypedValueUtils.getBooleanFromString( (String) value );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Conversion to BOOLEAN is not supported." );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to BOOLEAN is not supported." );
     }
 
 
@@ -444,7 +444,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to byte" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to byte" );
     }
 
 
@@ -465,7 +465,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to short" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to short" );
     }
 
 
@@ -486,7 +486,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to int" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to int" );
     }
 
 
@@ -507,7 +507,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to long" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to long" );
     }
 
 
@@ -528,7 +528,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to float" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to float" );
     }
 
 
@@ -549,7 +549,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to double" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to double" );
     }
 
 
@@ -579,7 +579,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to byte" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to byte" );
     }
 
 
@@ -597,7 +597,7 @@ public class TypedValue implements Convertible {
             objectOutputStream.writeObject( value );
             return byteArrayOutputStream.toByteArray();
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.STREAM_ERROR, "Error in converting object to byte array.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error in converting object to byte array.", e );
         }
     }
 
@@ -610,7 +610,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof String ) {
             return new ByteArrayInputStream( ((String) value).getBytes( StandardCharsets.US_ASCII ) );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Conversion to ascii stream not supported." );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to ascii stream not supported." );
     }
 
 
@@ -628,7 +628,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof String ) {
             return new ByteArrayInputStream( ((String) value).getBytes( StandardCharsets.UTF_8 ) );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Conversion to unicode stream not supported." );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to unicode stream not supported." );
     }
 
 
@@ -640,7 +640,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof byte[] ) {
             return new ByteArrayInputStream( (byte[]) value );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Conversion to binary stream not supported." );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to binary stream not supported." );
     }
 
 
@@ -652,7 +652,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof String ) {
             return new StringReader( (String) value );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a character stream" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a character stream" );
 
     }
 
@@ -665,7 +665,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Blob ) {
             return (Blob) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a blob" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a blob" );
     }
 
 
@@ -677,7 +677,7 @@ public class TypedValue implements Convertible {
         if ( TypedValueUtils.isClobOrNClobRepresented( jdbcType ) ) {
             return (Clob) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a clob" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a clob" );
     }
 
 
@@ -689,7 +689,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Array ) {
             return (Array) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to an array" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to an array" );
     }
 
 
@@ -698,7 +698,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Struct ) {
             return (Struct) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a struct" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a struct" );
     }
 
 
@@ -719,7 +719,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( ParseException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a date" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a date" );
     }
 
 
@@ -752,7 +752,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( ParseException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time " + value + "with type " + jdbcType );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time " + value + "with type " + jdbcType );
     }
 
 
@@ -780,7 +780,7 @@ public class TypedValue implements Convertible {
         if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
             return TypedValueUtils.getTimestampFromString( (String) value );
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time" );
     }
 
 
@@ -801,7 +801,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Ref ) {
             return (Ref) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a ref" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a ref" );
     }
 
 
@@ -813,7 +813,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof RowId ) {
             return (RowId) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a row id" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a row id" );
     }
 
 
@@ -825,7 +825,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof URL ) {
             return (URL) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a url" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a url" );
     }
 
 
@@ -837,7 +837,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof NClob ) {
             return (NClob) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a nclob" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a nclob" );
     }
 
 
@@ -849,7 +849,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof SQLXML ) {
             return (SQLXML) value;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a nclob" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a nclob" );
     }
 
 
@@ -875,7 +875,7 @@ public class TypedValue implements Convertible {
 
     public UDTPrototype getUdtPrototype() throws ProtoInterfaceServiceException {
         if ( !isUdtPrototype() ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
         }
         if ( !(value instanceof UDTPrototype) ) {
             throw new ProtoInterfaceServiceException( "Should never be thrown" );
@@ -1021,7 +1021,7 @@ public class TypedValue implements Convertible {
 
     public <T> T asObject( Class<T> aClass ) throws ProtoInterfaceServiceException {
         if ( !isUdtPrototype() ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
         }
         return aClass.cast( buildFromUdtPrototype( aClass, getUdtPrototype() ) );
     }
@@ -1045,7 +1045,7 @@ public class TypedValue implements Convertible {
 
     private <T> Object buildFromUdtPrototype( Class<T> udtClass, UDTPrototype prototype ) throws ProtoInterfaceServiceException {
         if ( udtClass == null ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Type-map contains no type for internal type " + prototype.getTypeName() );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Type-map contains no type for internal type " + prototype.getTypeName() );
         }
         try {
             Constructor<?> udtConstructor = udtClass.getConstructor( SQLInput.class, String.class );
@@ -1053,9 +1053,9 @@ public class TypedValue implements Convertible {
             internalType = prototype.getTypeName();
             return value;
         } catch ( NoSuchMethodException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.MISSING_INTERFACE, "The type contained in the type map does not implement the SQLInput interface required for udt construction" );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.MISSING_INTERFACE, "The type contained in the type map does not implement the SQLInput interface required for udt construction" );
         } catch ( InvocationTargetException | InstantiationException | IllegalAccessException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.UDT_CONSTRUCTION_FAILED, "Construction of user defined type failed", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.UDT_CONSTRUCTION_FAILED, "Construction of user defined type failed", e );
         }
     }
 
@@ -1064,7 +1064,7 @@ public class TypedValue implements Convertible {
         try {
             return TypedValueUtils.buildTypedValueFromObject( value );
         } catch ( ParseException | SQLFeatureNotSupportedException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
         }
     }
 
@@ -1073,7 +1073,7 @@ public class TypedValue implements Convertible {
         try {
             return TypedValueUtils.buildTypedValueFromObject( value, targetSqlType );
         } catch ( ParseException | SQLFeatureNotSupportedException e ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
         }
     }
 

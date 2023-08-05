@@ -51,7 +51,7 @@ public class PolyphenyDriver implements java.sql.Driver {
     @Override
     public boolean acceptsURL( String url ) throws SQLException {
         if ( url == null ) {
-            throw new ProtoInterfaceServiceException( SQLErrors.VALUE_ILLEGAL, "URL must no be null." );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "URL must no be null." );
         }
         return url.startsWith( DriverProperties.getDRIVER_URL_SCHEMA() );
     }

@@ -7,7 +7,7 @@ import org.polypheny.jdbc.types.TypedValue;
 public class EdgeDeserializer implements ValueDeserializer {
 
     @Override
-    public TypedValue deserialize( ProtoValue value ) {
+    public TypedValue deserializeToTypedValue( ProtoValue value ) {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.JAVA_OBJECT:

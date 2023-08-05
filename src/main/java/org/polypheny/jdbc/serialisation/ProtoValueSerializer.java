@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.SQLErrors;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.proto.ProtoArray;
 import org.polypheny.jdbc.proto.ProtoBigDecimal;
 import org.polypheny.jdbc.proto.ProtoBinary;
@@ -135,7 +135,7 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
         }
-        throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Serialization of jdbc type " + typedValue.getJdbcType() + " not known" );
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Serialization of jdbc type " + typedValue.getJdbcType() + " not known" );
     }
 
 
