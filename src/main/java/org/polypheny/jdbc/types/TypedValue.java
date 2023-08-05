@@ -659,6 +659,9 @@ public class TypedValue implements Convertible {
 
     @Override
     public Blob asBlob() throws SQLException {
+        if ( isSqlNull() || isNull() ) {
+            return null;
+        }
         if ( value instanceof Blob ) {
             return (Blob) value;
         }
@@ -668,8 +671,10 @@ public class TypedValue implements Convertible {
 
     @Override
     public Clob asClob() throws SQLException {
+        if ( isSqlNull() || isNull() ) {
+            return null;
+        }
         if ( TypedValueUtils.isClobOrNClobRepresented( jdbcType ) ) {
-            // legit cast as Clob is a superinterface of Clob
             return (Clob) value;
         }
         throw new ProtoInterfaceServiceException( SQLErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a clob" );
@@ -678,6 +683,9 @@ public class TypedValue implements Convertible {
 
     @Override
     public Array asArray() throws SQLException {
+        if ( isSqlNull() || isNull() ) {
+            return null;
+        }
         if ( value instanceof Array ) {
             return (Array) value;
         }

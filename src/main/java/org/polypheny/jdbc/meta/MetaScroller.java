@@ -166,7 +166,7 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
     @Override
     public boolean isAfterLast() {
-        return currentIndex >= data.size();
+        return data.isEmpty() || currentIndex >= data.size();
     }
 
 

@@ -953,7 +953,8 @@ public class PolyhenyResultSet implements ResultSet {
     public void cancelRowUpdates() throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        discardRowUpdates();
+        throw new SQLFeatureNotSupportedException();
+        //discardRowUpdates();
     }
 
 
@@ -961,7 +962,8 @@ public class PolyhenyResultSet implements ResultSet {
     public void moveToInsertRow() throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        isInInsertMode = true;
+        throw new SQLFeatureNotSupportedException();
+        //isInInsertMode = true;
     }
 
 
@@ -969,7 +971,8 @@ public class PolyhenyResultSet implements ResultSet {
     public void moveToCurrentRow() throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        isInInsertMode = false;
+        throw new SQLFeatureNotSupportedException();
+        //isInInsertMode = false;
     }
 
 

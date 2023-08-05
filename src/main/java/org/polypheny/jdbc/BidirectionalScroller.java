@@ -269,7 +269,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
     @Override
     public boolean isAfterLast() {
-        return currentIndex == values.size();
+        return values.isEmpty() || currentIndex == values.size();
     }
 
 
