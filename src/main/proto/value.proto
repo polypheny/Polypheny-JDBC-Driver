@@ -33,7 +33,6 @@ message ProtoValue {
     ProtoPath path = 22;
     ProtoGraph graph = 23;
     ProtoArray array = 24;
-    ProtoRowId rowId = 25;
   }
   enum ProtoValueType {
     UNSPECIFIED = 0;
@@ -87,13 +86,12 @@ message ProtoValue {
     CURSOR = 48;
     COLUMN_LIST = 49;
     DYNAMIC_STAR = 50;
-    GEOMETRY = 51;
+    GEOMETRY= 51;
     SYMBOL = 52;
     JSON = 53;
     MULTISET = 54;
     ANY = 55;
     USER_DEFINED_TYPE = 56;
-    ROW_ID = 57;
   }
 }
 
@@ -133,7 +131,7 @@ message ProtoString {
 }
 
 message ProtoTime {
-  int64 value = 1;
+  int32 value = 1;
   TimeUnit time_unit = 2;
   enum TimeUnit {
     UNSPECIFIED = 0;
@@ -220,6 +218,7 @@ message ProtoEdge {
     NONE = 3;
   }
 }
+
 message ProtoNode {
   ProtoGraphPropertyHolder graph_property_holder = 1;
 }
@@ -258,8 +257,4 @@ message ProtoGraphPropertyHolder {
   ProtoString variable_name = 2;
   ProtoMap properties = 3; //Dictionary = ProtoMap<ProtoString, ProtoValue>
   ProtoList labels = 4; //ProtoList<ProtoString>
-}
-
-message ProtoRowId {
-  string rowId = 1;
 }
