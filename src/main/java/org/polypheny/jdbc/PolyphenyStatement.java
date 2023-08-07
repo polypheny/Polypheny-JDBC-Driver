@@ -8,12 +8,15 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
+import org.polypheny.jdbc.proto.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
-import org.polypheny.jdbc.proto.StatementBatchStatus;
-import org.polypheny.jdbc.proto.StatementStatus;
+import org.polypheny.jdbc.proto.StatementBatchResponse;
+import org.polypheny.jdbc.proto.StatementResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class PolyphenyStatement implements Statement {
@@ -34,6 +37,7 @@ public class PolyphenyStatement implements Statement {
     protected static final int NO_STATEMENT_ID = -1;
 
     protected List<String> statementBatch;
+
 
     public PolyphenyStatement( PolyphenyConnection connection, PolyphenyStatementProperties properties ) throws SQLException {
         this.polyphenyConnection = connection;
@@ -105,14 +109,15 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         closeCurrentResult();
         discardStatementId();
-        CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
-        getClient().executeUnparameterizedStatement( properties, statement, callback, getTimeout() );
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
+        String namespaceName = getConnection().getSchema();
+        getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
         while ( true ) {
-            StatementStatus status = callback.takeNext();
+            StatementResponse response = callback.takeNext();
             if ( !hasStatementId() ) {
-                statementId = status.getStatementId();
+                statementId = response.getStatementId();
             }
-            if ( !status.hasResult() ) {
+            if ( !response.hasResult() ) {
                 continue;
             }
             try {
@@ -120,10 +125,10 @@ public class PolyphenyStatement implements Statement {
             } catch ( InterruptedException e ) {
                 throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
-            if ( !status.getResult().hasFrame() ) {
+            if ( !response.getResult().hasFrame() ) {
                 throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
             }
-            Frame frame = status.getResult().getFrame();
+            Frame frame = response.getResult().getFrame();
             throwIfNotRelational( frame );
             currentResult = new PolyhenyResultSet( this, frame, properties.toResultSetProperties() );
             return currentResult;
@@ -136,14 +141,15 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         closeCurrentResult();
         discardStatementId();
-        CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
-        getClient().executeUnparameterizedStatement( properties, statement, callback, getTimeout() );
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
+        String namespaceName = getConnection().getSchema();
+        getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
         while ( true ) {
-            StatementStatus status = callback.takeNext();
+            StatementResponse response = callback.takeNext();
             if ( !hasStatementId() ) {
-                statementId = status.getStatementId();
+                statementId = response.getStatementId();
             }
-            if ( !status.hasResult() ) {
+            if ( !response.hasResult() ) {
                 continue;
             }
             try {
@@ -151,13 +157,14 @@ public class PolyphenyStatement implements Statement {
             } catch ( InterruptedException e ) {
                 throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
-            if ( status.getResult().hasFrame() ) {
+            if ( response.getResult().hasFrame() ) {
                 throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
             }
-            currentUpdateCount = status.getResult().getScalar();
+            currentUpdateCount = response.getResult().getScalar();
             return longToInt( currentUpdateCount );
         }
     }
+
 
     public void closeStatementOnly() throws SQLException {
         this.statementId = NO_STATEMENT_ID;
@@ -168,7 +175,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void close() throws SQLException {
-        if (isClosed) {
+        if ( isClosed ) {
             return;
         }
         if ( currentResult != null ) {
@@ -276,14 +283,15 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         closeCurrentResult();
         discardStatementId();
-        CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
-        getClient().executeUnparameterizedStatement( properties, statement, callback, getTimeout() );
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
+        String namespaceName = getConnection().getSchema();
+        getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
         while ( true ) {
-            StatementStatus status = callback.takeNext();
+            StatementResponse response = callback.takeNext();
             if ( !hasStatementId() ) {
-                statementId = status.getStatementId();
+                statementId = response.getStatementId();
             }
-            if ( !status.hasResult() ) {
+            if ( !response.hasResult() ) {
                 continue;
             }
             try {
@@ -291,11 +299,11 @@ public class PolyphenyStatement implements Statement {
             } catch ( InterruptedException e ) {
                 throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
-            if ( !status.getResult().hasFrame() ) {
-                currentUpdateCount = longToInt( status.getResult().getScalar() );
+            if ( !response.getResult().hasFrame() ) {
+                currentUpdateCount = longToInt( response.getResult().getScalar() );
                 return false;
             }
-            Frame frame = status.getResult().getFrame();
+            Frame frame = response.getResult().getFrame();
             throwIfNotRelational( frame );
             currentResult = new PolyhenyResultSet( this, frame, properties.toResultSetProperties() );
             return true;
@@ -413,10 +421,11 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         closeCurrentResult();
         discardStatementId();
-        CallbackQueue<StatementBatchStatus> callback = new CallbackQueue<>();
-        getClient().executeUnparameterizedStatementBatch( properties, statementBatch, callback, getTimeout() );
+        CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>();
+        List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
+        getClient().executeUnparameterizedStatementBatch( requests, callback, getTimeout() );
         while ( true ) {
-            StatementBatchStatus status = callback.takeNext();
+            StatementBatchResponse status = callback.takeNext();
             if ( !hasStatementId() ) {
                 statementId = status.getBatchId();
             }
@@ -434,6 +443,21 @@ public class PolyphenyStatement implements Statement {
     }
 
 
+    List<ExecuteUnparameterizedStatementRequest> buildBatchRequest() throws SQLException {
+        String namespaceName = getConnection().getSchema();
+        return statementBatch.stream()
+                .map(
+                        s -> ExecuteUnparameterizedStatementRequest.newBuilder()
+                                .setStatement( s )
+                                .setFetchSize( properties.getFetchSize() )
+                                .setLanguageName( PropertyUtils.getSQL_LANGUAGE_NAME() )
+                                .setNamespaceName( namespaceName )
+                                .build()
+                )
+                .collect( Collectors.toList() );
+    }
+
+
     @Override
     public Connection getConnection() throws SQLException {
         throwIfClosed();
@@ -446,8 +470,8 @@ public class PolyphenyStatement implements Statement {
         if ( i == KEEP_CURRENT_RESULT || i == CLOSE_ALL_RESULTS ) {
             throw new SQLFeatureNotSupportedException();
         }
-        if (i != CLOSE_CURRENT_RESULT) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for closing behaviour: " + i);
+        if ( i != CLOSE_CURRENT_RESULT ) {
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for closing behaviour: " + i );
         }
         throwIfClosed();
         closeCurrentResult();

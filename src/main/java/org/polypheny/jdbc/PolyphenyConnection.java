@@ -39,10 +39,7 @@ import org.polypheny.jdbc.types.PolyphenyClob;
 import org.polypheny.jdbc.types.PolyphenyStruct;
 
 public class PolyphenyConnection implements Connection {
-
     private PolyphenyConnectionProperties properties;
-
-    private String url;
 
     private PolyphenyDatabaseMetadata databaseMetaData;
     private boolean isClosed;
@@ -147,7 +144,12 @@ public class PolyphenyConnection implements Connection {
 
     @Override
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql, getNetworkTimeout() );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement(
+                properties.getNamespaceName(),
+                PropertyUtils.getSQL_LANGUAGE_NAME(),
+                sql,
+                getTimeout()
+        );
         PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, properties.toStatementProperties(), signature );
         openStatements.add( statement );
         return statement;
@@ -303,7 +305,12 @@ public class PolyphenyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql, getNetworkTimeout() );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement(
+                properties.getNamespaceName(),
+                PropertyUtils.getSQL_LANGUAGE_NAME(),
+                sql,
+                getTimeout()
+        );
         return new PolyphenyPreparedStatement( this, statementProperties, signature );
 
     }
@@ -384,7 +391,12 @@ public class PolyphenyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement( sql, getNetworkTimeout() );
+        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement(
+                properties.getNamespaceName(),
+                PropertyUtils.getSQL_LANGUAGE_NAME(),
+                sql,
+                getTimeout()
+        );
         PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
         openStatements.add( statement );
         return statement;

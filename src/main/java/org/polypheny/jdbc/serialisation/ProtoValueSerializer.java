@@ -241,7 +241,8 @@ public class ProtoValueSerializer {
 
     private static ProtoValue serializeAsProtoTime( TypedValue typedValue ) throws SQLException {
         ProtoTime protoTime = ProtoTime.newBuilder()
-                .setValue( typedValue.asTime().getTime() )
+                // TODO TH: Fix this. Why is this an int32?!
+                .setValue( (int)typedValue.asTime().getTime() )
                 .setTimeUnit( TimeUnit.MILLISECOND )
                 .build();
         return ProtoValue.newBuilder()

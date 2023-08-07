@@ -6,8 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.jdbc.PolyphenyStatement;
 import org.polypheny.jdbc.ProtoInterfaceClient;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 public class PolyphenyStatementProperties {
 
@@ -54,8 +54,6 @@ public class PolyphenyStatementProperties {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for max" );
         }
         this.queryTimeoutSeconds = queryTimeoutSeconds;
-        syncIfStatementPresent();
-
     }
 
 
@@ -78,7 +76,6 @@ public class PolyphenyStatementProperties {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set concurrency" );
         }
         this.resultSetConcurrency = resultSetConcurrency;
-        syncIfStatementPresent();
     }
 
 
@@ -99,7 +96,6 @@ public class PolyphenyStatementProperties {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for fetch size" );
         }
         this.fetchSize = fetchSize;
-        syncIfStatementPresent();
     }
 
 
@@ -108,7 +104,6 @@ public class PolyphenyStatementProperties {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for fetch direction" );
         }
         this.fetchDirection = fetchDirection;
-        syncIfStatementPresent();
     }
 
 
@@ -117,7 +112,6 @@ public class PolyphenyStatementProperties {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Illegal argument for max field size" );
         }
         this.maxFieldSize = maxFieldSize;
-        syncIfStatementPresent();
     }
 
 
@@ -126,32 +120,16 @@ public class PolyphenyStatementProperties {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for large max rows" );
         }
         this.largeMaxRows = largeMaxRows;
-        syncIfStatementPresent();
     }
 
 
     public void setDoesEscapeProcessing( boolean doesEscapeProcessing ) throws SQLException {
         this.doesEscapeProcessing = doesEscapeProcessing;
-        syncIfStatementPresent();
     }
 
 
     public void setIsPoolable( boolean isPoolable ) throws SQLException {
         this.isPoolable = isPoolable;
-        syncIfStatementPresent();
-    }
-
-
-    private void syncIfStatementPresent() throws SQLException {
-        if ( polyphenyStatement == null ) {
-            // bypass sync during construction
-            return;
-        }
-        if ( !polyphenyStatement.hasStatementId() ) {
-            // no statement on serverside that could hold the properties
-            return;
-        }
-        protoInterfaceClient.setStatementProperties( this, polyphenyStatement.getStatementId(), polyphenyStatement.getQueryTimeout() );
     }
 
 
@@ -164,7 +142,7 @@ public class PolyphenyStatementProperties {
         properties.setStatementFetchSize( fetchSize );
         properties.setMaxFieldSize( maxFieldSize );
         properties.setLargeMaxRows( largeMaxRows );
-        properties.setCalendar(calendar);
+        properties.setCalendar( calendar );
         return properties;
     }
 

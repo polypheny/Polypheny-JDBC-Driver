@@ -14,7 +14,6 @@ import lombok.Getter;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.proto.ConnectionProperties;
-import org.polypheny.jdbc.proto.StatementProperties;
 
 public class PropertyUtils {
 
@@ -58,7 +57,8 @@ public class PropertyUtils {
     private static final String DEFAULT_HOST = "localhost";
     @Getter
     private static final int DEFAULT_PORT = 20591;
-
+    @Getter
+    private static final String SQL_LANGUAGE_NAME = "sql";
     // Keys for properties
     @Getter
     private static final String USERNAME_KEY = "user";
@@ -213,33 +213,6 @@ public class PropertyUtils {
     public static boolean isInvalidFetchDdirection( int fetchDirection ) {
         return !FETCH_DIRECTIONS.contains( fetchDirection );
     }
-
-
-    public static ConnectionProperties.Isolation getProtoIsolation( int transactionIsolation ) {
-        switch ( transactionIsolation ) {
-            case Connection.TRANSACTION_READ_COMMITTED:
-                return ConnectionProperties.Isolation.COMMITTED;
-            case Connection.TRANSACTION_READ_UNCOMMITTED:
-                return ConnectionProperties.Isolation.DIRTY;
-            case Connection.TRANSACTION_SERIALIZABLE:
-                return ConnectionProperties.Isolation.SERIALIZABLE;
-            case Connection.TRANSACTION_REPEATABLE_READ:
-                return ConnectionProperties.Isolation.REPEATABLE_READ;
-        }
-        throw new RuntimeException( "Should never be thrown" );
-    }
-
-
-    public static StatementProperties.ResultOperations getProtoUpdateBehaviour( int resultSetConcurrency ) {
-        switch ( resultSetConcurrency ) {
-            case ResultSet.CONCUR_READ_ONLY:
-                return StatementProperties.ResultOperations.READ_ONLY;
-            case ResultSet.CONCUR_UPDATABLE:
-                return StatementProperties.ResultOperations.READ_WRITE;
-        }
-        throw new RuntimeException( "Should never be thrown" );
-    }
-
 
     public static boolean isForwardFetching( int fetchDirection ) {
         return fetchDirection == ResultSet.FETCH_FORWARD;

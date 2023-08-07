@@ -23,7 +23,7 @@ import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.RelationalResult;
 import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.proto.StatementStatus;
+import org.polypheny.jdbc.proto.StatementResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class ProtoStatement {
@@ -88,7 +88,7 @@ public class ProtoStatement {
 
     public ResultType execute( String namespaceName, String languageName, String statement ) throws ProtoInterfaceServiceException {
         resetStatement();
-        CallbackQueue<StatementStatus> callback = new CallbackQueue<>();
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
         int timeout = connection.getTimeout();
         getProtoInterfaceClient().executeUnparameterizedStatement(
                 namespaceName,
@@ -98,11 +98,11 @@ public class ProtoStatement {
                 timeout
         );
         while ( true ) {
-            StatementStatus status = callback.takeNext();
+            StatementResponse response = callback.takeNext();
             if ( statementId == NO_STATEMENT_ID ) {
-                statementId = status.getStatementId();
+                statementId = response.getStatementId();
             }
-            if ( !status.hasResult() ) {
+            if ( !response.hasResult() ) {
                 continue;
             }
             try {
@@ -110,11 +110,11 @@ public class ProtoStatement {
             } catch ( InterruptedException e ) {
                 throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
-            if ( !status.getResult().hasFrame() ) {
-                scalarResult = status.getResult().getScalar();
+            if ( !response.getResult().hasFrame() ) {
+                scalarResult = response.getResult().getScalar();
                 return ResultType.SCALAR;
             }
-            return getResultFromFrame(status.getResult().getFrame());
+            return getResultFromFrame(response.getResult().getFrame());
         }
     }
 

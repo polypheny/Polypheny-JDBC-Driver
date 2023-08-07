@@ -72,7 +72,6 @@ public class ProtoInterfaceClient {
 
     private static final int MAJOR_API_VERSION = 2;
     private static final int MINOR_API_VERSION = 0;
-    private static final String SQL_LANGUAGE_NAME = "sql";
     private final ProtoInterfaceGrpc.ProtoInterfaceBlockingStub blockingStub;
     private final ProtoInterfaceGrpc.ProtoInterfaceStub asyncStub;
     private final String clientUUID;

@@ -55,4 +55,5 @@ message CloseStatementRequest {
 
 message FetchRequest {
   int32 statement_id = 1;
+  optional int32 fetchSize = 2;
 }
