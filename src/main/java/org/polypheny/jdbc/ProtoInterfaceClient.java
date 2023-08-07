@@ -164,7 +164,6 @@ public class ProtoInterfaceClient {
         Optional.ofNullable( properties.getNamespaceName() ).ifPresent( propertiesBuilder::setNamespaceName );
         return propertiesBuilder
                 .setIsAutoCommit( properties.isAutoCommit() )
-                .setNamespaceName( properties.getNamespaceName() )
                 .build();
     }
 
