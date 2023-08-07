@@ -179,8 +179,11 @@ public class ProtoInterfaceClient {
 
 
     public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws ProtoInterfaceServiceException {
-        ExecuteUnparameterizedStatementRequest request = ExecuteUnparameterizedStatementRequest.newBuilder()
-                .setNamespaceName( namespaceName )
+        ExecuteUnparameterizedStatementRequest.Builder requestBuilder = ExecuteUnparameterizedStatementRequest.newBuilder();
+        if (namespaceName != null) {
+            requestBuilder.setNamespaceName( namespaceName );
+        }
+        ExecuteUnparameterizedStatementRequest request = requestBuilder
                 .setLanguageName( languageName )
                 .setStatement( statement )
                 .build();
@@ -205,13 +208,16 @@ public class ProtoInterfaceClient {
 
 
     public PreparedStatementSignature prepareIndexedStatement( String namespaceName, String languageName, String statement, int timeout ) throws ProtoInterfaceServiceException {
-        PrepareStatementRequest preparedStatement = PrepareStatementRequest.newBuilder()
-                .setNamespaceName( namespaceName )
+        PrepareStatementRequest.Builder requestBuilder = PrepareStatementRequest.newBuilder();
+        if (namespaceName != null) {
+            requestBuilder.setNamespaceName( namespaceName );
+        }
+        PrepareStatementRequest request = requestBuilder
                 .setStatement( statement )
                 .setLanguageName( languageName )
                 .build();
         try {
-            return getBlockingStub( timeout ).prepareIndexedStatement( preparedStatement );
+            return getBlockingStub( timeout ).prepareIndexedStatement( request );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
