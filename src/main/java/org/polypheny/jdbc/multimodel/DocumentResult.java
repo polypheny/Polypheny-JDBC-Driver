@@ -23,6 +23,7 @@ import org.polypheny.jdbc.PolyphenyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.DocumentFrame;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
@@ -53,7 +54,7 @@ public class DocumentResult implements Iterable<Document> {
     private void fetchMore() throws ProtoInterfaceServiceException {
         int id = protoStatement.getStatementId();
         int timeout = getPolyphenyConnection().getTimeout();
-        Frame frame = getProtoInterfaceClient().fetchResult( id, timeout );
+        Frame frame = getProtoInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
         if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
             throw new ProtoInterfaceServiceException(
                     ProtoInterfaceErrors.RESULT_TYPE_INVALID,

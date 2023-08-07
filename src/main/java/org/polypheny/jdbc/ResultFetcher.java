@@ -40,9 +40,9 @@ public class ResultFetcher implements Runnable {
     @Override
     public void run() {
         long fetchEnd = totalFetched + properties.getStatementFetchSize();
-        Frame nextFrame = null;
+        Frame nextFrame;
         try {
-            nextFrame = client.fetchResult( statementId, fetchTimeout);
+            nextFrame = client.fetchResult( statementId, properties.getFetchSize(), fetchTimeout);
         } catch ( ProtoInterfaceServiceException e ) {
             throw new RuntimeException( e );
         }

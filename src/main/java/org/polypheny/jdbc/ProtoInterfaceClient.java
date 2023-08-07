@@ -285,8 +285,9 @@ public class ProtoInterfaceClient {
     }
 
 
-    public Frame fetchResult( int statementId, int timeout ) throws ProtoInterfaceServiceException {
+    public Frame fetchResult( int statementId, int fetchSize, int timeout ) throws ProtoInterfaceServiceException {
         FetchRequest fetchRequest = FetchRequest.newBuilder()
+                .setFetchSize( fetchSize )
                 .setStatementId( statementId )
                 .build();
         try {
