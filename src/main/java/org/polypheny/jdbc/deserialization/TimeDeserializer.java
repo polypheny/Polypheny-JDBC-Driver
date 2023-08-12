@@ -26,7 +26,7 @@ public class TimeDeserializer implements ValueDeserializer {
 
 
     private Time deserializeToSqlTime( ProtoTime protoTime ) {
-        return new Time( protoTime.getValue() * 86400000L );
+        return new Time( protoTime.getValue() );
     }
 
 }
