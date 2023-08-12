@@ -71,13 +71,9 @@ public class CallbackQueue<T> implements StreamObserver<T> {
         queueLock.lock();
         if (propagatedException instanceof StatusRuntimeException ) {
             StatusRuntimeException statusRuntimeException = (StatusRuntimeException) propagatedException;
-            try {
-                this.propagatedException = ProtoInterfaceServiceException.fromMetadata(
-                        statusRuntimeException.getMessage(),
-                        Status.trailersFromThrowable(statusRuntimeException));
-            } catch ( ProtoInterfaceServiceException e ) {
-                this.propagatedException = e;
-            }
+            this.propagatedException = ProtoInterfaceServiceException.fromMetadata(
+                    statusRuntimeException.getMessage(),
+                    Status.trailersFromThrowable(statusRuntimeException));
         } else {
             this.propagatedException = new ProtoInterfaceServiceException(propagatedException);
         }

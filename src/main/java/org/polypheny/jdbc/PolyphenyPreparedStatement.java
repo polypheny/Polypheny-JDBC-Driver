@@ -410,8 +410,6 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
-        discardStatementId();
-        CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>();
         StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
         return status.getScalarsList();
     }
