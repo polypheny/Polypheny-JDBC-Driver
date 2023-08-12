@@ -43,7 +43,7 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoValueType.BINARY, Types.BINARY )
                     .put( ProtoValueType.VARBINARY, Types.VARBINARY )
                     .put( ProtoValueType.NULL, Types.NULL )
-                    .put( ProtoValueType.ARRAY, Types.ARRAY )
+                    .put( ProtoValueType.ARRAY, Types.ARRAY)
                     .put( ProtoValueType.MAP, Types.OTHER )
                     .put( ProtoValueType.DOCUMENT, Types.STRUCT )
                     .put( ProtoValueType.GRAPH, Types.JAVA_OBJECT )

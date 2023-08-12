@@ -447,12 +447,16 @@ public class PolyphenyStatement implements Statement {
         String namespaceName = getConnection().getSchema();
         return statementBatch.stream()
                 .map(
-                        s -> ExecuteUnparameterizedStatementRequest.newBuilder()
-                                .setStatement( s )
-                                .setFetchSize( properties.getFetchSize() )
-                                .setLanguageName( PropertyUtils.getSQL_LANGUAGE_NAME() )
-                                .setNamespaceName( namespaceName )
-                                .build()
+                        s -> {
+                            ExecuteUnparameterizedStatementRequest.Builder builder = ExecuteUnparameterizedStatementRequest.newBuilder()
+                                    .setStatement( s )
+                                    .setFetchSize( properties.getFetchSize() )
+                                    .setLanguageName( PropertyUtils.getSQL_LANGUAGE_NAME() );
+                            if ( namespaceName != null ) {
+                                builder.setNamespaceName( namespaceName );
+                            }
+                            return builder.build();
+                        }
                 )
                 .collect( Collectors.toList() );
     }

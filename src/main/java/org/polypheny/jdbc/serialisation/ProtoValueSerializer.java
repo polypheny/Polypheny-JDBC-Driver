@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.proto.ProtoArray;
 import org.polypheny.jdbc.proto.ProtoBigDecimal;
 import org.polypheny.jdbc.proto.ProtoBinary;
 import org.polypheny.jdbc.proto.ProtoBoolean;
@@ -18,6 +17,7 @@ import org.polypheny.jdbc.proto.ProtoDate;
 import org.polypheny.jdbc.proto.ProtoDouble;
 import org.polypheny.jdbc.proto.ProtoFloat;
 import org.polypheny.jdbc.proto.ProtoInteger;
+import org.polypheny.jdbc.proto.ProtoList;
 import org.polypheny.jdbc.proto.ProtoLong;
 import org.polypheny.jdbc.proto.ProtoNull;
 import org.polypheny.jdbc.proto.ProtoRowId;
@@ -107,7 +107,7 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
             case Types.ARRAY:
-                return serializeAsProtoArray( typedValue );
+                return serializeAsProtoList( typedValue );
             case Types.CLOB:
                 // TODO TH: find something useful to do here...
                 break;
@@ -150,16 +150,16 @@ public class ProtoValueSerializer {
     }
 
 
-    private static ProtoValue serializeAsProtoArray( TypedValue typedValue ) throws SQLException {
+    private static ProtoValue serializeAsProtoList( TypedValue typedValue ) throws SQLException {
         List<ProtoValue> elements = new ArrayList<>();
         for ( Object object : (Object[]) typedValue.asArray().getArray() ) {
             elements.add( ProtoValueSerializer.serialize( TypedValue.fromObject( object ) ) );
         }
-        ProtoArray protoArray = ProtoArray.newBuilder()
-                .addAllElements( elements )
+        ProtoList protoList = ProtoList.newBuilder()
+                .addAllValues( elements )
                 .build();
         return ProtoValue.newBuilder()
-                .setArray( protoArray )
+                .setList( protoList )
                 .setType( getType( typedValue ) )
                 .build();
     }

@@ -33,7 +33,6 @@ public class ProtoValueDeserializer {
                     .put( ValueCase.EDGE, new EdgeDeserializer() )
                     .put( ValueCase.PATH, new PathDeserializer() )
                     .put( ValueCase.GRAPH, new GraphDeserializer() )
-                    .put( ValueCase.ARRAY, new ArrayDeserializer() )
                     .put( ValueCase.ROW_ID, new RowIdDeserializer())
                     .build();
 

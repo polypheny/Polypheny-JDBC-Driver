@@ -58,6 +58,9 @@ public class PolyphenyConnection implements Connection {
 
 
     private void throwIfAutoCommit() throws SQLException {
+        if (!isStrict()) {
+            return;
+        }
         if ( properties.isAutoCommit() ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on auto committing connection." );
         }

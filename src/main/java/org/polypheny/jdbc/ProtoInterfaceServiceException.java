@@ -32,14 +32,17 @@ public class ProtoInterfaceServiceException extends SQLException {
     public static final Metadata.Key<ErrorDetails> ERROR_DETAILS_KEY = ProtoUtils.keyForProto( ErrorDetails.getDefaultInstance() );
 
 
-    public static ProtoInterfaceServiceException fromMetadata( String message, Metadata metadata ) throws ProtoInterfaceServiceException {
+    public static ProtoInterfaceServiceException fromMetadata( String message, Metadata metadata ) {
         if ( metadata == null ) {
-            throw new ProtoInterfaceServiceException( message );
+            return new ProtoInterfaceServiceException( message );
         }
         if ( !metadata.containsKey( ERROR_DETAILS_KEY ) ) {
-            throw new ProtoInterfaceServiceException( message, ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode );
+            return new ProtoInterfaceServiceException( message, ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode );
         }
         ErrorDetails errorDetails = metadata.get( ERROR_DETAILS_KEY );
+        if ( errorDetails == null ) {
+            return new ProtoInterfaceServiceException( message );
+        }
         return new ProtoInterfaceServiceException( Objects.requireNonNull( errorDetails ) );
     }
 
