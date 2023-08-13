@@ -797,7 +797,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsDataDefinitionAndDataManipulationTransactions() throws SQLException {
-        return false;
+        return true;
     }
 
 
@@ -809,7 +809,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean dataDefinitionCausesTransactionCommit() throws SQLException {
-        return false;
+        return true;
     }
 
 

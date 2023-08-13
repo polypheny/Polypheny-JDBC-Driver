@@ -243,16 +243,16 @@ public class TypedValue implements Convertible {
         return nullValue;
     }
 
+    public static TypedValue fromNull(int sqlType, String internalType) {
+        TypedValue typedValue = TypedValue.fromNull(sqlType);
+        typedValue.internalType = internalType;
+        return typedValue;
+    }
+
 
     public static TypedValue fromNull() {
         return fromNull( Types.NULL );
     }
-
-
-    public static TypedValue fromNull( int sqlType, String typeName ) throws NotImplementedException {
-        throw new NotImplementedException( "Not implemented yet..." );
-    }
-
 
     public static TypedValue fromClob( Clob value ) {
         return new TypedValue( Types.CLOB, value );
