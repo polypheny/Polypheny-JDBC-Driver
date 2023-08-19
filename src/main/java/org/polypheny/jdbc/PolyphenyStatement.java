@@ -423,6 +423,7 @@ public class PolyphenyStatement implements Statement {
         discardStatementId();
         CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>();
         List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
+        clearBatch();
         getClient().executeUnparameterizedStatementBatch( requests, callback, getTimeout() );
         while ( true ) {
             StatementBatchResponse status = callback.takeNext();
