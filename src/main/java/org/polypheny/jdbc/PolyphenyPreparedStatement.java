@@ -35,7 +35,7 @@ import org.polypheny.jdbc.types.TypedValue;
 
 public class PolyphenyPreparedStatement extends PolyphenyStatement implements PreparedStatement {
 
-    private List<TypedValue> parameters;
+    private TypedValue[] parameters;
     private List<List<TypedValue>> parameterBatch;
     private PolyphenyParameterMetaData parameterMetaData;
 
@@ -49,8 +49,8 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     }
 
 
-    private List<TypedValue> createParamterList( int parameterCount ) {
-        return Arrays.asList( new TypedValue[parameterCount] );
+    private TypedValue[] createParamterList( int parameterCount ) {
+        return new TypedValue[parameterCount];
     }
 
 
@@ -133,7 +133,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
-                parameters,
+                Arrays.asList(parameters),
                 properties.getFetchSize(),
                 getTimeout()
         );
@@ -153,7 +153,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
-                parameters,
+                Arrays.asList(parameters),
                 properties.getFetchSize(),
                 getTimeout()
         );
@@ -191,7 +191,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNull( int parameterIndex, int sqlType ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNull( sqlType ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNull( sqlType );
     }
 
 
@@ -199,7 +199,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBoolean( int parameterIndex, boolean x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBoolean( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBoolean( x );
     }
 
 
@@ -207,7 +207,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setByte( int parameterIndex, byte x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromByte( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromByte( x );
     }
 
 
@@ -215,7 +215,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setShort( int parameterIndex, short x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromShort( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromShort( x );
     }
 
 
@@ -223,7 +223,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setInt( int parameterIndex, int x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromInt( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromInt( x );
     }
 
 
@@ -231,7 +231,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setLong( int parameterIndex, long x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromLong( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromLong( x );
     }
 
 
@@ -239,7 +239,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setFloat( int parameterIndex, float x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromFloat( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromFloat( x );
     }
 
 
@@ -247,7 +247,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setDouble( int parameterIndex, double x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromDouble( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromDouble( x );
     }
 
 
@@ -255,7 +255,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBigDecimal( int parameterIndex, BigDecimal x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBigDecimal( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBigDecimal( x );
     }
 
 
@@ -263,7 +263,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setString( int parameterIndex, String x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromString( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromString( x );
     }
 
 
@@ -271,7 +271,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBytes( int parameterIndex, byte[] x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBytes( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBytes( x );
     }
 
 
@@ -279,7 +279,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setDate( int parameterIndex, Date x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromDate( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromDate( x );
     }
 
 
@@ -287,7 +287,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setTime( int parameterIndex, Time x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromTime( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromTime( x );
     }
 
 
@@ -295,7 +295,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setTimestamp( int parameterIndex, Timestamp x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromTimestamp( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromTimestamp( x );
     }
 
 
@@ -304,7 +304,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromAsciiStream( x, length ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x, length );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
         }
@@ -316,7 +316,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromUnicodeStream( x, length ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromUnicodeStream( x, length );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
         }
@@ -328,7 +328,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBinaryStream( x, length ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x, length );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
         }
@@ -346,7 +346,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setObject( int parameterIndex, Object x, int targetSqlType ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x, targetSqlType ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromObject( x, targetSqlType );
     }
 
 
@@ -354,7 +354,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setObject( int parameterIndex, Object x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromObject( x );
     }
 
 
@@ -363,7 +363,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
-                parameters,
+                Arrays.asList(parameters),
                 properties.getFetchSize(),
                 getTimeout()
         );
@@ -382,7 +382,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public void addBatch() throws SQLException {
         throwIfClosed();
-        parameterBatch.add( parameters );
+        parameterBatch.add( new ArrayList<TypedValue>(Arrays.asList(parameters)) );
     }
 
 
@@ -427,7 +427,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setRef( int parameterIndex, Ref x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromRef( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromRef( x );
     }
 
 
@@ -435,7 +435,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBlob( int parameterIndex, Blob x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBlob( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBlob( x );
     }
 
 
@@ -443,7 +443,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setClob( int parameterIndex, Clob x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromClob( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromClob( x );
     }
 
 
@@ -451,7 +451,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setArray( int parameterIndex, Array x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromArray( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromArray( x );
     }
 
 
@@ -465,7 +465,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setDate( int parameterIndex, Date x, Calendar cal ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromDate( x, cal ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromDate( x, cal );
     }
 
 
@@ -473,7 +473,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setTime( int parameterIndex, Time x, Calendar cal ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromTime( x, cal ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromTime( x, cal );
     }
 
 
@@ -481,7 +481,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setTimestamp( int parameterIndex, Timestamp x, Calendar cal ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromTimestamp( x, cal ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromTimestamp( x, cal );
     }
 
 
@@ -489,7 +489,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNull( int parameterIndex, int sqlType, String typeName ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNull( sqlType, typeName ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNull( sqlType, typeName );
     }
 
 
@@ -497,7 +497,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setURL( int parameterIndex, URL x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromUrl( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromUrl( x );
     }
 
 
@@ -511,7 +511,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setRowId( int parameterIndex, RowId x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromRowId( x ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromRowId( x );
     }
 
 
@@ -519,7 +519,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNString( int parameterIndex, String value ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNString( value ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNString( value );
     }
 
 
@@ -528,7 +528,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNCharacterStream( value ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNCharacterStream( value );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting NCharacterStream.", e );
         }
@@ -539,7 +539,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNClob( int parameterIndex, NClob value ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNClob( value ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNClob( value );
     }
 
 
@@ -547,7 +547,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setClob( int parameterIndex, Reader reader, long length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromClob( reader, length ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromClob( reader, length );
     }
 
 
@@ -555,7 +555,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBlob( int parameterIndex, InputStream inputStream, long length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBlob( inputStream, length ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBlob( inputStream, length );
     }
 
 
@@ -563,7 +563,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNClob( int parameterIndex, Reader reader, long length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNClob( reader, length ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNClob( reader, length );
     }
 
 
@@ -571,7 +571,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setSQLXML( int parameterIndex, SQLXML xmlObject ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromSQLXML( xmlObject ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromSQLXML( xmlObject );
     }
 
 
@@ -579,7 +579,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setObject( int parameterIndex, Object x, int targetSqlType, int scaleOrLength ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromObject( x, targetSqlType, scaleOrLength ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromObject( x, targetSqlType, scaleOrLength );
     }
 
 
@@ -588,7 +588,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromAsciiStream( x, length ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x, length );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting AsciiStream.", e );
         }
@@ -600,7 +600,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBinaryStream( x, length ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x, length );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting BinaryStream.", e );
         }
@@ -612,7 +612,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromCharacterStream( reader, length ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromCharacterStream( reader, length );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting CharacterStream.", e );
         }
@@ -624,7 +624,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromAsciiStream( x ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting AsciiStream.", e );
         }
@@ -636,7 +636,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBinaryStream( x ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting BinaryStream.", e );
         }
@@ -648,7 +648,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromCharacterStream( reader ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromCharacterStream( reader );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting CharacterStream.", e );
         }
@@ -660,7 +660,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNCharacterStream( value ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNCharacterStream( value );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting NCharacterStream.", e );
         }
@@ -671,7 +671,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setClob( int parameterIndex, Reader reader ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromClob( reader ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromClob( reader );
     }
 
 
@@ -680,7 +680,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
         try {
-            parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromBlob( inputStream ) );
+            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBlob( inputStream );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error while setting Blob.", e );
         }
@@ -691,6 +691,6 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNClob( int parameterIndex, Reader reader ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters.set( indexFromParameterIndex( parameterIndex ), TypedValue.fromNClob( reader ) );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNClob( reader );
     }
 }

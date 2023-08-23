@@ -50,7 +50,7 @@ public class ResultFetcher implements Runnable {
             throw new RuntimeException(new ProtoInterfaceServiceException( "Illegal result type." ));
         }
         List<Row> rows = nextFrame.getRelationalFrame().getRowsList();
-        if (fetchEnd > properties.getLargeMaxRows()) {
+        if (properties.getLargeMaxRows() != 0 && fetchEnd > properties.getLargeMaxRows()) {
             long rowEndIndex = properties.getLargeMaxRows() - totalFetched;
             if (rowEndIndex > Integer.MAX_VALUE) {
                 throw new RuntimeException("Should never be thrown");
