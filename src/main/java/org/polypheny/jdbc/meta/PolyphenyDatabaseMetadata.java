@@ -487,7 +487,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean isCatalogAtStart() throws SQLException {
-        return true;
+        return false;
     }
 
 
