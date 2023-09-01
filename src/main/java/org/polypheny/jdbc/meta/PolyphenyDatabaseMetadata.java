@@ -232,8 +232,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsMixedCaseQuotedIdentifiers() throws SQLException {
-        return true;
+        return false;
     }
+
 
 
     @Override
@@ -250,13 +251,13 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean storesMixedCaseQuotedIdentifiers() throws SQLException {
-        return true;
+        return false;
     }
 
 
     @Override
     public String getIdentifierQuoteString() throws SQLException {
-        return "\"";
+        return " ";
     }
 
 
@@ -341,13 +342,13 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsTableCorrelationNames() throws SQLException {
-        return true;
+        return false;
     }
 
 
     @Override
     public boolean supportsDifferentTableCorrelationNames() throws SQLException {
-        return true;
+        return false;
     }
 
 
@@ -480,19 +481,19 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getCatalogTerm() throws SQLException {
-        return "database";
+        return "";
     }
 
 
     @Override
     public boolean isCatalogAtStart() throws SQLException {
-        return true;
+        return false;
     }
 
 
     @Override
     public String getCatalogSeparator() throws SQLException {
-        return ".";
+        return "";
     }
 
 
@@ -530,33 +531,33 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsCatalogsInDataManipulation() throws SQLException {
-        return true;
+        return false;
     }
 
 
     @Override
     public boolean supportsCatalogsInProcedureCalls() throws SQLException {
-        return true;
+        return false;
     }
 
 
     @Override
     public boolean supportsCatalogsInTableDefinitions() throws SQLException {
-        return true;
+        return false;
     }
 
 
     @Override
     public boolean supportsCatalogsInIndexDefinitions() throws SQLException {
         // Index definition not supported by polypheny!
-        return true;
+        return false;
     }
 
 
     @Override
     public boolean supportsCatalogsInPrivilegeDefinitions() throws SQLException {
         // Privilege Definition not supported by polypheny!
-        return true;
+        return false;
     }
 
 

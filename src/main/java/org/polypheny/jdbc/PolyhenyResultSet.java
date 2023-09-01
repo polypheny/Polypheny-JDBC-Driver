@@ -35,6 +35,8 @@ import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class PolyhenyResultSet implements ResultSet {
 
+    private boolean isMeta = false;
+
     private PolyphenyStatement statement;
 
     private PolyphenyResultSetMetadata metadata;
@@ -79,6 +81,7 @@ public class PolyhenyResultSet implements ResultSet {
         this.lastRead = null;
         this.isClosed = false;
         this.isInInsertMode = false;
+        this.isMeta = true;
     }
 
 
@@ -979,6 +982,9 @@ public class PolyhenyResultSet implements ResultSet {
     @Override
     public Statement getStatement() throws SQLException {
         throwIfClosed();
+        if (isMeta) {
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "This operation cannot be applied to a dummy result set of a meta request." );
+        }
         return statement;
     }
 
