@@ -65,7 +65,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public static PolyTimeStamp of( Timestamp value ) {
-        if ( value == ) {
+        if ( value == null) {
             return null;
         }
         long time = value.getTime();

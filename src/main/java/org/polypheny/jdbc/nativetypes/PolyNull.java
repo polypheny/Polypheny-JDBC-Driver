@@ -17,20 +17,25 @@
 package org.polypheny.jdbc.nativetypes;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.jdbc.nativetypes.category.PolyBlob;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
+import org.polypheny.jdbc.nativetypes.document.PolyDocument;
+import org.polypheny.jdbc.nativetypes.graph.PolyDictionary;
 import org.polypheny.jdbc.nativetypes.graph.PolyEdge;
 import org.polypheny.jdbc.nativetypes.graph.PolyGraph;
 import org.polypheny.jdbc.nativetypes.graph.PolyNode;
-import org.polypheny.jdbc.nativetypes.graph.PolyPath;
+import org.polypheny.jdbc.nativetypes.relational.PolyMap;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
 
 public class PolyNull extends PolyValue {
+
     public static PolyNull NULL = new PolyNull();
+
+
     public PolyNull() {
         super( ProtoValueType.NULL );
     }
@@ -39,18 +44,6 @@ public class PolyNull extends PolyValue {
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         return o.isNull() ? 0 : -1;
-    }
-
-
-    @Override
-    public String toJson() {
-        return "null";
-    }
-
-
-    @Override
-    public @Nullable Long deriveByteSize() {
-        return 1L;
     }
 
 
@@ -265,12 +258,6 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyPath asPath() {
-        return new PolyPath( null, null, null, null, null );
-    }
-
-
-    @Override
     public boolean isGraph() {
         return true;
     }
@@ -278,7 +265,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyGraph asGraph() {
-        return new PolyGraph( null, new FlatMap<>(), new FlatMap<>() );
+        return new PolyGraph( null, new HashMap<>(), new HashMap<>() );
     }
 
 
@@ -329,8 +316,10 @@ public class PolyNull extends PolyValue {
         return new PolyBlob( ProtoValueType.FILE );
     }
 
+
     @Override
     public String toString() {
         return "null";
     }
+
 }

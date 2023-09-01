@@ -18,12 +18,16 @@ package org.polypheny.jdbc.nativetypes.relational;
 
 import java.util.HashMap;
 import java.util.Map;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.experimental.Delegate;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
 
+@EqualsAndHashCode(callSuper = true)
+@Value(staticConstructor = "of")
 public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue implements Map<K, V> {
 
     @Delegate
