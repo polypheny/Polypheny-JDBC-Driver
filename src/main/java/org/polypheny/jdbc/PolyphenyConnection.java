@@ -28,7 +28,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
-import org.polypheny.jdbc.multimodel.ProtoStatement;
+import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
@@ -140,8 +140,8 @@ public class PolyphenyConnection implements Connection {
         return statement;
     }
 
-    public ProtoStatement createProtoStatement() {
-        return new ProtoStatement( this);
+    public PolyStatement createProtoStatement() {
+        return new PolyStatement( this);
     }
 
 

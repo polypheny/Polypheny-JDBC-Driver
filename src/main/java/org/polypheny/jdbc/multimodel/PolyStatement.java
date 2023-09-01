@@ -21,42 +21,25 @@ import org.polypheny.jdbc.PolyphenyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.RelationalResult;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.StatementResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
-public class ProtoStatement {
+public class PolyStatement {
 
     private static final long SCALAR_NOT_SET = -1;
     private static final int NO_STATEMENT_ID = -1;
 
 
-    public enum ResultType {
-        RELATIONAL,
-        DOCUMENT,
-        GRAPH,
-        SCALAR
-    }
+
 
 
     @Getter
     private PolyphenyConnection connection;
     @Getter
     private int statementId;
-    private ResultType resultType = null;
-    private RelationalResult relationalResult = null;
-    private DocumentResult documentResult = null;
-    private GraphResult graphResult = null;
-
-    private long scalarResult = SCALAR_NOT_SET;
-
 
     private void resetStatement() {
-        relationalResult = null;
-        documentResult = null;
-        graphResult = null;
-        scalarResult = SCALAR_NOT_SET;
         statementId = NO_STATEMENT_ID;
     }
 
@@ -65,28 +48,25 @@ public class ProtoStatement {
         return connection.getProtoInterfaceClient();
     }
 
-    private ResultType getResultFromFrame(Frame frame) throws ProtoInterfaceServiceException {
+    private Result getResultFromFrame(Frame frame) throws ProtoInterfaceServiceException {
         switch ( frame.getResultCase() ) {
             case RELATIONAL_FRAME:
-                relationalResult = new RelationalResult( frame.getRelationalFrame(), this );
-                return ResultType.RELATIONAL;
+                return new RelationalResult( frame.getRelationalFrame(), this );
             case DOCUMENT_FRAME:
-                documentResult = new DocumentResult( frame.getDocumentFrame(), this );
-                return ResultType.DOCUMENT;
+                return new DocumentResult( frame.getDocumentFrame(), this );
             case GRAPH_FRAME:
-                graphResult = new GraphResult( frame.getGraphFrame(), this );
-                return ResultType.GRAPH;
+                return new GraphResult( frame.getGraphFrame(), this );
         }
         throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement produced unknown result type" );
     }
 
 
-    public ProtoStatement( PolyphenyConnection polyphenyConnection ) {
+    public PolyStatement( PolyphenyConnection polyphenyConnection ) {
         this.connection = polyphenyConnection;
     }
 
 
-    public ResultType execute( String namespaceName, String languageName, String statement ) throws ProtoInterfaceServiceException {
+    public Result execute( String namespaceName, String languageName, String statement ) throws ProtoInterfaceServiceException {
         resetStatement();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
         int timeout = connection.getTimeout();
@@ -111,8 +91,7 @@ public class ProtoStatement {
                 throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
             if ( !response.getResult().hasFrame() ) {
-                scalarResult = response.getResult().getScalar();
-                return ResultType.SCALAR;
+                return new ScalarResult(response.getResult().getScalar());
             }
             return getResultFromFrame(response.getResult().getFrame());
         }

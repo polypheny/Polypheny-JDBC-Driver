@@ -21,6 +21,7 @@ import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.Delegate;
+import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyValue;
@@ -28,6 +29,7 @@ import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
+@NonFinal
 public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue implements Map<K, V> {
 
     @Delegate

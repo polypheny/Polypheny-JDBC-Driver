@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.multimodel;
 
-import org.polypheny.jdbc.multimodel.ProtoStatement;
-import org.polypheny.jdbc.proto.RelationalFrame;
+public class ScalarResult extends Result {
 
-public class RelationalResult {
-
-    public RelationalResult( RelationalFrame relationalFrame, ProtoStatement protoStatement ) {
+    public ScalarResult( long scalar ) {
+        super(ResultType.SCALAR);
     }
 
 }

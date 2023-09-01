@@ -31,6 +31,14 @@ public class PolyBinary extends PolyValue{
         this.value = value;
     }
 
+    public PolyBinary( byte[] value, ProtoValueType type ) {
+        super( type  );
+        if (!TypeUtils.BLOB_TYPES.contains( type )) {
+            throw new RuntimeException("Should never be thrown.");
+        }
+        this.value = value;
+    }
+
     public static PolyBinary of( byte[] value ) {
         return new PolyBinary( value);
     }

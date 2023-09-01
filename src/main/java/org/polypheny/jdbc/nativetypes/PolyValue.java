@@ -16,6 +16,14 @@
 
 package org.polypheny.jdbc.nativetypes;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
@@ -23,14 +31,28 @@ import org.polypheny.jdbc.nativetypes.category.PolyBlob;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
 import org.polypheny.jdbc.nativetypes.document.PolyDocument;
+import org.polypheny.jdbc.nativetypes.graph.PolyDictionary;
 import org.polypheny.jdbc.nativetypes.graph.PolyEdge;
+import org.polypheny.jdbc.nativetypes.graph.PolyEdge.EdgeDirection;
 import org.polypheny.jdbc.nativetypes.graph.PolyGraph;
 import org.polypheny.jdbc.nativetypes.graph.PolyNode;
 import org.polypheny.jdbc.nativetypes.relational.PolyMap;
+import org.polypheny.jdbc.proto.ProtoBigDecimal;
+import org.polypheny.jdbc.proto.ProtoDocument;
+import org.polypheny.jdbc.proto.ProtoEdge;
+import org.polypheny.jdbc.proto.ProtoEntry;
+import org.polypheny.jdbc.proto.ProtoGraph;
+import org.polypheny.jdbc.proto.ProtoGraphPropertyHolder;
+import org.polypheny.jdbc.proto.ProtoList;
+import org.polypheny.jdbc.proto.ProtoMap;
+import org.polypheny.jdbc.proto.ProtoNode;
+import org.polypheny.jdbc.proto.ProtoUserDefinedType;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.jdbc.proto.ProtoValue.ValueCase;
 
 public abstract class PolyValue implements Comparable<PolyValue> {
+
     public ProtoValue.ProtoValueType type;
 
 
@@ -38,9 +60,11 @@ public abstract class PolyValue implements Comparable<PolyValue> {
         this.type = type;
     }
 
+
     public boolean isSameType( PolyValue value ) {
         return type == value.type;
     }
+
 
     public boolean isNull() {
         return type == ProtoValue.ProtoValueType.NULL;
@@ -71,7 +95,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
         return new ProtoInterfaceServiceException(
                 ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE,
                 String.format( "Cannot parse %s to type %s", value, clazz.getSimpleName() )
-                );
+        );
     }
 
 
@@ -387,6 +411,244 @@ public abstract class PolyValue implements Comparable<PolyValue> {
             return (PolyUserDefinedValue) this;
         }
         throw cannotParse( this, PolyUserDefinedValue.class );
+    }
+
+
+    public static PolyValue fromProto( ProtoValue protoValue ) {
+        switch ( protoValue.getType() ) {
+            case UNSPECIFIED:
+            case ROW_ID:
+            case DISTINCT:
+            case STRUCTURED:
+            case ROW:
+            case OTHER:
+            case CURSOR:
+            case COLUMN_LIST:
+            case DYNAMIC_STAR:
+            case GEOMETRY:
+            case SYMBOL:
+            case JSON:
+            case MULTISET:
+            case ANY:
+            case UNRECOGNIZED:
+                throw new RuntimeException( "Should never be thrown." );
+            case BOOLEAN:
+                return new PolyBoolean( protoValue.getBoolean().getBoolean() );
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                return new PolyInteger( protoValue.getInteger().getInteger() );
+            case BIGINT:
+                return new PolyLong( protoValue.getLong().getLong() );
+            case DECIMAL:
+                return deserializeToPolyBigDecimal( protoValue.getBigDecimal() );
+            case REAL:
+            case FLOAT:
+                return new PolyFloat( protoValue.getFloat().getFloat() );
+            case DOUBLE:
+                return new PolyDouble( protoValue.getDouble().getDouble() );
+            case DATE:
+                return new PolyDate( protoValue.getDate().getDate() );
+            case TIME:
+                return new PolyTime( protoValue.getTime().getValue(), protoValue.getTime().getTimeUnit() );
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                throw new NotImplementedException( "Conversion from time with local timezone not yet implemented." );
+            case TIMESTAMP:
+                return new PolyTimeStamp(protoValue.getTimeStamp().getTimeStamp());
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                throw new NotImplementedException( "Conversion from timestamp with local timezone not yet implemented." );
+            case INTERVAL_SECOND:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY:
+            case INTERVAL_MONTH:
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_YEAR:
+                BigDecimal value = deserializeToBigDecimal( protoValue.getInterval().getValue() );
+                return new PolyInterval( value, protoValue.getType() );
+            case CHAR:
+            case VARCHAR:
+                return new PolyString( protoValue.getString().getString() );
+            case BINARY:
+            case VARBINARY:
+                return new PolyBinary( protoValue.getBinary().getBinary().toByteArray() );
+            case NULL:
+                return new PolyNull();
+            case ARRAY:
+                return deserializeToPolyList( protoValue.getList() );
+            case MAP:
+                return deserializeToPolyMap( protoValue.getMap() );
+            case DOCUMENT:
+                return deserializeToPolyDocument( protoValue.getDocument() );
+            case GRAPH:
+                return deserializeToPolyGraph( protoValue.getGraph() );
+            case NODE:
+                return deserializeToPolyNode( protoValue.getNode() );
+            case EDGE:
+                return deserializeToPolyEdge( protoValue.getEdge() );
+            case PATH:
+                throw new NotImplementedException( "Conversion from path with local timezone not yet implemented." );
+            case IMAGE:
+            case VIDEO:
+            case AUDIO:
+            case FILE:
+                return new PolyBinary( protoValue.getBinary().getBinary().toByteArray(), protoValue.getType() );
+            case USER_DEFINED_TYPE:
+                return deserializeToPolyUserDefinedType( protoValue.getUserDefinedType() );
+        }
+        throw new RuntimeException("Should never be thrown.");
+    }
+
+
+    private static PolyValue deserializeToPolyUserDefinedType( ProtoUserDefinedType userDefinedType ) {
+        Map<String, PolyValue> values = userDefinedType.getValueMap().entrySet().stream()
+                .collect( Collectors.toMap( Entry::getKey, e -> PolyValue.fromProto( e.getValue() ), ( key1, key2 ) -> key1 )
+                );
+        return new PolyUserDefinedValue( userDefinedType.getTemplateMap(), values );
+    }
+
+
+    private static PolyValue deserializeToPolyEdge( ProtoEdge edge ) {
+        return new PolyEdge(
+                new PolyString( edge.getGraphPropertyHolder().getId().getString() ),
+                new PolyDictionary( deserializeToPolyMap( edge.getGraphPropertyHolder().getProperties() ) ),
+                getLabels( edge.getGraphPropertyHolder() ),
+                new PolyString( edge.getSource().getString() ),
+                new PolyString( edge.getTarget().getString() ),
+                EdgeDirection.valueOf( edge.getEdgeDirection().name() ),
+                new PolyString( edge.getGraphPropertyHolder().getVariableName().getString() )
+        );
+    }
+
+
+    private static List<PolyString> getLabels( ProtoGraphPropertyHolder propertyHolder ) {
+        return propertyHolder.getLabels().getValuesList().stream()
+                .map( p -> p.getString().getString() )
+                .map( PolyString::new )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static PolyValue deserializeToPolyNode( ProtoNode node ) {
+        return new PolyNode(
+                new PolyString( node.getGraphPropertyHolder().getId().getString() ),
+                new PolyDictionary( deserializeToPolyMap( node.getGraphPropertyHolder().getProperties() ) ),
+                getLabels( node.getGraphPropertyHolder() ),
+                new PolyString( node.getGraphPropertyHolder().getVariableName().getString() )
+        );
+    }
+
+
+    private static PolyValue deserializeToPolyGraph( ProtoGraph graph ) {
+        Map<PolyString, PolyNode> nodes = getNodeMap( graph.getNodes() );
+        Map<PolyString, PolyEdge> edges = getEdgeMap( graph.getEdges() );
+        return new PolyGraph(
+                new PolyString( graph.getId().getString() ),
+                nodes,
+                edges
+        );
+    }
+
+
+    private static Map<PolyString, PolyEdge> getEdgeMap( ProtoMap edges ) {
+        return edges.getEntriesList().stream()
+                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
+                .filter( e -> e.getValue().getValueCase() == ValueCase.EDGE )
+                .collect( Collectors.toMap(
+                                e -> {
+                                    try {
+                                        return PolyValue.fromProto( e.getKey() ).asString();
+                                    } catch ( ProtoInterfaceServiceException ex ) {
+                                        throw new RuntimeException( "Should never be thrown." );
+                                    }
+                                },
+                                e -> {
+                                    try {
+                                        return PolyValue.fromProto( e.getValue() ).asEdge();
+                                    } catch ( ProtoInterfaceServiceException ex ) {
+                                        throw new RuntimeException( "Should never be thrown." );
+                                    }
+                                },
+                                ( key1, key2 ) -> key1
+                        )
+                );
+    }
+
+
+    private static Map<PolyString, PolyNode> getNodeMap( ProtoMap nodes ) {
+        return nodes.getEntriesList().stream()
+                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
+                .filter( e -> e.getValue().getValueCase() == ValueCase.NODE )
+                .collect( Collectors.toMap(
+                                e -> {
+                                    try {
+                                        return PolyValue.fromProto( e.getKey() ).asString();
+                                    } catch ( ProtoInterfaceServiceException ex ) {
+                                        throw new RuntimeException( "Should never be thrown." );
+                                    }
+                                },
+                                e -> {
+                                    try {
+                                        return PolyValue.fromProto( e.getValue() ).asNode();
+                                    } catch ( ProtoInterfaceServiceException ex ) {
+                                        throw new RuntimeException( "Should never be thrown." );
+                                    }
+                                },
+                                ( key1, key2 ) -> key1
+                        )
+                );
+    }
+
+
+    public static PolyDocument deserializeToPolyDocument( ProtoDocument document ) {
+        return new PolyDocument( deserializeToPolyMap( document.getEntriesList() ) );
+    }
+
+
+    private static PolyMap<PolyString, PolyValue> deserializeToPolyMap( ProtoMap map ) {
+        return deserializeToPolyMap( map.getEntriesList() );
+    }
+
+
+    private static PolyMap<PolyString, PolyValue> deserializeToPolyMap( List<ProtoEntry> entries ) {
+        return new PolyMap<>( entries.stream()
+                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
+                .collect( Collectors.toMap(
+                        e -> {
+                            try {
+                                return PolyValue.fromProto( e.getKey() ).asString();
+                            } catch ( ProtoInterfaceServiceException ex ) {
+                                throw new RuntimeException( "Should never be thrown." );
+                            }
+                        },
+                        e -> PolyValue.fromProto( e.getValue() ),
+                        ( key1, key2 ) -> key1
+                ) ) );
+    }
+
+
+    private static PolyValue deserializeToPolyList( ProtoList list ) {
+        return new PolyList<>( list.getValuesList().stream()
+                .map( PolyValue::fromProto )
+                .collect( Collectors.toList() ) );
+    }
+
+
+    private static PolyBigDecimal deserializeToPolyBigDecimal( ProtoBigDecimal bigDecimal ) {
+        return new PolyBigDecimal( deserializeToBigDecimal( bigDecimal ) );
+    }
+
+
+    private static BigDecimal deserializeToBigDecimal( ProtoBigDecimal bigDecimal ) {
+        MathContext context = new MathContext( bigDecimal.getPrecision() );
+        byte[] unscaledValue = bigDecimal.getUnscaledValue().toByteArray();
+        return new BigDecimal( new BigInteger( unscaledValue ), bigDecimal.getScale(), context );
     }
 
 }

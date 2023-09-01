@@ -23,21 +23,22 @@ import org.polypheny.jdbc.PolyphenyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.nativetypes.document.PolyDocument;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.DocumentFrame;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
-import org.polypheny.jdbc.proto.ProtoDocument;
 
-public class DocumentResult implements Iterable<Document> {
+public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
-    ProtoStatement protoStatement;
-    ArrayList<Document> documents;
+    PolyStatement polyStatement;
+    ArrayList<PolyDocument> documents;
     boolean isFullyFetched;
 
 
-    public DocumentResult( DocumentFrame documentFrame, ProtoStatement protoStatement ) throws ProtoInterfaceServiceException {
-        this.protoStatement = protoStatement;
+    public DocumentResult( DocumentFrame documentFrame, PolyStatement polyStatement ) throws ProtoInterfaceServiceException {
+        super( ResultType.DOCUMENT );
+        this.polyStatement = polyStatement;
         this.isFullyFetched = false;
         this.documents = new ArrayList<>();
         addDocuments( documentFrame );
@@ -45,14 +46,12 @@ public class DocumentResult implements Iterable<Document> {
 
 
     private void addDocuments( DocumentFrame documentFrame ) throws ProtoInterfaceServiceException {
-        for ( ProtoDocument protoDocument : documentFrame.getDocumentsList() ) {
-            documents.add( new Document( protoDocument ) );
-        }
+        documentFrame.getDocumentsList().forEach( d -> documents.add( PolyDocument.fromProto( d ) ) );
     }
+    
 
-
-    private void fetchMore() throws ProtoInterfaceServiceException {
-        int id = protoStatement.getStatementId();
+    public boolean fetchMore() throws ProtoInterfaceServiceException {
+        int id = polyStatement.getStatementId();
         int timeout = getPolyphenyConnection().getTimeout();
         Frame frame = getProtoInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
         if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
@@ -64,11 +63,12 @@ public class DocumentResult implements Iterable<Document> {
         }
         isFullyFetched = frame.getIsLast();
         addDocuments( frame.getDocumentFrame() );
+        return !isFullyFetched;
     }
 
 
     private PolyphenyConnection getPolyphenyConnection() {
-        return protoStatement.getConnection();
+        return polyStatement.getConnection();
     }
 
 
@@ -78,15 +78,15 @@ public class DocumentResult implements Iterable<Document> {
 
 
     @Override
-    public Iterator<Document> iterator() {
+    public Iterator<PolyDocument> iterator() {
         return new DocumentIterator();
     }
 
 
-    class DocumentIterator implements Iterator<Document> {
+    class DocumentIterator implements Iterator<PolyDocument> {
 
         int index = -1;
-        Document current = null;
+        PolyDocument current = null;
 
 
         @Override
@@ -111,7 +111,7 @@ public class DocumentResult implements Iterable<Document> {
 
 
         @Override
-        public Document next() {
+        public PolyDocument next() {
             if ( current == null ) {
                 throw new NoSuchElementException( "There are no more documents" );
             }

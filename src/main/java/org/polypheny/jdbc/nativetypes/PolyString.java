@@ -25,6 +25,8 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.proto.ProtoString;
+import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
 
 public class PolyString extends PolyValue{
@@ -41,6 +43,8 @@ public class PolyString extends PolyValue{
         this.value = value;
         this.charset = charset;
     }
+
+
 
 
     public static PolyString of( String value, @Nullable String charset ) {
