@@ -4,8 +4,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import org.polypheny.jdbc.proto.ProtoString;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.Type;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class StringDeserializer implements ValueDeserializer {
 

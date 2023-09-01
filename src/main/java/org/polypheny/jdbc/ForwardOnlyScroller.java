@@ -8,7 +8,7 @@ import java.util.NoSuchElementException;
 
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {

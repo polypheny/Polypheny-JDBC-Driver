@@ -2,11 +2,10 @@ package org.polypheny.jdbc;
 
 import static java.lang.Math.min;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<TypedValue>> {

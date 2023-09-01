@@ -3,16 +3,14 @@ package org.polypheny.jdbc.deserialization;
 import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.polypheny.jdbc.proto.ProtoList;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
-import org.polypheny.jdbc.types.PolyphenyArray;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.PolyphenyArray;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class ListDeserializer implements ValueDeserializer {
 

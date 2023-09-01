@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.polypheny.jdbc.proto.ProtoEntry;
 import org.polypheny.jdbc.proto.ProtoMap;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class MapDeserializer implements ValueDeserializer {
 

@@ -5,7 +5,7 @@ import java.sql.Types;
 import java.util.Map;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
-import org.polypheny.jdbc.types.ExtraPolyTypes;
+import org.polypheny.jdbc.jdbctypes.ExtraPolyTypes;
 
 public class ProtoToJdbcTypeMap {
 

@@ -21,7 +21,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import org.polypheny.jdbc.proto.ProtoRowId;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.PolyphenyRowId;
 
 public class RowIdDeserializer implements ValueDeserializer {

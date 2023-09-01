@@ -3,7 +3,7 @@ package org.polypheny.jdbc.deserialization;
 import lombok.Getter;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 import java.io.InputStream;
 import java.io.Reader;

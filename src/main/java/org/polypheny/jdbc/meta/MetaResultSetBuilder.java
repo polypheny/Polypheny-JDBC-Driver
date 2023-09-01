@@ -23,7 +23,7 @@ import org.polypheny.jdbc.proto.Table;
 import org.polypheny.jdbc.proto.TableType;
 import org.polypheny.jdbc.proto.Type;
 import org.polypheny.jdbc.proto.UserDefinedType;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class MetaResultSetBuilder {
 

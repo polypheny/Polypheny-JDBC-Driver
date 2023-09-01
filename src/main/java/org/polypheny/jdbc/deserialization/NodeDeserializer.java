@@ -2,7 +2,7 @@ package org.polypheny.jdbc.deserialization;
 
 import java.sql.Types;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class NodeDeserializer implements ValueDeserializer {
 

@@ -31,7 +31,7 @@ import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.Frame.ResultCase;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class PolyhenyResultSet implements ResultSet {
 

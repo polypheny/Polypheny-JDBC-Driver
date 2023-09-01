@@ -2,7 +2,7 @@ package org.polypheny.jdbc.deserialization;
 
 import org.polypheny.jdbc.proto.ProtoUserDefinedType;
 import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 import java.sql.Types;
 import java.util.ArrayList;

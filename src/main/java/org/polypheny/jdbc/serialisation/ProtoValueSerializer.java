@@ -27,7 +27,7 @@ import org.polypheny.jdbc.proto.ProtoTime.TimeUnit;
 import org.polypheny.jdbc.proto.ProtoTimeStamp;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class ProtoValueSerializer {
 

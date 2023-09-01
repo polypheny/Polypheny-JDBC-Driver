@@ -33,10 +33,10 @@ import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.PreparedStatementSignature;
-import org.polypheny.jdbc.types.PolyphenyArray;
-import org.polypheny.jdbc.types.PolyphenyBlob;
-import org.polypheny.jdbc.types.PolyphenyClob;
-import org.polypheny.jdbc.types.PolyphenyStruct;
+import org.polypheny.jdbc.jdbctypes.PolyphenyArray;
+import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
+import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
+import org.polypheny.jdbc.jdbctypes.PolyphenyStruct;
 
 public class PolyphenyConnection implements Connection {
     private PolyphenyConnectionProperties properties;

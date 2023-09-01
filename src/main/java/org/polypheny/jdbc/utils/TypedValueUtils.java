@@ -39,7 +39,7 @@ import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.deserialization.ProtoValueDeserializer;
 import org.polypheny.jdbc.proto.ProtoValue;
 import org.polypheny.jdbc.proto.Row;
-import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class TypedValueUtils {
 

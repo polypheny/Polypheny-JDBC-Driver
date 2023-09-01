@@ -30,6 +30,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class TypedValueTest {
 
