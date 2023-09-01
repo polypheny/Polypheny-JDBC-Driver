@@ -21,6 +21,7 @@ import org.polypheny.jdbc.proto.GraphFrame;
 public class GraphResult extends Result {
 
     public GraphResult( GraphFrame graphFrame, PolyStatement polyStatement ) {
+        super(ResultType.GRAPH);
     }
 
 }

@@ -48,7 +48,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     private void addDocuments( DocumentFrame documentFrame ) throws ProtoInterfaceServiceException {
         documentFrame.getDocumentsList().forEach( d -> documents.add( PolyDocument.fromProto( d ) ) );
     }
-    
+
 
     public boolean fetchMore() throws ProtoInterfaceServiceException {
         int id = polyStatement.getStatementId();

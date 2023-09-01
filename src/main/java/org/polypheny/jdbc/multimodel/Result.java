@@ -21,7 +21,7 @@ import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 @Getter
-public class Result {
+public abstract class Result {
     private final ResultType resultType;
 
     public Result(ResultType resultType) {
@@ -34,6 +34,7 @@ public class Result {
         }
         throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
     }
+
 
     public enum ResultType {
         RELATIONAL,

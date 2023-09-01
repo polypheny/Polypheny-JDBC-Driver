@@ -96,48 +96,4 @@ public class PolyStatement {
             return getResultFromFrame(response.getResult().getFrame());
         }
     }
-
-
-    public RelationalResult getRelationalResult() throws ProtoInterfaceServiceException {
-        if ( resultType != ResultType.RELATIONAL ) {
-            throw new ProtoInterfaceServiceException(
-                    ProtoInterfaceErrors.RESULT_TYPE_INVALID,
-                    "This statement did not return a relational result."
-            );
-        }
-        return relationalResult;
-    }
-
-
-    public DocumentResult getDocumentResult() throws ProtoInterfaceServiceException {
-        if ( resultType != ResultType.DOCUMENT ) {
-            throw new ProtoInterfaceServiceException(
-                    ProtoInterfaceErrors.RESULT_TYPE_INVALID,
-                    "This statement did not return a document result."
-            );
-        }
-        return documentResult;
-    }
-
-
-    public GraphResult getGraphResult() throws ProtoInterfaceServiceException {
-        if ( resultType != ResultType.GRAPH ) {
-            throw new ProtoInterfaceServiceException(
-                    ProtoInterfaceErrors.RESULT_TYPE_INVALID,
-                    "This statement did not return a graph result."
-            );
-        }
-        return graphResult;
-    }
-
-
-    public long getScalarResult() throws ProtoInterfaceServiceException {
-        if ( resultType != ResultType.SCALAR ) {
-            throw new ProtoInterfaceServiceException(
-                    ProtoInterfaceErrors.RESULT_TYPE_INVALID,
-                    "This statement did not return a scalar result." );
-        }
-        return scalarResult;
-    }
-
 }
