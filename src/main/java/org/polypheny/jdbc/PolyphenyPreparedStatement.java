@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
@@ -39,7 +40,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private PolyphenyParameterMetaData parameterMetaData;
 
 
-    public PolyphenyPreparedStatement( PolyphenyConnection connection, PolyphenyStatementProperties properties, PreparedStatementSignature statementSignature ) throws SQLException {
+    public PolyphenyPreparedStatement( PolyConnection connection, PolyphenyStatementProperties properties, PreparedStatementSignature statementSignature ) throws SQLException {
         super( connection, properties );
         this.statementId = statementSignature.getStatementId();
         this.parameterMetaData = new PolyphenyParameterMetaData( statementSignature );

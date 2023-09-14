@@ -22,7 +22,7 @@ import org.polypheny.jdbc.utils.CallbackQueue;
 public class PolyphenyStatement implements Statement {
 
     @Getter
-    private PolyphenyConnection polyphenyConnection;
+    private PolyConnection polyConnection;
     protected ResultSet currentResult;
     protected long currentUpdateCount;
     @Getter
@@ -39,8 +39,8 @@ public class PolyphenyStatement implements Statement {
     protected List<String> statementBatch;
 
 
-    public PolyphenyStatement( PolyphenyConnection connection, PolyphenyStatementProperties properties ) throws SQLException {
-        this.polyphenyConnection = connection;
+    public PolyphenyStatement( PolyConnection connection, PolyphenyStatementProperties properties ) throws SQLException {
+        this.polyConnection = connection;
         this.properties = properties;
         this.isClosed = false;
         this.isClosedOnCompletion = false;
@@ -57,7 +57,7 @@ public class PolyphenyStatement implements Statement {
 
 
     protected ProtoInterfaceClient getClient() {
-        return polyphenyConnection.getProtoInterfaceClient();
+        return polyConnection.getProtoInterfaceClient();
     }
 
 
@@ -72,7 +72,7 @@ public class PolyphenyStatement implements Statement {
         }
         if ( statementId != NO_STATEMENT_ID ) {
             getClient().closeStatement( statementId, getTimeout() );
-            getPolyphenyConnection().removeStatement( this );
+            getPolyConnection().removeStatement( this );
         }
         currentResult = null;
         currentUpdateCount = NO_UPDATE_COUNT;
@@ -181,7 +181,7 @@ public class PolyphenyStatement implements Statement {
         if ( currentResult != null ) {
             currentResult.close();
         }
-        polyphenyConnection.removeStatementFromOpen( this );
+        polyConnection.removeStatementFromOpen( this );
         getClient().closeStatement( statementId, getTimeout() );
         isClosed = true;
     }
@@ -466,7 +466,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public Connection getConnection() throws SQLException {
         throwIfClosed();
-        return polyphenyConnection;
+        return polyConnection;
     }
 
 

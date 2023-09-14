@@ -17,7 +17,7 @@
 package org.polypheny.jdbc.multimodel;
 
 import lombok.Getter;
-import org.polypheny.jdbc.PolyphenyConnection;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
@@ -30,12 +30,8 @@ public class PolyStatement {
     private static final long SCALAR_NOT_SET = -1;
     private static final int NO_STATEMENT_ID = -1;
 
-
-
-
-
     @Getter
-    private PolyphenyConnection connection;
+    private PolyConnection connection;
     @Getter
     private int statementId;
 
@@ -61,8 +57,8 @@ public class PolyStatement {
     }
 
 
-    public PolyStatement( PolyphenyConnection polyphenyConnection ) {
-        this.connection = polyphenyConnection;
+    public PolyStatement( PolyConnection polyConnection ) {
+        this.connection = polyConnection;
     }
 
 

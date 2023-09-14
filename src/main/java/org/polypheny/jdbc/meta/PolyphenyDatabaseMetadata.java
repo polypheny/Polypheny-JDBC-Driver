@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.polypheny.jdbc.ConnectionString;
-import org.polypheny.jdbc.PolyphenyConnection;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
@@ -45,7 +45,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     private ProtoInterfaceClient protoInterfaceClient;
 
-    private PolyphenyConnection polyphenyConnection;
+    private PolyConnection polyConnection;
 
     private String productName;
     private String productVersion;
@@ -71,15 +71,15 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     private void throwNotSupportedIfStrict() throws SQLFeatureNotSupportedException {
-        if ( !polyphenyConnection.isStrict() ) {
+        if ( !polyConnection.isStrict() ) {
             return;
         }
         throw new SQLFeatureNotSupportedException();
     }
 
 
-    public void setConnection( PolyphenyConnection connection ) {
-        this.polyphenyConnection = connection;
+    public void setConnection( PolyConnection connection ) {
+        this.polyConnection = connection;
     }
 
 
@@ -1159,7 +1159,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public Connection getConnection() throws SQLException {
-        return polyphenyConnection;
+        return polyConnection;
     }
 
 

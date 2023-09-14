@@ -13,7 +13,7 @@ import java.sql.SQLException;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-public class PolyphenyConnectionPropertiesTest {
+public class PolyConnectionPropertiesTest {
     private static ConnectionString connectionString;
 
     @BeforeClass

@@ -19,7 +19,7 @@ package org.polypheny.jdbc.multimodel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import org.polypheny.jdbc.PolyphenyConnection;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
@@ -67,7 +67,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     }
 
 
-    private PolyphenyConnection getPolyphenyConnection() {
+    private PolyConnection getPolyphenyConnection() {
         return polyStatement.getConnection();
     }
 

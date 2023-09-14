@@ -38,7 +38,7 @@ import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
 import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
 import org.polypheny.jdbc.jdbctypes.PolyphenyStruct;
 
-public class PolyphenyConnection implements Connection {
+public class PolyConnection implements Connection {
     private PolyphenyConnectionProperties properties;
 
     private PolyphenyDatabaseMetadata databaseMetaData;
@@ -78,7 +78,7 @@ public class PolyphenyConnection implements Connection {
     }
 
 
-    public PolyphenyConnection(
+    public PolyConnection(
             PolyphenyConnectionProperties connectionProperties,
             PolyphenyDatabaseMetadata databaseMetaData ) {
 
@@ -91,7 +91,7 @@ public class PolyphenyConnection implements Connection {
     }
 
 
-    public PolyphenyConnection(
+    public PolyConnection(
             PolyphenyConnectionProperties connectionProperties,
             PolyphenyDatabaseMetadata databaseMetaData,
             long heartbeatInterval ) {

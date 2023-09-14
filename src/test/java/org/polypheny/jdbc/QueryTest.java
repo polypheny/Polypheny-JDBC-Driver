@@ -1,14 +1,25 @@
 package org.polypheny.jdbc;
 
-import java.math.BigInteger;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.Test;
+import org.polypheny.jdbc.multimodel.PolyStatement;
+import org.polypheny.jdbc.multimodel.Result;
+import org.polypheny.jdbc.multimodel.ScalarResult;
 
 public class QueryTest {
+
+    private static final String MQL_LANGUAGE_NAME = "mongo";
+    private static final String TEST_DATA = "db.test.insertOne({name: \"John Doe\", age: 20, subjects: [\"Math\", \"Physics\", \"Chemistry\"], address: {street: \"123 Main St\", city: \"Anytown\", state: \"CA\", postalCode: \"12345\"}, graduationYear: 2023});";
+    private static final String TEST_QUERY = "db.emps.find({});";
+
 
     @Test
     public void thisOneWorks() throws ClassNotFoundException {
@@ -18,27 +29,41 @@ public class QueryTest {
 
         Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
 
-        try ( Connection connection = DriverManager.getConnection( DB_URL, USER, PASS ) ) {
-
-            String createTableSQL = "CREATE TABLE my_table (column1 INT NOT NULL, column2 VARCHAR(255), PRIMARY KEY (column1))";
-            Statement statement = connection.createStatement();
-            statement.executeUpdate( createTableSQL );
-
-            String insertSQL = "INSERT INTO my_table (column1, column2) VALUES (?, ?)";
-            PreparedStatement preparedStatement = connection.prepareStatement( insertSQL );
-
-            for ( int i = 1; i <= 100; i++ ) {
-                String hexValue = Integer.toHexString( i ).toUpperCase();
-                preparedStatement.setInt( 1, i );
-                preparedStatement.setString( 2, hexValue );
-                preparedStatement.addBatch();
+        try (
+                Connection connection = DriverManager.getConnection( "jdbc:polypheny://localhost:20590" );
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery( "SELECT * FROM emps" );
+        ) {
+            while ( resultSet.next() ) {
+                // Process the result set...
             }
-            preparedStatement.executeBatch();
-            System.out.println( "Values inserted successfully!" );
-
         } catch ( SQLException e ) {
             e.printStackTrace();
         }
     }
+
+
+    @Test
+    public void simpleMqlTest() throws ClassNotFoundException {
+
+        final String DB_URL = "jdbc:polypheny://localhost:20590";
+        final String USER = "pa";
+        final String PASS = "";
+
+        Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
+
+        try ( Connection connection = DriverManager.getConnection( DB_URL, USER, PASS ) ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
+                fail( "Driver must support unwrapping to PolyphenyConnection" );
+            }
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
+            Result result = polyStatement.execute( "public", MQL_LANGUAGE_NAME, TEST_QUERY );
+            assertEquals( result.getResultType(), Result.ResultType.SCALAR );
+            assertEquals( 1, result.unwrap( ScalarResult.class ).getScalar() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
 }
 
