@@ -16,14 +16,101 @@
 
 package org.polypheny.jdbc.multimodel;
 
-import org.polypheny.jdbc.multimodel.PolyStatement;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.ProtoInterfaceClient;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.nativetypes.document.PolyDocument;
+import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.proto.Frame;
+import org.polypheny.jdbc.proto.Frame.ResultCase;
 import org.polypheny.jdbc.proto.RelationalFrame;
 
-public class RelationalResult extends Result {
+public class RelationalResult extends Result implements Iterable<PolyRow> {
 
-    public RelationalResult( Frame frame, PolyStatement polyStatement ) {
-        super(ResultType.RELATIONAL);
+    private final PolyStatement polyStatement;
+    private final ArrayList<PolyRow> rows;
+    private boolean isFullyFetched;
+
+
+    public RelationalResult( Frame frame, PolyStatement polyStatement ) throws ProtoInterfaceServiceException {
+        super( ResultType.DOCUMENT );
+        this.polyStatement = polyStatement;
+        this.isFullyFetched = frame.getIsLast();
+        this.rows = new ArrayList<>();
+        addRows( frame.getRelationalFrame() );
+    }
+
+
+    private void addRows( RelationalFrame relationalFrame ) throws ProtoInterfaceServiceException {
+        relationalFrame.getRowsList().forEach( d -> rows.add( PolyRow.fromProto( d ) ) );
+    }
+
+
+    private void fetchMore() throws ProtoInterfaceServiceException {
+        int id = polyStatement.getStatementId();
+        int timeout = getPolyphenyConnection().getTimeout();
+        Frame frame = getProtoInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
+        if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
+            throw new ProtoInterfaceServiceException(
+                    ProtoInterfaceErrors.RESULT_TYPE_INVALID,
+                    "Statement returned a result of illegal type "
+                            + frame.getResultCase()
+            );
+        }
+        isFullyFetched = frame.getIsLast();
+        addRows( frame.getRelationalFrame() );
+    }
+
+
+    private PolyConnection getPolyphenyConnection() {
+        return polyStatement.getConnection();
+    }
+
+
+    private ProtoInterfaceClient getProtoInterfaceClient() {
+        return getPolyphenyConnection().getProtoInterfaceClient();
+    }
+
+
+    @Override
+    public Iterator<PolyRow> iterator() {
+        return new RelationalResult.RowIterator();
+    }
+
+
+    class RowIterator implements Iterator<PolyRow> {
+
+        int index = -1;
+
+
+        @Override
+        public boolean hasNext() {
+            if ( index + 1 >= rows.size() ) {
+                if ( isFullyFetched ) {
+                    return false;
+                }
+                try {
+                    fetchMore();
+                } catch ( ProtoInterfaceServiceException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            return index + 1 < rows.size();
+        }
+
+
+        @Override
+        public PolyRow next() {
+            if ( !hasNext() ) {
+                throw new NoSuchElementException( "There are no more documents" );
+            }
+            return rows.get( ++index );
+        }
+
     }
 
 }

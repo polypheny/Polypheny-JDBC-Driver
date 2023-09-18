@@ -31,8 +31,8 @@ import org.polypheny.jdbc.proto.Frame.ResultCase;
 
 public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
-    private PolyStatement polyStatement;
-    private ArrayList<PolyDocument> documents;
+    private final PolyStatement polyStatement;
+    private final ArrayList<PolyDocument> documents;
     private boolean isFullyFetched;
 
 
@@ -50,7 +50,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     }
 
 
-    private boolean fetchMore() throws ProtoInterfaceServiceException {
+    private void fetchMore() throws ProtoInterfaceServiceException {
         int id = polyStatement.getStatementId();
         int timeout = getPolyphenyConnection().getTimeout();
         Frame frame = getProtoInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
@@ -63,7 +63,6 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
         }
         isFullyFetched = frame.getIsLast();
         addDocuments( frame.getDocumentFrame() );
-        return !isFullyFetched;
     }
 
 
@@ -86,8 +85,6 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     class DocumentIterator implements Iterator<PolyDocument> {
 
         int index = -1;
-        PolyDocument current;
-
 
         @Override
         public boolean hasNext() {
@@ -112,7 +109,6 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
             }
             return documents.get( ++index );
         }
-
 
     }
 
