@@ -37,13 +37,16 @@ public class PolyRow {
         this( Arrays.asList( value ) );
     }
 
+
     public int getColumnCount() {
         return values.size();
     }
 
-    public PolyValue getValue(int columnIndex) {
+
+    public PolyValue getValue( int columnIndex ) {
         return values.get( columnIndex );
     }
+
 
     public static <E extends PolyValue> PolyRow of( E... values ) {
         return new PolyRow( values );
