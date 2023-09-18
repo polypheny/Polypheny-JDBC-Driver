@@ -47,11 +47,11 @@ public class PolyStatement {
     private Result getResultFromFrame(Frame frame) throws ProtoInterfaceServiceException {
         switch ( frame.getResultCase() ) {
             case RELATIONAL_FRAME:
-                return new RelationalResult( frame.getRelationalFrame(), this );
+                return new RelationalResult( frame, this );
             case DOCUMENT_FRAME:
-                return new DocumentResult( frame.getDocumentFrame(), this );
+                return new DocumentResult( frame, this );
             case GRAPH_FRAME:
-                return new GraphResult( frame.getGraphFrame(), this );
+                return new GraphResult( frame, this );
         }
         throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement produced unknown result type" );
     }

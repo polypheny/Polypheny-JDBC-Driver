@@ -16,11 +16,11 @@
 
 package org.polypheny.jdbc.multimodel;
 
-import org.polypheny.jdbc.proto.GraphFrame;
+import org.polypheny.jdbc.proto.Frame;
 
 public class GraphResult extends Result {
 
-    public GraphResult( GraphFrame graphFrame, PolyStatement polyStatement ) {
+    public GraphResult( Frame frame, PolyStatement polyStatement ) {
         super(ResultType.GRAPH);
     }
 

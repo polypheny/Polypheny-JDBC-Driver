@@ -31,17 +31,17 @@ import org.polypheny.jdbc.proto.Frame.ResultCase;
 
 public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
-    PolyStatement polyStatement;
-    ArrayList<PolyDocument> documents;
-    boolean isFullyFetched;
+    private PolyStatement polyStatement;
+    private ArrayList<PolyDocument> documents;
+    private boolean isFullyFetched;
 
 
-    public DocumentResult( DocumentFrame documentFrame, PolyStatement polyStatement ) throws ProtoInterfaceServiceException {
+    public DocumentResult( Frame frame, PolyStatement polyStatement ) throws ProtoInterfaceServiceException {
         super( ResultType.DOCUMENT );
         this.polyStatement = polyStatement;
-        this.isFullyFetched = false;
+        this.isFullyFetched = frame.getIsLast();
         this.documents = new ArrayList<>();
-        addDocuments( documentFrame );
+        addDocuments( frame.getDocumentFrame() );
     }
 
 
@@ -50,7 +50,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     }
 
 
-    public boolean fetchMore() throws ProtoInterfaceServiceException {
+    private boolean fetchMore() throws ProtoInterfaceServiceException {
         int id = polyStatement.getStatementId();
         int timeout = getPolyphenyConnection().getTimeout();
         Frame frame = getProtoInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
@@ -86,12 +86,12 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     class DocumentIterator implements Iterator<PolyDocument> {
 
         int index = -1;
-        PolyDocument current = null;
+        PolyDocument current;
 
 
         @Override
         public boolean hasNext() {
-            if ( ++index >= documents.size() ) {
+            if ( index + 1 >= documents.size() ) {
                 if ( isFullyFetched ) {
                     return false;
                 }
@@ -101,22 +101,18 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
                     throw new RuntimeException( e );
                 }
             }
-            try {
-                current = documents.get( index );
-                return true;
-            } catch ( IndexOutOfBoundsException ignored ) {
-            }
-            return false;
+            return index + 1 < documents.size();
         }
 
 
         @Override
         public PolyDocument next() {
-            if ( current == null ) {
+            if ( !hasNext() ) {
                 throw new NoSuchElementException( "There are no more documents" );
             }
-            return current;
+            return documents.get( ++index );
         }
+
 
     }
 

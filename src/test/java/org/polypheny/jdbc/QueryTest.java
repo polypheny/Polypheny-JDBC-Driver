@@ -9,10 +9,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Iterator;
 import org.junit.Test;
+import org.polypheny.jdbc.multimodel.DocumentResult;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.Result;
+import org.polypheny.jdbc.multimodel.Result.ResultType;
 import org.polypheny.jdbc.multimodel.ScalarResult;
+import org.polypheny.jdbc.nativetypes.document.PolyDocument;
+import org.polypheny.jdbc.proto.Document;
 
 public class QueryTest {
 
@@ -58,8 +63,32 @@ public class QueryTest {
             }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
             Result result = polyStatement.execute( "public", MQL_LANGUAGE_NAME, TEST_QUERY );
-            assertEquals( result.getResultType(), Result.ResultType.SCALAR );
-            assertEquals( 1, result.unwrap( ScalarResult.class ).getScalar() );
+            assertEquals( ResultType.DOCUMENT, result.getResultType() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Test
+    public void mqlDataRetrievalTest() throws ClassNotFoundException {
+        final String DB_URL = "jdbc:polypheny://localhost:20590";
+        final String USER = "pa";
+        final String PASS = "";
+
+        Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
+
+        try ( Connection connection = DriverManager.getConnection( DB_URL, USER, PASS ) ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
+                fail( "Driver must support unwrapping to PolyphenyConnection" );
+            }
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
+            Result result = polyStatement.execute( "public", MQL_LANGUAGE_NAME, TEST_QUERY );
+            DocumentResult docs = result.unwrap( DocumentResult.class );
+            Iterator<PolyDocument> iterator = docs.iterator();
+            while ( iterator.hasNext() ) {
+                System.out.println(iterator.next().toString());
+            }
+            assertEquals( ResultType.DOCUMENT, result.getResultType() );
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }

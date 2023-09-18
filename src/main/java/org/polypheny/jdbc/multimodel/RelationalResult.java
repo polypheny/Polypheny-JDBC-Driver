@@ -17,11 +17,12 @@
 package org.polypheny.jdbc.multimodel;
 
 import org.polypheny.jdbc.multimodel.PolyStatement;
+import org.polypheny.jdbc.proto.Frame;
 import org.polypheny.jdbc.proto.RelationalFrame;
 
 public class RelationalResult extends Result {
 
-    public RelationalResult( RelationalFrame relationalFrame, PolyStatement polyStatement ) {
+    public RelationalResult( Frame frame, PolyStatement polyStatement ) {
         super(ResultType.RELATIONAL);
     }
 
