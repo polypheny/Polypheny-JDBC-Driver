@@ -1085,21 +1085,18 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean ownUpdatesAreVisible( int type ) throws SQLException {
-        //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
     public boolean ownDeletesAreVisible( int tyoe ) throws SQLException {
-        //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
     public boolean ownInsertsAreVisible( int type ) throws SQLException {
-        //TODO TH: adjust according to implementation
         return false;
     }
 
@@ -1124,21 +1121,18 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean updatesAreDetected( int i ) throws SQLException {
-        //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
     public boolean deletesAreDetected( int i ) throws SQLException {
-        //TODO TH: adjust according to implementation
         return false;
     }
 
 
     @Override
     public boolean insertsAreDetected( int i ) throws SQLException {
-        //TODO TH: adjust according to implementation
         return false;
     }
 

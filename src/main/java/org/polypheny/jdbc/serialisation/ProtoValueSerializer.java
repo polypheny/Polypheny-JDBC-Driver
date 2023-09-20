@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.proto.ProtoBigDecimal;
@@ -32,7 +33,7 @@ import org.polypheny.jdbc.jdbctypes.TypedValue;
 public class ProtoValueSerializer {
 
     public static Map<String, ProtoValue> serializeParameterMap( Map<String, TypedValue> parameters ) {
-        //TODO implement this
+
         return null;
     }
 
