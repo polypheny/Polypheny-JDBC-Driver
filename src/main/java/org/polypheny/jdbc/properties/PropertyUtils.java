@@ -13,7 +13,6 @@ import java.util.Set;
 import lombok.Getter;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.db.protointerface.proto.ConnectionProperties;
 
 public class PropertyUtils {
 

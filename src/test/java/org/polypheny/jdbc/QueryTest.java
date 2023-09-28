@@ -5,7 +5,6 @@ import static org.junit.Assert.fail;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -15,9 +14,7 @@ import org.polypheny.jdbc.multimodel.DocumentResult;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.Result;
 import org.polypheny.jdbc.multimodel.Result.ResultType;
-import org.polypheny.jdbc.multimodel.ScalarResult;
 import org.polypheny.jdbc.nativetypes.document.PolyDocument;
-import org.polypheny.db.protointerface.proto.Document;
 
 public class QueryTest {
 
@@ -37,7 +34,7 @@ public class QueryTest {
         try (
                 Connection connection = DriverManager.getConnection( "jdbc:polypheny://localhost:20590" );
                 Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery( "SELECT * FROM emps" );
+                ResultSet resultSet = statement.executeQuery( "SELECT * FROM emps" )
         ) {
             while ( resultSet.next() ) {
                 // Process the result set...

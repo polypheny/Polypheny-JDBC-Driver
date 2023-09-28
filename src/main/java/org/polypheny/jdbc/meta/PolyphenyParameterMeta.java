@@ -9,7 +9,7 @@ public class PolyphenyParameterMeta {
     /* As all values are unsigned in polypheny we hardcoded this. */
     private static final boolean SIGNEDNESS = false;
     private static final int PARAMETER_MODE = ParameterMetaData.parameterModeIn;
-    private static final int NULLABLITY = ParameterMetaData.parameterNullableUnknown;
+    private static final int NULLABILITY = ParameterMetaData.parameterNullableUnknown;
 
     @Getter
     private String parameterClassName;
@@ -36,7 +36,7 @@ public class PolyphenyParameterMeta {
         this.parameterTypeName = parameterMeta.getTypeName();
         this.precision = parameterMeta.getPrecision();
         this.scale = parameterMeta.getScale();
-        this.isNullable = NULLABLITY;
+        this.isNullable = NULLABILITY;
         this.isSigned = SIGNEDNESS;
 
     }

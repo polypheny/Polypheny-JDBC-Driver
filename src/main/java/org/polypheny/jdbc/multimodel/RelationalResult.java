@@ -23,7 +23,6 @@ import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.nativetypes.document.PolyDocument;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Frame.ResultCase;

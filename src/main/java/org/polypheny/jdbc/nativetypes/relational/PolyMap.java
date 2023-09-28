@@ -52,7 +52,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
         if ( !isSameType( o ) ) {
             return -1;
         }
-        Map<PolyValue, PolyValue> other = null;
+        Map<PolyValue, PolyValue> other;
         try {
             other = o.asMap();
         } catch ( ProtoInterfaceServiceException e ) {
