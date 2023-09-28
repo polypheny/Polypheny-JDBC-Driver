@@ -18,7 +18,7 @@ package org.polypheny.jdbc.nativetypes.category;
 
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.nativetypes.PolyValue;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyBlob extends PolyValue {
     public PolyBlob( ProtoValueType type) {

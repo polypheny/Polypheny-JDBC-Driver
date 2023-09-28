@@ -37,19 +37,19 @@ import org.polypheny.jdbc.nativetypes.graph.PolyEdge.EdgeDirection;
 import org.polypheny.jdbc.nativetypes.graph.PolyGraph;
 import org.polypheny.jdbc.nativetypes.graph.PolyNode;
 import org.polypheny.jdbc.nativetypes.relational.PolyMap;
-import org.polypheny.jdbc.proto.ProtoBigDecimal;
-import org.polypheny.jdbc.proto.ProtoDocument;
-import org.polypheny.jdbc.proto.ProtoEdge;
-import org.polypheny.jdbc.proto.ProtoEntry;
-import org.polypheny.jdbc.proto.ProtoGraph;
-import org.polypheny.jdbc.proto.ProtoGraphPropertyHolder;
-import org.polypheny.jdbc.proto.ProtoList;
-import org.polypheny.jdbc.proto.ProtoMap;
-import org.polypheny.jdbc.proto.ProtoNode;
-import org.polypheny.jdbc.proto.ProtoUserDefinedType;
-import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
-import org.polypheny.jdbc.proto.ProtoValue.ValueCase;
+import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
+import org.polypheny.db.protointerface.proto.ProtoDocument;
+import org.polypheny.db.protointerface.proto.ProtoEdge;
+import org.polypheny.db.protointerface.proto.ProtoEntry;
+import org.polypheny.db.protointerface.proto.ProtoGraph;
+import org.polypheny.db.protointerface.proto.ProtoGraphPropertyHolder;
+import org.polypheny.db.protointerface.proto.ProtoList;
+import org.polypheny.db.protointerface.proto.ProtoMap;
+import org.polypheny.db.protointerface.proto.ProtoNode;
+import org.polypheny.db.protointerface.proto.ProtoUserDefinedType;
+import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 
 public abstract class PolyValue implements Comparable<PolyValue> {
 

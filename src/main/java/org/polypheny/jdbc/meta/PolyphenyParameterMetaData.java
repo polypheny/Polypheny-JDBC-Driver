@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.proto.PreparedStatementSignature;
+import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 
 public class PolyphenyParameterMetaData implements ParameterMetaData {
 

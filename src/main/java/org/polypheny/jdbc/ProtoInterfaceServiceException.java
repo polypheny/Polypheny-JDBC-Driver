@@ -5,7 +5,7 @@ import io.grpc.protobuf.ProtoUtils;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
-import org.polypheny.jdbc.proto.ErrorDetails;
+import org.polypheny.db.protointerface.proto.ErrorDetails;
 
 /*
  * Copyright 2019-2023 The Polypheny Project

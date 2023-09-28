@@ -6,9 +6,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.polypheny.jdbc.proto.ProtoEntry;
-import org.polypheny.jdbc.proto.ProtoMap;
-import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoEntry;
+import org.polypheny.db.protointerface.proto.ProtoMap;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class MapDeserializer implements ValueDeserializer {

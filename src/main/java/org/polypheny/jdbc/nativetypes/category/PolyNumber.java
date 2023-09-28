@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.nativetypes.PolyBigDecimal;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.nativetypes.TypeUtils;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public abstract class PolyNumber extends PolyValue {
     public PolyNumber( ProtoValueType type ) {

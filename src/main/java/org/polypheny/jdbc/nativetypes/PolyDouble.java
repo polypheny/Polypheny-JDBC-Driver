@@ -21,7 +21,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyDouble extends PolyNumber {
 

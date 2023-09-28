@@ -21,8 +21,8 @@ import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.proto.StatementResponse;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.StatementResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class PolyStatement {

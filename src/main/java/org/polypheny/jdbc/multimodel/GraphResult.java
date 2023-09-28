@@ -16,7 +16,7 @@
 
 package org.polypheny.jdbc.multimodel;
 
-import org.polypheny.jdbc.proto.Frame;
+import org.polypheny.db.protointerface.proto.Frame;
 
 public class GraphResult extends Result {
 

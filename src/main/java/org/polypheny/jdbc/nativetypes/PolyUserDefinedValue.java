@@ -20,7 +20,7 @@ import java.util.Map;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyUserDefinedValue extends PolyValue{
 

@@ -18,7 +18,7 @@ package org.polypheny.jdbc.nativetypes.graph;
 
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.nativetypes.PolyString;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public abstract class GraphObject extends PolyValue {
 

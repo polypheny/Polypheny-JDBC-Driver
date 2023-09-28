@@ -4,8 +4,8 @@ import java.sql.ResultSetMetaData;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
-import org.polypheny.jdbc.proto.ColumnMeta;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ColumnMeta;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyphenyColumnMeta {
 

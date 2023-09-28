@@ -20,21 +20,21 @@ import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.jdbc.proto.ClientInfoPropertyMeta;
-import org.polypheny.jdbc.proto.Column;
-import org.polypheny.jdbc.proto.Database;
-import org.polypheny.jdbc.proto.DbmsVersionResponse;
-import org.polypheny.jdbc.proto.Entity;
-import org.polypheny.jdbc.proto.ForeignKey;
-import org.polypheny.jdbc.proto.Function;
-import org.polypheny.jdbc.proto.Index;
-import org.polypheny.jdbc.proto.Namespace;
-import org.polypheny.jdbc.proto.PrimaryKey;
-import org.polypheny.jdbc.proto.Procedure;
-import org.polypheny.jdbc.proto.Table;
-import org.polypheny.jdbc.proto.TableType;
-import org.polypheny.jdbc.proto.Type;
-import org.polypheny.jdbc.proto.UserDefinedType;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
+import org.polypheny.db.protointerface.proto.Column;
+import org.polypheny.db.protointerface.proto.Database;
+import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
+import org.polypheny.db.protointerface.proto.Entity;
+import org.polypheny.db.protointerface.proto.ForeignKey;
+import org.polypheny.db.protointerface.proto.Function;
+import org.polypheny.db.protointerface.proto.Index;
+import org.polypheny.db.protointerface.proto.Namespace;
+import org.polypheny.db.protointerface.proto.PrimaryKey;
+import org.polypheny.db.protointerface.proto.Procedure;
+import org.polypheny.db.protointerface.proto.Table;
+import org.polypheny.db.protointerface.proto.TableType;
+import org.polypheny.db.protointerface.proto.Type;
+import org.polypheny.db.protointerface.proto.UserDefinedType;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 

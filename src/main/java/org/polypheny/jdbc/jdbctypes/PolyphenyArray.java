@@ -29,7 +29,7 @@ import java.util.Map;
 import org.polypheny.jdbc.PolyhenyResultSet;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyphenyArray implements Array {
 

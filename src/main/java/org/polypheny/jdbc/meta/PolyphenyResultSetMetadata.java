@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.proto.ColumnMeta;
+import org.polypheny.db.protointerface.proto.ColumnMeta;
 
 public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 

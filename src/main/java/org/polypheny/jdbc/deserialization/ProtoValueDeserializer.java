@@ -4,8 +4,8 @@ package org.polypheny.jdbc.deserialization;
 import com.google.common.collect.ImmutableMap;
 import java.sql.SQLException;
 import java.util.Map;
-import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.ProtoValue.ValueCase;
+import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class ProtoValueDeserializer {

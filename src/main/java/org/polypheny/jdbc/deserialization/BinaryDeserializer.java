@@ -2,8 +2,8 @@ package org.polypheny.jdbc.deserialization;
 
 import java.sql.SQLException;
 import java.sql.Types;
-import org.polypheny.jdbc.proto.ProtoBinary;
-import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoBinary;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class BinaryDeserializer implements ValueDeserializer {

@@ -1,7 +1,7 @@
 package org.polypheny.jdbc.meta;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.polypheny.jdbc.proto.*;
+import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 import java.sql.DatabaseMetaData;
@@ -303,15 +303,15 @@ public class MetaResultSetSignatures {
     );
 
     // Used to build an EMPTY result set thus no types and accessors are specified.
-    public static final List<MetaResultSetParameter<org.polypheny.jdbc.proto.Function>> FUNCTION_SIGNATURE = Arrays.asList(
+    public static final List<MetaResultSetParameter<org.polypheny.db.protointerface.proto.Function>> FUNCTION_SIGNATURE = Arrays.asList(
             new MetaResultSetParameter<>("FUNCTION_CAT", Types.VARCHAR, p -> null),
             new MetaResultSetParameter<>("FUNCTION_SCHEM", Types.VARCHAR, p -> null),
-            new MetaResultSetParameter<>("FUNCTION_NAME", Types.VARCHAR, org.polypheny.jdbc.proto.Function::getName),
-            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, org.polypheny.jdbc.proto.Function::getSyntax),
+            new MetaResultSetParameter<>("FUNCTION_NAME", Types.VARCHAR, org.polypheny.db.protointerface.proto.Function::getName),
+            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, org.polypheny.db.protointerface.proto.Function::getSyntax),
             new MetaResultSetParameter<>("FUNCTION_TYPE", Types.SMALLINT, p -> p.getIsTableFunction()
                     ? DatabaseMetaData.functionReturnsTable
                     : DatabaseMetaData.functionNoTable),
-            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, org.polypheny.jdbc.proto.Function::getName)
+            new MetaResultSetParameter<>("REMARKS", Types.VARCHAR, org.polypheny.db.protointerface.proto.Function::getName)
     );
 
     // Used to build an EMPTY result set thus no types and accessors are specified.

@@ -11,7 +11,7 @@ import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.jdbc.proto.ConnectionResponse;
+import org.polypheny.db.protointerface.proto.ConnectionResponse;
 
 public class PolyphenyDriver implements java.sql.Driver {
 

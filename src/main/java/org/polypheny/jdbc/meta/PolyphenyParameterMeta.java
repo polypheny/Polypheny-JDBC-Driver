@@ -2,7 +2,7 @@ package org.polypheny.jdbc.meta;
 
 import java.sql.ParameterMetaData;
 import lombok.Getter;
-import org.polypheny.jdbc.proto.ParameterMeta;
+import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class PolyphenyParameterMeta {

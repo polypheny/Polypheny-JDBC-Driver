@@ -27,7 +27,7 @@ import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyList;
 import org.polypheny.jdbc.nativetypes.PolyString;
 import org.polypheny.jdbc.nativetypes.PolyValue;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyEdge extends GraphPropertyHolder {
     public PolyString source;

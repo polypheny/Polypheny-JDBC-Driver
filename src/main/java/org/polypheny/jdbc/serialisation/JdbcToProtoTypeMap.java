@@ -3,8 +3,8 @@ package org.polypheny.jdbc.serialisation;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Types;
 import java.util.Map;
-import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class JdbcToProtoTypeMap {

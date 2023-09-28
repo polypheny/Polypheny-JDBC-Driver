@@ -21,8 +21,8 @@ import java.util.TimeZone;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
-import org.polypheny.jdbc.proto.ProtoTime;
-import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoTime;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 
 public class PolyTime extends PolyTemporal {
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();

@@ -2,8 +2,8 @@ package org.polypheny.jdbc.deserialization;
 
 import java.sql.SQLException;
 import java.sql.Types;
-import org.polypheny.jdbc.proto.ProtoFloat;
-import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoFloat;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class FloatDeserializer implements ValueDeserializer {

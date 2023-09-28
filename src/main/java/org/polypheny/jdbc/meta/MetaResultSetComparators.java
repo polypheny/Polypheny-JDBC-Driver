@@ -1,6 +1,6 @@
 package org.polypheny.jdbc.meta;
 
-import org.polypheny.jdbc.proto.*;
+import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 import java.util.Comparator;

@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.deserialization.ProtoValueDeserializer;
-import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.Row;
+import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class TypedValueUtils {

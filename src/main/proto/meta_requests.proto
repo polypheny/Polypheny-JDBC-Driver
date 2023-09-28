@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "org.polypheny.jdbc.proto";
+option java_package = "org.polypheny.db.protointerface.proto";
 option java_outer_classname = "MetaRequests";
 
 package polypheny.protointerface;

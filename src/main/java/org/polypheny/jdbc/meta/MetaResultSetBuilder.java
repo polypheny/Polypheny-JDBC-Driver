@@ -11,18 +11,18 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.PolyhenyResultSet;
-import org.polypheny.jdbc.proto.ClientInfoPropertyMeta;
-import org.polypheny.jdbc.proto.Column;
-import org.polypheny.jdbc.proto.Database;
-import org.polypheny.jdbc.proto.ForeignKey;
-import org.polypheny.jdbc.proto.Index;
-import org.polypheny.jdbc.proto.Namespace;
-import org.polypheny.jdbc.proto.PrimaryKey;
-import org.polypheny.jdbc.proto.Procedure;
-import org.polypheny.jdbc.proto.Table;
-import org.polypheny.jdbc.proto.TableType;
-import org.polypheny.jdbc.proto.Type;
-import org.polypheny.jdbc.proto.UserDefinedType;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
+import org.polypheny.db.protointerface.proto.Column;
+import org.polypheny.db.protointerface.proto.Database;
+import org.polypheny.db.protointerface.proto.ForeignKey;
+import org.polypheny.db.protointerface.proto.Index;
+import org.polypheny.db.protointerface.proto.Namespace;
+import org.polypheny.db.protointerface.proto.PrimaryKey;
+import org.polypheny.db.protointerface.proto.Procedure;
+import org.polypheny.db.protointerface.proto.Table;
+import org.polypheny.db.protointerface.proto.TableType;
+import org.polypheny.db.protointerface.proto.Type;
+import org.polypheny.db.protointerface.proto.UserDefinedType;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class MetaResultSetBuilder {
@@ -397,7 +397,7 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet fromFunctions( List<org.polypheny.jdbc.proto.Function> functions ) throws SQLException {
+    public static ResultSet fromFunctions( List<org.polypheny.db.protointerface.proto.Function> functions ) throws SQLException {
         // jdbc standard about functions: Rows are ordered by FUNCTION_CAT, FUNCTION_SCHEM, FUNCTION_NAME and SPECIFIC_NAME ascending
         functions = functions.stream().sorted( MetaResultSetComparators.FUNCTION_COMPARATOR ).collect( Collectors.toList() );
         return buildResultSet(

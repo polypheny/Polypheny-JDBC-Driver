@@ -29,8 +29,8 @@ import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
-import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.proto.Frame.ResultCase;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.Frame.ResultCase;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class PolyhenyResultSet implements ResultSet {

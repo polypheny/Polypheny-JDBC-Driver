@@ -12,11 +12,11 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.jdbc.proto.ExecuteUnparameterizedStatementRequest;
-import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.proto.Frame.ResultCase;
-import org.polypheny.jdbc.proto.StatementBatchResponse;
-import org.polypheny.jdbc.proto.StatementResponse;
+import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.Frame.ResultCase;
+import org.polypheny.db.protointerface.proto.StatementBatchResponse;
+import org.polypheny.db.protointerface.proto.StatementResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class PolyphenyStatement implements Statement {

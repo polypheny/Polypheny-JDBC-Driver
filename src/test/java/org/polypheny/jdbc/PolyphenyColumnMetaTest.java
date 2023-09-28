@@ -14,10 +14,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
-import org.polypheny.jdbc.proto.ColumnMeta;
-import org.polypheny.jdbc.proto.ProtoValue;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
-import org.polypheny.jdbc.proto.TypeMeta;
+import org.polypheny.db.protointerface.proto.ColumnMeta;
+import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.TypeMeta;
 
 public class PolyphenyColumnMetaTest {
 

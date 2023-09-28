@@ -5,9 +5,9 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
-import org.polypheny.jdbc.proto.Frame;
-import org.polypheny.jdbc.proto.Frame.ResultCase;
-import org.polypheny.jdbc.proto.Row;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.Frame.ResultCase;
+import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 

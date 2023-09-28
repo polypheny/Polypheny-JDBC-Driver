@@ -16,14 +16,14 @@
 
 package org.polypheny.jdbc.nativetypes;
 
-import static org.polypheny.jdbc.proto.ProtoValue.ProtoValueType.*;
+import static org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 
 public class TypeUtils {
     public static final List<ProtoValue.ProtoValueType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE );

@@ -19,8 +19,8 @@ package org.polypheny.jdbc.deserialization;
 import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.Types;
-import org.polypheny.jdbc.proto.ProtoRowId;
-import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoRowId;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.PolyphenyRowId;
 

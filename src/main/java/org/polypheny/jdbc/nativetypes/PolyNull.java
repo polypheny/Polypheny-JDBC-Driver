@@ -29,7 +29,7 @@ import org.polypheny.jdbc.nativetypes.graph.PolyEdge;
 import org.polypheny.jdbc.nativetypes.graph.PolyGraph;
 import org.polypheny.jdbc.nativetypes.graph.PolyNode;
 import org.polypheny.jdbc.nativetypes.relational.PolyMap;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyNull extends PolyValue {
 

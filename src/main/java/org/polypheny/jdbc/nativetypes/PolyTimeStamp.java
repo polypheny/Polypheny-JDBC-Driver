@@ -24,7 +24,7 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyTimeStamp extends PolyTemporal {
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();

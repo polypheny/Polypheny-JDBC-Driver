@@ -4,8 +4,8 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.jdbc.proto.ProtoTimeStamp;
-import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoTimeStamp;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class TimeStampDeserializer implements ValueDeserializer {

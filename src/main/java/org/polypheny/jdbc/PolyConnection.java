@@ -32,7 +32,7 @@ import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.jdbc.proto.PreparedStatementSignature;
+import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.jdbctypes.PolyphenyArray;
 import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
 import org.polypheny.jdbc.jdbctypes.PolyphenyClob;

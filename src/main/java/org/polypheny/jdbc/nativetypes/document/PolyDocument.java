@@ -21,8 +21,8 @@ import java.util.Map;
 import org.polypheny.jdbc.nativetypes.PolyString;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.nativetypes.relational.PolyMap;
-import org.polypheny.jdbc.proto.ProtoDocument;
-import org.polypheny.jdbc.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoDocument;
+import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 

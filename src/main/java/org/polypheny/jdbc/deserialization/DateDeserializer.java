@@ -3,8 +3,8 @@ package org.polypheny.jdbc.deserialization;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.Date;
-import org.polypheny.jdbc.proto.ProtoDate;
-import org.polypheny.jdbc.proto.ProtoValue;
+import org.polypheny.db.protointerface.proto.ProtoDate;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class DateDeserializer implements ValueDeserializer {
