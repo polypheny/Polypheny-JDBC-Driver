@@ -1,4 +1,5 @@
 syntax = "proto3";
+
 import "value.proto";
 import "meta_requests.proto";
 import "meta_responses.proto";
@@ -10,7 +11,6 @@ import "statement_requests.proto";
 import "statement_responses.proto";
 import "transaction_requests.proto";
 import "transactions_responses.proto";
-
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
@@ -29,7 +29,7 @@ service ProtoInterface {
   rpc GetTableTypes(TableTypesRequest) returns (TableTypesResponse) {}
   rpc GetTypes(TypesRequest) returns (TypesResponse) {}
   rpc GetUserDefinedTypes(UserDefinedTypesRequest) returns (UserDefinedTypesResponse) {}
-  rpc GetClientInfoPropertyMetas(ClientInfoPropertyMetaRequest) returns (ClientInfoPropertyMetaResponse){}
+  rpc GetClientInfoPropertyMetas(ClientInfoPropertyMetaRequest) returns (ClientInfoPropertyMetaResponse) {}
   rpc SearchProcedures(ProceduresRequest) returns (ProceduresResponse) {}
   rpc SearchFunctions(FunctionsRequest) returns (FunctionsResponse) {}
   rpc SearchNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
@@ -51,10 +51,10 @@ service ProtoInterface {
   rpc ExecuteUnparameterizedStatementBatch(ExecuteUnparameterizedStatementBatchRequest) returns (stream StatementBatchResponse) {}
   // Prepared Statements
   rpc PrepareIndexedStatement(PrepareStatementRequest) returns (PreparedStatementSignature) {}
-  rpc ExecuteIndexedStatement(ExecuteIndexedStatementRequest) returns (StatementResult){}
-  rpc ExecuteIndexedStatementBatch(ExecuteIndexedStatementBatchRequest) returns (StatementBatchResponse){}
+  rpc ExecuteIndexedStatement(ExecuteIndexedStatementRequest) returns (StatementResult) {}
+  rpc ExecuteIndexedStatementBatch(ExecuteIndexedStatementBatchRequest) returns (StatementBatchResponse) {}
   rpc PrepareNamedStatement(PrepareStatementRequest) returns (PreparedStatementSignature) {}
-  rpc ExecuteNamedStatement(ExecuteNamedStatementRequest) returns (StatementResult){}
+  rpc ExecuteNamedStatement(ExecuteNamedStatementRequest) returns (StatementResult) {}
   // Results
   rpc FetchResult(FetchRequest) returns (Frame) {}
   // Transaction handling
@@ -62,5 +62,5 @@ service ProtoInterface {
   rpc CommitTransaction(CommitRequest) returns (CommitResponse) {}
   rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
   // Properties
-  rpc UpdateConnectionProperties(ConnectionPropertiesUpdateRequest) returns (ConnectionPropertiesUpdateResponse){}
+  rpc UpdateConnectionProperties(ConnectionPropertiesUpdateRequest) returns (ConnectionPropertiesUpdateResponse) {}
 }
