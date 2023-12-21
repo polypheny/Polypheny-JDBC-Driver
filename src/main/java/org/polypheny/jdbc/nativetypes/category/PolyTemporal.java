@@ -22,7 +22,10 @@ import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public abstract class PolyTemporal extends PolyValue {
+
     private static final long MILLIS_PER_DAY = 86400000; // = 24 * 60 * 60 * 1000;
+
+
     public abstract Long getMilliSinceEpoch();
 
 
@@ -41,4 +44,5 @@ public abstract class PolyTemporal extends PolyValue {
         cal.setTimeInMillis( getMilliSinceEpoch() );
         return cal;
     }
+
 }

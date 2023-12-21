@@ -75,9 +75,9 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
                 return value.size() - o.asList().value.size();
             }
             int size = Math.min( value.size(), other.size() );
-            for (int i = 0; i < size; i++) {
-                if (value.get(i).compareTo( other.value.get( i ) ) != 0) {
-                    return value.get(i).compareTo( other.value.get( i ));
+            for ( int i = 0; i < size; i++ ) {
+                if ( value.get( i ).compareTo( other.value.get( i ) ) != 0 ) {
+                    return value.get( i ).compareTo( other.value.get( i ) );
                 }
             }
             return 0;
@@ -86,8 +86,10 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         }
     }
 
+
     @Override
     public String toString() {
         return value.toString();
     }
+
 }

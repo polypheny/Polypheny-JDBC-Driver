@@ -68,7 +68,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             if ( rowIndex < 0 ) {
                 fetchAll();
                 currentIndex = values.size() + rowIndex;
-                if (currentIndex < 1) {
+                if ( currentIndex < 1 ) {
                     currentIndex = INDEX_BEFORE_FIRST;
                     currentRow = null;
                     return false;

@@ -33,9 +33,9 @@ public enum ProtoInterfaceErrors {
     PARAMETER_NOT_EXISTS( "42000", 13 ),
     OPTION_NOT_SUPPORTED( "0A000", 14 ),
     DATA_TYPE_MISSMATCH( "42S22", 17 ),
-    MISSING_INTERFACE("I4003", 18),
-    UDT_CONSTRUCTION_FAILED("I4003", 19),
-    ENTRY_NOT_EXISTS("I5001", 20);
+    MISSING_INTERFACE( "I4003", 18 ),
+    UDT_CONSTRUCTION_FAILED( "I4003", 19 ),
+    ENTRY_NOT_EXISTS( "I5001", 20 );
 
 
     public final String state;
@@ -46,4 +46,4 @@ public enum ProtoInterfaceErrors {
         this.state = state;
         this.errorCode = errorCode;
     }
-    }
+}

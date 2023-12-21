@@ -39,6 +39,7 @@ import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
 import org.polypheny.jdbc.jdbctypes.PolyphenyStruct;
 
 public class PolyConnection implements Connection {
+
     private PolyphenyConnectionProperties properties;
 
     private PolyphenyDatabaseMetadata databaseMetaData;
@@ -50,6 +51,7 @@ public class PolyConnection implements Connection {
 
     private Map<String, Class<?>> typeMap;
 
+
     private void throwIfClosed() throws SQLException {
         if ( isClosed ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.CONNECTION_LOST, "Illegal operation on closed connection." );
@@ -58,7 +60,7 @@ public class PolyConnection implements Connection {
 
 
     private void throwIfAutoCommit() throws SQLException {
-        if (!isStrict()) {
+        if ( !isStrict() ) {
             return;
         }
         if ( properties.isAutoCommit() ) {
@@ -73,7 +75,8 @@ public class PolyConnection implements Connection {
         }
     }
 
-    public void removeStatement(Statement polyphenyStatement) {
+
+    public void removeStatement( Statement polyphenyStatement ) {
         openStatements.remove( polyphenyStatement );
     }
 
@@ -101,9 +104,11 @@ public class PolyConnection implements Connection {
         heartbeatTimer.schedule( createNewHeartbeatTask(), 0, heartbeatInterval );
     }
 
+
     public boolean isStrict() {
         return properties.isStrict();
     }
+
 
     private TimerTask createNewHeartbeatTask() {
         Runnable runnable = () -> getProtoInterfaceClient().checkConnection( properties.getNetworkTimeout() );
@@ -123,9 +128,11 @@ public class PolyConnection implements Connection {
         openStatements.remove( statement );
     }
 
+
     public int getTimeout() {
         return properties.getNetworkTimeout();
     }
+
 
     public ProtoInterfaceClient getProtoInterfaceClient() {
         return properties.getProtoInterfaceClient();
@@ -140,8 +147,9 @@ public class PolyConnection implements Connection {
         return statement;
     }
 
+
     public PolyStatement createProtoStatement() {
-        return new PolyStatement( this);
+        return new PolyStatement( this );
     }
 
 
@@ -209,7 +217,7 @@ public class PolyConnection implements Connection {
 
     @Override
     public void close() throws SQLException {
-        if (isClosed()) {
+        if ( isClosed() ) {
             return;
         }
         List<Statement> statements = new ArrayList<>( openStatements );

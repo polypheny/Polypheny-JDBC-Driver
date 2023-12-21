@@ -11,14 +11,14 @@ public class FloatDeserializer implements ValueDeserializer {
     @Override
     public TypedValue deserializeToTypedValue( ProtoValue value ) throws SQLException {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
-        switch(jdbcType) {
+        switch ( jdbcType ) {
             case Types.REAL:
                 Float f = deserializeToFloat( value.getFloat() );
                 return TypedValue.fromObject( f, jdbcType );
             case Types.FLOAT:
                 // according to jdbc appendix B.1 floats should internally be represented as doubles
                 Double d = deserializeToDouble( value.getFloat() );
-                return  TypedValue.fromObject( d, jdbcType );
+                return TypedValue.fromObject( d, jdbcType );
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto float." );
     }
@@ -27,6 +27,7 @@ public class FloatDeserializer implements ValueDeserializer {
     private Float deserializeToFloat( ProtoFloat protoFloat ) {
         return protoFloat.getFloat();
     }
+
 
     private Double deserializeToDouble( ProtoFloat protoFloat ) {
         return (double) protoFloat.getFloat();

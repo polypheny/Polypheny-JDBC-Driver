@@ -47,6 +47,7 @@ public class PolyInterval extends PolyValue {
         return 0;
     }
 
+
     @Override
     public String toString() {
         return value.toString() + type.toString();

@@ -30,6 +30,7 @@ import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyNode extends GraphPropertyHolder {
+
     @Getter
     @Setter
     @Accessors(fluent = true)
@@ -60,6 +61,7 @@ public class PolyNode extends GraphPropertyHolder {
         // MATCH (n) -> true, MATCH (n{name: 'Max'}) -> false, MATCH (n:Person) -> false
         return (properties == null || properties.isEmpty()) && (labels == null || labels.isEmpty());
     }
+
 
     @Override
     public void setLabels( PolyList<PolyString> labels ) {

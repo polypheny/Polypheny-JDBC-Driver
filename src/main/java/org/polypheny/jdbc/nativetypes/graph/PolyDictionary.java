@@ -28,7 +28,9 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
         super( map );
     }
 
+
     public PolyDictionary() {
         this( new HashMap<>() );
     }
+
 }

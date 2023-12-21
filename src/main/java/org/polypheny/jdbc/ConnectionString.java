@@ -113,7 +113,7 @@ public class ConnectionString {
         log.debug( "Parsing user info: \"" + userInformation + "\"" );
         final int firstColumnPosition = userInformation.indexOf( ':' );
         String username;
-        if (firstColumnPosition == -1) {
+        if ( firstColumnPosition == -1 ) {
             // no password given
             username = substringBefore( userInformation.length(), userInformation );
             if ( username.isEmpty() ) {
@@ -170,14 +170,15 @@ public class ConnectionString {
 
 
     public HashMap<String, String> getParameters() {
-        String property = parameters.get(PropertyUtils.getPASSWORD_KEY());
-        if (property != null && property.equals(DriverProperties.getBACKDOR_STRING()) && DriverProperties.isBACKDOOR_ENABLED()) {
-            parameters.put(PropertyUtils.getPASSWORD_KEY(), "");
+        String property = parameters.get( PropertyUtils.getPASSWORD_KEY() );
+        if ( property != null && property.equals( DriverProperties.getBACKDOR_STRING() ) && DriverProperties.isBACKDOOR_ENABLED() ) {
+            parameters.put( PropertyUtils.getPASSWORD_KEY(), "" );
         }
         return parameters;
     }
 
-    public String getParameter(String parameterName) {
+
+    public String getParameter( String parameterName ) {
         return parameters.get( parameterName );
     }
 

@@ -42,7 +42,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
     public int getColumnIndexFromLabel( String columnLabel ) throws SQLException {
         Integer columnIndex = columnIndexes.get( columnLabel );
         if ( columnIndex == null ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.COLUMN_NOT_EXISTS,  "Invalid column label: " + columnLabel );
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.COLUMN_NOT_EXISTS, "Invalid column label: " + columnLabel );
         }
         return columnIndex;
     }
@@ -175,17 +175,17 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
 
     @Override
-    public <T> T unwrap(Class<T> aClass) throws SQLException {
-        if (aClass.isInstance(this)) {
-            return aClass.cast(this);
+    public <T> T unwrap( Class<T> aClass ) throws SQLException {
+        if ( aClass.isInstance( this ) ) {
+            return aClass.cast( this );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass);
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
     }
 
 
     @Override
-    public boolean isWrapperFor(Class<?> aClass) {
-        return aClass.isInstance(this);
+    public boolean isWrapperFor( Class<?> aClass ) {
+        return aClass.isInstance( this );
 
     }
 

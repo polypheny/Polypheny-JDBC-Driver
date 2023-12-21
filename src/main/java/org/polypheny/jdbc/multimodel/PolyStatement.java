@@ -35,6 +35,7 @@ public class PolyStatement {
     @Getter
     private int statementId;
 
+
     private void resetStatement() {
         statementId = NO_STATEMENT_ID;
     }
@@ -44,7 +45,8 @@ public class PolyStatement {
         return connection.getProtoInterfaceClient();
     }
 
-    private Result getResultFromFrame(Frame frame) throws ProtoInterfaceServiceException {
+
+    private Result getResultFromFrame( Frame frame ) throws ProtoInterfaceServiceException {
         switch ( frame.getResultCase() ) {
             case RELATIONAL_FRAME:
                 return new RelationalResult( frame, this );
@@ -87,9 +89,10 @@ public class PolyStatement {
                 throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
             if ( !response.getResult().hasFrame() ) {
-                return new ScalarResult(response.getResult().getScalar());
+                return new ScalarResult( response.getResult().getScalar() );
             }
-            return getResultFromFrame(response.getResult().getFrame());
+            return getResultFromFrame( response.getResult().getFrame() );
         }
     }
+
 }

@@ -111,9 +111,9 @@ public class PolyphenyClob implements Clob, NClob {
 
 
     private void replaceSection( int startIndex, int replacementLength, String replacement ) throws ProtoInterfaceServiceException {
-        if (value == null) {
-            if (startIndex > 0) {
-                throw new ProtoInterfaceServiceException(ProtoInterfaceErrors.VALUE_ILLEGAL, "Can't replace section in empty string");
+        if ( value == null ) {
+            if ( startIndex > 0 ) {
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Can't replace section in empty string" );
             }
             value = replacement;
             return;
@@ -166,4 +166,5 @@ public class PolyphenyClob implements Clob, NClob {
         String slice = value.substring( startIndex, startIndex + longToInt( length ) );
         return null;
     }
+
 }

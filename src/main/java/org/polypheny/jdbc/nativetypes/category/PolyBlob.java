@@ -21,7 +21,8 @@ import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyBlob extends PolyValue {
-    public PolyBlob( ProtoValueType type) {
+
+    public PolyBlob( ProtoValueType type ) {
         super( type );
     }
 

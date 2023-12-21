@@ -23,7 +23,7 @@ public class DriverProperties {
     @Getter
     private static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
     @Getter
-    private static final TimeZone DEFAULT_TIMEZONE = TimeZone.getTimeZone("GMT+1");
+    private static final TimeZone DEFAULT_TIMEZONE = TimeZone.getTimeZone( "GMT+1" );
     @Getter
     // This feature is for testing purposes only!
     private static final boolean BACKDOOR_ENABLED = true;

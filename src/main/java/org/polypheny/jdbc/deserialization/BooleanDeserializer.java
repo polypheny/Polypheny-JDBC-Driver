@@ -11,7 +11,7 @@ public class BooleanDeserializer implements ValueDeserializer {
     @Override
     public TypedValue deserializeToTypedValue( ProtoValue value ) throws SQLException {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
-        switch (jdbcType) {
+        switch ( jdbcType ) {
             case Types.BOOLEAN:
                 boolean b = deserializeToBoolean( value.getBoolean() );
                 return TypedValue.fromObject( b, ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() ) );

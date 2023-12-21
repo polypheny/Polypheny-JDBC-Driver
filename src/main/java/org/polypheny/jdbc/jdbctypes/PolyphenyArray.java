@@ -42,11 +42,12 @@ public class PolyphenyArray implements Array {
         Object[] shiftedElements = new Object[elements.length + 1];
         // shifting array elements one to the right as first value has to be at index 1... duh!
         int endIdx = elements.length + 1;
-        for (int i = 1; i < endIdx; i++ ) {
+        for ( int i = 1; i < endIdx; i++ ) {
             shiftedElements[i] = elements[i - 1];
         }
         this.elements = shiftedElements;
     }
+
 
     public PolyphenyArray( String protoBaseTypeName, List<TypedValue> values ) throws SQLException {
         this.protoBaseTypeName = protoBaseTypeName;
@@ -56,27 +57,29 @@ public class PolyphenyArray implements Array {
             objects.add( object );
         }
         objects.add( 0, TypedValue.fromNull( values.get( 0 ).getJdbcType() ) );
-        this.elements = objects.toArray(new Object[0]);
+        this.elements = objects.toArray( new Object[0] );
     }
+
 
     private int longToInt( long value ) {
         return Math.toIntExact( value );
     }
 
+
     @Override
-    public String getBaseTypeName(){
+    public String getBaseTypeName() {
         return protoBaseTypeName;
     }
 
 
     @Override
-    public int getBaseType(){
+    public int getBaseType() {
         return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoValueType.valueOf( protoBaseTypeName ) );
     }
 
 
     @Override
-    public Object getArray(){
+    public Object getArray() {
         return elements;
     }
 
@@ -101,7 +104,7 @@ public class PolyphenyArray implements Array {
 
     @Override
     public ResultSet getResultSet() throws SQLException {
-        return getResultSet(0, elements.length);
+        return getResultSet( 0, elements.length );
     }
 
 
@@ -118,13 +121,13 @@ public class PolyphenyArray implements Array {
         columnMetas.add( PolyphenyColumnMeta.fromSpecification( 0, "INDEX", "ARRAY", Types.INTEGER ) );
         columnMetas.add( PolyphenyColumnMeta.fromSpecification( 1, "VALUE", "ARRAY", jdbcBaseType ) );
         ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
-        for (int i = 1; i < elements.length; i++) {
+        for ( int i = 1; i < elements.length; i++ ) {
             ArrayList<TypedValue> currentRow = new ArrayList<>();
             currentRow.add( TypedValue.fromInt( i ) );
             currentRow.add( TypedValue.fromObject( elements[i], jdbcBaseType ) );
             rows.add( currentRow );
         }
-        return new PolyhenyResultSet(columnMetas, rows);
+        return new PolyhenyResultSet( columnMetas, rows );
     }
 
 

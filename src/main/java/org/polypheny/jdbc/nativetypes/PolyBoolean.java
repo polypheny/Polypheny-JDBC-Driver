@@ -21,16 +21,19 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
-public class PolyBoolean extends PolyValue{
+public class PolyBoolean extends PolyValue {
+
     public static final PolyBoolean TRUE = PolyBoolean.of( true );
     public static final PolyBoolean FALSE = PolyBoolean.of( false );
 
     public Boolean value;
 
+
     public PolyBoolean( Boolean value ) {
         super( ProtoValueType.BOOLEAN );
         this.value = value;
     }
+
 
     public static PolyBoolean of( Boolean value ) {
         return new PolyBoolean( value );
@@ -41,9 +44,11 @@ public class PolyBoolean extends PolyValue{
         return value == null ? null : of( value );
     }
 
+
     public static PolyBoolean of( boolean value ) {
         return new PolyBoolean( value );
     }
+
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
@@ -51,11 +56,12 @@ public class PolyBoolean extends PolyValue{
             try {
                 return ObjectUtils.compare( value, o.asBoolean().value );
             } catch ( ProtoInterfaceServiceException e ) {
-                throw new RuntimeException("Should never be thrown!");
+                throw new RuntimeException( "Should never be thrown!" );
             }
         }
         return -1;
     }
+
 
     @Override
     public String toString() {

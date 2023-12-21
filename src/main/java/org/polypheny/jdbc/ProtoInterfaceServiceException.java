@@ -69,7 +69,7 @@ public class ProtoInterfaceServiceException extends SQLException {
 
 
     public ProtoInterfaceServiceException( String reason ) {
-        super(reason, ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode );
+        super( reason, ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode );
     }
 
 
@@ -79,7 +79,7 @@ public class ProtoInterfaceServiceException extends SQLException {
 
 
     public ProtoInterfaceServiceException( Throwable cause ) {
-        super(cause.getMessage(), ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode, cause );
+        super( cause.getMessage(), ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode, cause );
     }
 
 

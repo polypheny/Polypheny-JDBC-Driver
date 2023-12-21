@@ -22,11 +22,14 @@ import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 @Getter
 public abstract class Result {
+
     private final ResultType resultType;
 
-    public Result(ResultType resultType) {
+
+    public Result( ResultType resultType ) {
         this.resultType = resultType;
     }
+
 
     public <T> T unwrap( Class<T> aClass ) throws ProtoInterfaceServiceException {
         if ( aClass.isInstance( this ) ) {
@@ -42,7 +45,6 @@ public abstract class Result {
         GRAPH,
         SCALAR
     }
-
 
 
 }

@@ -33,4 +33,5 @@ public interface ExtraPolyTypes {
 
     // From OpenGIS
     int GEOMETRY = 2015; // TODO: confirm
+
 }

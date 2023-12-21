@@ -133,7 +133,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
-                Arrays.asList(parameters),
+                Arrays.asList( parameters ),
                 properties.getFetchSize(),
                 getTimeout()
         );
@@ -153,7 +153,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
-                Arrays.asList(parameters),
+                Arrays.asList( parameters ),
                 properties.getFetchSize(),
                 getTimeout()
         );
@@ -363,7 +363,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfClosed();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
-                Arrays.asList(parameters),
+                Arrays.asList( parameters ),
                 properties.getFetchSize(),
                 getTimeout()
         );
@@ -382,7 +382,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public void addBatch() throws SQLException {
         throwIfClosed();
-        parameterBatch.add( new ArrayList<TypedValue>(Arrays.asList(parameters)) );
+        parameterBatch.add( new ArrayList<TypedValue>( Arrays.asList( parameters ) ) );
     }
 
 
@@ -693,4 +693,5 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         throwIfOutOfBounds( parameterIndex );
         parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNClob( reader );
     }
+
 }

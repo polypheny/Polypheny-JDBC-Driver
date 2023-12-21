@@ -37,8 +37,9 @@ public class RowIdDeserializer implements ValueDeserializer {
         throw new IllegalArgumentException( "Illegal jdbc type for proto long." );
     }
 
+
     public RowId deserializeToRowId( ProtoRowId protoRowId ) {
-        return new PolyphenyRowId(protoRowId.getRowId());
+        return new PolyphenyRowId( protoRowId.getRowId() );
     }
 
 }

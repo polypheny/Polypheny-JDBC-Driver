@@ -982,7 +982,7 @@ public class PolyhenyResultSet implements ResultSet {
     @Override
     public Statement getStatement() throws SQLException {
         throwIfClosed();
-        if (isMeta) {
+        if ( isMeta ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "This operation cannot be applied to a dummy result set of a meta request." );
         }
         return statement;

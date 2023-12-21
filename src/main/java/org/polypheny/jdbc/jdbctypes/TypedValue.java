@@ -259,8 +259,9 @@ public class TypedValue implements Convertible {
         return nullValue;
     }
 
-    public static TypedValue fromNull(int sqlType, String internalType) {
-        TypedValue typedValue = TypedValue.fromNull(sqlType);
+
+    public static TypedValue fromNull( int sqlType, String internalType ) {
+        TypedValue typedValue = TypedValue.fromNull( sqlType );
         typedValue.internalType = internalType;
         return typedValue;
     }
@@ -269,6 +270,7 @@ public class TypedValue implements Convertible {
     public static TypedValue fromNull() {
         return fromNull( Types.NULL );
     }
+
 
     public static TypedValue fromClob( Clob value ) {
         return new TypedValue( Types.CLOB, value );
@@ -604,8 +606,8 @@ public class TypedValue implements Convertible {
         if ( isSqlNull() || isNull() ) {
             return null;
         }
-        if ( value instanceof byte[]) {
-            return (byte[])  value;
+        if ( value instanceof byte[] ) {
+            return (byte[]) value;
         }
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -727,7 +729,7 @@ public class TypedValue implements Convertible {
             case Types.DATE:
                 return (Date) value;
             case Types.TIMESTAMP:
-                return  TypedValueUtils.getDateFromTimestamp( (Timestamp) value );
+                return TypedValueUtils.getDateFromTimestamp( (Timestamp) value );
         }
         try {
             if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
@@ -967,6 +969,7 @@ public class TypedValue implements Convertible {
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }
 
+
     @Override
     public Object asObject( Calendar calendar ) throws SQLException {
         if ( isSqlNull() || isNull() ) {
@@ -1002,11 +1005,11 @@ public class TypedValue implements Convertible {
             case Types.LONGVARBINARY:
                 return asBytes();
             case Types.DATE:
-                return asDate(calendar);
+                return asDate( calendar );
             case Types.TIME:
-                return asTime(calendar);
+                return asTime( calendar );
             case Types.TIMESTAMP:
-                return asTimestamp(calendar);
+                return asTimestamp( calendar );
             case Types.DISTINCT:
                 // should return object type of underlying type
                 throw new IllegalArgumentException( "Retrieval of Types.DISTINCT not implemented" );

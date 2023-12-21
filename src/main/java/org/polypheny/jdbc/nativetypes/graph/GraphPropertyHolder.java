@@ -15,6 +15,7 @@
  */
 
 package org.polypheny.jdbc.nativetypes.graph;
+
 import java.util.List;
 import java.util.Map.Entry;
 import org.polypheny.jdbc.nativetypes.PolyValue;
@@ -23,14 +24,17 @@ import org.polypheny.jdbc.nativetypes.PolyString;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public abstract class GraphPropertyHolder extends GraphObject {
+
     public final PolyDictionary properties;
     public final PolyList<PolyString> labels;
+
 
     public GraphPropertyHolder( PolyString id, ProtoValueType type, PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {
         super( id, type, variableName );
         this.properties = properties;
         this.labels = PolyList.of( labels );
     }
+
 
     public boolean matchesProperties( PolyDictionary properties ) {
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
@@ -65,4 +69,5 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
 
     public abstract void setLabels( PolyList<PolyString> labels );
+
 }

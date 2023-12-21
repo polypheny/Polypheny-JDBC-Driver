@@ -31,7 +31,6 @@ public class Main {
         Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
 
 
-
     }
 
 

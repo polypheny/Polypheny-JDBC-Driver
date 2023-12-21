@@ -59,7 +59,7 @@ public interface Convertible {
     BigDecimal asBigDecimal() throws SQLException;
 
 
-    BigDecimal asBigDecimal(int scale) throws SQLException;
+    BigDecimal asBigDecimal( int scale ) throws SQLException;
 
 
     byte[] asBytes() throws SQLException;
@@ -93,15 +93,15 @@ public interface Convertible {
 
     Date asDate() throws SQLException;
 
-    Date asDate(Calendar calendar) throws SQLException;
+    Date asDate( Calendar calendar ) throws SQLException;
 
     Time asTime() throws SQLException;
 
-    Time asTime(Calendar calendar) throws SQLException;
+    Time asTime( Calendar calendar ) throws SQLException;
 
     Timestamp asTimestamp() throws SQLException;
 
-    Timestamp asTimestamp(Calendar calendar) throws SQLException;
+    Timestamp asTimestamp( Calendar calendar ) throws SQLException;
 
     Ref asRef() throws SQLException;
 
@@ -121,9 +121,10 @@ public interface Convertible {
 
     Reader asNCharacterStream() throws SQLException;
 
-    Object asObject(Map<String, Class<?>> map) throws SQLException;
+    Object asObject( Map<String, Class<?>> map ) throws SQLException;
 
     Object asObject( Calendar calendar ) throws SQLException;
 
-    <T> T asObject(Class<T> aClass) throws SQLFeatureNotSupportedException, ProtoInterfaceServiceException;
+    <T> T asObject( Class<T> aClass ) throws SQLFeatureNotSupportedException, ProtoInterfaceServiceException;
+
 }

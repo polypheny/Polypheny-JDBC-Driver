@@ -18,7 +18,7 @@ public class TimeDeserializer implements ValueDeserializer {
                 Time t = deserializeToSqlTime( value.getTime() );
                 return TypedValue.fromObject( t, jdbcType );
             case Types.OTHER:
-                throw new NotImplementedException("Deserialization of time with local timezone not implemented yet.");
+                throw new NotImplementedException( "Deserialization of time with local timezone not implemented yet." );
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto time." );
     }

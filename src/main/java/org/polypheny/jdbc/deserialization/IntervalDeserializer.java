@@ -12,7 +12,7 @@ public class IntervalDeserializer implements ValueDeserializer {
         switch ( jdbcType ) {
             case Types.OTHER:
                 return null;
-                //TODO implementation
+            //TODO implementation
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto interval." );
     }

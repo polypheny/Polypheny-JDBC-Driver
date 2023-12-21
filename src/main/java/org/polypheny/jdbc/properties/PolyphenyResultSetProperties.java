@@ -65,6 +65,7 @@ public class PolyphenyResultSetProperties {
         resultSetFetchSize = fetchSize;
     }
 
+
     public int getFetchSize() {
         return resultSetFetchSize;
     }

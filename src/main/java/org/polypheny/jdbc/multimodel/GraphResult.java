@@ -21,7 +21,7 @@ import org.polypheny.db.protointerface.proto.Frame;
 public class GraphResult extends Result {
 
     public GraphResult( Frame frame, PolyStatement polyStatement ) {
-        super(ResultType.GRAPH);
+        super( ResultType.GRAPH );
     }
 
 }

@@ -9,7 +9,7 @@ public class NullDeserializer implements ValueDeserializer {
     @Override
     public TypedValue deserializeToTypedValue( ProtoValue value ) {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
-        switch (jdbcType) {
+        switch ( jdbcType ) {
             case Types.NULL:
                 return TypedValue.fromNull( jdbcType );
         }

@@ -25,6 +25,7 @@ public class ListDeserializer implements ValueDeserializer {
         throw new IllegalArgumentException( "Illegal jdbc type for proto list" );
     }
 
+
     private Array deserializeToArray( ProtoList protoList ) throws SQLException {
         ProtoValueType baseType = protoList.getValues( 0 ).getType();
         List<TypedValue> values = new LinkedList<>();

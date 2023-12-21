@@ -123,7 +123,7 @@ public class PolyphenyBlob implements Blob {
     @Override
     public int setBytes( long pos, byte[] bytes, int offset, int len ) throws SQLException {
         throwIfFreed();
-        if (value == null) {
+        if ( value == null ) {
             value = new byte[len];
         }
         if ( positionToIndex( pos + len ) >= value.length ) {

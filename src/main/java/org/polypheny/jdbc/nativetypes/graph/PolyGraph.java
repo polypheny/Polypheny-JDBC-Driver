@@ -24,10 +24,11 @@ import org.polypheny.jdbc.nativetypes.PolyString;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
-public class PolyGraph extends GraphObject{
+public class PolyGraph extends GraphObject {
 
     private final Map<PolyString, PolyNode> nodes;
     private final Map<PolyString, PolyEdge> edges;
+
 
     public PolyGraph( @NonNull Map<PolyString, PolyNode> nodes, @NonNull Map<PolyString, PolyEdge> edges ) {
         this( PolyString.of( UUID.randomUUID().toString() ), nodes, edges );
@@ -74,4 +75,5 @@ public class PolyGraph extends GraphObject{
                 ", edges=" + edges +
                 '}';
     }
+
 }

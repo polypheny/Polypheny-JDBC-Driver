@@ -180,7 +180,7 @@ public class ProtoInterfaceClient {
 
     public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws ProtoInterfaceServiceException {
         ExecuteUnparameterizedStatementRequest.Builder requestBuilder = ExecuteUnparameterizedStatementRequest.newBuilder();
-        if (namespaceName != null) {
+        if ( namespaceName != null ) {
             requestBuilder.setNamespaceName( namespaceName );
         }
         ExecuteUnparameterizedStatementRequest request = requestBuilder
@@ -209,7 +209,7 @@ public class ProtoInterfaceClient {
 
     public PreparedStatementSignature prepareIndexedStatement( String namespaceName, String languageName, String statement, int timeout ) throws ProtoInterfaceServiceException {
         PrepareStatementRequest.Builder requestBuilder = PrepareStatementRequest.newBuilder();
-        if (namespaceName != null) {
+        if ( namespaceName != null ) {
             requestBuilder.setNamespaceName( namespaceName );
         }
         PrepareStatementRequest request = requestBuilder

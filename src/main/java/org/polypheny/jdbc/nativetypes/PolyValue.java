@@ -454,7 +454,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
             case TIME_WITH_LOCAL_TIME_ZONE:
                 throw new NotImplementedException( "Conversion from time with local timezone not yet implemented." );
             case TIMESTAMP:
-                return new PolyTimeStamp(protoValue.getTimeStamp().getTimeStamp());
+                return new PolyTimeStamp( protoValue.getTimeStamp().getTimeStamp() );
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 throw new NotImplementedException( "Conversion from timestamp with local timezone not yet implemented." );
             case INTERVAL_SECOND:
@@ -502,7 +502,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
             case USER_DEFINED_TYPE:
                 return deserializeToPolyUserDefinedType( protoValue.getUserDefinedType() );
         }
-        throw new RuntimeException("Should never be thrown.");
+        throw new RuntimeException( "Should never be thrown." );
     }
 
 

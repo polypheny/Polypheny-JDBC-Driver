@@ -236,7 +236,6 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     }
 
 
-
     @Override
     public boolean storesUpperCaseQuotedIdentifiers() throws SQLException {
         return false;

@@ -20,7 +20,9 @@ import java.nio.charset.StandardCharsets;
 import java.sql.RowId;
 
 public class PolyphenyRowId implements RowId {
+
     String rowId;
+
 
     public PolyphenyRowId( String rowId ) {
         this.rowId = rowId;
@@ -31,6 +33,7 @@ public class PolyphenyRowId implements RowId {
     public byte[] getBytes() {
         return rowId.getBytes( StandardCharsets.UTF_8 );
     }
+
 
     @Override
     public String toString() {

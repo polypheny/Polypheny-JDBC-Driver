@@ -86,6 +86,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
         int index = -1;
 
+
         @Override
         public boolean hasNext() {
             if ( index + 1 >= documents.size() ) {

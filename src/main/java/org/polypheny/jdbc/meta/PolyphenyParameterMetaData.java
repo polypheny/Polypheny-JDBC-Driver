@@ -93,17 +93,17 @@ public class PolyphenyParameterMetaData implements ParameterMetaData {
 
 
     @Override
-    public <T> T unwrap(Class<T> aClass) throws SQLException {
-        if (aClass.isInstance(this)) {
-            return aClass.cast(this);
+    public <T> T unwrap( Class<T> aClass ) throws SQLException {
+        if ( aClass.isInstance( this ) ) {
+            return aClass.cast( this );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass);
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
     }
 
 
     @Override
-    public boolean isWrapperFor(Class<?> aClass) {
-        return aClass.isInstance(this);
+    public boolean isWrapperFor( Class<?> aClass ) {
+        return aClass.isInstance( this );
 
     }
 

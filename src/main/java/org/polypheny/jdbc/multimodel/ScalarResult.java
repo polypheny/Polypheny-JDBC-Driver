@@ -19,11 +19,14 @@ package org.polypheny.jdbc.multimodel;
 import lombok.Getter;
 
 public class ScalarResult extends Result {
+
     @Getter
     long scalar;
 
+
     public ScalarResult( long scalar ) {
-        super(ResultType.SCALAR);
+        super( ResultType.SCALAR );
         this.scalar = scalar;
     }
+
 }

@@ -11,11 +11,11 @@ public class BinaryDeserializer implements ValueDeserializer {
     @Override
     public TypedValue deserializeToTypedValue( ProtoValue value ) throws SQLException {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
-        switch ( jdbcType) {
+        switch ( jdbcType ) {
             case Types.BINARY:
             case Types.VARBINARY:
-               byte[] b = deserilizeToByteArray( value.getBinary() );
-               return TypedValue.fromObject(b, jdbcType );
+                byte[] b = deserilizeToByteArray( value.getBinary() );
+                return TypedValue.fromObject( b, jdbcType );
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto string." );
     }

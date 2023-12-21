@@ -27,9 +27,11 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
-public class PolyString extends PolyValue{
+public class PolyString extends PolyValue {
+
     public String value;
     public Charset charset;
+
 
     public PolyString( String value ) {
         this( value, Charsets.UTF_16 );
@@ -41,8 +43,6 @@ public class PolyString extends PolyValue{
         this.value = value;
         this.charset = charset;
     }
-
-
 
 
     public static PolyString of( String value, @Nullable String charset ) {
@@ -64,9 +64,11 @@ public class PolyString extends PolyValue{
         return PolyString.of( strings.stream().map( s -> s.value ).collect( Collectors.joining() ) );
     }
 
+
     public static PolyString join( String delimiter, List<PolyString> strings ) {
         return PolyString.of( strings.stream().map( s -> s.value ).collect( Collectors.joining( delimiter ) ) );
     }
+
 
     @Override
     public int compareTo( @NotNull PolyValue o ) {
@@ -94,10 +96,12 @@ public class PolyString extends PolyValue{
         return Objects.equals( value, that.value );
     }
 
+
     @Override
     public boolean isNull() {
         return value == null;
     }
+
 
     public String asCharset( String charset ) {
         return asCharset( Charset.forName( charset ) );
@@ -110,6 +114,7 @@ public class PolyString extends PolyValue{
         }
         return new String( value.getBytes( this.charset ), charset );
     }
+
 
     @Override
     public String toString() {

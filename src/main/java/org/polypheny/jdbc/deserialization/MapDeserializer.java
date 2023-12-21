@@ -19,23 +19,25 @@ public class MapDeserializer implements ValueDeserializer {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.OTHER:
-                return deserializeAsUdtPrototype(value.getMap(), value.getType().name());
+                return deserializeAsUdtPrototype( value.getMap(), value.getType().name() );
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto map." );
     }
 
-    private TypedValue deserializeAsUdtPrototype(ProtoMap map, String typeName) {
+
+    private TypedValue deserializeAsUdtPrototype( ProtoMap map, String typeName ) {
         ArrayList<TypedValue> values = map.getEntriesList().stream()
-                .map(this::splitMapEntry)
-                .flatMap(List::stream)
-                .collect(Collectors.toCollection(ArrayList::new));
-        return TypedValue.fromUdtPrototype(new UDTPrototype(typeName, values));
+                .map( this::splitMapEntry )
+                .flatMap( List::stream )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+        return TypedValue.fromUdtPrototype( new UDTPrototype( typeName, values ) );
     }
 
-    private List<TypedValue> splitMapEntry(ProtoEntry entry) {
+
+    private List<TypedValue> splitMapEntry( ProtoEntry entry ) {
         List<TypedValue> values = new LinkedList<>();
-        values.add(ProtoValueDeserializer.deserializeToTypedValue(entry.getKey()));
-        values.add(ProtoValueDeserializer.deserializeToTypedValue(entry.getValue()));
+        values.add( ProtoValueDeserializer.deserializeToTypedValue( entry.getKey() ) );
+        values.add( ProtoValueDeserializer.deserializeToTypedValue( entry.getValue() ) );
         return values;
     }
 

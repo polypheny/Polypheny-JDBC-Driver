@@ -12,9 +12,9 @@ public class DateDeserializer implements ValueDeserializer {
     @Override
     public TypedValue deserializeToTypedValue( ProtoValue value ) throws SQLException {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
-        switch(jdbcType) {
+        switch ( jdbcType ) {
             case Types.DATE:
-                Date d = deserializeToSqlDate(value.getDate());
+                Date d = deserializeToSqlDate( value.getDate() );
                 return TypedValue.fromObject( d, ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() ) );
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto date." );
@@ -22,7 +22,7 @@ public class DateDeserializer implements ValueDeserializer {
 
 
     private Date deserializeToSqlDate( ProtoDate protoDate ) {
-        return new Date(protoDate.getDate() * 86400000);
+        return new Date( protoDate.getDate() * 86400000 );
     }
 
 }

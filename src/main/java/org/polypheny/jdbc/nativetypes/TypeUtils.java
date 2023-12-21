@@ -26,6 +26,7 @@ import java.util.Set;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 
 public class TypeUtils {
+
     public static final List<ProtoValue.ProtoValueType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE );
     public static final List<ProtoValue.ProtoValueType> INT_TYPES = ImmutableList.of( TINYINT, SMALLINT, INTEGER, BIGINT );
 
@@ -60,10 +61,12 @@ public class TypeUtils {
 
     public static final List<ProtoValue.ProtoValueType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
 
+
     private static List<ProtoValue.ProtoValueType> combine( List<ProtoValue.ProtoValueType> list0, List<ProtoValue.ProtoValueType> list1 ) {
         return ImmutableList.<ProtoValue.ProtoValueType>builder()
                 .addAll( list0 )
                 .addAll( list1 )
                 .build();
     }
+
 }

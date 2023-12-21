@@ -24,6 +24,7 @@ import org.polypheny.jdbc.nativetypes.TypeUtils;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public abstract class PolyNumber extends PolyValue {
+
     public PolyNumber( ProtoValueType type ) {
         super( type );
     }
@@ -50,6 +51,7 @@ public abstract class PolyNumber extends PolyValue {
         return super.equals( o );
     }
 
+
     public abstract int intValue();
 
 
@@ -71,6 +73,7 @@ public abstract class PolyNumber extends PolyValue {
         return longValue();
     }
 
+
     public abstract float floatValue();
 
 
@@ -81,6 +84,7 @@ public abstract class PolyNumber extends PolyValue {
         return floatValue();
     }
 
+
     public abstract double doubleValue();
 
 
@@ -90,6 +94,7 @@ public abstract class PolyNumber extends PolyValue {
         }
         return doubleValue();
     }
+
 
     public abstract BigDecimal bigDecimalValue();
 
@@ -146,4 +151,5 @@ public abstract class PolyNumber extends PolyValue {
 
 
     public abstract PolyNumber negate();
+
 }

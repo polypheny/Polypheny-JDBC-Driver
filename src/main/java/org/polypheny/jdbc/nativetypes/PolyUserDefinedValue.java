@@ -22,7 +22,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
-public class PolyUserDefinedValue extends PolyValue{
+public class PolyUserDefinedValue extends PolyValue {
 
     @Getter
     private final Map<String, ProtoValueType> template;

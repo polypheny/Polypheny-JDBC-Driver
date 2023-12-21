@@ -39,8 +39,8 @@ public class CallbackQueue<T> implements StreamObserver<T> {
         while ( messageQueue.isEmpty() ) {
             try {
                 hasNext.await();
-            }catch (InterruptedException e) {
-                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e);
+            } catch ( InterruptedException e ) {
+                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e );
             }
             throwReceivedException();
         }
@@ -69,13 +69,13 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     @Override
     public void onError( Throwable propagatedException ) {
         queueLock.lock();
-        if (propagatedException instanceof StatusRuntimeException ) {
+        if ( propagatedException instanceof StatusRuntimeException ) {
             StatusRuntimeException statusRuntimeException = (StatusRuntimeException) propagatedException;
             this.propagatedException = ProtoInterfaceServiceException.fromMetadata(
                     statusRuntimeException.getMessage(),
-                    Status.trailersFromThrowable(statusRuntimeException));
+                    Status.trailersFromThrowable( statusRuntimeException ) );
         } else {
-            this.propagatedException = new ProtoInterfaceServiceException(propagatedException);
+            this.propagatedException = new ProtoInterfaceServiceException( propagatedException );
         }
         hasNext.signal();
         queueLock.unlock();

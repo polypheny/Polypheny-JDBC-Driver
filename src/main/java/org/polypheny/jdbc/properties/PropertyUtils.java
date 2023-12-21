@@ -85,17 +85,19 @@ public class PropertyUtils {
     @Getter
     private static final String STRICT_MODE_KEY = "strict";
 
-    public static String getHoldabilityName(int resultSetHoldability) throws ProtoInterfaceServiceException {
+
+    public static String getHoldabilityName( int resultSetHoldability ) throws ProtoInterfaceServiceException {
         switch ( resultSetHoldability ) {
             case ResultSet.CLOSE_CURSORS_AT_COMMIT:
                 return "CLOSE";
             case ResultSet.HOLD_CURSORS_OVER_COMMIT:
                 return "HOLD";
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "The passed integer value does not match a result holdability.");
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "The passed integer value does not match a result holdability." );
     }
 
-    public static String getTransactionIsolationName(int transactionIsolation) throws ProtoInterfaceServiceException {
+
+    public static String getTransactionIsolationName( int transactionIsolation ) throws ProtoInterfaceServiceException {
         switch ( transactionIsolation ) {
             case Connection.TRANSACTION_READ_UNCOMMITTED:
                 return "DIRTY";
@@ -106,8 +108,9 @@ public class PropertyUtils {
             case Connection.TRANSACTION_REPEATABLE_READ:
                 return "REPEATABLE_READ";
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "The passed integer value does not match a transaction isolation level.");
+        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "The passed integer value does not match a transaction isolation level." );
     }
+
 
     // Methods for input checking
     private static final Map<Integer, List<Integer>> SUPPORTED_CONCURRENCIES =
@@ -212,6 +215,7 @@ public class PropertyUtils {
     public static boolean isInvalidFetchDdirection( int fetchDirection ) {
         return !FETCH_DIRECTIONS.contains( fetchDirection );
     }
+
 
     public static boolean isForwardFetching( int fetchDirection ) {
         return fetchDirection == ResultSet.FETCH_FORWARD;

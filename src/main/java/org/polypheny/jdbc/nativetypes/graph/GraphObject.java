@@ -32,6 +32,7 @@ public abstract class GraphObject extends PolyValue {
         this.variableName = variableName;
     }
 
+
     public enum GraphObjectType {
         GRAPH,
         NODE,

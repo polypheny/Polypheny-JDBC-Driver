@@ -18,24 +18,26 @@ public class DocumentDeserializer implements ValueDeserializer {
         int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
         switch ( jdbcType ) {
             case Types.STRUCT:
-                return deserializeAsUdtPrototype(value.getDocument(), value.getType().name());
+                return deserializeAsUdtPrototype( value.getDocument(), value.getType().name() );
             //TODO implementation
         }
         throw new IllegalArgumentException( "Illegal jdbc type for proto document." );
     }
 
-    private TypedValue deserializeAsUdtPrototype(ProtoDocument document, String typeName) {
-            ArrayList<TypedValue> values = document.getEntriesList().stream()
-                    .map(this::splitDocumentEntry)
-                    .flatMap(List::stream)
-                    .collect(Collectors.toCollection(ArrayList::new));
-            return TypedValue.fromUdtPrototype(new UDTPrototype(typeName, values));
+
+    private TypedValue deserializeAsUdtPrototype( ProtoDocument document, String typeName ) {
+        ArrayList<TypedValue> values = document.getEntriesList().stream()
+                .map( this::splitDocumentEntry )
+                .flatMap( List::stream )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+        return TypedValue.fromUdtPrototype( new UDTPrototype( typeName, values ) );
     }
 
-    private List<TypedValue> splitDocumentEntry(ProtoEntry entry) {
+
+    private List<TypedValue> splitDocumentEntry( ProtoEntry entry ) {
         List<TypedValue> values = new LinkedList<>();
-        values.add(ProtoValueDeserializer.deserializeToTypedValue(entry.getKey()));
-        values.add(ProtoValueDeserializer.deserializeToTypedValue(entry.getValue()));
+        values.add( ProtoValueDeserializer.deserializeToTypedValue( entry.getKey() ) );
+        values.add( ProtoValueDeserializer.deserializeToTypedValue( entry.getValue() ) );
         return values;
     }
 

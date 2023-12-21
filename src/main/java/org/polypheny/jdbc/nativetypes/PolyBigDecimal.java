@@ -29,6 +29,7 @@ public class PolyBigDecimal extends PolyNumber {
 
     public BigDecimal value;
 
+
     public PolyBigDecimal( BigDecimal value ) {
         super( ProtoValueType.DECIMAL );
         this.value = value;
@@ -54,7 +55,8 @@ public class PolyBigDecimal extends PolyNumber {
         return new PolyBigDecimal( BigDecimal.valueOf( value ) );
     }
 
-    public static PolyBigDecimal ofNullable( Number value) {
+
+    public static PolyBigDecimal ofNullable( Number value ) {
         return value == null ? null : of( value.doubleValue() );
     }
 
@@ -137,6 +139,7 @@ public class PolyBigDecimal extends PolyNumber {
         return Objects.equals( value.stripTrailingZeros(), that.value.stripTrailingZeros() );
     }
 
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !o.isNumber() ) {
@@ -145,9 +148,10 @@ public class PolyBigDecimal extends PolyNumber {
         try {
             return ObjectUtils.compare( value, o.asNumber().BigDecimalValue() );
         } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException("Should never be thrown!");
+            throw new RuntimeException( "Should never be thrown!" );
         }
     }
+
 
     @Override
     public String toString() {

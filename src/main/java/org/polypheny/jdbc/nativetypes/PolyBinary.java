@@ -20,7 +20,7 @@ import java.util.Base64;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
-public class PolyBinary extends PolyValue{
+public class PolyBinary extends PolyValue {
 
     public static final PolyBinary EMPTY = new PolyBinary( new byte[0] );
     public byte[] value;
@@ -31,16 +31,18 @@ public class PolyBinary extends PolyValue{
         this.value = value;
     }
 
+
     public PolyBinary( byte[] value, ProtoValueType type ) {
-        super( type  );
-        if (!TypeUtils.BLOB_TYPES.contains( type )) {
-            throw new RuntimeException("Should never be thrown.");
+        super( type );
+        if ( !TypeUtils.BLOB_TYPES.contains( type ) ) {
+            throw new RuntimeException( "Should never be thrown." );
         }
         this.value = value;
     }
 
+
     public static PolyBinary of( byte[] value ) {
-        return new PolyBinary( value);
+        return new PolyBinary( value );
     }
 
 
@@ -54,6 +56,7 @@ public class PolyBinary extends PolyValue{
         return 0;
     }
 
+
     @Override
     public String toString() {
         return Base64.getEncoder().encodeToString( value );
@@ -64,11 +67,13 @@ public class PolyBinary extends PolyValue{
         return value.length;
     }
 
+
     public String toHexString() {
         StringBuilder stringBuilder = new StringBuilder();
-        for (byte singleByte : value) {
-            stringBuilder.append( String.format( "%02x", singleByte) );
+        for ( byte singleByte : value ) {
+            stringBuilder.append( String.format( "%02x", singleByte ) );
         }
-        return  stringBuilder.toString();
+        return stringBuilder.toString();
     }
+
 }

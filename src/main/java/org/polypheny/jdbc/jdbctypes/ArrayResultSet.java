@@ -487,7 +487,7 @@ public class ArrayResultSet<T> implements ResultSet {
     @Override
     public boolean last() throws SQLException {
         currentIndex = data.size() - 1;
-        current = data.get(data.size() - 1);
+        current = data.get( data.size() - 1 );
         return true;
     }
 
@@ -502,21 +502,21 @@ public class ArrayResultSet<T> implements ResultSet {
     @Override
     public boolean absolute( int row ) throws SQLException {
         row--;
-        if (row >= data.size()) {
+        if ( row >= data.size() ) {
             currentIndex = data.size();
             current = null;
             return false;
         }
-        if (row == -1) {
+        if ( row == -1 ) {
             currentIndex = -1;
             current = null;
             return false;
         }
-        if (row < 0) {
-            return absolute( data.size() + row + 1);
+        if ( row < 0 ) {
+            return absolute( data.size() + row + 1 );
         }
         currentIndex = row;
-        current = data.get(row);
+        current = data.get( row );
         return true;
     }
 
@@ -524,12 +524,12 @@ public class ArrayResultSet<T> implements ResultSet {
     @Override
     public boolean relative( int offset ) throws SQLException {
         int newCurrent = currentIndex + offset;
-        if (newCurrent < 0) {
+        if ( newCurrent < 0 ) {
             currentIndex = -1;
             current = null;
             return false;
         }
-        if (newCurrent >= data.size()) {
+        if ( newCurrent >= data.size() ) {
             // This is not an off by one error. An index set to the length of an array is positioned after the last element.
             currentIndex = data.size();
             current = null;
@@ -550,8 +550,8 @@ public class ArrayResultSet<T> implements ResultSet {
     @Override
     public void setFetchDirection( int fetchDirection ) throws SQLException {
         throwIfClosed();
-        if (fetchDirection != ResultSet.FETCH_FORWARD) {
-            throw new SQLException("Illegal fetch direction for this result set");
+        if ( fetchDirection != ResultSet.FETCH_FORWARD ) {
+            throw new SQLException( "Illegal fetch direction for this result set" );
         }
     }
 
@@ -564,8 +564,8 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public void setFetchSize( int fetchSize ) throws SQLException {
-        if (fetchSize < 0) {
-            throw new SQLException("Illegal value for fetchSize");
+        if ( fetchSize < 0 ) {
+            throw new SQLException( "Illegal value for fetchSize" );
         }
     }
 
@@ -610,289 +610,289 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public void updateNull( int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBoolean( int i, boolean b ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateByte( int i, byte b ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateShort( int i, short i1 ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateInt( int i, int i1 ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateLong( int i, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateFloat( int i, float v ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateDouble( int i, double v ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBigDecimal( int i, BigDecimal bigDecimal ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateString( int i, String s ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBytes( int i, byte[] bytes ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateDate( int i, Date date ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateTime( int i, Time time ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateTimestamp( int i, Timestamp timestamp ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateAsciiStream( int i, InputStream inputStream, int i1 ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBinaryStream( int i, InputStream inputStream, int i1 ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateCharacterStream( int i, Reader reader, int i1 ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateObject( int i, Object o, int i1 ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateObject( int i, Object o ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNull( String s ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBoolean( String s, boolean b ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateByte( String s, byte b ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateShort( String s, short i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateInt( String s, int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateLong( String s, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateFloat( String s, float v ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateDouble( String s, double v ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBigDecimal( String s, BigDecimal bigDecimal ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateString( String s, String s1 ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBytes( String s, byte[] bytes ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateDate( String s, Date date ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateTime( String s, Time time ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateTimestamp( String s, Timestamp timestamp ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateAsciiStream( String s, InputStream inputStream, int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBinaryStream( String s, InputStream inputStream, int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateCharacterStream( String s, Reader reader, int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateObject( String s, Object o, int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateObject( String s, Object o ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void insertRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void deleteRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void refreshRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void cancelRowUpdates() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void moveToInsertRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void moveToCurrentRow() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Statement getStatement() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Object getObject( int i, Map<String, Class<?>> map ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Ref getRef( int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
@@ -928,13 +928,13 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public Object getObject( String s, Map<String, Class<?>> map ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Ref getRef( String s ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
@@ -958,37 +958,37 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public Date getDate( int i, Calendar calendar ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Date getDate( String s, Calendar calendar ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Time getTime( int i, Calendar calendar ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Time getTime( String s, Calendar calendar ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Timestamp getTimestamp( int i, Calendar calendar ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public Timestamp getTimestamp( String s, Calendar calendar ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
@@ -1010,49 +1010,49 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public void updateRef( int i, Ref ref ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateRef( String s, Ref ref ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBlob( int i, Blob blob ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBlob( String s, Blob blob ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateClob( int i, Clob clob ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateClob( String s, Clob clob ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateArray( int i, Array array ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateArray( String s, Array array ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
@@ -1074,13 +1074,13 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public void updateRowId( int i, RowId rowId ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateRowId( String s, RowId rowId ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
@@ -1099,31 +1099,31 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public void updateNString( int i, String s ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNString( String s, String s1 ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNClob( int i, NClob nClob ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNClob( String s, NClob nClob ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public NClob getNClob( int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
@@ -1151,13 +1151,13 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public void updateSQLXML( int i, SQLXML sqlxml ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateSQLXML( String s, SQLXML sqlxml ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
@@ -1195,169 +1195,169 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public void updateNCharacterStream( int i, Reader reader, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNCharacterStream( String s, Reader reader, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateAsciiStream( int i, InputStream inputStream, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBinaryStream( int i, InputStream inputStream, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateCharacterStream( int i, Reader reader, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateAsciiStream( String s, InputStream inputStream, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBinaryStream( String s, InputStream inputStream, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateCharacterStream( String s, Reader reader, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBlob( int i, InputStream inputStream, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBlob( String s, InputStream inputStream, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateClob( int i, Reader reader, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateClob( String s, Reader reader, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNClob( int i, Reader reader, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNClob( String s, Reader reader, long l ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNCharacterStream( int i, Reader reader ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNCharacterStream( String s, Reader reader ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateAsciiStream( int i, InputStream inputStream ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBinaryStream( int i, InputStream inputStream ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateCharacterStream( int i, Reader reader ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateAsciiStream( String s, InputStream inputStream ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBinaryStream( String s, InputStream inputStream ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateCharacterStream( String s, Reader reader ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBlob( int i, InputStream inputStream ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateBlob( String s, InputStream inputStream ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateClob( int i, Reader reader ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateClob( String s, Reader reader ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNClob( int i, Reader reader ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
     @Override
     public void updateNClob( String s, Reader reader ) throws SQLException {
-        throw new SQLFeatureNotSupportedException("Operation not supported");
+        throw new SQLFeatureNotSupportedException( "Operation not supported" );
     }
 
 
@@ -1373,22 +1373,22 @@ public class ArrayResultSet<T> implements ResultSet {
 
     @Override
     public <T> T getObject( String s, Class<T> aClass ) throws SQLException {
-        return getObject( metadata.getColumnIndexFromLabel( s ), aClass);
+        return getObject( metadata.getColumnIndexFromLabel( s ), aClass );
     }
 
 
     @Override
-    public <T> T unwrap(Class<T> aClass) throws SQLException {
-        if (aClass.isInstance(this)) {
-            return aClass.cast(this);
+    public <T> T unwrap( Class<T> aClass ) throws SQLException {
+        if ( aClass.isInstance( this ) ) {
+            return aClass.cast( this );
         }
-        throw new SQLException("Not a wrapper for " + aClass);
+        throw new SQLException( "Not a wrapper for " + aClass );
     }
 
 
     @Override
-    public boolean isWrapperFor(Class<?> aClass) {
-        return aClass.isInstance(this);
+    public boolean isWrapperFor( Class<?> aClass ) {
+        return aClass.isInstance( this );
 
     }
 

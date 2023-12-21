@@ -86,6 +86,7 @@ public class PolyLong extends PolyNumber {
         }
     }
 
+
     @Override
     public int intValue() {
         return Math.toIntExact( value );
@@ -164,6 +165,7 @@ public class PolyLong extends PolyNumber {
         PolyLong polyLong = (PolyLong) o;
         return Objects.equals( value, polyLong.value );
     }
+
 
     @Override
     public String toString() {

@@ -42,22 +42,22 @@ public class ResultFetcher implements Runnable {
         long fetchEnd = totalFetched + properties.getStatementFetchSize();
         Frame nextFrame;
         try {
-            nextFrame = client.fetchResult( statementId, properties.getFetchSize(), fetchTimeout);
+            nextFrame = client.fetchResult( statementId, properties.getFetchSize(), fetchTimeout );
         } catch ( ProtoInterfaceServiceException e ) {
             throw new RuntimeException( e );
         }
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
-            throw new RuntimeException(new ProtoInterfaceServiceException( "Illegal result type." ));
+            throw new RuntimeException( new ProtoInterfaceServiceException( "Illegal result type." ) );
         }
         List<Row> rows = nextFrame.getRelationalFrame().getRowsList();
-        if (properties.getLargeMaxRows() != 0 && fetchEnd > properties.getLargeMaxRows()) {
+        if ( properties.getLargeMaxRows() != 0 && fetchEnd > properties.getLargeMaxRows() ) {
             long rowEndIndex = properties.getLargeMaxRows() - totalFetched;
-            if (rowEndIndex > Integer.MAX_VALUE) {
-                throw new RuntimeException("Should never be thrown");
+            if ( rowEndIndex > Integer.MAX_VALUE ) {
+                throw new RuntimeException( "Should never be thrown" );
             }
-            rows = rows.subList(0, (int) rowEndIndex);
+            rows = rows.subList( 0, (int) rowEndIndex );
         }
-        fetchedValues = TypedValueUtils.buildRows(rows);
+        fetchedValues = TypedValueUtils.buildRows( rows );
         totalFetched = totalFetched + rows.size();
         isLast = nextFrame.getIsLast();
 

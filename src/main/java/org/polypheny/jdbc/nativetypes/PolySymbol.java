@@ -45,7 +45,7 @@ public class PolySymbol extends PolyValue {
         try {
             return ((Enum) value).compareTo( o.asSymbol().value );
         } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown.");
+            throw new RuntimeException( "Should never be thrown." );
         }
     }
 

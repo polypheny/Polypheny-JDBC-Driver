@@ -25,10 +25,12 @@ import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 
 public class PolyTime extends PolyTemporal {
+
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
     public Integer ofDay;
 
     public ProtoTime.TimeUnit timeUnit;
+
 
     public PolyTime( int ofDay, ProtoTime.TimeUnit timeUnit ) {
         super( ProtoValue.ProtoValueType.TIME );
@@ -63,9 +65,12 @@ public class PolyTime extends PolyTemporal {
         return new PolyTime( (int) time, ProtoTime.TimeUnit.MILLISECOND );
     }
 
+
     public Time asSqlTime() {
         return new Time( ofDay );
     }
+
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !isTime() ) {
@@ -79,13 +84,16 @@ public class PolyTime extends PolyTemporal {
         }
     }
 
+
     @Override
     public Long getMilliSinceEpoch() {
         return Long.valueOf( ofDay );
     }
 
+
     @Override
     public String toString() {
         return ofDay.toString() + timeUnit.toString();
     }
+
 }

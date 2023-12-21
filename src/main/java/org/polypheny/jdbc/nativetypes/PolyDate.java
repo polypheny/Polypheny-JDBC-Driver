@@ -25,6 +25,7 @@ import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyDate extends PolyTemporal {
+
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
 
     @Getter
@@ -81,8 +82,10 @@ public class PolyDate extends PolyTemporal {
         }
     }
 
+
     @Override
     public String toString() {
         return milliSinceEpoch.toString();
     }
+
 }

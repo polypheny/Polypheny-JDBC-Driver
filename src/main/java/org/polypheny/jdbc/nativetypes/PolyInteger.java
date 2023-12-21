@@ -24,14 +24,18 @@ import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
-public class PolyInteger extends PolyNumber{
+public class PolyInteger extends PolyNumber {
+
     public static final PolyInteger ZERO = PolyInteger.of( 0 );
     public Integer value;
+
 
     public PolyInteger( Integer value ) {
         super( ProtoValueType.INTEGER );
         this.value = value;
     }
+
+
     public static PolyInteger of( byte value ) {
         return new PolyInteger( (int) value );
     }
@@ -64,6 +68,7 @@ public class PolyInteger extends PolyNumber{
         return value == null ? null : of( value );
     }
 
+
     @Override
     public boolean equals( Object o ) {
         if ( this == o ) {
@@ -85,6 +90,7 @@ public class PolyInteger extends PolyNumber{
         return false;
     }
 
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !o.isNumber() ) {
@@ -97,6 +103,7 @@ public class PolyInteger extends PolyNumber{
             throw new RuntimeException( "Should never be thrown!" );
         }
     }
+
 
     @Override
     public boolean isNull() {
@@ -120,6 +127,7 @@ public class PolyInteger extends PolyNumber{
                 String.format( "%s does not support conversion to %s.", value, value.type )
         );
     }
+
 
     @Override
     public long longValue() {
@@ -180,8 +188,10 @@ public class PolyInteger extends PolyNumber{
         return PolyInteger.of( -value );
     }
 
+
     @Override
     public String toString() {
         return value.toString();
     }
+
 }

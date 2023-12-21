@@ -27,6 +27,7 @@ import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyTimeStamp extends PolyTemporal {
+
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
 
     @Getter
@@ -65,7 +66,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public static PolyTimeStamp of( Timestamp value ) {
-        if ( value == null) {
+        if ( value == null ) {
             return null;
         }
         long time = value.getTime();

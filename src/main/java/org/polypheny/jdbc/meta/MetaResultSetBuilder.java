@@ -102,7 +102,7 @@ public class MetaResultSetBuilder {
 
     public static ResultSet buildFromColumns( List<Column> columns ) throws SQLException {
         // jdbc standard about columns: Rows are ordered by TABLE_CAT, TABLE_SCHEM, TABLE_NAME, and ORDINAL_POSITION
-        columns = columns.stream().sorted( MetaResultSetComparators.COLUMN_COMPARATOR ).collect( Collectors.toList());
+        columns = columns.stream().sorted( MetaResultSetComparators.COLUMN_COMPARATOR ).collect( Collectors.toList() );
         return buildResultSet(
                 "COLUMNS",
                 columns,
@@ -141,7 +141,7 @@ public class MetaResultSetBuilder {
 
     public static ResultSet buildFromDatabases( List<Database> databases ) throws SQLException {
         // jdbc standard about catalogs: Rows are ordered by TABLE_CAT ascending
-        databases = databases.stream().sorted( MetaResultSetComparators.DATABASE_COMPARATOR ).collect( Collectors.toList());
+        databases = databases.stream().sorted( MetaResultSetComparators.DATABASE_COMPARATOR ).collect( Collectors.toList() );
         return buildResultSet(
                 "CATALOGS",
                 databases,

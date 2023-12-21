@@ -16,14 +16,15 @@ class MetaResultSetParameter<T> {
     private final Function<T, Object> accessFunction;
 
 
-    MetaResultSetParameter(String name, int jdbcType, Function<T, Object> acessor) {
+    MetaResultSetParameter( String name, int jdbcType, Function<T, Object> acessor ) {
         this.name = name;
         this.jdbcType = jdbcType;
         this.accessFunction = acessor;
     }
 
 
-    TypedValue retrieveFrom(T message) throws SQLException {
-        return TypedValue.fromObject(accessFunction.apply(message), jdbcType);
+    TypedValue retrieveFrom( T message ) throws SQLException {
+        return TypedValue.fromObject( accessFunction.apply( message ), jdbcType );
     }
+
 }

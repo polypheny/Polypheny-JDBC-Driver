@@ -30,6 +30,7 @@ import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyEdge extends GraphPropertyHolder {
+
     public PolyString source;
     public PolyString target;
     public EdgeDirection direction;
@@ -73,15 +74,17 @@ public class PolyEdge extends GraphPropertyHolder {
         this.labels.add( labels.get( 0 ) );
     }
 
+
     public boolean isRange() {
         if ( from == null || to == null ) {
             return false;
         }
-        return !from.equals(to);
+        return !from.equals( to );
     }
 
+
     public int getMinLength() {
-        if ( from == null  ) {
+        if ( from == null ) {
             return 1;
         }
         return from;
@@ -113,6 +116,7 @@ public class PolyEdge extends GraphPropertyHolder {
         }
 
     }
+
 
     public enum EdgeDirection {
         LEFT_TO_RIGHT,

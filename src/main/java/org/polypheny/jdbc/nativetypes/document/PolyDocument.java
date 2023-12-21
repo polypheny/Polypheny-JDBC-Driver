@@ -38,7 +38,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     }
 
 
-    public static PolyDocument fromProto (ProtoDocument protoDocument ) {
+    public static PolyDocument fromProto( ProtoDocument protoDocument ) {
         return PolyValue.deserializeToPolyDocument( protoDocument );
     }
 
