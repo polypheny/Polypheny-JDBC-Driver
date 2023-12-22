@@ -19,10 +19,10 @@ package org.polypheny.jdbc.nativetypes;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyInteger extends PolyNumber {
 
@@ -31,7 +31,7 @@ public class PolyInteger extends PolyNumber {
 
 
     public PolyInteger( Integer value ) {
-        super( ProtoValueType.INTEGER );
+        super( ProtoPolyType.INTEGER );
         this.value = value;
     }
 

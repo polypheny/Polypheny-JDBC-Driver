@@ -19,9 +19,6 @@ option java_outer_classname = "ProtoInterfaceProto";
 package polypheny.protointerface;
 
 service ProtoInterface {
-  // NewMetaFunctions
-  rpc GetNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
-
   // Meta functions
   rpc GetDbmsVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}

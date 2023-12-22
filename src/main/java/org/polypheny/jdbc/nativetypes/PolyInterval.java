@@ -18,14 +18,14 @@ package org.polypheny.jdbc.nativetypes;
 
 import java.math.BigDecimal;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 
 public class PolyInterval extends PolyValue {
 
     public BigDecimal value;
 
 
-    public PolyInterval( BigDecimal value, ProtoValueType intervalType ) {
+    public PolyInterval( BigDecimal value, ProtoPolyType intervalType ) {
         super( intervalType );
         if ( !TypeUtils.INTERVAL_TYPES.contains( intervalType ) ) {
             throw new RuntimeException( "Type must be an interval type." );
@@ -34,7 +34,7 @@ public class PolyInterval extends PolyValue {
     }
 
 
-    public static PolyInterval of( BigDecimal value, ProtoValueType intervalType ) {
+    public static PolyInterval of( BigDecimal value, ProtoPolyType intervalType ) {
         return new PolyInterval( value, intervalType );
     }
 

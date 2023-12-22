@@ -5,7 +5,7 @@ import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 
 public class PolyphenyColumnMeta {
 
@@ -75,7 +75,7 @@ public class PolyphenyColumnMeta {
         this.writable = false;
         this.definitelyWritable = false;
         this.columnClassName = "";
-        if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoValueType.USER_DEFINED_TYPE ) {
+        if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoPolyType.USER_DEFINED_TYPE ) {
             //TODO handle structured meta
             throw new NotImplementedException( "Struct types not implemented yet" );
         } else {

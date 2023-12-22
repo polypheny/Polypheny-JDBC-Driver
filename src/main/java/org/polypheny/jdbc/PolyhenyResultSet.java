@@ -668,7 +668,7 @@ public class PolyhenyResultSet implements ResultSet {
         throwIfClosed();
         throwIfReadOnly();
         throwIfColumnIndexOutOfBounds( columnIndex );
-        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromInt( x ) );
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromInteger( x ) );
     }
 
 

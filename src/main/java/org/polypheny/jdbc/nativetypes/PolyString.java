@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyString extends PolyValue {
 
@@ -39,7 +39,7 @@ public class PolyString extends PolyValue {
 
 
     public PolyString( String value, Charset charset ) {
-        super( ProtoValueType.VARCHAR );
+        super( ProtoPolyType.VARCHAR );
         this.value = value;
         this.charset = charset;
     }

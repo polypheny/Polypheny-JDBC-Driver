@@ -23,9 +23,9 @@ import lombok.Value;
 import lombok.experimental.Delegate;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
@@ -37,11 +37,11 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
 
     public PolyMap( Map<K, V> map ) {
-        this( map, ProtoValueType.MAP );
+        this( map, ProtoPolyType.MAP );
     }
 
 
-    public PolyMap( Map<K, V> map, ProtoValueType type ) {
+    public PolyMap( Map<K, V> map, ProtoPolyType type ) {
         super( type );
         this.map = new HashMap<>( map );
     }

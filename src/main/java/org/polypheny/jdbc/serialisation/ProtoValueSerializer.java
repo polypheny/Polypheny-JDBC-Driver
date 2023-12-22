@@ -26,7 +26,7 @@ import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTime.TimeUnit;
 import org.polypheny.db.protointerface.proto.ProtoTimeStamp;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class ProtoValueSerializer {
@@ -90,7 +90,7 @@ public class ProtoValueSerializer {
             case Types.VARBINARY:
             case Types.LONGVARBINARY:
             case Types.BLOB:
-                // requires getter conversions to work propertly...
+                // requires getter conversions to work properly...
                 return serializeAsProtoBinary( typedValue );
             case Types.NULL:
                 return serializeAsProtoNull( typedValue );
@@ -145,7 +145,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setRowId( protoRowId )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -160,12 +159,11 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setList( protoList )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
 
-    private static ProtoValue.ProtoValueType getType( TypedValue typedValue ) {
+    private static ProtoPolyType getType( TypedValue typedValue ) {
         return JdbcToProtoTypeMap.getTypeOf( typedValue );
     }
 
@@ -176,7 +174,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setDouble( protoDouble )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -187,7 +184,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setFloat( protoFloat )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -198,7 +194,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setLong( protoLong )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -212,7 +207,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBigDecimal( protoBigDecimal )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -223,7 +217,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -234,7 +227,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setString( protoString )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -247,7 +239,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setTime( protoTime )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -258,7 +249,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setTimeStamp( protoTimeStamp )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -269,7 +259,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -277,7 +266,6 @@ public class ProtoValueSerializer {
     private static ProtoValue serializeAsProtoNull( TypedValue typedValue ) {
         return ProtoValue.newBuilder()
                 .setNull( ProtoNull.newBuilder().build() )
-                .setType( getType( typedValue ) )
                 .build();
     }
 
@@ -288,7 +276,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setBoolean( protoBoolean )
-                .setType( ProtoValueType.NULL )
                 .build();
     }
 
@@ -299,7 +286,6 @@ public class ProtoValueSerializer {
                 .build();
         return ProtoValue.newBuilder()
                 .setInteger( protoInteger )
-                .setType( getType( typedValue ) )
                 .build();
     }
 

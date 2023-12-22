@@ -35,9 +35,9 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.deserialization.ProtoValueDeserializer;
-import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
@@ -247,7 +247,7 @@ public class TypedValueUtils {
 
 
     public static int getJdbcTypeFromPolyTypeName( String polyTypeName ) {
-        return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoValue.ProtoValueType.valueOf( polyTypeName ) );
+        return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoPolyType.valueOf( polyTypeName ) );
     }
 
 
@@ -726,7 +726,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( value.shortValue() );
             case Types.INTEGER:
-                return TypedValue.fromInt( value.intValue() );
+                return TypedValue.fromInteger( value.intValue() );
             case Types.BIGINT:
                 return TypedValue.fromLong( value.longValue() );
             case Types.REAL:
@@ -757,7 +757,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( value.shortValue() );
             case Types.INTEGER:
-                return TypedValue.fromInt( value.intValue() );
+                return TypedValue.fromInteger( value.intValue() );
             case Types.BIGINT:
                 return TypedValue.fromLong( value.longValue() );
             case Types.REAL:
@@ -788,7 +788,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( value.shortValue() );
             case Types.INTEGER:
-                return TypedValue.fromInt( value.intValue() );
+                return TypedValue.fromInteger( value.intValue() );
             case Types.BIGINT:
                 return TypedValue.fromLong( value );
             case Types.REAL:
@@ -819,7 +819,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( value.shortValue() );
             case Types.INTEGER:
-                return TypedValue.fromInt( value );
+                return TypedValue.fromInteger( value );
             case Types.BIGINT:
                 return TypedValue.fromLong( value );
             case Types.REAL:
@@ -850,7 +850,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( value );
             case Types.INTEGER:
-                return TypedValue.fromInt( value );
+                return TypedValue.fromInteger( value );
             case Types.BIGINT:
                 return TypedValue.fromLong( value );
             case Types.REAL:
@@ -881,7 +881,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( value );
             case Types.INTEGER:
-                return TypedValue.fromInt( value );
+                return TypedValue.fromInteger( value );
             case Types.BIGINT:
                 return TypedValue.fromLong( value );
             case Types.REAL:
@@ -912,7 +912,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( getNumberFromBoolean( value ).shortValue() );
             case Types.INTEGER:
-                return TypedValue.fromInt( getNumberFromBoolean( value ).intValue() );
+                return TypedValue.fromInteger( getNumberFromBoolean( value ).intValue() );
             case Types.BIGINT:
                 return TypedValue.fromLong( getNumberFromBoolean( value ).longValue() );
             case Types.REAL:
@@ -943,7 +943,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( value.shortValue() );
             case Types.INTEGER:
-                return TypedValue.fromInt( value.intValue() );
+                return TypedValue.fromInteger( value.intValue() );
             case Types.BIGINT:
                 return TypedValue.fromLong( value.longValue() );
             case Types.REAL:
@@ -974,7 +974,7 @@ public class TypedValueUtils {
             case Types.SMALLINT:
                 return TypedValue.fromShort( Short.parseShort( value ) );
             case Types.INTEGER:
-                return TypedValue.fromInt( Integer.parseInt( value ) );
+                return TypedValue.fromInteger( Integer.parseInt( value ) );
             case Types.BIGINT:
                 return TypedValue.fromLong( Long.parseLong( value ) );
             case Types.REAL:

@@ -16,9 +16,9 @@
 
 package org.polypheny.jdbc.nativetypes.graph;
 
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.nativetypes.PolyString;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public abstract class GraphObject extends PolyValue {
 
@@ -26,7 +26,7 @@ public abstract class GraphObject extends PolyValue {
     public PolyString variableName;
 
 
-    protected GraphObject( PolyString id, ProtoValueType type, PolyString variableName ) {
+    protected GraphObject( PolyString id, ProtoPolyType type, PolyString variableName ) {
         super( type );
         this.id = id;
         this.variableName = variableName;

@@ -17,12 +17,12 @@
 package org.polypheny.jdbc.nativetypes.category;
 
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.nativetypes.PolyValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyBlob extends PolyValue {
 
-    public PolyBlob( ProtoValueType type ) {
+    public PolyBlob( ProtoPolyType type ) {
         super( type );
     }
 

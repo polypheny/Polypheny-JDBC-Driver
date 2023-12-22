@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyBlob;
@@ -48,15 +49,15 @@ import org.polypheny.db.protointerface.proto.ProtoMap;
 import org.polypheny.db.protointerface.proto.ProtoNode;
 import org.polypheny.db.protointerface.proto.ProtoUserDefinedType;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 
 public abstract class PolyValue implements Comparable<PolyValue> {
 
-    public ProtoValue.ProtoValueType type;
+    public ProtoPolyType type;
 
 
-    public PolyValue( ProtoValueType type ) {
+    public PolyValue( ProtoPolyType type ) {
         this.type = type;
     }
 
@@ -67,7 +68,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isNull() {
-        return type == ProtoValue.ProtoValueType.NULL;
+        return type == ProtoPolyType.NULL;
     }
 
 
@@ -77,7 +78,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isBoolean() {
-        return type == ProtoValue.ProtoValueType.BOOLEAN;
+        return type == ProtoPolyType.BOOLEAN;
     }
 
 
@@ -100,7 +101,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isInteger() {
-        return type == ProtoValue.ProtoValueType.INTEGER;
+        return type == ProtoPolyType.INTEGER;
     }
 
 
@@ -115,7 +116,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isDocument() {
-        return type == ProtoValue.ProtoValueType.DOCUMENT;
+        return type == ProtoPolyType.DOCUMENT;
     }
 
 
@@ -129,7 +130,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isList() {
-        return type == ProtoValue.ProtoValueType.ARRAY;
+        return type == ProtoPolyType.ARRAY;
     }
 
 
@@ -143,7 +144,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isString() {
-        return type == ProtoValue.ProtoValueType.VARCHAR;
+        return type == ProtoPolyType.VARCHAR;
     }
 
 
@@ -157,7 +158,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isBinary() {
-        return type == ProtoValue.ProtoValueType.BINARY;
+        return type == ProtoPolyType.BINARY;
     }
 
 
@@ -171,7 +172,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isBigDecimal() {
-        return type == ProtoValue.ProtoValueType.DECIMAL;
+        return type == ProtoPolyType.DECIMAL;
     }
 
 
@@ -186,7 +187,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isFloat() {
-        return type == ProtoValue.ProtoValueType.FLOAT;
+        return type == ProtoPolyType.FLOAT;
     }
 
 
@@ -201,7 +202,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isDouble() {
-        return type == ProtoValue.ProtoValueType.DOUBLE;
+        return type == ProtoPolyType.DOUBLE;
     }
 
 
@@ -216,7 +217,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isLong() {
-        return type == ProtoValue.ProtoValueType.BIGINT;
+        return type == ProtoPolyType.BIGINT;
     }
 
 
@@ -244,7 +245,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isDate() {
-        return type == ProtoValue.ProtoValueType.DATE;
+        return type == ProtoPolyType.DATE;
     }
 
 
@@ -258,7 +259,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isTime() {
-        return type == ProtoValue.ProtoValueType.TIME;
+        return type == ProtoPolyType.TIME;
     }
 
 
@@ -273,7 +274,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isTimestamp() {
-        return type == ProtoValue.ProtoValueType.TIMESTAMP;
+        return type == ProtoPolyType.TIMESTAMP;
     }
 
 
@@ -288,7 +289,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isMap() {
-        return type == ProtoValue.ProtoValueType.MAP;
+        return type == ProtoPolyType.MAP;
     }
 
 
@@ -302,7 +303,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isEdge() {
-        return type == ProtoValue.ProtoValueType.EDGE;
+        return type == ProtoPolyType.EDGE;
     }
 
 
@@ -316,7 +317,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isNode() {
-        return type == ProtoValue.ProtoValueType.NODE;
+        return type == ProtoPolyType.NODE;
     }
 
 
@@ -330,12 +331,12 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isPath() {
-        return type == ProtoValue.ProtoValueType.PATH;
+        return type == ProtoPolyType.PATH;
     }
 
 
     public boolean isGraph() {
-        return type == ProtoValue.ProtoValueType.GRAPH;
+        return type == ProtoPolyType.GRAPH;
     }
 
 
@@ -375,7 +376,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isSymbol() {
-        return type == ProtoValue.ProtoValueType.SYMBOL;
+        return type == ProtoPolyType.SYMBOL;
     }
 
 
@@ -402,7 +403,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isUserDefinedValue() {
-        return ProtoValue.ProtoValueType.USER_DEFINED_TYPE == type;
+        return ProtoPolyType.USER_DEFINED_TYPE == type;
     }
 
 
@@ -415,34 +416,17 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public static PolyValue fromProto( ProtoValue protoValue ) {
-        switch ( protoValue.getType() ) {
-            case UNSPECIFIED:
+        switch ( protoValue.getValueCase() ) {
             case ROW_ID:
-            case DISTINCT:
-            case STRUCTURED:
-            case ROW:
-            case OTHER:
-            case CURSOR:
-            case COLUMN_LIST:
-            case DYNAMIC_STAR:
-            case GEOMETRY:
-            case SYMBOL:
-            case JSON:
-            case MULTISET:
-            case ANY:
-            case UNRECOGNIZED:
                 throw new RuntimeException( "Should never be thrown." );
             case BOOLEAN:
                 return new PolyBoolean( protoValue.getBoolean().getBoolean() );
-            case TINYINT:
-            case SMALLINT:
             case INTEGER:
                 return new PolyInteger( protoValue.getInteger().getInteger() );
-            case BIGINT:
+            case LONG:
                 return new PolyLong( protoValue.getLong().getLong() );
-            case DECIMAL:
+            case BIG_DECIMAL:
                 return deserializeToPolyBigDecimal( protoValue.getBigDecimal() );
-            case REAL:
             case FLOAT:
                 return new PolyFloat( protoValue.getFloat().getFloat() );
             case DOUBLE:
@@ -451,36 +435,18 @@ public abstract class PolyValue implements Comparable<PolyValue> {
                 return new PolyDate( protoValue.getDate().getDate() );
             case TIME:
                 return new PolyTime( protoValue.getTime().getValue(), protoValue.getTime().getTimeUnit() );
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                throw new NotImplementedException( "Conversion from time with local timezone not yet implemented." );
-            case TIMESTAMP:
-                return new PolyTimeStamp( protoValue.getTimeStamp().getTimeStamp() );
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                throw new NotImplementedException( "Conversion from timestamp with local timezone not yet implemented." );
-            case INTERVAL_SECOND:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY:
-            case INTERVAL_MONTH:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_YEAR:
+            case TIME_STAMP:
+                return new PolyTimeStamp(protoValue.getTimeStamp().getTimeStamp());
+            case INTERVAL:
                 BigDecimal value = deserializeToBigDecimal( protoValue.getInterval().getValue() );
-                return new PolyInterval( value, protoValue.getType() );
-            case CHAR:
-            case VARCHAR:
+                return new PolyInterval( value, ProtoPolyType.UNSPECIFIED ); // TODO: Fix type
+            case STRING:
                 return new PolyString( protoValue.getString().getString() );
             case BINARY:
-            case VARBINARY:
                 return new PolyBinary( protoValue.getBinary().getBinary().toByteArray() );
             case NULL:
                 return new PolyNull();
-            case ARRAY:
+            case LIST:
                 return deserializeToPolyList( protoValue.getList() );
             case MAP:
                 return deserializeToPolyMap( protoValue.getMap() );
@@ -494,11 +460,8 @@ public abstract class PolyValue implements Comparable<PolyValue> {
                 return deserializeToPolyEdge( protoValue.getEdge() );
             case PATH:
                 throw new NotImplementedException( "Conversion from path with local timezone not yet implemented." );
-            case IMAGE:
-            case VIDEO:
-            case AUDIO:
             case FILE:
-                return new PolyBinary( protoValue.getBinary().getBinary().toByteArray(), protoValue.getType() );
+                return new PolyBinary( protoValue.getBinary().getBinary().toByteArray(), ProtoPolyType.FILE ); // TODO: Fix type
             case USER_DEFINED_TYPE:
                 return deserializeToPolyUserDefinedType( protoValue.getUserDefinedType() );
         }

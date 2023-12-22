@@ -223,7 +223,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setInt( int parameterIndex, int x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromInt( x );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromInteger( x );
     }
 
 

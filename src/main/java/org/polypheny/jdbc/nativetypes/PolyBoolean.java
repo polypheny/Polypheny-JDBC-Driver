@@ -18,8 +18,8 @@ package org.polypheny.jdbc.nativetypes;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyBoolean extends PolyValue {
 
@@ -30,7 +30,7 @@ public class PolyBoolean extends PolyValue {
 
 
     public PolyBoolean( Boolean value ) {
-        super( ProtoValueType.BOOLEAN );
+        super( ProtoPolyType.BOOLEAN );
         this.value = value;
     }
 

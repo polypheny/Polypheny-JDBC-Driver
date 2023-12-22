@@ -587,7 +587,7 @@ public class TypedValueTest {
 
     @Test
     public void fromIntWithValidInteger() {
-        TypedValue typedValue = TypedValue.fromInt( 10 );
+        TypedValue typedValue = TypedValue.fromInteger( 10 );
 
         assertEquals( Types.INTEGER, typedValue.getJdbcType() );
         assertEquals( 10, typedValue.getValue() );

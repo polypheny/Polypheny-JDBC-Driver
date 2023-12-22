@@ -22,9 +22,9 @@ import java.util.Date;
 import java.util.TimeZone;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyTimeStamp extends PolyTemporal {
 
@@ -35,7 +35,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public PolyTimeStamp( Long milliSinceEpoch ) {
-        super( ProtoValueType.TIMESTAMP );
+        super( ProtoPolyType.TIMESTAMP );
         this.milliSinceEpoch = milliSinceEpoch;
     }
 

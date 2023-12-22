@@ -10,7 +10,7 @@ public class LongDeserializer implements ValueDeserializer {
 
     @Override
     public TypedValue deserializeToTypedValue( ProtoValue value ) throws SQLException {
-        int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getType() );
+        int jdbcType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( value.getValueCase() );
         switch ( jdbcType ) {
             case Types.BIGINT:
                 Long l = deserializeToLong( value.getLong() );

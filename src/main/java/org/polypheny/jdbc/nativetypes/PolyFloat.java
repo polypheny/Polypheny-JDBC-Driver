@@ -19,9 +19,9 @@ package org.polypheny.jdbc.nativetypes;
 import java.math.BigDecimal;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyFloat extends PolyNumber {
 
@@ -29,7 +29,7 @@ public class PolyFloat extends PolyNumber {
 
 
     public PolyFloat( Float value ) {
-        super( ProtoValueType.FLOAT );
+        super( ProtoPolyType.FLOAT );
         this.value = value;
     }
 

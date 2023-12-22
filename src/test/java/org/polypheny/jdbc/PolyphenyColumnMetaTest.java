@@ -16,7 +16,7 @@ import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.TypeMeta;
 
 public class PolyphenyColumnMetaTest {
@@ -36,7 +36,7 @@ public class PolyphenyColumnMetaTest {
     private static final String ENTITY_NAME = "ENTITY_NAME";
     private static final String SCHEMA_NAME = "SCHEMA_NAME";
     private static final String NAMESPACE_NAME = "NAMESPACE_NAME";
-    private static final ProtoValue.ProtoValueType VALUE_TYPE = ProtoValueType.BIGINT;
+    private static final ProtoPolyType VALUE_TYPE = ProtoPolyType.BIGINT;
     private static final int JDBC_TYPE = Types.NCLOB;
 
 

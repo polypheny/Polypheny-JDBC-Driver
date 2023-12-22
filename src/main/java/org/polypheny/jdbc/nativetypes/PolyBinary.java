@@ -18,7 +18,7 @@ package org.polypheny.jdbc.nativetypes;
 
 import java.util.Base64;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 
 public class PolyBinary extends PolyValue {
 
@@ -27,12 +27,12 @@ public class PolyBinary extends PolyValue {
 
 
     public PolyBinary( byte[] value ) {
-        super( ProtoValueType.BINARY );
+        super( ProtoPolyType.BINARY );
         this.value = value;
     }
 
 
-    public PolyBinary( byte[] value, ProtoValueType type ) {
+    public PolyBinary( byte[] value, ProtoPolyType type ) {
         super( type );
         if ( !TypeUtils.BLOB_TYPES.contains( type ) ) {
             throw new RuntimeException( "Should never be thrown." );

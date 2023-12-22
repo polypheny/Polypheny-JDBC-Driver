@@ -18,10 +18,10 @@ package org.polypheny.jdbc.nativetypes.graph;
 
 import java.util.List;
 import java.util.Map.Entry;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.nativetypes.PolyList;
 import org.polypheny.jdbc.nativetypes.PolyString;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public abstract class GraphPropertyHolder extends GraphObject {
 
@@ -29,7 +29,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
     public final PolyList<PolyString> labels;
 
 
-    public GraphPropertyHolder( PolyString id, ProtoValueType type, PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {
+    public GraphPropertyHolder( PolyString id, ProtoPolyType type, PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {
         super( id, type, variableName );
         this.properties = properties;
         this.labels = PolyList.of( labels );

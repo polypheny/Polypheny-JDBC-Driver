@@ -3,57 +3,56 @@ package org.polypheny.jdbc.serialisation;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Types;
 import java.util.Map;
-import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class JdbcToProtoTypeMap {
 
-    private static final Map<Integer, ProtoValue.ProtoValueType> JDBC_TYPE_TO_PROTO =
-            ImmutableMap.<Integer, ProtoValue.ProtoValueType>builder()
-                    .put( Types.TINYINT, ProtoValueType.INTEGER )
-                    .put( Types.SMALLINT, ProtoValueType.INTEGER )
-                    .put( Types.INTEGER, ProtoValueType.INTEGER )
-                    .put( Types.BIT, ProtoValueType.BOOLEAN )
-                    .put( Types.BOOLEAN, ProtoValueType.BOOLEAN )
-                    .put( Types.BIGINT, ProtoValueType.BIGINT )
-                    .put( Types.FLOAT, ProtoValueType.DOUBLE )
-                    .put( Types.REAL, ProtoValueType.DOUBLE )
-                    .put( Types.DOUBLE, ProtoValueType.DOUBLE )
-                    .put( Types.NUMERIC, ProtoValueType.DECIMAL )
-                    .put( Types.DECIMAL, ProtoValueType.DECIMAL )
-                    .put( Types.CHAR, ProtoValueType.VARCHAR )
-                    .put( Types.VARCHAR, ProtoValueType.VARCHAR )
-                    .put( Types.LONGVARCHAR, ProtoValueType.VARCHAR )
-                    .put( Types.NCHAR, ProtoValueType.VARCHAR )
-                    .put( Types.NVARCHAR, ProtoValueType.VARCHAR )
-                    .put( Types.LONGNVARCHAR, ProtoValueType.VARCHAR )
-                    .put( Types.DATE, ProtoValueType.DATE )
-                    .put( Types.TIME, ProtoValueType.DATE )
-                    .put( Types.TIMESTAMP, ProtoValueType.TIMESTAMP )
-                    .put( Types.BINARY, ProtoValueType.BINARY )
-                    .put( Types.VARBINARY, ProtoValueType.BINARY )
-                    .put( Types.LONGVARBINARY, ProtoValueType.BINARY )
-                    .put( Types.NULL, ProtoValueType.NULL )
-                    .put( Types.OTHER, ProtoValueType.UNSPECIFIED )
-                    .put( Types.JAVA_OBJECT, ProtoValueType.UNSPECIFIED )
-                    .put( Types.DISTINCT, ProtoValueType.UNSPECIFIED )
-                    .put( Types.STRUCT, ProtoValueType.USER_DEFINED_TYPE )
-                    .put( Types.ARRAY, ProtoValueType.ARRAY )
-                    .put( Types.BLOB, ProtoValueType.BINARY )
-                    .put( Types.CLOB, ProtoValueType.BINARY )
-                    .put( Types.REF, ProtoValueType.UNSPECIFIED )
-                    .put( Types.DATALINK, ProtoValueType.UNSPECIFIED )
-                    .put( Types.ROWID, ProtoValueType.ROW_ID )
-                    .put( Types.NCLOB, ProtoValueType.BINARY )
-                    .put( Types.SQLXML, ProtoValueType.UNSPECIFIED )
-                    .put( Types.REF_CURSOR, ProtoValueType.UNSPECIFIED )
-                    .put( Types.TIME_WITH_TIMEZONE, ProtoValueType.TIME )
-                    .put( Types.TIMESTAMP_WITH_TIMEZONE, ProtoValueType.TIMESTAMP )
+    private static final Map<Integer, ProtoPolyType> JDBC_TYPE_TO_PROTO =
+            ImmutableMap.<Integer, ProtoPolyType>builder()
+                    .put( Types.TINYINT, ProtoPolyType.INTEGER )
+                    .put( Types.SMALLINT, ProtoPolyType.INTEGER )
+                    .put( Types.INTEGER, ProtoPolyType.INTEGER )
+                    .put( Types.BIT, ProtoPolyType.BOOLEAN )
+                    .put( Types.BOOLEAN, ProtoPolyType.BOOLEAN )
+                    .put( Types.BIGINT, ProtoPolyType.BIGINT )
+                    .put( Types.FLOAT, ProtoPolyType.DOUBLE )
+                    .put( Types.REAL, ProtoPolyType.DOUBLE )
+                    .put( Types.DOUBLE, ProtoPolyType.DOUBLE )
+                    .put( Types.NUMERIC, ProtoPolyType.DECIMAL )
+                    .put( Types.DECIMAL, ProtoPolyType.DECIMAL )
+                    .put( Types.CHAR, ProtoPolyType.VARCHAR )
+                    .put( Types.VARCHAR, ProtoPolyType.VARCHAR )
+                    .put( Types.LONGVARCHAR, ProtoPolyType.VARCHAR )
+                    .put( Types.NCHAR, ProtoPolyType.VARCHAR )
+                    .put( Types.NVARCHAR, ProtoPolyType.VARCHAR )
+                    .put( Types.LONGNVARCHAR, ProtoPolyType.VARCHAR )
+                    .put( Types.DATE, ProtoPolyType.DATE )
+                    .put( Types.TIME, ProtoPolyType.DATE )
+                    .put( Types.TIMESTAMP, ProtoPolyType.TIMESTAMP )
+                    .put( Types.BINARY, ProtoPolyType.BINARY )
+                    .put( Types.VARBINARY, ProtoPolyType.BINARY )
+                    .put( Types.LONGVARBINARY, ProtoPolyType.BINARY )
+                    .put( Types.NULL, ProtoPolyType.NULL )
+                    .put( Types.OTHER, ProtoPolyType.UNSPECIFIED )
+                    .put( Types.JAVA_OBJECT, ProtoPolyType.UNSPECIFIED )
+                    .put( Types.DISTINCT, ProtoPolyType.UNSPECIFIED )
+                    .put( Types.STRUCT, ProtoPolyType.USER_DEFINED_TYPE )
+                    .put( Types.ARRAY, ProtoPolyType.ARRAY )
+                    .put( Types.BLOB, ProtoPolyType.BINARY )
+                    .put( Types.CLOB, ProtoPolyType.BINARY )
+                    .put( Types.REF, ProtoPolyType.UNSPECIFIED )
+                    .put( Types.DATALINK, ProtoPolyType.UNSPECIFIED )
+                    .put( Types.ROWID, ProtoPolyType.ROW_ID )
+                    .put( Types.NCLOB, ProtoPolyType.BINARY )
+                    .put( Types.SQLXML, ProtoPolyType.UNSPECIFIED )
+                    .put( Types.REF_CURSOR, ProtoPolyType.UNSPECIFIED )
+                    .put( Types.TIME_WITH_TIMEZONE, ProtoPolyType.TIME )
+                    .put( Types.TIMESTAMP_WITH_TIMEZONE, ProtoPolyType.TIMESTAMP )
                     .build();
 
 
-    public static ProtoValueType getTypeOf( TypedValue typedValue ) {
+    public static ProtoPolyType getTypeOf( TypedValue typedValue ) {
         return JDBC_TYPE_TO_PROTO.get( typedValue.getJdbcType() );
     }
 

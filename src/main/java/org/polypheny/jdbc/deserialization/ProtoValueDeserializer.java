@@ -1,45 +1,54 @@
 package org.polypheny.jdbc.deserialization;
 
 
-import com.google.common.collect.ImmutableMap;
 import java.sql.SQLException;
-import java.util.Map;
+import java.sql.Types;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class ProtoValueDeserializer {
 
-    private static final Map<ProtoValue.ValueCase, ValueDeserializer> VALUE_DESERIALIZERS =
-            ImmutableMap.<ProtoValue.ValueCase, ValueDeserializer>builder()
-                    .put( ValueCase.BOOLEAN, new BooleanDeserializer() )
-                    .put( ValueCase.INTEGER, new IntegerDeserializer() )
-                    .put( ValueCase.LONG, new LongDeserializer() )
-                    .put( ValueCase.BINARY, new BinaryDeserializer() )
-                    .put( ValueCase.DATE, new DateDeserializer() )
-                    .put( ValueCase.DOUBLE, new DoubleDeserializer() )
-                    .put( ValueCase.FLOAT, new FloatDeserializer() )
-                    .put( ValueCase.NULL, new NullDeserializer() )
-                    .put( ValueCase.STRING, new StringDeserializer() )
-                    .put( ValueCase.TIME, new TimeDeserializer() )
-                    .put( ValueCase.TIME_STAMP, new TimeStampDeserializer() )
-                    .put( ValueCase.BIG_DECIMAL, new BigDecimalDeserializer() )
-                    .put( ValueCase.INTERVAL, new IntervalDeserializer() )
-                    .put( ValueCase.USER_DEFINED_TYPE, new UserDefinedTypeDeserializer() )
-                    .put( ValueCase.LIST, new ListDeserializer() )
-                    .put( ValueCase.MAP, new MapDeserializer() )
-                    .put( ValueCase.DOCUMENT, new DocumentDeserializer() )
-                    .put( ValueCase.NODE, new NodeDeserializer() )
-                    .put( ValueCase.EDGE, new EdgeDeserializer() )
-                    .put( ValueCase.PATH, new PathDeserializer() )
-                    .put( ValueCase.GRAPH, new GraphDeserializer() )
-                    .put( ValueCase.ROW_ID, new RowIdDeserializer() )
-                    .build();
-
-
     public static TypedValue deserializeToTypedValue( ProtoValue value ) {
+        // TODO Java 17: Convert to switch expression
         try {
-            return VALUE_DESERIALIZERS.get( value.getValueCase() ).deserializeToTypedValue( value );
+            switch ( value.getValueCase() ) {
+                case BOOLEAN:
+                    return TypedValue.fromBoolean( value.getBoolean().getBoolean() );
+                case INTEGER:
+                    return TypedValue.fromInteger( value.getInteger().getInteger() );
+                case LONG:
+                    return TypedValue.fromLong( value.getLong().getLong() );
+                case BINARY:
+                    return TypedValue.fromObject( value.getBinary().getBinary(), Types.BINARY );
+                case DATE:
+                    return TypedValue.fromObject( value.getDate().getDate(), Types.DATE );
+                case DOUBLE:
+                    return TypedValue.fromDouble( value.getDouble().getDouble() );
+                case FLOAT:
+                    // according to jdbc appendix B.1 floats should internally be represented as doubles
+                    return TypedValue.fromDouble( value.getFloat().getFloat() );
+                case NULL:
+                    return TypedValue.fromNull( Types.NULL );
+                case STRING:
+                    return TypedValue.fromString( value.getString().getString() );
+                case TIME:
+                    return TypedValue.fromObject( value.getTime().getValue(), Types.TIME ); // TODO
+                case TIME_STAMP:
+                    return TypedValue.fromObject( value.getTimeStamp().getTimeStamp(), Types.TIMESTAMP );
+                case BIG_DECIMAL:
+                case INTERVAL:
+                case USER_DEFINED_TYPE:
+                case LIST:
+                case MAP:
+                case DOCUMENT:
+                case NODE:
+                case EDGE:
+                case PATH:
+                case GRAPH:
+                case ROW_ID:
+                default:
+                    throw new RuntimeException( "Cannot deserialize ProtoValue of case " + value.getValueCase() );
+            }
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }

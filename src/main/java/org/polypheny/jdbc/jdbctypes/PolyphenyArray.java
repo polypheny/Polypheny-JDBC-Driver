@@ -29,7 +29,7 @@ import java.util.Map;
 import org.polypheny.jdbc.PolyhenyResultSet;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 
 public class PolyphenyArray implements Array {
 
@@ -74,7 +74,7 @@ public class PolyphenyArray implements Array {
 
     @Override
     public int getBaseType() {
-        return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoValueType.valueOf( protoBaseTypeName ) );
+        return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoPolyType.valueOf( protoBaseTypeName ) );
     }
 
 
@@ -123,7 +123,7 @@ public class PolyphenyArray implements Array {
         ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
         for ( int i = 1; i < elements.length; i++ ) {
             ArrayList<TypedValue> currentRow = new ArrayList<>();
-            currentRow.add( TypedValue.fromInt( i ) );
+            currentRow.add( TypedValue.fromInteger( i ) );
             currentRow.add( TypedValue.fromObject( elements[i], jdbcBaseType ) );
             rows.add( currentRow );
         }

@@ -21,10 +21,10 @@ import java.math.MathContext;
 import java.util.Objects;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyLong extends PolyNumber {
 
@@ -32,13 +32,13 @@ public class PolyLong extends PolyNumber {
 
 
     public PolyLong( Long value ) {
-        super( ProtoValueType.BIGINT );
+        super( ProtoPolyType.BIGINT );
         this.value = value;
     }
 
 
     public PolyLong( long value ) {
-        super( ProtoValueType.BIGINT );
+        super( ProtoPolyType.BIGINT );
         this.value = value;
     }
 

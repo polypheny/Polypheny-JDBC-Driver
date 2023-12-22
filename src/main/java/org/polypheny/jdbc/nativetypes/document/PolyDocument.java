@@ -18,16 +18,16 @@ package org.polypheny.jdbc.nativetypes.document;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.nativetypes.PolyString;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.nativetypes.relational.PolyMap;
 import org.polypheny.db.protointerface.proto.ProtoDocument;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     public PolyDocument( Map<PolyString, PolyValue> value ) {
-        super( value, ProtoValueType.DOCUMENT );
+        super( value, ProtoPolyType.DOCUMENT );
     }
 
 

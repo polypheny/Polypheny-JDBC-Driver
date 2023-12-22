@@ -19,10 +19,10 @@ package org.polypheny.jdbc.nativetypes.graph;
 import java.util.Map;
 import java.util.UUID;
 import lombok.NonNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyString;
 import org.polypheny.jdbc.nativetypes.PolyValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public class PolyGraph extends GraphObject {
 
@@ -36,7 +36,7 @@ public class PolyGraph extends GraphObject {
 
 
     public PolyGraph( PolyString id, @NonNull Map<PolyString, PolyNode> nodes, @NonNull Map<PolyString, PolyEdge> edges ) {
-        super( id, ProtoValueType.GRAPH, null );
+        super( id, ProtoPolyType.GRAPH, null );
         this.nodes = nodes;
         this.edges = edges;
     }

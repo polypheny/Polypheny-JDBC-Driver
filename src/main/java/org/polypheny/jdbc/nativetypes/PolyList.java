@@ -24,8 +24,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.Delegate;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "copyOf")
@@ -36,7 +36,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
 
     public PolyList( List<E> value ) {
-        super( ProtoValueType.ARRAY );
+        super( ProtoPolyType.ARRAY );
         this.value = new ArrayList<>( value );
     }
 

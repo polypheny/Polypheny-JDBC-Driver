@@ -104,7 +104,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue fromInt( int value ) {
+    public static TypedValue fromInteger( int value ) {
         return new TypedValue( Types.INTEGER, value );
     }
 

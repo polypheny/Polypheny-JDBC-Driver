@@ -20,18 +20,18 @@ import java.util.Map;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 
 public class PolyUserDefinedValue extends PolyValue {
 
     @Getter
-    private final Map<String, ProtoValueType> template;
+    private final Map<String, ProtoPolyType> template;
     @Getter
     private final Map<String, PolyValue> value;
 
 
-    public PolyUserDefinedValue( Map<String, ProtoValueType> template, Map<String, PolyValue> value ) {
-        super( ProtoValueType.USER_DEFINED_TYPE );
+    public PolyUserDefinedValue( Map<String, ProtoPolyType> template, Map<String, PolyValue> value ) {
+        super( ProtoPolyType.USER_DEFINED_TYPE );
         this.template = template;
         this.value = value;
     }

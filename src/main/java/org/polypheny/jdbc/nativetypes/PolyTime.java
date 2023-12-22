@@ -19,6 +19,7 @@ package org.polypheny.jdbc.nativetypes;
 import java.sql.Time;
 import java.util.TimeZone;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
 import org.polypheny.db.protointerface.proto.ProtoTime;
@@ -33,7 +34,7 @@ public class PolyTime extends PolyTemporal {
 
 
     public PolyTime( int ofDay, ProtoTime.TimeUnit timeUnit ) {
-        super( ProtoValue.ProtoValueType.TIME );
+        super( ProtoPolyType.TIME );
         this.ofDay = ofDay;
         this.timeUnit = timeUnit;
     }

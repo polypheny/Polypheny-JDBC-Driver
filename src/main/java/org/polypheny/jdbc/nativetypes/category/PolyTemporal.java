@@ -18,8 +18,8 @@ package org.polypheny.jdbc.nativetypes.category;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.nativetypes.PolyValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 
 public abstract class PolyTemporal extends PolyValue {
 
@@ -29,7 +29,7 @@ public abstract class PolyTemporal extends PolyValue {
     public abstract Long getMilliSinceEpoch();
 
 
-    public PolyTemporal( ProtoValueType type ) {
+    public PolyTemporal( ProtoPolyType type ) {
         super( type );
     }
 
