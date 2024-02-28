@@ -33,8 +33,8 @@ public class ProtoValueDeserializer {
                     return TypedValue.fromString( value.getString().getString() );
                 case TIME:
                     return TypedValue.fromObject( value.getTime().getValue(), Types.TIME ); // TODO
-                case TIME_STAMP:
-                    return TypedValue.fromObject( value.getTimeStamp().getTimeStamp(), Types.TIMESTAMP );
+                case TIMESTAMP:
+                    return TypedValue.fromObject( value.getTimestamp().getTimestamp(), Types.TIMESTAMP );
                 case BIG_DECIMAL:
                 case INTERVAL:
                 case USER_DEFINED_TYPE:

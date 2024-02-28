@@ -30,18 +30,16 @@ public class PolyTime extends PolyTemporal {
     public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
     public Integer ofDay;
 
-    public ProtoTime.TimeUnit timeUnit;
 
 
-    public PolyTime( int ofDay, ProtoTime.TimeUnit timeUnit ) {
+    public PolyTime( int ofDay ) {
         super( ProtoPolyType.TIME );
         this.ofDay = ofDay;
-        this.timeUnit = timeUnit;
     }
 
 
     public static PolyTime of( Number value ) {
-        return new PolyTime( value.intValue(), ProtoTime.TimeUnit.MILLISECOND );
+        return new PolyTime( value.intValue() );
     }
 
 
@@ -56,14 +54,14 @@ public class PolyTime extends PolyTemporal {
 
 
     public static PolyTime of( Integer value ) {
-        return new PolyTime( value, ProtoTime.TimeUnit.MILLISECOND );
+        return new PolyTime( value );
     }
 
 
     public static PolyTime of( Time value ) {
         long time = value.getTime();
         time = time + LOCAL_TZ.getOffset( time );
-        return new PolyTime( (int) time, ProtoTime.TimeUnit.MILLISECOND );
+        return new PolyTime( (int) time );
     }
 
 
@@ -94,7 +92,7 @@ public class PolyTime extends PolyTemporal {
 
     @Override
     public String toString() {
-        return ofDay.toString() + timeUnit.toString();
+        return ofDay.toString();
     }
 
 }

@@ -83,7 +83,7 @@ public class ProtoToJdbcTypeMap {
                     .put( ValueCase.DATE, Types.DATE )
                     .put( ValueCase.TIME, Types.TIME )
                     // TODO .put( ProtoPolyType.TIME_WITH_LOCAL_TIME_ZONE, Types.TIMESTAMP_WITH_TIMEZONE )
-                    .put( ValueCase.TIME_STAMP, Types.TIMESTAMP )
+                    .put( ValueCase.TIMESTAMP, Types.TIMESTAMP )
                     // TODO .put( ProtoPolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, Types.TIMESTAMP_WITH_TIMEZONE )
                     .put( ValueCase.INTERVAL, Types.OTHER )
                     .put( ValueCase.STRING, Types.VARCHAR )

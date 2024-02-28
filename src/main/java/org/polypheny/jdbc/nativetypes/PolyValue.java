@@ -434,9 +434,9 @@ public abstract class PolyValue implements Comparable<PolyValue> {
             case DATE:
                 return new PolyDate( protoValue.getDate().getDate() );
             case TIME:
-                return new PolyTime( protoValue.getTime().getValue(), protoValue.getTime().getTimeUnit() );
-            case TIME_STAMP:
-                return new PolyTimeStamp(protoValue.getTimeStamp().getTimeStamp());
+                return new PolyTime( protoValue.getTime().getValue() );
+            case TIMESTAMP:
+                return new PolyTimeStamp(protoValue.getTimestamp().getTimestamp());
             case INTERVAL:
                 BigDecimal value = deserializeToBigDecimal( protoValue.getInterval().getValue() );
                 return new PolyInterval( value, ProtoPolyType.UNSPECIFIED ); // TODO: Fix type

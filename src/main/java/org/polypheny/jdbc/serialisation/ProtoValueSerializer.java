@@ -23,8 +23,7 @@ import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoRowId;
 import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
-import org.polypheny.db.protointerface.proto.ProtoTime.TimeUnit;
-import org.polypheny.db.protointerface.proto.ProtoTimeStamp;
+import org.polypheny.db.protointerface.proto.ProtoTimestamp;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
@@ -85,7 +84,7 @@ public class ProtoValueSerializer {
             case Types.TIME:
                 return serializeAsProtoTime( typedValue );
             case Types.TIMESTAMP:
-                return serializeAsTimeStamp( typedValue );
+                return serializeAsTimestamp( typedValue );
             case Types.BINARY:
             case Types.VARBINARY:
             case Types.LONGVARBINARY:
@@ -235,7 +234,6 @@ public class ProtoValueSerializer {
         ProtoTime protoTime = ProtoTime.newBuilder()
                 // TODO TH: Fix this. Why is this an int32?!
                 .setValue( (int) typedValue.asTime().getTime() )
-                .setTimeUnit( TimeUnit.MILLISECOND )
                 .build();
         return ProtoValue.newBuilder()
                 .setTime( protoTime )
@@ -243,12 +241,12 @@ public class ProtoValueSerializer {
     }
 
 
-    private static ProtoValue serializeAsTimeStamp( TypedValue typedValue ) throws SQLException {
-        ProtoTimeStamp protoTimeStamp = ProtoTimeStamp.newBuilder()
-                .setTimeStamp( typedValue.asTimestamp().getTime() )
+    private static ProtoValue serializeAsTimestamp( TypedValue typedValue ) throws SQLException {
+        ProtoTimestamp protoTimestamp = ProtoTimestamp.newBuilder()
+                .setTimestamp( typedValue.asTimestamp().getTime() )
                 .build();
         return ProtoValue.newBuilder()
-                .setTimeStamp( protoTimeStamp )
+                .setTimestamp( protoTimestamp )
                 .build();
     }
 

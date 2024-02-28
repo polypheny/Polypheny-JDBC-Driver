@@ -145,7 +145,7 @@ public class ProtoInterfaceClient {
             requestBuilder
                     .setMajorApiVersion( MAJOR_API_VERSION )
                     .setMinorApiVersion( MINOR_API_VERSION )
-                    .setClientUuid( clientUUID )
+                    //.setClientUuid( clientUUID )
                     .setConnectionProperties( buildConnectionProperties( connectionProperties ) );
             ConnectionResponse connectionResponse = getBlockingStub( timeout ).connect( requestBuilder.build() );
             if ( !connectionResponse.getIsCompatible() ) {
