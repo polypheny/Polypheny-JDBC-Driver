@@ -78,7 +78,7 @@ message ProtoValue {
     ProtoFloat float = 7;
     ProtoString string = 8;
     ProtoTime time = 9;
-    ProtoTimeStamp time_stamp = 10;
+    ProtoTimestamp timestamp = 10;
     ProtoNull null = 11;
     ProtoBigDecimal big_decimal = 12;
     ProtoInterval interval = 13;
@@ -132,33 +132,10 @@ message ProtoString {
 
 message ProtoTime {
   int32 value = 1;
-  TimeUnit time_unit = 2;
-  enum TimeUnit {
-    UNSPECIFIED = 0;
-    YEAR = 1;
-    MONTH = 2;
-    DAY = 3;
-    HOUR = 4;
-    MINUTE = 5;
-    SECOND = 6;
-    QUARTER = 7;
-    ISOYEAR = 8;
-    WEEK = 9;
-    MILLISECOND = 10;
-    MICROSECOND = 11;
-    NANOSECOND = 12;
-    DOW = 13;
-    ISODOW = 14;
-    DOY = 15;
-    EPOCH = 16;
-    DECADE = 17;
-    CENTURY = 18;
-    MILLENNIUM = 19;
-  }
 }
 
-message ProtoTimeStamp {
-  int64 time_stamp = 1;
+message ProtoTimestamp {
+  int64 timestamp = 1;
 }
 
 message ProtoBigDecimal {
