@@ -1,6 +1,8 @@
 package org.polypheny.jdbc;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -59,18 +61,54 @@ public class ConnectionString {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.URL_PARSING_INVALID, "Invalid driver schema." );
         }
         log.debug( "Parsing url: \"" + url + "\"" );
+        /*
         final int parameterStartIndex = url.indexOf( "?" );
         // parameters present
         if ( parameterStartIndex != -1 ) {
             parseParameters( substringAfter( parameterStartIndex, url ) );
             url = substringBefore( parameterStartIndex, url );
         }
+         */
         final int schemeSpecificPartStartIndex = url.indexOf( "//" );
         if ( schemeSpecificPartStartIndex == -1 ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.URL_PARSING_INVALID, "Invalid url format." );
         }
         // + 1 removes the second / in //
-        url = substringAfter( schemeSpecificPartStartIndex + 1, url );
+        //url = substringAfter( schemeSpecificPartStartIndex + 1, url )
+
+        this.host = PropertyUtils.getDEFAULT_HOST();
+        this.port = PropertyUtils.getDEFAULT_PORT();
+        url = url.substring( schemeSpecificPartStartIndex );
+
+        if ( url.equals( "//" ) ) {
+            return;
+        }
+
+        try {
+            URI uri = new URI( url );
+            if ( uri.getQuery() != null ) {
+                parseParameters( uri.getQuery() );
+            }
+            if ( uri.getHost() != null ) {
+                this.host = uri.getHost();
+            }
+            if ( uri.getPort() != -1 ) {
+                this.port = uri.getPort();
+            }
+            if ( uri.getUserInfo() != null ) {
+                String[] userAndPassword = uri.getUserInfo().split( ":", 2 );
+                this.parameters.put( PropertyUtils.getUSERNAME_KEY(), userAndPassword[0] );
+                if ( userAndPassword.length > 1 ) {
+                    this.parameters.put( PropertyUtils.getPASSWORD_KEY(), userAndPassword[1] );
+                }
+            }
+            if ( !uri.getPath().isEmpty() && uri.getPath().length() > 1 ) {
+                this.parameters.put( PropertyUtils.getNAMESPACE_KEY(), uri.getPath().substring( 1 ) ); // Leading /
+            }
+        } catch ( URISyntaxException e ) {
+            throw new ProtoInterfaceServiceException( e );
+        }
+        /*
         final int authorityStartIndex = url.indexOf( "@" );
         // user information present
         if ( authorityStartIndex != -1 ) {
@@ -84,6 +122,7 @@ public class ConnectionString {
             url = substringBefore( pathStartIndex, url );
         }
         parseAuthority( url );
+         */
     }
 
 
