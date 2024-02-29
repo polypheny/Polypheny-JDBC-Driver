@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
@@ -15,7 +16,10 @@ import org.polypheny.jdbc.properties.PropertyUtils;
 @Slf4j
 public class ConnectionString {
 
-    private String target;
+    @Getter
+    private String host;
+    @Getter
+    private int port;
     private HashMap<String, String> parameters;
 
 
@@ -97,7 +101,8 @@ public class ConnectionString {
         if ( host.isEmpty() ) {
             host = PropertyUtils.getDEFAULT_HOST();
         }
-        target = host + ":" + port;
+        this.host = host;
+        this.port = Integer.parseInt( port );
     }
 
 
@@ -165,7 +170,7 @@ public class ConnectionString {
 
 
     public String getTarget() {
-        return target;
+        return host + ":" + port;
     }
 
 
