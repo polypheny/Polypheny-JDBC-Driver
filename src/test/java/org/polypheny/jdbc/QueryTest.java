@@ -24,7 +24,7 @@ public class QueryTest {
 
 
     @Test
-    public void thisOneWorks() throws ClassNotFoundException {
+    public void thisOneWorks() throws ClassNotFoundException, SQLException {
         final String DB_URL = "jdbc:polypheny://localhost:20590";
         final String USER = "pa";
         final String PASS = "";
@@ -32,15 +32,13 @@ public class QueryTest {
         Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
 
         try (
-                Connection connection = DriverManager.getConnection( "jdbc:polypheny://localhost:20590" );
+                Connection connection = DriverManager.getConnection( DB_URL, USER, PASS );
                 Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery( "SELECT * FROM emps" )
         ) {
             while ( resultSet.next() ) {
                 // Process the result set...
             }
-        } catch ( SQLException e ) {
-            e.printStackTrace();
         }
     }
 
@@ -66,6 +64,7 @@ public class QueryTest {
         }
     }
 
+
     @Test
     public void mqlDataRetrievalTest() throws ClassNotFoundException {
         final String DB_URL = "jdbc:polypheny://localhost:20590";
@@ -83,7 +82,7 @@ public class QueryTest {
             DocumentResult docs = result.unwrap( DocumentResult.class );
             Iterator<PolyDocument> iterator = docs.iterator();
             while ( iterator.hasNext() ) {
-                System.out.println(iterator.next().toString());
+                System.out.println( iterator.next().toString() );
             }
             assertEquals( ResultType.DOCUMENT, result.getResultType() );
         } catch ( SQLException e ) {

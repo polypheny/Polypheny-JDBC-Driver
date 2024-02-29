@@ -1,15 +1,13 @@
 package org.polypheny.jdbc;
 
-import io.grpc.Channel;
-import io.grpc.Grpc;
-import io.grpc.InsecureChannelCredentials;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import java.io.IOException;
+import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
@@ -72,20 +70,17 @@ public class ProtoInterfaceClient {
 
     private static final int MAJOR_API_VERSION = 2;
     private static final int MINOR_API_VERSION = 0;
-    private final ProtoInterfaceGrpc.ProtoInterfaceBlockingStub blockingStub;
-    private final ProtoInterfaceGrpc.ProtoInterfaceStub asyncStub;
-    private final String clientUUID;
+    private ProtoInterfaceGrpc.ProtoInterfaceBlockingStub blockingStub;
+    private ProtoInterfaceGrpc.ProtoInterfaceStub asyncStub;
+    private final Socket con;
+    private final RpcService rpc;
 
 
-    public ProtoInterfaceClient( String target ) throws ProtoInterfaceServiceException {
-        this.clientUUID = UUID.randomUUID().toString();
+    public ProtoInterfaceClient( String host, int port ) throws ProtoInterfaceServiceException {
         try {
-            Channel channel = Grpc.newChannelBuilder( target, InsecureChannelCredentials.create() )
-                    .intercept( new ClientMetaInterceptor( clientUUID ) )
-                    .build();
-            this.blockingStub = ProtoInterfaceGrpc.newBlockingStub( channel );
-            this.asyncStub = ProtoInterfaceGrpc.newStub( channel );
-        } catch ( StatusRuntimeException e ) {
+            con = new Socket( host, port );
+            rpc = new RpcService( con.getInputStream(), con.getOutputStream() );
+        } catch ( IOException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
     }
@@ -147,10 +142,10 @@ public class ProtoInterfaceClient {
                     .setMinorApiVersion( MINOR_API_VERSION )
                     //.setClientUuid( clientUUID )
                     .setConnectionProperties( buildConnectionProperties( connectionProperties ) );
-            ConnectionResponse connectionResponse = getBlockingStub( timeout ).connect( requestBuilder.build() );
+            ConnectionResponse connectionResponse = rpc.connect( requestBuilder.build(), timeout );
             if ( !connectionResponse.getIsCompatible() ) {
                 throw new ProtoInterfaceServiceException( "client version " + getClientApiVersionString()
-                        + "not compatible with server version " + getServerApiVersionString( connectionResponse ) + "." );
+                        + " not compatible with server version " + getServerApiVersionString( connectionResponse ) + "." );
             }
             return connectionResponse;
         } catch ( StatusRuntimeException e ) {
@@ -171,9 +166,15 @@ public class ProtoInterfaceClient {
     public void unregister( int timeout ) throws ProtoInterfaceServiceException {
         DisconnectRequest request = DisconnectRequest.newBuilder().build();
         try {
-            getBlockingStub( timeout ).disconnect( request );
+            rpc.disconnect( request, timeout );
+            //getBlockingStub( timeout ).disconnect( request );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
+        } finally {
+            try {
+                con.close();
+            } catch ( IOException ignored ) {
+            }
         }
     }
 
@@ -188,7 +189,8 @@ public class ProtoInterfaceClient {
                 .setStatement( statement )
                 .build();
         try {
-            getAsyncStub( timeout ).executeUnparameterizedStatement( request, callback );
+            rpc.executeUnparameterizedStatement( request, callback );
+            //getAsyncStub( timeout ).executeUnparameterizedStatement( request, callback );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -283,7 +285,8 @@ public class ProtoInterfaceClient {
                 .setStatementId( statementId )
                 .build();
         try {
-            getBlockingStub( timeout ).closeStatement( request );
+            //getBlockingStub( timeout ).closeStatement( request );
+            rpc.closeStatement( request, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
