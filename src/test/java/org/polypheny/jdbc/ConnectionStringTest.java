@@ -293,12 +293,15 @@ public class ConnectionStringTest {
     @Test
     public void connectionString_String__Ipv6() throws SQLException {
         final String expectedTarget = "[7ed0:1b1d:0058:6765:253f:2f64:6406:063c]:12345";
+        final String ip = "[7ed0:1b1d:0058:6765:253f:2f64:6406:063c]";
+        final int port = 12345;
 
         final String url = "jdbc:polypheny://username:password@[7ed0:1b1d:0058:6765:253f:2f64:6406:063c]:12345/database?k1=v1&k2=v2";
         final ConnectionString cs = new ConnectionString( url );
 
         assertEquals( expectedTarget, cs.getTarget() );
+        assertEquals( ip, cs.getHost() );
+        assertEquals( port, cs.getPort() );
     }
-
 
 }
