@@ -6,39 +6,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import java.util.List;
 import org.polypheny.jdbc.meta.MetaScroller;
 
 public class MetaScrollerTest {
 
-    private static final ArrayList<Integer> TEST_DATA_EMPTY = new ArrayList<>();
-    private static final ArrayList<Integer> TEST_DATA_FOUR = new ArrayList<>( Arrays.asList( 1, 2, 3, 4 ) );
-
-
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-
-    @Before
-    public void setUp() {
-    }
-
-
-    @After
-    public void tearDown() {
-    }
+    private static final List<Integer> TEST_DATA_EMPTY = List.of();
+    private static final List<Integer> TEST_DATA_FOUR = List.of( 1, 2, 3, 4 );
 
 
     @Test

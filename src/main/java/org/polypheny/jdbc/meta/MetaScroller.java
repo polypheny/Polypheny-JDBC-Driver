@@ -1,6 +1,6 @@
 package org.polypheny.jdbc.meta;
 
-import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.jdbc.BidirectionalScrollable;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
@@ -8,12 +8,12 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
     private static final int CURSOR_BEFORE_DATA = -1;
 
-    private final ArrayList<T> data;
+    private final List<T> data;
     private T current;
     private int currentIndex;
 
 
-    public MetaScroller( ArrayList<T> rows ) {
+    public MetaScroller( List<T> rows ) {
         this.data = rows;
         this.current = null;
         this.currentIndex = CURSOR_BEFORE_DATA;
