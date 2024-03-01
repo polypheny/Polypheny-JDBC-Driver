@@ -28,12 +28,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
+import org.polypheny.db.protointerface.proto.CommitRequest;
+import org.polypheny.db.protointerface.proto.CommitResponse;
+import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateRequest;
+import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateResponse;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.ConnectionResponse;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
@@ -41,6 +44,8 @@ import org.polypheny.db.protointerface.proto.DisconnectResponse;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.db.protointerface.proto.Request;
 import org.polypheny.db.protointerface.proto.Response;
+import org.polypheny.db.protointerface.proto.RollbackRequest;
+import org.polypheny.db.protointerface.proto.RollbackResponse;
 import org.polypheny.db.protointerface.proto.StatementResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
@@ -126,39 +131,54 @@ public class RpcService {
     }
 
 
-    public ConnectionResponse connect( ConnectionRequest msg, int timeout ) throws ProtoInterfaceServiceException {
-        Request.Builder req = newMessage();
-        req.setConnectionRequest( msg );
+    private Response completeSynchronously( Request.Builder req, int timeout ) throws ProtoInterfaceServiceException {
         try {
             CompletableFuture<Response> f = new CompletableFuture<>();
             callbacks.put( req.getId(), r -> completeOrThrow( f, r ) );
             sendMessage( req.build() );
             if ( timeout == 0 ) {
-                return f.get().getConnectionResponse();
+                return f.get();
             } else {
-                return f.get( timeout, TimeUnit.MILLISECONDS ).getConnectionResponse();
+                return f.get( timeout, TimeUnit.MILLISECONDS );
             }
-        } catch ( TimeoutException | IOException | InterruptedException | ExecutionException e ) {
+        } catch ( IOException | ExecutionException | InterruptedException | TimeoutException e ) {
             throw new ProtoInterfaceServiceException( e );
         }
+    }
+
+
+    public ConnectionResponse connect( ConnectionRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setConnectionRequest( msg );
+        return completeSynchronously( req, timeout ).getConnectionResponse();
+    }
+
+
+    public ConnectionPropertiesUpdateResponse updateConnectionProperties( ConnectionPropertiesUpdateRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setConnectionPropertiesUpdateRequest( msg );
+        return completeSynchronously( req, timeout ).getConnectionPropertiesUpdateResponse();
     }
 
 
     public DisconnectResponse disconnect( DisconnectRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setDisconnectRequest( msg );
-        try {
-            CompletableFuture<Response> f = new CompletableFuture<>();
-            callbacks.put( req.getId(), r -> completeOrThrow( f, r ) );
-            sendMessage( req.build() );
-            if ( timeout == 0 ) {
-                return f.get().getDisconnectResponse();
-            } else {
-                return f.get( timeout, TimeUnit.MILLISECONDS ).getDisconnectResponse();
-            }
-        } catch ( IOException | ExecutionException | InterruptedException | TimeoutException e ) {
-            throw new ProtoInterfaceServiceException( e );
-        }
+        return completeSynchronously( req, timeout ).getDisconnectResponse();
+    }
+
+
+    public CommitResponse commit( CommitRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setCommitRequest( msg );
+        return completeSynchronously( req, timeout ).getCommitResponse();
+    }
+
+
+    public RollbackResponse rollback( RollbackRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setRollbackRequest( msg );
+        return completeSynchronously( req, timeout ).getRollbackResponse();
     }
 
 
@@ -186,18 +206,7 @@ public class RpcService {
     public CloseStatementResponse closeStatement( CloseStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setCloseStatementRequest( msg );
-        try {
-            CompletableFuture<Response> f = new CompletableFuture<>();
-            callbacks.put( req.getId(), r -> completeOrThrow( f, r ) );
-            sendMessage( req.build() );
-            if ( timeout == 0 ) {
-                return f.get().getCloseStatementResponse();
-            } else {
-                return f.get( timeout, TimeUnit.MILLISECONDS ).getCloseStatementResponse();
-            }
-        } catch ( ExecutionException | InterruptedException | TimeoutException | IOException e ) {
-            throw new ProtoInterfaceServiceException( e );
-        }
+        return completeSynchronously( req, timeout ).getCloseStatementResponse();
     }
 
 }

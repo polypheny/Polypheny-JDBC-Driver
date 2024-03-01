@@ -263,7 +263,8 @@ public class ProtoInterfaceClient {
     public void commitTransaction( int timeout ) throws ProtoInterfaceServiceException {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
         try {
-            getBlockingStub( timeout ).commitTransaction( commitRequest );
+            //getBlockingStub( timeout ).commitTransaction( commitRequest );
+            rpc.commit(commitRequest, timeout);
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -273,7 +274,8 @@ public class ProtoInterfaceClient {
     public void rollbackTransaction( int timeout ) throws ProtoInterfaceServiceException {
         RollbackRequest rollbackRequest = RollbackRequest.newBuilder().build();
         try {
-            getBlockingStub( timeout ).rollbackTransaction( rollbackRequest );
+            //getBlockingStub( timeout ).rollbackTransaction( rollbackRequest );
+            rpc.rollback( rollbackRequest, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -404,7 +406,8 @@ public class ProtoInterfaceClient {
                 .setConnectionProperties( buildConnectionProperties( connectionProperties ) )
                 .build();
         try {
-            getBlockingStub( timeout ).updateConnectionProperties( request );
+            //getBlockingStub( timeout ).updateConnectionProperties( request );
+            rpc.updateConnectionProperties( request, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
