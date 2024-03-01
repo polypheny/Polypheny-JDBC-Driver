@@ -219,7 +219,8 @@ public class ProtoInterfaceClient {
                 .setLanguageName( languageName )
                 .build();
         try {
-            return getBlockingStub( timeout ).prepareIndexedStatement( request );
+            //return getBlockingStub( timeout ).prepareIndexedStatement( request );
+            return rpc.prepareIndexedStatement( request, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -236,7 +237,8 @@ public class ProtoInterfaceClient {
                 .setFetchSize( fetchSize )
                 .build();
         try {
-            return getBlockingStub( timeout ).executeIndexedStatement( request );
+            //return getBlockingStub( timeout ).executeIndexedStatement( request );
+            return rpc.executeIndexedStatement( request, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -264,7 +266,7 @@ public class ProtoInterfaceClient {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
         try {
             //getBlockingStub( timeout ).commitTransaction( commitRequest );
-            rpc.commit(commitRequest, timeout);
+            rpc.commit( commitRequest, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -322,7 +324,8 @@ public class ProtoInterfaceClient {
     public DbmsVersionResponse getDbmsVersion( int timeout ) throws ProtoInterfaceServiceException {
         DbmsVersionRequest dbmsVersionRequest = DbmsVersionRequest.newBuilder().build();
         try {
-            return getBlockingStub( timeout ).getDbmsVersion( dbmsVersionRequest );
+            //return getBlockingStub( timeout ).getDbmsVersion( dbmsVersionRequest );
+            return rpc.getDbmsVersion( dbmsVersionRequest, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }

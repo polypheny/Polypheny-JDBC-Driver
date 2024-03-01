@@ -39,14 +39,20 @@ import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateRequest;
 import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateResponse;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.ConnectionResponse;
+import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
+import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
 import org.polypheny.db.protointerface.proto.DisconnectResponse;
+import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementRequest;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
+import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.db.protointerface.proto.Request;
 import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.db.protointerface.proto.RollbackRequest;
 import org.polypheny.db.protointerface.proto.RollbackResponse;
 import org.polypheny.db.protointerface.proto.StatementResponse;
+import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 @Slf4j
@@ -161,6 +167,13 @@ public class RpcService {
     }
 
 
+    public DbmsVersionResponse getDbmsVersion( DbmsVersionRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setDbmsVersionRequest( msg );
+        return completeSynchronously( req, timeout ).getDbmsVersionResponse();
+    }
+
+
     public DisconnectResponse disconnect( DisconnectRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setDisconnectRequest( msg );
@@ -200,6 +213,20 @@ public class RpcService {
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( e );
         }
+    }
+
+
+    public PreparedStatementSignature prepareIndexedStatement( PrepareStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setPrepareIndexedStatementRequest( msg );
+        return completeSynchronously( req, timeout ).getPreparedStatementSignature();
+    }
+
+
+    public StatementResult executeIndexedStatement( ExecuteIndexedStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setExecuteIndexedStatementRequest( msg );
+        return completeSynchronously( req, timeout ).getStatementResult();
     }
 
 
