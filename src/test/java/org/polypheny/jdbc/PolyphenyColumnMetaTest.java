@@ -1,21 +1,18 @@
 package org.polypheny.jdbc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.ResultSetMetaData;
 import java.sql.Types;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
-import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.TypeMeta;
 
@@ -40,7 +37,7 @@ public class PolyphenyColumnMetaTest {
     private static final int JDBC_TYPE = Types.NCLOB;
 
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() {
         TypeMeta typeMeta = TypeMeta.newBuilder()
                 .setProtoValueType( VALUE_TYPE )
@@ -72,21 +69,6 @@ public class PolyphenyColumnMetaTest {
                 .setNamespace( NAMESPACE_NAME )
                 .build();
         specifiedColumnMeta = PolyphenyColumnMeta.fromSpecification( COLUMN_INDEX, COLUMN_LABEL, ENTITY_NAME, JDBC_TYPE );
-    }
-
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-
-    @Before
-    public void setUp() {
-    }
-
-
-    @After
-    public void tearDown() {
     }
 
 

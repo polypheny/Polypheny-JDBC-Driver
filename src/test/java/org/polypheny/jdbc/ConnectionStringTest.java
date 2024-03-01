@@ -1,78 +1,48 @@
 package org.polypheny.jdbc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Properties;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.properties.PropertyUtils;
 
 public class ConnectionStringTest {
 
-    @BeforeClass
-    public static void setUpClass() {
+    @Test()
+    public void connectionString_String__null()  {
+        assertThrows( SQLException.class, () -> new ConnectionString( null ) );
     }
 
 
-    @AfterClass
-    public static void tearDownClass() {
+    @Test()
+    public void connectionString_String__Empty()  {
+        assertThrows( SQLException.class, () -> new ConnectionString( "" ));
     }
 
 
-    @Before
-    public void setUp() {
-    }
-
-
-    @After
-    public void tearDown() {
-    }
-
-
-    @Test(expected = SQLException.class)
-    public void connectionString_String__null() throws Exception {
-        final String url = null;
-        final ConnectionString cs = new ConnectionString( url );
-        fail( "No SQLException thrown" );
-    }
-
-
-    @Test(expected = SQLException.class)
-    public void connectionString_String__Empty() throws Exception {
-        final String url = "";
-        final ConnectionString cs = new ConnectionString( url );
-        fail( "No SQLException thrown" );
-    }
-
-
-    @Test(expected = SQLException.class)
-    public void connectionString_String__NoJdbcSchema() throws Exception {
+    @Test()
+    public void connectionString_String__NoJdbcSchema()  {
         final String url = "polypheny://username:password@host:20569/database?k1=v1&k2=v2";
-        final ConnectionString cs = new ConnectionString( url );
-        fail( "No SQLException thrown" );
+        assertThrows( SQLException.class, () -> new ConnectionString( url ));
     }
 
 
-    @Test(expected = SQLException.class)
-    public void connectionString_String__NoPolyphenySubSchema() throws Exception {
+    @Test()
+    public void connectionString_String__NoPolyphenySubSchema()  {
         final String url = "jdbc://username:password@host:20569/database?k1=v1&k2=v2";
-        final ConnectionString cs = new ConnectionString( url );
-        fail( "No SQLException thrown" );
+        assertThrows( SQLException.class, () ->new ConnectionString( url ));
     }
 
 
-    @Test(expected = SQLException.class)
+    @Test()
     public void connectionString_String__WrongSubSchema() throws Exception {
         final String url = "jdbc:foo://username:password@host:20569/database?k1=v1&k2=v2";
-        final ConnectionString cs = new ConnectionString( url );
-        fail( "No SQLException thrown" );
+        assertThrows( SQLException.class, () -> new ConnectionString( url ));
     }
 
 
@@ -88,7 +58,7 @@ public class ConnectionStringTest {
 
 
     @Test
-    public void connecitonString_String__NoUsername() throws Exception {
+    public void connectionString_String__NoUsername()  {
 
     }
 
@@ -157,30 +127,24 @@ public class ConnectionStringTest {
     }
 
 
-    @Test(expected = SQLException.class)
-    public void connectionString_String__MissingValue() throws Exception {
+    @Test()
+    public void connectionString_String__MissingValue(){
         final String url = "jdbc:polypheny://username:pass:word@localhost:20569/namespace?k1=v1&k2";
-        final ConnectionString cs = new ConnectionString( url );
-
-        fail( "No sql exception thrown" );
+        assertThrows( SQLException.class, () -> new ConnectionString( url ));
     }
 
 
-    @Test(expected = SQLException.class)
-    public void connectionString_String__MissplacedAt() throws Exception {
+    @Test()
+    public void connectionString_String__MissplacedAt() {
         final String url = "jdbc:polypheny://username:password@localhost:20569/namespace?k1@v1&k2";
-        final ConnectionString cs = new ConnectionString( url );
-
-        fail( "No sql exception thrown" );
+        assertThrows( SQLException.class, () -> new ConnectionString( url ));
     }
 
 
-    @Test(expected = SQLException.class)
+    @Test()
     public void connectionString_String__MissplacedAt2() throws Exception {
         final String url = "jdbc:polypheny://username@password:localhost:20569/namespace?k1@v1&k2";
-        final ConnectionString cs = new ConnectionString( url );
-
-        fail( "No sql exception thrown" );
+        assertThrows( SQLException.class, () -> new ConnectionString( url ));
     }
 
 
@@ -244,7 +208,7 @@ public class ConnectionStringTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     public void connectionString_String__NoHost() throws Exception {
         final String expectedTarget = PropertyUtils.getDEFAULT_HOST() + ":20569";
         final String url = "jdbc:polypheny://username:password@:20569/database?k1=v1&k2=v2";

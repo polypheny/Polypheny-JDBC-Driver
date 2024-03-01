@@ -1,12 +1,12 @@
 package org.polypheny.jdbc.types;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -28,7 +28,7 @@ import java.sql.Time;
 import java.sql.Types;
 import java.util.Calendar;
 import java.util.TimeZone;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
@@ -245,10 +245,9 @@ public class TypedValueTest {
     }
 
 
-    @Test(expected = NullPointerException.class)
-    public void fromBinaryStreamWhenStreamIsInvalidThenThrowIOException() throws IOException {
-        TypedValue.fromBinaryStream( null, 0 );
-        fail( "NullPointer exception not thrown" );
+    @Test()
+    public void fromBinaryStreamWhenStreamIsInvalidThenThrowIOException() {
+        assertThrows( NullPointerException.class, () -> TypedValue.fromBinaryStream( null, 0 ) );
     }
 
 
@@ -263,18 +262,15 @@ public class TypedValueTest {
     }
 
 
-    @Test(expected = NullPointerException.class)
-    public void fromUnicodeStreamWithInvalidStreamThrowsIOException() throws IOException {
-        TypedValue typedValue = TypedValue.fromUnicodeStream( null, 0 );
-        fail( "NullPointer exception not thrown" );
+    @Test()
+    public void fromUnicodeStreamWithInvalidStreamThrowsIOException() {
+        assertThrows( NullPointerException.class, () -> TypedValue.fromUnicodeStream( null, 0 ) );
     }
 
 
-    @Test(expected = NullPointerException.class)
-    public void fromAsciiStreamWithInvalidInputStream() throws IOException {
-        TypedValue typedValue = TypedValue.fromAsciiStream( null, 0 );
-        assertNull( typedValue );
-        fail( "NullPointer exception not thrown" );
+    @Test()
+    public void fromAsciiStreamWithInvalidInputStream() {
+        assertThrows( NullPointerException.class, () -> TypedValue.fromAsciiStream( null, 0 ) );
     }
 
 
@@ -315,11 +311,9 @@ public class TypedValueTest {
     }
 
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void fromTimeWithNullCalendarThrowsException() {
-        TypedValue typedValue = TypedValue.fromTime( new Time( 10, 30, 0 ), null );
-        assertNull( typedValue );
-        fail( "NullPointerException not thrown" );
+        assertThrows( NullPointerException.class, () -> TypedValue.fromTime( new Time( 10, 30, 0 ), null ) );
     }
 
 
@@ -342,17 +336,18 @@ public class TypedValueTest {
     @Test
     public void binaryTrimmingTest() throws SQLException {
         byte[] data = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-        byte[] expected = {1, 2, 3, 4 };
+        byte[] expected = { 1, 2, 3, 4 };
         TypedValue value = TypedValue.fromBytes( data );
         TypedValue trimmed = value.getTrimmed( 4 );
-        assertArrayEquals(expected, trimmed.asBytes() );
+        assertArrayEquals( expected, trimmed.asBytes() );
     }
+
 
     @Test
     public void asBytesReturnsPropertValue() throws SQLException {
         byte[] data = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         TypedValue value = TypedValue.fromBytes( data );
-        assertArrayEquals(data, value.asBytes() );
+        assertArrayEquals( data, value.asBytes() );
     }
 
 
@@ -373,16 +368,14 @@ public class TypedValueTest {
     }
 
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void fromTimeWithNullTimeAndCalendar() {
         Calendar calendar = Calendar.getInstance();
         calendar.set( Calendar.YEAR, 2022 );
         calendar.set( Calendar.MONTH, Calendar.JANUARY );
         calendar.set( Calendar.DAY_OF_MONTH, 1 );
 
-        TypedValue typedValue = TypedValue.fromTime( null, calendar );
-
-        fail( "NullPointerException not thrown" );
+        assertThrows( NullPointerException.class, () -> TypedValue.fromTime( null, calendar ) );
     }
 
 
@@ -417,11 +410,9 @@ public class TypedValueTest {
     }
 
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void fromDateWhenNullCalendarProvidedThenThrowException() {
-        TypedValue typedValue = TypedValue.fromDate( new Date( 2022, 1, 1 ), null );
-        assertNull( typedValue );
-        fail( "NullPointerException not thrown" );
+        assertThrows( NullPointerException.class, () -> TypedValue.fromDate( new Date( 2022, 1, 1 ), null ) );
     }
 
 
@@ -439,14 +430,12 @@ public class TypedValueTest {
     }
 
 
-    @Test(expected = NullPointerException.class)
+    @Test()
     public void fromDateWithNullDateAndCalendarProvided() {
         Calendar calendar = Calendar.getInstance();
         calendar.set( 2022, Calendar.JANUARY, 1 );
 
-        TypedValue typedValue = TypedValue.fromDate( null, calendar );
-
-        fail( "NullPointerException not thrown" );
+        assertThrows( NullPointerException.class, () -> TypedValue.fromDate( null, calendar ) );
     }
 
 

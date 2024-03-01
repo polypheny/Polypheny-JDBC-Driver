@@ -16,17 +16,15 @@
 
 package org.polypheny.jdbc;
 
-import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class DriverPropertyInfoTest {
 
     @Test
     public void propertyInfo_defaultValues() throws SQLException {
         String url = "jdbc:polypheny://host:20590";
-        DriverPropertyInfo[] infos = new PolyphenyDriver().getPropertyInfo( url, null );
-
+        new PolyphenyDriver().getPropertyInfo( url, null );
     }
 
 }

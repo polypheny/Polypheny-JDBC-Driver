@@ -1,7 +1,7 @@
 package org.polypheny.jdbc.properties;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.PolyphenyStatement;
 import org.polypheny.jdbc.ProtoInterfaceClient;
@@ -10,13 +10,16 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 public class PolyConnectionPropertiesTest {
     private static ConnectionString connectionString;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws SQLException {
         connectionString = new ConnectionString("jdbc:polypheny://localhost:20590");
     }

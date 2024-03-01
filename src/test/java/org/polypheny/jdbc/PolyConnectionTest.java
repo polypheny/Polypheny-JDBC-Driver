@@ -16,15 +16,15 @@
 
 package org.polypheny.jdbc;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.sql.SQLException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 
@@ -43,11 +43,7 @@ public class PolyConnectionTest {
         databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
         connection = new PolyConnection( properties, databaseMetaData );
 
-        try {
-            connection.getAutoCommit();
-        } catch ( SQLException e ) {
-            fail( "Should not throw an exception" );
-        }
+        assertDoesNotThrow( () -> connection.getAutoCommit() );
 
         verify( properties, times( 1 ) ).isAutoCommit();
     }
@@ -88,11 +84,7 @@ public class PolyConnectionTest {
 
         when( properties.isAutoCommit() ).thenReturn( false );
 
-        try {
-            connection.setAutoCommit( true );
-        } catch ( SQLException e ) {
-            fail( "Unexpected SQLException occurred: " + e.getMessage() );
-        }
+        assertDoesNotThrow( () -> connection.setAutoCommit( true ) );
 
         verify( properties, times( 1 ) ).setAutoCommit( true );
     }
@@ -107,11 +99,7 @@ public class PolyConnectionTest {
         when( properties.isAutoCommit() ).thenReturn( true );
         when( properties.getNetworkTimeout() ).thenReturn( 5000 );
 
-        try {
-            connection.setAutoCommit( false );
-        } catch ( SQLException e ) {
-            fail( "Unexpected SQLException" );
-        }
+        assertDoesNotThrow( () -> connection.setAutoCommit( false ) );
 
         verify( properties, times( 1 ) ).setAutoCommit( false );
     }
