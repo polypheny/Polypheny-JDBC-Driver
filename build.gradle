@@ -65,7 +65,7 @@ dependencies {
 
 
     // --- Test Compile ---
-    testImplementation group: "junit", name: "junit", version: '4.13.1'
+    testImplementation(group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.10.1')
     // https://mvnrepository.com/artifact/org.mockito/mockito-core
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '5.4.0'
 }
@@ -117,14 +117,10 @@ sourceSets {
             srcDirs = ["src/main/resources"]
         }
     }
-    test {
-        java {
-            srcDirs = ["src/test/java"]
-        }
-        resources {
-            srcDirs = ["src/test/resources"]
-        }
-    }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 /**
