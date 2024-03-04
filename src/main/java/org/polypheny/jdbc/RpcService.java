@@ -54,6 +54,7 @@ import org.polypheny.db.protointerface.proto.DisconnectRequest;
 import org.polypheny.db.protointerface.proto.DisconnectResponse;
 import org.polypheny.db.protointerface.proto.EntitiesRequest;
 import org.polypheny.db.protointerface.proto.EntitiesResponse;
+import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementBatchRequest;
 import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementRequest;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
@@ -95,6 +96,8 @@ public class RpcService {
     private final InputStream in;
     private final OutputStream out;
     private final Thread service;
+    private boolean closed = false;
+    private IOException error = null;
     private final Map<Long, Consumer<Response>> callbacks = new ConcurrentHashMap<>();
 
 
@@ -106,6 +109,11 @@ public class RpcService {
     }
 
 
+    void close() {
+        closed = true;
+    }
+
+
     private Request.Builder newMessage() {
         long id = idCounter.getAndIncrement();
         return Request.newBuilder().setId( id );
@@ -113,6 +121,16 @@ public class RpcService {
 
 
     private void sendMessage( Request req ) throws IOException {
+        if ( this.error != null ) {
+            synchronized ( this ) {
+                IOException e = this.error;
+                this.error = null;
+                throw e;
+            }
+        }
+        if ( this.closed ) {
+            throw new IOException( "Connection is closed" );
+        }
         byte[] b = req.toByteArray();
         ByteBuffer bb = ByteBuffer.allocate( 8 );
         bb.order( ByteOrder.LITTLE_ENDIAN );
@@ -155,7 +173,16 @@ public class RpcService {
                 }
                 c.accept( resp );
             } catch ( IOException e ) { // Communicate this to ProtoInterfaceClient
-                throw new RuntimeException( e );
+                this.closed = true;
+                if ( e instanceof EOFException && closed ) {
+                    // Nothing to worry about
+                    return;
+                } else {
+                    // This will cause the exception to be thrown when the next call is made
+                    // TODO: Is this good enough, or should the program be alerted sooner?
+                    this.error = e;
+                    throw new RuntimeException( e );
+                }
             }
         }
     }

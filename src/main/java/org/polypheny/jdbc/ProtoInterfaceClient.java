@@ -173,6 +173,7 @@ public class ProtoInterfaceClient {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         } finally {
             try {
+                rpc.close();
                 con.close();
             } catch ( IOException ignored ) {
             }
