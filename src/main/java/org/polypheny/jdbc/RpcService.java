@@ -186,168 +186,168 @@ public class RpcService {
     }
 
 
-    public ConnectionResponse connect( ConnectionRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    ConnectionResponse connect( ConnectionRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setConnectionRequest( msg );
         return completeSynchronously( req, timeout ).getConnectionResponse();
     }
 
 
-    public ConnectionCheckResponse checkConnection( ConnectionCheckRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    ConnectionCheckResponse checkConnection( ConnectionCheckRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setConnectionCheckRequest( msg );
         return completeSynchronously( req, timeout ).getConnectionCheckResponse();
     }
 
 
-    public ConnectionPropertiesUpdateResponse updateConnectionProperties( ConnectionPropertiesUpdateRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    ConnectionPropertiesUpdateResponse updateConnectionProperties( ConnectionPropertiesUpdateRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setConnectionPropertiesUpdateRequest( msg );
         return completeSynchronously( req, timeout ).getConnectionPropertiesUpdateResponse();
     }
 
 
-    public DbmsVersionResponse getDbmsVersion( DbmsVersionRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    DbmsVersionResponse getDbmsVersion( DbmsVersionRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setDbmsVersionRequest( msg );
         return completeSynchronously( req, timeout ).getDbmsVersionResponse();
     }
 
 
-    public DatabasesResponse getDatabases( DatabasesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    DatabasesResponse getDatabases( DatabasesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setDatabasesRequest( msg );
         return completeSynchronously( req, timeout ).getDatabasesResponse();
     }
 
 
-    public ClientInfoPropertyMetaResponse getClientInfoPropertiesMetas( ClientInfoPropertyMetaRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    ClientInfoPropertyMetaResponse getClientInfoPropertiesMetas( ClientInfoPropertyMetaRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setClientInfoPropertyMetaRequest( msg );
         return completeSynchronously( req, timeout ).getClientInfoPropertyMetaResponse();
     }
 
 
-    public TableTypesResponse getTableTypes( TableTypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    TableTypesResponse getTableTypes( TableTypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setTableTypesRequest( msg );
         return completeSynchronously( req, timeout ).getTableTypesResponse();
     }
 
 
-    public UserDefinedTypesResponse getUserDefinedTypes( UserDefinedTypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    UserDefinedTypesResponse getUserDefinedTypes( UserDefinedTypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setUserDefinedTypesRequest( msg );
         return completeSynchronously( req, timeout ).getUserDefinedTypesResponse();
     }
 
 
-    public TypesResponse getTypes( TypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    TypesResponse getTypes( TypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setTypesRequest( msg );
         return completeSynchronously( req, timeout ).getTypesResponse();
     }
 
 
-    public ProceduresResponse searchProcedures( ProceduresRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    ProceduresResponse searchProcedures( ProceduresRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setProceduresRequest( msg );
         return completeSynchronously( req, timeout ).getProceduresResponse();
     }
 
 
-    public FunctionsResponse searchFunctions( FunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    FunctionsResponse searchFunctions( FunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setFunctionsRequest( msg );
         return completeSynchronously( req, timeout ).getFunctionsResponse();
     }
 
 
-    public NamespacesResponse searchNamespaces( NamespacesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    NamespacesResponse searchNamespaces( NamespacesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setNamespacesRequest( msg );
         return completeSynchronously( req, timeout ).getNamespacesResponse();
     }
 
 
-    public EntitiesResponse searchEntities( EntitiesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    EntitiesResponse searchEntities( EntitiesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setEntitiesRequest( msg );
         return completeSynchronously( req, timeout ).getEntitiesResponse();
     }
 
 
-    public ClientInfoPropertiesResponse setClientInfoProperties( ClientInfoProperties msg, int timeout ) throws ProtoInterfaceServiceException {
+    ClientInfoPropertiesResponse setClientInfoProperties( ClientInfoProperties msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setSetClientInfoPropertiesRequest( msg );
         return completeSynchronously( req, timeout ).getSetClientInfoPropertiesResponse();
     }
 
 
-    public ClientInfoProperties getClientInfoProperties( ClientInfoPropertiesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    ClientInfoProperties getClientInfoProperties( ClientInfoPropertiesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setClientInfoPropertiesRequest( msg );
         return completeSynchronously( req, timeout ).getClientInfoPropertiesResponse();
     }
 
 
-    public MetaStringResponse getSqlStringFunctions( SqlStringFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    MetaStringResponse getSqlStringFunctions( SqlStringFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setSqlStringFunctionsRequest( msg );
         return completeSynchronously( req, timeout ).getSqlStringFunctionsResponse();
     }
 
 
-    public MetaStringResponse getSqlSystemFunctions( SqlSystemFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    MetaStringResponse getSqlSystemFunctions( SqlSystemFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setSqlSystemFunctionsRequest( msg );
         return completeSynchronously( req, timeout ).getSqlSystemFunctionsResponse();
     }
 
 
-    public MetaStringResponse getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    MetaStringResponse getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setSqlTimeDateFunctionsRequest( msg );
         return completeSynchronously( req, timeout ).getSqlTimeDateFunctionsResponse();
     }
 
 
-    public MetaStringResponse getSqlNumericFunctions( SqlNumericFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    MetaStringResponse getSqlNumericFunctions( SqlNumericFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setSqlNumericFunctionsRequest( msg );
         return completeSynchronously( req, timeout ).getSqlNumericFunctionsResponse();
     }
 
 
-    public MetaStringResponse getSqlKeywords( SqlKeywordsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    MetaStringResponse getSqlKeywords( SqlKeywordsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setSqlKeywordsRequest( msg );
         return completeSynchronously( req, timeout ).getSqlKeywordsResponse();
     }
 
 
-    public DisconnectResponse disconnect( DisconnectRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    DisconnectResponse disconnect( DisconnectRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setDisconnectRequest( msg );
         return completeSynchronously( req, timeout ).getDisconnectResponse();
     }
 
 
-    public CommitResponse commit( CommitRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    CommitResponse commit( CommitRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setCommitRequest( msg );
         return completeSynchronously( req, timeout ).getCommitResponse();
     }
 
 
-    public RollbackResponse rollback( RollbackRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    RollbackResponse rollback( RollbackRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setRollbackRequest( msg );
         return completeSynchronously( req, timeout ).getRollbackResponse();
     }
 
 
-    public void executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest msg, CallbackQueue<StatementResponse> callback ) throws ProtoInterfaceServiceException {
+    void executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest msg, CallbackQueue<StatementResponse> callback ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteUnparameterizedStatementRequest( msg );
         try {
@@ -368,7 +368,7 @@ public class RpcService {
     }
 
 
-    public void executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest msg, CallbackQueue<StatementBatchResponse> callback ) throws ProtoInterfaceServiceException {
+    void executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest msg, CallbackQueue<StatementBatchResponse> callback ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteUnparameterizedStatementBatchRequest( msg );
         try {
@@ -389,28 +389,28 @@ public class RpcService {
     }
 
 
-    public PreparedStatementSignature prepareIndexedStatement( PrepareStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    PreparedStatementSignature prepareIndexedStatement( PrepareStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setPrepareIndexedStatementRequest( msg );
         return completeSynchronously( req, timeout ).getPreparedStatementSignature();
     }
 
 
-    public StatementResult executeIndexedStatement( ExecuteIndexedStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    StatementResult executeIndexedStatement( ExecuteIndexedStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteIndexedStatementRequest( msg );
         return completeSynchronously( req, timeout ).getStatementResult();
     }
 
 
-    public Frame fetchResult( FetchRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    Frame fetchResult( FetchRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setFetchRequest( msg );
         return completeSynchronously( req, timeout ).getFrame();
     }
 
 
-    public CloseStatementResponse closeStatement( CloseStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+    CloseStatementResponse closeStatement( CloseStatementRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setCloseStatementRequest( msg );
         return completeSynchronously( req, timeout ).getCloseStatementResponse();
