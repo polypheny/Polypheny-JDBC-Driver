@@ -18,8 +18,11 @@ package org.polypheny.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -36,6 +39,10 @@ public class ConnectionTest {
     @BeforeEach
     void createConnection() throws SQLException {
         con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590", "pa", "" );
+        try ( Statement statement = con.createStatement() ) {
+            statement.execute( "DROP TABLE IF EXISTS t" );
+            statement.execute( "CREATE TABLE t(id INTEGER PRIMARY KEY, a INTEGER NOT NULL)" );
+        }
     }
 
 
@@ -49,8 +56,6 @@ public class ConnectionTest {
     void testCommit() throws SQLException {
         con.setAutoCommit( false );
         try ( Statement statement = con.createStatement() ) {
-            statement.execute( "DROP TABLE IF EXISTS t" );
-            statement.execute( "CREATE TABLE t(id INTEGER PRIMARY KEY, a INTEGER NOT NULL)" );
             statement.execute( "INSERT INTO t(id, a) VALUES (1, 1), (2, 2), (3, 3)" );
             con.commit();
             ResultSet resultSet = statement.executeQuery( "SELECT * FROM t" );
@@ -67,8 +72,6 @@ public class ConnectionTest {
     void testRollback() throws SQLException {
         con.setAutoCommit( false );
         try ( Statement statement = con.createStatement() ) {
-            statement.execute( "DROP TABLE IF EXISTS t" );
-            statement.execute( "CREATE TABLE t(id INTEGER PRIMARY KEY, a INTEGER NOT NULL)" );
             statement.execute( "INSERT INTO t(id, a) VALUES (1, 1), (2, 2), (3, 3)" );
             con.rollback();
             ResultSet resultSet = statement.executeQuery( "SELECT * FROM t" );
@@ -77,5 +80,30 @@ public class ConnectionTest {
     }
 
 
+    @Test
+    void testCloseWithOpenStatements() throws SQLException {
+        try ( Statement statement = con.createStatement() ) {
+            con.close();
+            assertTrue( statement.isClosed() );
+        }
+    }
+
+
+    @Test
+    void testCheckConnection() throws SQLException {
+        con.isValid( 0 );
+        assertThrows( SQLException.class, () -> con.isValid( -1 ) );
+    }
+
+
+    @Test
+    void testMetaData() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
+        meta.getURL();
+        meta.getDatabaseProductName();
+        meta.getCatalogs();
+        meta.getTableTypes();
+        meta.getTypeInfo();
+    }
 
 }

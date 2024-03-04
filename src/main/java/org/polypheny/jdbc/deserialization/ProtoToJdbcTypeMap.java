@@ -42,6 +42,7 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoPolyType.INTERVAL_YEAR, Types.OTHER )
                     .put( ProtoPolyType.CHAR, Types.CHAR )
                     .put( ProtoPolyType.VARCHAR, Types.VARCHAR )
+                    .put( ProtoPolyType.TEXT, Types.VARCHAR ) // TODO is Types.VARCHAR correct?
                     .put( ProtoPolyType.BINARY, Types.BINARY )
                     .put( ProtoPolyType.VARBINARY, Types.VARBINARY )
                     .put( ProtoPolyType.NULL, Types.NULL )

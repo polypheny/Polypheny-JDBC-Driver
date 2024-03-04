@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+package org.polypheny.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -63,6 +65,18 @@ public class StatementTest {
             assertEquals( 4, resultSet.getInt( 1 ) );
             assertEquals( 4, resultSet.getInt( 1 ) );
             assertFalse( resultSet.next() );
+        }
+    }
+
+
+    @Test
+    void testLargeBatch() throws SQLException {
+        try ( Statement s = con.createStatement() ) {
+            s.addBatch( "INSERT INTO t(id, a) VALUES (1, 1)" );
+            s.addBatch( "INSERT INTO t(id, a) VALUES (2, 2)" );
+            s.addBatch( "INSERT INTO t(id, a) VALUES (3, 3)" );
+            long[] res = s.executeLargeBatch();
+            assertArrayEquals( new long[]{ 1, 1, 1 }, res );
         }
     }
 

@@ -35,15 +35,20 @@ import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
 import org.polypheny.db.protointerface.proto.CommitRequest;
 import org.polypheny.db.protointerface.proto.CommitResponse;
+import org.polypheny.db.protointerface.proto.ConnectionCheckRequest;
+import org.polypheny.db.protointerface.proto.ConnectionCheckResponse;
 import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateRequest;
 import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateResponse;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.ConnectionResponse;
+import org.polypheny.db.protointerface.proto.DatabasesRequest;
+import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
 import org.polypheny.db.protointerface.proto.DisconnectResponse;
 import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementRequest;
+import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
@@ -51,8 +56,13 @@ import org.polypheny.db.protointerface.proto.Request;
 import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.db.protointerface.proto.RollbackRequest;
 import org.polypheny.db.protointerface.proto.RollbackResponse;
+import org.polypheny.db.protointerface.proto.StatementBatchResponse;
 import org.polypheny.db.protointerface.proto.StatementResponse;
 import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.db.protointerface.proto.TableTypesRequest;
+import org.polypheny.db.protointerface.proto.TableTypesResponse;
+import org.polypheny.db.protointerface.proto.TypesRequest;
+import org.polypheny.db.protointerface.proto.TypesResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 @Slf4j
@@ -160,6 +170,13 @@ public class RpcService {
     }
 
 
+    public ConnectionCheckResponse checkConnection( ConnectionCheckRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setConnectionCheckRequest( msg );
+        return completeSynchronously( req, timeout ).getConnectionCheckResponse();
+    }
+
+
     public ConnectionPropertiesUpdateResponse updateConnectionProperties( ConnectionPropertiesUpdateRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setConnectionPropertiesUpdateRequest( msg );
@@ -171,6 +188,27 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setDbmsVersionRequest( msg );
         return completeSynchronously( req, timeout ).getDbmsVersionResponse();
+    }
+
+
+    public DatabasesResponse getDatabases( DatabasesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setDatabasesRequest( msg );
+        return completeSynchronously( req, timeout ).getDatabasesResponse();
+    }
+
+
+    public TableTypesResponse getTableTypes( TableTypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setTableTypesRequest( msg );
+        return completeSynchronously( req, timeout ).getTableTypesResponse();
+    }
+
+
+    public TypesResponse getTypes( TypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setTypesRequest( msg );
+        return completeSynchronously( req, timeout ).getTypesResponse();
     }
 
 
@@ -204,6 +242,27 @@ public class RpcService {
                     callback.onError( new ProtoInterfaceServiceException( v.getErrorResponse().getMessage() ) );
                 } else {
                     callback.onNext( v.getStatementResponse() );
+                    if ( v.getLast() ) {
+                        callback.onCompleted();
+                    }
+                }
+            } );
+            sendMessage( req.build() );
+        } catch ( IOException e ) {
+            throw new ProtoInterfaceServiceException( e );
+        }
+    }
+
+
+    public void executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest msg, CallbackQueue<StatementBatchResponse> callback ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setExecuteUnparameterizedStatementBatchRequest( msg );
+        try {
+            callbacks.put( req.getId(), v -> {
+                if ( v.hasErrorResponse() ) {
+                    callback.onError( new ProtoInterfaceServiceException( v.getErrorResponse().getMessage() ) );
+                } else {
+                    callback.onNext( v.getStatementBatchResponse() );
                     if ( v.getLast() ) {
                         callback.onCompleted();
                     }

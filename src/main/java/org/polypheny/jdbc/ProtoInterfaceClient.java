@@ -114,11 +114,12 @@ public class ProtoInterfaceClient {
         ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
             /* ConnectionCheckResponses are empty messages */
-            getBlockingStub( timeout ).checkConnection( request );
+            // getBlockingStub( timeout ).checkConnection( request );
+            rpc.checkConnection( request, timeout );
+            return true;
         } catch ( StatusRuntimeException | ProtoInterfaceServiceException e ) {
             return false;
         }
-        return true;
     }
 
 
@@ -202,7 +203,8 @@ public class ProtoInterfaceClient {
                 .addAllStatements( requests )
                 .build();
         try {
-            getAsyncStub( timeout ).executeUnparameterizedStatementBatch( request, updateCallback );
+            rpc.executeUnparameterizedStatementBatch( request, updateCallback );
+            //getAsyncStub( timeout ).executeUnparameterizedStatementBatch( request, updateCallback );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -334,7 +336,8 @@ public class ProtoInterfaceClient {
 
     public List<Database> getDatabases( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getDatabases( DatabasesRequest.newBuilder().build() ).getDatabasesList();
+            //return getBlockingStub( timeout ).getDatabases( DatabasesRequest.newBuilder().build() ).getDatabasesList();
+            return rpc.getDatabases( DatabasesRequest.newBuilder().build(), timeout ).getDatabasesList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -352,7 +355,8 @@ public class ProtoInterfaceClient {
 
     public List<Type> getTypes( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getTypes( TypesRequest.newBuilder().build() ).getTypesList();
+            //return getBlockingStub( timeout ).getTypes( TypesRequest.newBuilder().build() ).getTypesList();
+            return rpc.getTypes( TypesRequest.newBuilder().build(), timeout ).getTypesList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -464,7 +468,8 @@ public class ProtoInterfaceClient {
 
     public List<TableType> getTablesTypes( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getTableTypes( TableTypesRequest.newBuilder().build() ).getTableTypesList();
+            //return getBlockingStub( timeout ).getTableTypes( TableTypesRequest.newBuilder().build() ).getTableTypesList();
+            return rpc.getTableTypes( TableTypesRequest.newBuilder().build(), timeout ).getTableTypesList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
