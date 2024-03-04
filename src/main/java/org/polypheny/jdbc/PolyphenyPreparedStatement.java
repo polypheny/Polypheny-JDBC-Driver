@@ -44,12 +44,12 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         super( connection, properties );
         this.statementId = statementSignature.getStatementId();
         this.parameterMetaData = new PolyphenyParameterMetaData( statementSignature );
-        this.parameters = createParamterList( statementSignature.getParameterMetasCount() );
+        this.parameters = createParameterList( statementSignature.getParameterMetasCount() );
         this.parameterBatch = new LinkedList<>();
     }
 
 
-    private TypedValue[] createParamterList( int parameterCount ) {
+    private TypedValue[] createParameterList( int parameterCount ) {
         return new TypedValue[parameterCount];
     }
 
@@ -338,7 +338,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public void clearParameters() throws SQLException {
         throwIfClosed();
-        parameters = createParamterList( parameterMetaData.getParameterCount() );
+        parameters = createParameterList( parameterMetaData.getParameterCount() );
     }
 
 
