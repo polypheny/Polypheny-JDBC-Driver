@@ -31,6 +31,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.protointerface.proto.ClientInfoProperties;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertiesResponse;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaRequest;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaResponse;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
@@ -79,6 +82,8 @@ import org.polypheny.db.protointerface.proto.TableTypesRequest;
 import org.polypheny.db.protointerface.proto.TableTypesResponse;
 import org.polypheny.db.protointerface.proto.TypesRequest;
 import org.polypheny.db.protointerface.proto.TypesResponse;
+import org.polypheny.db.protointerface.proto.UserDefinedTypesRequest;
+import org.polypheny.db.protointerface.proto.UserDefinedTypesResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 @Slf4j
@@ -228,6 +233,13 @@ public class RpcService {
     }
 
 
+    public UserDefinedTypesResponse getUserDefinedTypes( UserDefinedTypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setUserDefinedTypesRequest( msg );
+        return completeSynchronously( req, timeout ).getUserDefinedTypesResponse();
+    }
+
+
     public TypesResponse getTypes( TypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setTypesRequest( msg );
@@ -260,6 +272,20 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setEntitiesRequest( msg );
         return completeSynchronously( req, timeout ).getEntitiesResponse();
+    }
+
+
+    public ClientInfoPropertiesResponse setClientInfoProperties( ClientInfoProperties msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setSetClientInfoPropertiesRequest( msg );
+        return completeSynchronously( req, timeout ).getSetClientInfoPropertiesResponse();
+    }
+
+
+    public ClientInfoProperties getClientInfoProperties( ClientInfoPropertiesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setClientInfoPropertiesRequest( msg );
+        return completeSynchronously( req, timeout ).getClientInfoPropertiesResponse();
     }
 
 

@@ -442,7 +442,8 @@ public class ProtoInterfaceClient {
 
     public Map<String, String> getClientInfoProperties( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build() ).getPropertiesMap();
+            //return getBlockingStub( timeout ).getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build() ).getPropertiesMap();
+            return rpc.getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build(), timeout ).getPropertiesMap();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -499,7 +500,8 @@ public class ProtoInterfaceClient {
     public List<UserDefinedType> getUserDefinedTypes( int timeout ) throws ProtoInterfaceServiceException {
         UserDefinedTypesRequest.Builder requestBuilder = UserDefinedTypesRequest.newBuilder();
         try {
-            return getBlockingStub( timeout ).getUserDefinedTypes( requestBuilder.build() ).getUserDefinedTypesList();
+            //return getBlockingStub( timeout ).getUserDefinedTypes( requestBuilder.build() ).getUserDefinedTypesList();
+            return rpc.getUserDefinedTypes( requestBuilder.build(), timeout ).getUserDefinedTypesList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -511,7 +513,8 @@ public class ProtoInterfaceClient {
         properties.stringPropertyNames()
                 .forEach( s -> requestBuilder.putProperties( s, properties.getProperty( s ) ) );
         try {
-            getBlockingStub( timeout ).setClientInfoProperties( requestBuilder.build() );
+            //getBlockingStub( timeout ).setClientInfoProperties( requestBuilder.build() );
+            rpc.setClientInfoProperties( requestBuilder.build(), timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }

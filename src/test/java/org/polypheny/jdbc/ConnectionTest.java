@@ -27,6 +27,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -96,6 +97,12 @@ public class ConnectionTest {
         assertThrows( SQLException.class, () -> con.isValid( -1 ) );
     }
 
+    @Test
+    void testClientProperties() throws SQLException {
+        Properties info = con.getClientInfo();
+        con.setClientInfo( info );
+    }
+
 
     @Test
     void testMetaData() throws SQLException {
@@ -109,6 +116,7 @@ public class ConnectionTest {
         meta.getStringFunctions();
         meta.getSystemFunctions();
         meta.getTimeDateFunctions();
+        meta.getNumericFunctions();
         meta.getSQLKeywords();
     }
 
@@ -129,6 +137,7 @@ public class ConnectionTest {
     void testUnimplemented() throws SQLException {
         DatabaseMetaData meta = con.getMetaData();
         meta.getClientInfoProperties();
+        meta.getUDTs( "public", ".*", ".*", null );
     }
 
 }
