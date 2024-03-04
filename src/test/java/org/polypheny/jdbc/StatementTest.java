@@ -29,7 +29,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class StatementTest {
 
@@ -65,6 +68,20 @@ public class StatementTest {
             assertEquals( 4, resultSet.getInt( 1 ) );
             assertEquals( 4, resultSet.getInt( 1 ) );
             assertFalse( resultSet.next() );
+        }
+    }
+
+
+    @ParameterizedTest()
+    @ValueSource(ints = { 99, 100, 101 })
+    @Disabled("Prepared statements can only be executed once")
+    void testFetch( int n ) throws SQLException {
+        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
+            for ( int i = 0; i < n; i++ ) {
+                p.setInt( 1, i );
+                p.setInt( 2, i );
+                p.execute();
+            }
         }
     }
 
