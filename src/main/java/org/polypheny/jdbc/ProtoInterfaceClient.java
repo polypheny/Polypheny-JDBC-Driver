@@ -346,7 +346,8 @@ public class ProtoInterfaceClient {
 
     public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getClientInfoPropertyMetas( ClientInfoPropertyMetaRequest.newBuilder().build() ).getClientInfoPropertyMetasList();
+            //return getBlockingStub( timeout ).getClientInfoPropertyMetas( ClientInfoPropertyMetaRequest.newBuilder().build() ).getClientInfoPropertyMetasList();
+            return rpc.getClientInfoPropertiesMetas( ClientInfoPropertyMetaRequest.newBuilder().build(), timeout ).getClientInfoPropertyMetasList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -365,7 +366,8 @@ public class ProtoInterfaceClient {
 
     public String getSqlStringFunctions( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getSqlStringFunctions( SqlStringFunctionsRequest.newBuilder().build() ).getString();
+            //return getBlockingStub( timeout ).getSqlStringFunctions( SqlStringFunctionsRequest.newBuilder().build() ).getString();
+            return rpc.getSqlStringFunctions( SqlStringFunctionsRequest.newBuilder().build(), timeout ).getString();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -374,7 +376,8 @@ public class ProtoInterfaceClient {
 
     public String getSqlSystemFunctions( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getSqlSystemFunctions( SqlSystemFunctionsRequest.newBuilder().build() ).getString();
+            //return getBlockingStub( timeout ).getSqlSystemFunctions( SqlSystemFunctionsRequest.newBuilder().build() ).getString();
+            return rpc.getSqlSystemFunctions( SqlSystemFunctionsRequest.newBuilder().build(), timeout ).getString();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -383,7 +386,8 @@ public class ProtoInterfaceClient {
 
     public String getSqlTimeDateFunctions( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest.newBuilder().build() ).getString();
+            //return getBlockingStub( timeout ).getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest.newBuilder().build() ).getString();
+            return rpc.getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest.newBuilder().build(), timeout ).getString();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -392,7 +396,8 @@ public class ProtoInterfaceClient {
 
     public String getSqlNumericFunctions( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getSqlNumericFunctions( SqlNumericFunctionsRequest.newBuilder().build() ).getString();
+            //return getBlockingStub( timeout ).getSqlNumericFunctions( SqlNumericFunctionsRequest.newBuilder().build() ).getString();
+            return rpc.getSqlNumericFunctions( SqlNumericFunctionsRequest.newBuilder().build(), timeout ).getString();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -401,7 +406,8 @@ public class ProtoInterfaceClient {
 
     public String getSqlKeywords( int timeout ) throws ProtoInterfaceServiceException {
         try {
-            return getBlockingStub( timeout ).getSqlKeywords( SqlKeywordsRequest.newBuilder().build() ).getString();
+            //return getBlockingStub( timeout ).getSqlKeywords( SqlKeywordsRequest.newBuilder().build() ).getString();
+            return rpc.getSqlKeywords( SqlKeywordsRequest.newBuilder().build(), timeout ).getString();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -426,7 +432,8 @@ public class ProtoInterfaceClient {
         requestBuilder.setLanguage( languageName );
         Optional.ofNullable( procedureNamePattern ).ifPresent( requestBuilder::setProcedureNamePattern );
         try {
-            return getBlockingStub( timeout ).searchProcedures( requestBuilder.build() ).getProceduresList();
+            //return getBlockingStub( timeout ).searchProcedures( requestBuilder.build() ).getProceduresList();
+            return rpc.searchProcedures( requestBuilder.build(), timeout ).getProceduresList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -447,7 +454,8 @@ public class ProtoInterfaceClient {
         Optional.ofNullable( schemaPattern ).ifPresent( requestBuilder::setNamespacePattern );
         Optional.ofNullable( protoNamespaceType ).ifPresent( requestBuilder::setNamespaceType );
         try {
-            return getBlockingStub( timeout ).searchNamespaces( requestBuilder.build() ).getNamespacesList();
+            //return getBlockingStub( timeout ).searchNamespaces( requestBuilder.build() ).getNamespacesList();
+            return rpc.searchNamespaces( requestBuilder.build(), timeout ).getNamespacesList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -459,7 +467,8 @@ public class ProtoInterfaceClient {
         requestBuilder.setNamespaceName( namespace );
         Optional.ofNullable( entityNamePattern ).ifPresent( requestBuilder::setEntityPattern );
         try {
-            return getBlockingStub( timeout ).searchEntities( requestBuilder.build() ).getEntitiesList();
+            //return getBlockingStub( timeout ).searchEntities( requestBuilder.build() ).getEntitiesList();
+            return rpc.searchEntities( requestBuilder.build(), timeout ).getEntitiesList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
@@ -515,7 +524,8 @@ public class ProtoInterfaceClient {
                 .setFunctionCategory( functionCategory )
                 .build();
         try {
-            return getBlockingStub( timeout ).searchFunctions( functionsRequest ).getFunctionsList();
+            //return getBlockingStub( timeout ).searchFunctions( functionsRequest ).getFunctionsList();
+            return rpc.searchFunctions( functionsRequest, timeout ).getFunctionsList();
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }

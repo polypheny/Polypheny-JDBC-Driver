@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ConnectionTest {
@@ -104,6 +105,30 @@ public class ConnectionTest {
         meta.getCatalogs();
         meta.getTableTypes();
         meta.getTypeInfo();
+        meta.getColumns( "public", ".*", ".*", ".*" );
+        meta.getStringFunctions();
+        meta.getSystemFunctions();
+        meta.getTimeDateFunctions();
+        meta.getSQLKeywords();
+    }
+
+
+    @Test
+    void testMetaDataNotStrict() throws SQLException {
+        try ( Connection con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590?strict=false", "pa", "" ) ) {
+            DatabaseMetaData meta = con.getMetaData();
+            meta.getProcedures( "public", ".*", ".*" );
+            meta.getFunctions( "public", ".*", ".*" );
+            meta.getSchemas( "public", ".*" );
+        }
+    }
+
+
+    @Test
+    @Disabled("Not yet implemented")
+    void testUnimplemented() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
+        meta.getClientInfoProperties();
     }
 
 }

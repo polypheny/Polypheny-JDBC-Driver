@@ -31,6 +31,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaRequest;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaResponse;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
 import org.polypheny.db.protointerface.proto.CommitRequest;
@@ -47,15 +49,29 @@ import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
 import org.polypheny.db.protointerface.proto.DisconnectResponse;
+import org.polypheny.db.protointerface.proto.EntitiesRequest;
+import org.polypheny.db.protointerface.proto.EntitiesResponse;
 import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementRequest;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.db.protointerface.proto.FunctionsRequest;
+import org.polypheny.db.protointerface.proto.FunctionsResponse;
+import org.polypheny.db.protointerface.proto.MetaStringResponse;
+import org.polypheny.db.protointerface.proto.NamespacesRequest;
+import org.polypheny.db.protointerface.proto.NamespacesResponse;
 import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
+import org.polypheny.db.protointerface.proto.ProceduresRequest;
+import org.polypheny.db.protointerface.proto.ProceduresResponse;
 import org.polypheny.db.protointerface.proto.Request;
 import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.db.protointerface.proto.RollbackRequest;
 import org.polypheny.db.protointerface.proto.RollbackResponse;
+import org.polypheny.db.protointerface.proto.SqlKeywordsRequest;
+import org.polypheny.db.protointerface.proto.SqlNumericFunctionsRequest;
+import org.polypheny.db.protointerface.proto.SqlStringFunctionsRequest;
+import org.polypheny.db.protointerface.proto.SqlSystemFunctionsRequest;
+import org.polypheny.db.protointerface.proto.SqlTimeDateFunctionsRequest;
 import org.polypheny.db.protointerface.proto.StatementBatchResponse;
 import org.polypheny.db.protointerface.proto.StatementResponse;
 import org.polypheny.db.protointerface.proto.StatementResult;
@@ -198,6 +214,13 @@ public class RpcService {
     }
 
 
+    public ClientInfoPropertyMetaResponse getClientInfoPropertiesMetas( ClientInfoPropertyMetaRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setClientInfoPropertyMetaRequest( msg );
+        return completeSynchronously( req, timeout ).getClientInfoPropertyMetaResponse();
+    }
+
+
     public TableTypesResponse getTableTypes( TableTypesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setTableTypesRequest( msg );
@@ -209,6 +232,69 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setTypesRequest( msg );
         return completeSynchronously( req, timeout ).getTypesResponse();
+    }
+
+
+    public ProceduresResponse searchProcedures( ProceduresRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setProceduresRequest( msg );
+        return completeSynchronously( req, timeout ).getProceduresResponse();
+    }
+
+
+    public FunctionsResponse searchFunctions( FunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setFunctionsRequest( msg );
+        return completeSynchronously( req, timeout ).getFunctionsResponse();
+    }
+
+
+    public NamespacesResponse searchNamespaces( NamespacesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setNamespacesRequest( msg );
+        return completeSynchronously( req, timeout ).getNamespacesResponse();
+    }
+
+
+    public EntitiesResponse searchEntities( EntitiesRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setEntitiesRequest( msg );
+        return completeSynchronously( req, timeout ).getEntitiesResponse();
+    }
+
+
+    public MetaStringResponse getSqlStringFunctions( SqlStringFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setSqlStringFunctionsRequest( msg );
+        return completeSynchronously( req, timeout ).getSqlStringFunctionsResponse();
+    }
+
+
+    public MetaStringResponse getSqlSystemFunctions( SqlSystemFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setSqlSystemFunctionsRequest( msg );
+        return completeSynchronously( req, timeout ).getSqlSystemFunctionsResponse();
+    }
+
+
+    public MetaStringResponse getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setSqlTimeDateFunctionsRequest( msg );
+        return completeSynchronously( req, timeout ).getSqlTimeDateFunctionsResponse();
+    }
+
+
+    public MetaStringResponse getSqlNumericFunctions( SqlNumericFunctionsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setSqlNumericFunctionsRequest( msg );
+        return completeSynchronously( req, timeout ).getSqlNumericFunctionsResponse();
+    }
+
+
+    public MetaStringResponse getSqlKeywords( SqlKeywordsRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setSqlKeywordsRequest( msg );
+        return completeSynchronously( req, timeout ).getSqlKeywordsResponse();
     }
 
 
