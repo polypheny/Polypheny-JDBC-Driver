@@ -89,12 +89,14 @@ public class StatementTest {
     @ValueSource(ints = { 99, 100, 101 })
     void testFetch( int n ) throws SQLException {
         // TODO: Switch for and try if testMoreThanOneExecute works
-        for ( int i = 0; i < n; i++ ) {
-            try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
+        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
+            for ( int i = 0; i < n; i++ ) {
+
                 p.setInt( 1, i );
                 p.setInt( 2, i );
-                p.execute();
+                p.addBatch();
             }
+            p.executeBatch();
         }
 
         try ( Statement s = con.createStatement() ) {
@@ -118,6 +120,32 @@ public class StatementTest {
             s.addBatch( "INSERT INTO t(id, a) VALUES (3, 3)" );
             long[] res = s.executeLargeBatch();
             assertArrayEquals( new long[]{ 1, 1, 1 }, res );
+        }
+    }
+
+
+    @Test
+    void testParameterizedLargeBatch() throws SQLException {
+        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
+            p.setInt( 1, 1 );
+            p.setInt( 2, 1 );
+            p.addBatch();
+            p.setInt( 1, 2 );
+            p.setInt( 2, 2 );
+            p.addBatch();
+            long[] res = p.executeLargeBatch();
+            assertArrayEquals( new long[]{ 2 }, res );
+        }
+    }
+
+
+    @Test
+    @Disabled("Too slow")
+    void testSpeed() throws SQLException {
+        try ( Statement p = con.createStatement() ) {
+            for ( int i = 0; i < 30; i++ ) {
+                p.executeUpdate( String.format( "INSERT INTO t(id, a) VALUES (%s, %s)", i, i ) );
+            }
         }
     }
 

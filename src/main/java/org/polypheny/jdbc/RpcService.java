@@ -430,6 +430,13 @@ public class RpcService {
     }
 
 
+    StatementBatchResponse executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setExecuteIndexedStatementBatchRequest( msg );
+        return completeSynchronously( req, timeout ).getStatementBatchResponse();
+    }
+
+
     Frame fetchResult( FetchRequest msg, int timeout ) throws ProtoInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setFetchRequest( msg );

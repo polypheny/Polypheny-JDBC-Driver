@@ -258,7 +258,8 @@ public class ProtoInterfaceClient {
                 .addAllParameters( parameters )
                 .build();
         try {
-            return getBlockingStub( timeout ).executeIndexedStatementBatch( request );
+            //return getBlockingStub( timeout ).executeIndexedStatementBatch( request );
+            return rpc.executeIndexedStatementBatch( request, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }
