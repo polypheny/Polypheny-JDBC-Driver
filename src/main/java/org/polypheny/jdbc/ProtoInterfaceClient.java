@@ -305,7 +305,8 @@ public class ProtoInterfaceClient {
                 .setStatementId( statementId )
                 .build();
         try {
-            return getBlockingStub( timeout ).fetchResult( fetchRequest );
+            //return getBlockingStub( timeout ).fetchResult( fetchRequest );
+            return rpc.fetchResult( fetchRequest, timeout );
         } catch ( StatusRuntimeException e ) {
             throw ProtoInterfaceServiceException.fromMetadata( e.getMessage(), Status.trailersFromThrowable( e ) );
         }

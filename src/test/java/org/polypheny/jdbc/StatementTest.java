@@ -72,17 +72,41 @@ public class StatementTest {
     }
 
 
+    @Test
+    void testMoreThanOneExecute() throws SQLException {
+        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
+            p.setInt( 1, 4 );
+            p.setInt( 2, 4 );
+            p.execute();
+            p.setInt( 1, 5 );
+            p.setInt( 2, 5 );
+            p.execute();
+        }
+    }
+
+
     @ParameterizedTest()
     @ValueSource(ints = { 99, 100, 101 })
-    @Disabled("Prepared statements can only be executed once")
     void testFetch( int n ) throws SQLException {
-        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
-            for ( int i = 0; i < n; i++ ) {
+        // TODO: Switch for and try if testMoreThanOneExecute works
+        for ( int i = 0; i < n; i++ ) {
+            try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
                 p.setInt( 1, i );
                 p.setInt( 2, i );
                 p.execute();
             }
         }
+
+        try ( Statement s = con.createStatement() ) {
+            ResultSet res = s.executeQuery( "SELECT * FROM t" );
+            int count = 0;
+            while ( res.next() ) {
+                // Consume all results
+                count++;
+            }
+            assertEquals( n, count );
+        }
+
     }
 
 

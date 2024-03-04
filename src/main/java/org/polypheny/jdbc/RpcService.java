@@ -57,6 +57,8 @@ import org.polypheny.db.protointerface.proto.EntitiesResponse;
 import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementRequest;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.db.protointerface.proto.FetchRequest;
+import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.FunctionsRequest;
 import org.polypheny.db.protointerface.proto.FunctionsResponse;
 import org.polypheny.db.protointerface.proto.MetaStringResponse;
@@ -398,6 +400,13 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setExecuteIndexedStatementRequest( msg );
         return completeSynchronously( req, timeout ).getStatementResult();
+    }
+
+
+    public Frame fetchResult( FetchRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setFetchRequest( msg );
+        return completeSynchronously( req, timeout ).getFrame();
     }
 
 
