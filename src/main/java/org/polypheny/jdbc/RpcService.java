@@ -18,10 +18,6 @@ package org.polypheny.jdbc;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,17 +89,15 @@ import org.polypheny.jdbc.utils.CallbackQueue;
 public class RpcService {
 
     private final AtomicLong idCounter = new AtomicLong( 1 );
-    private final InputStream in;
-    private final OutputStream out;
+    private final Transport con;
     private final Thread service;
     private boolean closed = false;
     private IOException error = null;
     private final Map<Long, Consumer<Response>> callbacks = new ConcurrentHashMap<>();
 
 
-    RpcService( InputStream in, OutputStream out ) {
-        this.in = in;
-        this.out = out;
+    RpcService( Transport con ) {
+        this.con = con;
         this.service = new Thread( this::readResponses );
         this.service.start();
     }
@@ -131,28 +125,12 @@ public class RpcService {
         if ( this.closed ) {
             throw new IOException( "Connection is closed" );
         }
-        byte[] b = req.toByteArray();
-        ByteBuffer bb = ByteBuffer.allocate( 8 );
-        bb.order( ByteOrder.LITTLE_ENDIAN );
-        bb.putLong( b.length );
-        out.write( bb.array() );
-        out.write( b );
+        con.sendMessage( req.toByteArray() );
     }
 
 
     private Response receiveMessage() throws IOException {
-        byte[] b = in.readNBytes( 8 );
-        if ( b.length != 8 ) {
-            if ( b.length == 0 ) { // EOF
-                throw new EOFException();
-            }
-            throw new IOException( "short read" );
-        }
-        ByteBuffer bb = ByteBuffer.wrap( b );
-        bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
-        long length = bb.getLong();
-        byte[] msg = in.readNBytes( (int) length );
-        return Response.parseFrom( msg );
+        return Response.parseFrom( con.receiveMessage() );
     }
 
 

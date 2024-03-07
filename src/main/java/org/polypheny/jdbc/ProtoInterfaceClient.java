@@ -1,7 +1,6 @@
 package org.polypheny.jdbc;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,14 +65,19 @@ public class ProtoInterfaceClient {
 
     private static final int MAJOR_API_VERSION = 2;
     private static final int MINOR_API_VERSION = 0;
-    private final Socket con;
+    private final Transport con;
     private final RpcService rpc;
 
 
-    public ProtoInterfaceClient( String host, int port ) throws ProtoInterfaceServiceException {
+    public ProtoInterfaceClient( String host, int port, Map<String, String> parameters ) throws ProtoInterfaceServiceException {
         try {
-            con = new Socket( host, port );
-            rpc = new RpcService( con.getInputStream(), con.getOutputStream() );
+            String mode = parameters.getOrDefault( "mode", "plain" );
+            if ( mode.equals( "plain" ) ) {
+                con = new PlainTransport( host, port );
+            } else {
+                throw new ProtoInterfaceServiceException( "Unknown mode " + mode );
+            }
+            rpc = new RpcService( con );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( e );
         }
@@ -133,11 +137,8 @@ public class ProtoInterfaceClient {
             rpc.disconnect( request, timeout );
             //getBlockingStub( timeout ).disconnect( request );
         } finally {
-            try {
-                rpc.close();
-                con.close();
-            } catch ( IOException ignored ) {
-            }
+            rpc.close();
+            con.close();
         }
     }
 
