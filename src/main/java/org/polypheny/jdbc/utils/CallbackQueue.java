@@ -1,8 +1,5 @@
 package org.polypheny.jdbc.utils;
 
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -10,7 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 
-public class CallbackQueue<T> implements StreamObserver<T> {
+public class CallbackQueue<T> {
 
     private final Lock queueLock = new ReentrantLock();
     private final Condition hasNext = queueLock.newCondition();
@@ -57,7 +54,6 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     }
 
 
-    @Override
     public void onNext( T message ) {
         queueLock.lock();
         messageQueue.add( message );
@@ -66,23 +62,14 @@ public class CallbackQueue<T> implements StreamObserver<T> {
     }
 
 
-    @Override
     public void onError( Throwable propagatedException ) {
         queueLock.lock();
-        if ( propagatedException instanceof StatusRuntimeException ) {
-            StatusRuntimeException statusRuntimeException = (StatusRuntimeException) propagatedException;
-            this.propagatedException = ProtoInterfaceServiceException.fromMetadata(
-                    statusRuntimeException.getMessage(),
-                    Status.trailersFromThrowable( statusRuntimeException ) );
-        } else {
-            this.propagatedException = new ProtoInterfaceServiceException( propagatedException );
-        }
+        this.propagatedException = new ProtoInterfaceServiceException( propagatedException );
         hasNext.signal();
         queueLock.unlock();
     }
 
 
-    @Override
     public void onCompleted() {
         queueLock.lock();
         bIsCompleted = true;

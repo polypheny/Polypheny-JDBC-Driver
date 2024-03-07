@@ -1,6 +1,5 @@
 package org.polypheny.jdbc;
 
-import io.grpc.StatusRuntimeException;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -518,7 +517,7 @@ public class PolyConnection implements Connection {
             Properties properties = new Properties();
             properties.putAll( getProtoInterfaceClient().getClientInfoProperties( getNetworkTimeout() ) );
             return properties;
-        } catch ( StatusRuntimeException | SQLException e ) {
+        } catch ( SQLException e ) {
             throw new SQLClientInfoException();
         }
     }

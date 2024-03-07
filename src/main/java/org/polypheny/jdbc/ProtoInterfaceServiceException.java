@@ -1,10 +1,6 @@
 package org.polypheny.jdbc;
 
-import io.grpc.Metadata;
-import io.grpc.protobuf.ProtoUtils;
 import java.sql.SQLException;
-import java.util.Objects;
-import java.util.Optional;
 import org.polypheny.db.protointerface.proto.ErrorDetails;
 
 /*
@@ -23,29 +19,6 @@ import org.polypheny.db.protointerface.proto.ErrorDetails;
  * limitations under the License.
  */
 public class ProtoInterfaceServiceException extends SQLException {
-
-    private enum ErrorCodes {
-
-    }
-
-
-    public static final Metadata.Key<ErrorDetails> ERROR_DETAILS_KEY = ProtoUtils.keyForProto( ErrorDetails.getDefaultInstance() );
-
-
-    public static ProtoInterfaceServiceException fromMetadata( String message, Metadata metadata ) {
-        if ( metadata == null ) {
-            return new ProtoInterfaceServiceException( message );
-        }
-        if ( !metadata.containsKey( ERROR_DETAILS_KEY ) ) {
-            return new ProtoInterfaceServiceException( message, ProtoInterfaceErrors.UNSPECIFIED.state, ProtoInterfaceErrors.UNSPECIFIED.errorCode );
-        }
-        ErrorDetails errorDetails = metadata.get( ERROR_DETAILS_KEY );
-        if ( errorDetails == null ) {
-            return new ProtoInterfaceServiceException( message );
-        }
-        return new ProtoInterfaceServiceException( Objects.requireNonNull( errorDetails ) );
-    }
-
 
     public ProtoInterfaceServiceException( ProtoInterfaceErrors sqlError, String message ) {
         this( message, sqlError.state, sqlError.errorCode );
@@ -104,15 +77,6 @@ public class ProtoInterfaceServiceException extends SQLException {
                 errorDetails.hasState() ? errorDetails.getState() : ProtoInterfaceErrors.UNSPECIFIED.state,
                 errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : ProtoInterfaceErrors.UNSPECIFIED.errorCode
         );
-    }
-
-
-    public ErrorDetails getProtoErrorDetails() {
-        ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
-        errorDetailsBuilder.setErrorCode( getErrorCode() );
-        Optional.ofNullable( getSQLState() ).ifPresent( errorDetailsBuilder::setState );
-        Optional.ofNullable( getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
-        return errorDetailsBuilder.build();
     }
 
 }
