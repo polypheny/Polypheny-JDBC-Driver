@@ -83,6 +83,7 @@ import org.polypheny.db.protointerface.proto.TypesRequest;
 import org.polypheny.db.protointerface.proto.TypesResponse;
 import org.polypheny.db.protointerface.proto.UserDefinedTypesRequest;
 import org.polypheny.db.protointerface.proto.UserDefinedTypesResponse;
+import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 @Slf4j

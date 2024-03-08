@@ -59,6 +59,8 @@ import org.polypheny.db.protointerface.proto.UserDefinedType;
 import org.polypheny.db.protointerface.proto.UserDefinedTypesRequest;
 import org.polypheny.jdbc.serialisation.ProtoValueSerializer;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.transport.PlainTransport;
+import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class ProtoInterfaceClient {

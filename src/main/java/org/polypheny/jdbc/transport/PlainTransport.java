@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc;
+package org.polypheny.jdbc.transport;
 
 import java.io.EOFException;
 import java.io.IOException;
