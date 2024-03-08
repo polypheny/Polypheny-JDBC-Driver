@@ -132,7 +132,7 @@ message ProtoString {
 }
 
 message ProtoTime {
-  int32 value = 1;
+  int32 time = 1;
 }
 
 message ProtoTimestamp {

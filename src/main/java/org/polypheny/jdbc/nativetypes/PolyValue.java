@@ -434,7 +434,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
             case DATE:
                 return new PolyDate( protoValue.getDate().getDate() );
             case TIME:
-                return new PolyTime( protoValue.getTime().getValue() );
+                return new PolyTime( protoValue.getTime().getTime() );
             case TIMESTAMP:
                 return new PolyTimeStamp(protoValue.getTimestamp().getTimestamp());
             case INTERVAL:
