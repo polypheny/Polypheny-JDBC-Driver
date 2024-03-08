@@ -90,7 +90,6 @@ public class ProtoInterfaceClient {
         ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
             /* ConnectionCheckResponses are empty messages */
-            // getBlockingStub( timeout ).checkConnection( request );
             rpc.checkConnection( request, timeout );
             return true;
         } catch ( ProtoInterfaceServiceException e ) {
@@ -101,7 +100,6 @@ public class ProtoInterfaceClient {
 
     public List<String> requestSupportedLanguages( int timeout ) {
         LanguageRequest languageRequest = LanguageRequest.newBuilder().build();
-        //return blockingStub.getSupportedLanguages( languageRequest ).getLanguageNamesList();
         throw new RuntimeException( "Not yet implemented" );
     }
 
@@ -137,7 +135,6 @@ public class ProtoInterfaceClient {
         DisconnectRequest request = DisconnectRequest.newBuilder().build();
         try {
             rpc.disconnect( request, timeout );
-            //getBlockingStub( timeout ).disconnect( request );
         } finally {
             rpc.close();
             con.close();
@@ -155,7 +152,6 @@ public class ProtoInterfaceClient {
                 .setStatement( statement )
                 .build();
         rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
-        //getAsyncStub( timeout ).executeUnparameterizedStatement( request, callback );
     }
 
 
@@ -165,7 +161,6 @@ public class ProtoInterfaceClient {
                 .build();
 
         rpc.executeUnparameterizedStatementBatch( request, updateCallback ); // TODO timeout
-        //getAsyncStub( timeout ).executeUnparameterizedStatementBatch( request, updateCallback );
     }
 
 
@@ -179,7 +174,6 @@ public class ProtoInterfaceClient {
                 .setLanguageName( languageName )
                 .build();
 
-        //return getBlockingStub( timeout ).prepareIndexedStatement( request );
         return rpc.prepareIndexedStatement( request, timeout );
     }
 
@@ -194,7 +188,6 @@ public class ProtoInterfaceClient {
                 .setFetchSize( fetchSize )
                 .build();
 
-        //return getBlockingStub( timeout ).executeIndexedStatement( request );
         return rpc.executeIndexedStatement( request, timeout );
     }
 
@@ -209,7 +202,6 @@ public class ProtoInterfaceClient {
                 .addAllParameters( parameters )
                 .build();
 
-        //return getBlockingStub( timeout ).executeIndexedStatementBatch( request );
         return rpc.executeIndexedStatementBatch( request, timeout );
     }
 
@@ -217,7 +209,6 @@ public class ProtoInterfaceClient {
     public void commitTransaction( int timeout ) throws ProtoInterfaceServiceException {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
 
-        //getBlockingStub( timeout ).commitTransaction( commitRequest );
         rpc.commit( commitRequest, timeout );
     }
 
@@ -225,7 +216,6 @@ public class ProtoInterfaceClient {
     public void rollbackTransaction( int timeout ) throws ProtoInterfaceServiceException {
         RollbackRequest rollbackRequest = RollbackRequest.newBuilder().build();
 
-        //getBlockingStub( timeout ).rollbackTransaction( rollbackRequest );
         rpc.rollback( rollbackRequest, timeout );
     }
 
@@ -235,7 +225,6 @@ public class ProtoInterfaceClient {
                 .setStatementId( statementId )
                 .build();
 
-        //getBlockingStub( timeout ).closeStatement( request );
         rpc.closeStatement( request, timeout );
     }
 
@@ -246,7 +235,6 @@ public class ProtoInterfaceClient {
                 .setStatementId( statementId )
                 .build();
 
-        //return getBlockingStub( timeout ).fetchResult( fetchRequest );
         return rpc.fetchResult( fetchRequest, timeout );
     }
 
@@ -265,55 +253,46 @@ public class ProtoInterfaceClient {
     public DbmsVersionResponse getDbmsVersion( int timeout ) throws ProtoInterfaceServiceException {
         DbmsVersionRequest dbmsVersionRequest = DbmsVersionRequest.newBuilder().build();
 
-        //return getBlockingStub( timeout ).getDbmsVersion( dbmsVersionRequest );
         return rpc.getDbmsVersion( dbmsVersionRequest, timeout );
     }
 
 
     public List<Database> getDatabases( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getDatabases( DatabasesRequest.newBuilder().build() ).getDatabasesList();
         return rpc.getDatabases( DatabasesRequest.newBuilder().build(), timeout ).getDatabasesList();
     }
 
 
     public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getClientInfoPropertyMetas( ClientInfoPropertyMetaRequest.newBuilder().build() ).getClientInfoPropertyMetasList();
         return rpc.getClientInfoPropertiesMetas( ClientInfoPropertyMetaRequest.newBuilder().build(), timeout ).getClientInfoPropertyMetasList();
     }
 
 
     public List<Type> getTypes( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getTypes( TypesRequest.newBuilder().build() ).getTypesList();
         return rpc.getTypes( TypesRequest.newBuilder().build(), timeout ).getTypesList();
     }
 
 
     public String getSqlStringFunctions( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getSqlStringFunctions( SqlStringFunctionsRequest.newBuilder().build() ).getString();
         return rpc.getSqlStringFunctions( SqlStringFunctionsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
     public String getSqlSystemFunctions( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getSqlSystemFunctions( SqlSystemFunctionsRequest.newBuilder().build() ).getString();
         return rpc.getSqlSystemFunctions( SqlSystemFunctionsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
     public String getSqlTimeDateFunctions( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest.newBuilder().build() ).getString();
         return rpc.getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
     public String getSqlNumericFunctions( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getSqlNumericFunctions( SqlNumericFunctionsRequest.newBuilder().build() ).getString();
         return rpc.getSqlNumericFunctions( SqlNumericFunctionsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
     public String getSqlKeywords( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getSqlKeywords( SqlKeywordsRequest.newBuilder().build() ).getString();
         return rpc.getSqlKeywords( SqlKeywordsRequest.newBuilder().build(), timeout ).getString();
     }
 
@@ -322,7 +301,6 @@ public class ProtoInterfaceClient {
         ConnectionPropertiesUpdateRequest request = ConnectionPropertiesUpdateRequest.newBuilder()
                 .setConnectionProperties( buildConnectionProperties( connectionProperties ) )
                 .build();
-        //getBlockingStub( timeout ).updateConnectionProperties( request );
         rpc.updateConnectionProperties( request, timeout );
     }
 
@@ -331,13 +309,11 @@ public class ProtoInterfaceClient {
         ProceduresRequest.Builder requestBuilder = ProceduresRequest.newBuilder();
         requestBuilder.setLanguage( languageName );
         Optional.ofNullable( procedureNamePattern ).ifPresent( requestBuilder::setProcedureNamePattern );
-        //return getBlockingStub( timeout ).searchProcedures( requestBuilder.build() ).getProceduresList();
         return rpc.searchProcedures( requestBuilder.build(), timeout ).getProceduresList();
     }
 
 
     public Map<String, String> getClientInfoProperties( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build() ).getPropertiesMap();
         return rpc.getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build(), timeout ).getPropertiesMap();
     }
 
@@ -347,7 +323,6 @@ public class ProtoInterfaceClient {
         Optional.ofNullable( schemaPattern ).ifPresent( requestBuilder::setNamespacePattern );
         Optional.ofNullable( protoNamespaceType ).ifPresent( requestBuilder::setNamespaceType );
 
-        //return getBlockingStub( timeout ).searchNamespaces( requestBuilder.build() ).getNamespacesList();
         return rpc.searchNamespaces( requestBuilder.build(), timeout ).getNamespacesList();
     }
 
@@ -357,13 +332,11 @@ public class ProtoInterfaceClient {
         requestBuilder.setNamespaceName( namespace );
         Optional.ofNullable( entityNamePattern ).ifPresent( requestBuilder::setEntityPattern );
 
-        //return getBlockingStub( timeout ).searchEntities( requestBuilder.build() ).getEntitiesList();
         return rpc.searchEntities( requestBuilder.build(), timeout ).getEntitiesList();
     }
 
 
     public List<TableType> getTablesTypes( int timeout ) throws ProtoInterfaceServiceException {
-        //return getBlockingStub( timeout ).getTableTypes( TableTypesRequest.newBuilder().build() ).getTableTypesList();
         return rpc.getTableTypes( TableTypesRequest.newBuilder().build(), timeout ).getTableTypesList();
     }
 
@@ -372,7 +345,6 @@ public class ProtoInterfaceClient {
         NamespaceRequest.Builder requestBuilder = NamespaceRequest.newBuilder();
         requestBuilder.setNamespaceName( namespaceName );
 
-        //return getBlockingStub( timeout ).getNamespace( requestBuilder.build() );
         throw new RuntimeException( "Not yet implemented" );
     }
 
@@ -380,7 +352,6 @@ public class ProtoInterfaceClient {
     public List<UserDefinedType> getUserDefinedTypes( int timeout ) throws ProtoInterfaceServiceException {
         UserDefinedTypesRequest.Builder requestBuilder = UserDefinedTypesRequest.newBuilder();
 
-        //return getBlockingStub( timeout ).getUserDefinedTypes( requestBuilder.build() ).getUserDefinedTypesList();
         return rpc.getUserDefinedTypes( requestBuilder.build(), timeout ).getUserDefinedTypesList();
     }
 
@@ -390,7 +361,6 @@ public class ProtoInterfaceClient {
         properties.stringPropertyNames()
                 .forEach( s -> requestBuilder.putProperties( s, properties.getProperty( s ) ) );
 
-        //getBlockingStub( timeout ).setClientInfoProperties( requestBuilder.build() );
         rpc.setClientInfoProperties( requestBuilder.build(), timeout );
     }
 
@@ -401,7 +371,6 @@ public class ProtoInterfaceClient {
                 .setFunctionCategory( functionCategory )
                 .build();
 
-        //return getBlockingStub( timeout ).searchFunctions( functionsRequest ).getFunctionsList();
         return rpc.searchFunctions( functionsRequest, timeout ).getFunctionsList();
     }
 
