@@ -2,7 +2,9 @@ package org.polypheny.jdbc.deserialization;
 
 
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Types;
+import java.time.LocalTime;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
@@ -32,7 +34,7 @@ public class ProtoValueDeserializer {
                 case STRING:
                     return TypedValue.fromString( value.getString().getString() );
                 case TIME:
-                    return TypedValue.fromObject( value.getTime().getTime(), Types.TIME ); // TODO
+                    return TypedValue.fromTime( new Time(value.getTime().getTime()));
                 case TIMESTAMP:
                     return TypedValue.fromObject( value.getTimestamp().getTimestamp(), Types.TIMESTAMP );
                 case BIG_DECIMAL:
