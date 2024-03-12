@@ -18,6 +18,7 @@ package org.polypheny.jdbc;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -165,7 +166,7 @@ public class RpcService {
                     callbacks.remove( resp.getId() );
                 }
                 c.complete( resp );
-            } catch ( EOFException e ) {
+            } catch ( EOFException | ClosedChannelException e ) {
                 this.closed = true;
                 callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
                 callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
