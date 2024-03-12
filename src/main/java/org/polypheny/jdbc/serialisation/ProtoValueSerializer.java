@@ -234,9 +234,11 @@ public class ProtoValueSerializer {
 
 
     private static ProtoValue serializeAsProtoTime( TypedValue typedValue ) throws SQLException {
+        long ofDay = typedValue.asTime().getTime();
+        ofDay += DriverProperties.getDEFAULT_TIMEZONE().getOffset(ofDay);
+        System.out.println(ofDay);
         ProtoTime protoTime = ProtoTime.newBuilder()
-                // TODO TH: Fix this. Why is this an int32?!
-                .setTime( (int) typedValue.asTime().getTime() )
+                .setTime( (int) ofDay )
                 .build();
         return ProtoValue.newBuilder()
                 .setTime( protoTime )
