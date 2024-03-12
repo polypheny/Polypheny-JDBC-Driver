@@ -236,7 +236,6 @@ public class ProtoValueSerializer {
     private static ProtoValue serializeAsProtoTime( TypedValue typedValue ) throws SQLException {
         long ofDay = typedValue.asTime().getTime();
         ofDay += DriverProperties.getDEFAULT_TIMEZONE().getOffset(ofDay);
-        System.out.println(ofDay);
         ProtoTime protoTime = ProtoTime.newBuilder()
                 .setTime( (int) ofDay )
                 .build();
@@ -247,8 +246,10 @@ public class ProtoValueSerializer {
 
 
     private static ProtoValue serializeAsTimestamp( TypedValue typedValue ) throws SQLException {
+        long milliseconds = typedValue.asTimestamp().getTime();
+        milliseconds += DriverProperties.getDEFAULT_TIMEZONE().getOffset(milliseconds);
         ProtoTimestamp protoTimestamp = ProtoTimestamp.newBuilder()
-                .setTimestamp( typedValue.asTimestamp().getTime() )
+                .setTimestamp( milliseconds )
                 .build();
         return ProtoValue.newBuilder()
                 .setTimestamp( protoTimestamp )
