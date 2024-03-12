@@ -64,12 +64,12 @@ public class ProtoValueSerializer {
             case Types.BOOLEAN:
                 return serializeAsProtoBoolean( typedValue );
             case Types.BIGINT:
-            case Types.DOUBLE:
                 return serializeAsProtoLong( typedValue );
+            case Types.REAL:
+            case Types.DOUBLE:
+                return serializeAsProtoDouble( typedValue );
             case Types.FLOAT:
                 return serializeAsProtoFloat( typedValue );
-            case Types.REAL:
-                return serializeAsProtoDouble( typedValue );
             case Types.NUMERIC:
             case Types.DECIMAL:
                 return serializeAsProtoBigDecimal( typedValue );
