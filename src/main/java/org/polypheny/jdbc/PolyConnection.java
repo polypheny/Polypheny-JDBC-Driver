@@ -75,11 +75,6 @@ public class PolyConnection implements Connection {
     }
 
 
-    public void removeStatement( Statement polyphenyStatement ) {
-        openStatements.remove( polyphenyStatement );
-    }
-
-
     public PolyConnection(
             PolyphenyConnectionProperties connectionProperties,
             PolyphenyDatabaseMetadata databaseMetaData ) {

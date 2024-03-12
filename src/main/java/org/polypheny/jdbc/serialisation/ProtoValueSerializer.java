@@ -52,7 +52,7 @@ public class ProtoValueSerializer {
 
     public static ProtoValue serialize( TypedValue typedValue ) throws SQLException {
         if ( typedValue.isNull() ) {
-            return serializeAsProtoNull( typedValue );
+            return serializeAsProtoNull();
         }
         switch ( typedValue.getJdbcType() ) {
             case Types.TINYINT:
@@ -92,7 +92,7 @@ public class ProtoValueSerializer {
                 // requires getter conversions to work properly...
                 return serializeAsProtoBinary( typedValue );
             case Types.NULL:
-                return serializeAsProtoNull( typedValue );
+                return serializeAsProtoNull();
             case Types.OTHER:
                 // TODO TH: find something useful to do here...
                 break;
@@ -261,7 +261,7 @@ public class ProtoValueSerializer {
     }
 
 
-    private static ProtoValue serializeAsProtoNull( TypedValue typedValue ) {
+    private static ProtoValue serializeAsProtoNull() {
         return ProtoValue.newBuilder()
                 .setNull( ProtoNull.newBuilder().build() )
                 .build();

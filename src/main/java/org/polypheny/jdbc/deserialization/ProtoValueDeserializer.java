@@ -1,6 +1,7 @@
 package org.polypheny.jdbc.deserialization;
 
 
+import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Types;
@@ -23,7 +24,7 @@ public class ProtoValueDeserializer {
                 case BINARY:
                     return TypedValue.fromObject( value.getBinary().getBinary(), Types.BINARY );
                 case DATE:
-                    return TypedValue.fromObject( value.getDate().getDate(), Types.DATE );
+                    return TypedValue.fromDate(new Date( value.getDate().getDate()));
                 case DOUBLE:
                     return TypedValue.fromDouble( value.getDouble().getDouble() );
                 case FLOAT:

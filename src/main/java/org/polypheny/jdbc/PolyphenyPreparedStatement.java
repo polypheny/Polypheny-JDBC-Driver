@@ -131,6 +131,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public ResultSet executeQuery() throws SQLException {
         throwIfClosed();
+
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
                 Arrays.asList( parameters ),

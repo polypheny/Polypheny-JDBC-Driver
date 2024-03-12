@@ -70,10 +70,6 @@ public class PolyphenyStatement implements Statement {
         if ( currentResult != null ) {
             currentResult.close();
         }
-        if ( statementId != NO_STATEMENT_ID ) {
-            getClient().closeStatement( statementId, getTimeout() );
-            getPolyConnection().removeStatement( this );
-        }
         currentResult = null;
         currentUpdateCount = NO_UPDATE_COUNT;
     }
