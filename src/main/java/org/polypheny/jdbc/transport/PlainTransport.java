@@ -18,23 +18,38 @@ package org.polypheny.jdbc.transport;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.SocketChannel;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class PlainTransport implements Transport {
 
-    Socket con;
-    InputStream in;
-    OutputStream out;
+    protected final SocketChannel con;
+
+    private final Lock writeLock = new ReentrantLock();
+    private final Lock readLock = new ReentrantLock();
 
 
     public PlainTransport( String host, int port ) throws IOException {
-        con = new Socket( host, port );
-        in = con.getInputStream();
-        out = con.getOutputStream();
+        con = SocketChannel.open( new InetSocketAddress( host, port ) );
+    }
+
+
+    protected void writeEntireBuffer( ByteBuffer bb ) throws IOException {
+        writeLock.lock();
+        try {
+            while ( bb.remaining() > 0 ) {
+                int i = con.write( bb );
+                if ( i == -1 ) {
+                    throw new EOFException();
+                }
+            }
+        } finally {
+            writeLock.unlock();
+        }
     }
 
 
@@ -44,23 +59,39 @@ public class PlainTransport implements Transport {
         bb.order( ByteOrder.LITTLE_ENDIAN );
         bb.putLong( message.length );
         bb.put( message );
-        out.write( bb.array() );
+        bb.rewind();
+        writeEntireBuffer( bb );
+    }
+
+
+    protected void readEntireBuffer( ByteBuffer bb ) throws IOException {
+        while ( bb.remaining() > 0 ) {
+            int i = con.read( bb );
+            if ( i == -1 ) {
+                throw new EOFException();
+            }
+        }
+        bb.rewind();
     }
 
 
     @Override
     public byte[] receiveMessage() throws IOException {
-        byte[] b = in.readNBytes( 8 );
-        if ( b.length != 8 ) {
-            if ( b.length == 0 ) { // EOF
-                throw new EOFException();
+        readLock.lock();
+        try {
+            ByteBuffer bb = ByteBuffer.allocate( 8 );
+            readEntireBuffer( bb );
+            bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
+            long length = bb.getLong();
+            if ( length == 0 ) {
+                throw new IOException( "Invalid message length" );
             }
-            throw new IOException( "short read" );
+            bb = ByteBuffer.allocate( (int) length );
+            readEntireBuffer( bb );
+            return bb.array();
+        } finally {
+            readLock.unlock();
         }
-        ByteBuffer bb = ByteBuffer.wrap( b );
-        bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
-        long length = bb.getLong();
-        return in.readNBytes( (int) length );
     }
 
 
