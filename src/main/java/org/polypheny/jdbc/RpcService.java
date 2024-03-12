@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.protointerface.proto.ClientInfoProperties;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
@@ -94,7 +93,8 @@ public class RpcService {
     private final Thread service;
     private boolean closed = false;
     private IOException error = null;
-    private final Map<Long, Consumer<Response>> callbacks = new ConcurrentHashMap<>();
+    private final Map<Long, CompletableFuture<Response>> callbacks = new ConcurrentHashMap<>();
+    private final Map<Long, CallbackQueue<?>> callbackQueues = new ConcurrentHashMap<>();
 
 
     RpcService( Transport con ) {
@@ -142,36 +142,61 @@ public class RpcService {
                 if ( resp.getId() == 0 ) {
                     throw new RuntimeException( "Invalid message id" );
                 }
-                Consumer<Response> c = callbacks.get( resp.getId() );
+                CompletableFuture<Response> c = callbacks.get( resp.getId() );
                 if ( c == null ) {
-                    log.info( "No callback for response of type " + resp.getTypeCase() );
+                    CallbackQueue<?> cq = callbackQueues.get( resp.getId() );
+                    if ( cq != null ) {
+                        if ( resp.hasErrorResponse() ) {
+                            callbackQueues.remove( resp.getId() );
+                            cq.onError( new ProtoInterfaceServiceException( resp.getErrorResponse().getMessage() ) );
+                        } else {
+                            cq.onNext( resp );
+                            if ( resp.getLast() ) {
+                                callbackQueues.remove( resp.getId() );
+                                cq.onCompleted();
+                            }
+                        }
+                    } else {
+                        log.info( "No callback for response of type " + resp.getTypeCase() );
+                    }
                     continue;
                 }
                 if ( resp.getLast() ) {
                     callbacks.remove( resp.getId() );
                 }
-                c.accept( resp );
+                c.complete( resp );
+            } catch ( EOFException e ) {
+                this.closed = true;
+                callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
+                callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
             } catch ( IOException e ) { // Communicate this to ProtoInterfaceClient
                 this.closed = true;
-                if ( e instanceof EOFException && closed ) {
-                    // Nothing to worry about
-                    return;
-                } else {
-                    // This will cause the exception to be thrown when the next call is made
-                    // TODO: Is this good enough, or should the program be alerted sooner?
-                    this.error = e;
-                    throw new RuntimeException( e );
-                }
+                callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
+                callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
+                // This will cause the exception to be thrown when the next call is made
+                // TODO: Is this good enough, or should the program be alerted sooner?
+                this.error = e;
+                throw new RuntimeException( e );
+            } catch ( Throwable t ) {
+                this.closed = true;
+                callbacks.forEach( ( id, c ) -> c.completeExceptionally( t ) );
+                callbackQueues.forEach( ( id, cq ) -> cq.onError( t ) );
+                log.error( "Unhandled exception", t );
+                throw t;
             }
         }
     }
 
 
-    private static void completeOrThrow( CompletableFuture<Response> f, Response r ) {
-        if ( r.hasErrorResponse() ) {
-            f.completeExceptionally( new ProtoInterfaceServiceException( r.getErrorResponse().getMessage() ) );
-        } else {
-            f.complete( r );
+    private Response waitForCompletion( CompletableFuture<Response> f, int timeout ) throws ProtoInterfaceServiceException {
+        try {
+            if ( timeout == 0 ) {
+                return f.get();
+            } else {
+                return f.get( timeout, TimeUnit.MILLISECONDS );
+            }
+        } catch ( ExecutionException | InterruptedException | TimeoutException e ) {
+            throw new ProtoInterfaceServiceException( e );
         }
     }
 
@@ -179,14 +204,14 @@ public class RpcService {
     private Response completeSynchronously( Request.Builder req, int timeout ) throws ProtoInterfaceServiceException {
         try {
             CompletableFuture<Response> f = new CompletableFuture<>();
-            callbacks.put( req.getId(), r -> completeOrThrow( f, r ) );
+            callbacks.put( req.getId(), f );
             sendMessage( req.build() );
-            if ( timeout == 0 ) {
-                return f.get();
-            } else {
-                return f.get( timeout, TimeUnit.MILLISECONDS );
+            Response resp = waitForCompletion( f, timeout );
+            if ( resp.hasErrorResponse() ) {
+                throw new ProtoInterfaceServiceException( resp.getErrorResponse().getMessage() );
             }
-        } catch ( IOException | ExecutionException | InterruptedException | TimeoutException e ) {
+            return resp;
+        } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( e );
         }
     }
@@ -357,16 +382,7 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setExecuteUnparameterizedStatementRequest( msg );
         try {
-            callbacks.put( req.getId(), v -> {
-                if ( v.hasErrorResponse() ) {
-                    callback.onError( new ProtoInterfaceServiceException( v.getErrorResponse().getMessage() ) );
-                } else {
-                    callback.onNext( v.getStatementResponse() );
-                    if ( v.getLast() ) {
-                        callback.onCompleted();
-                    }
-                }
-            } );
+            callbackQueues.put( req.getId(), callback );
             sendMessage( req.build() );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( e );
@@ -378,16 +394,7 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setExecuteUnparameterizedStatementBatchRequest( msg );
         try {
-            callbacks.put( req.getId(), v -> {
-                if ( v.hasErrorResponse() ) {
-                    callback.onError( new ProtoInterfaceServiceException( v.getErrorResponse().getMessage() ) );
-                } else {
-                    callback.onNext( v.getStatementBatchResponse() );
-                    if ( v.getLast() ) {
-                        callback.onCompleted();
-                    }
-                }
-            } );
+            callbackQueues.put( req.getId(), callback );
             sendMessage( req.build() );
         } catch ( IOException e ) {
             throw new ProtoInterfaceServiceException( e );
