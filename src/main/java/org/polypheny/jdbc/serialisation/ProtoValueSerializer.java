@@ -27,6 +27,7 @@ import org.polypheny.db.protointerface.proto.ProtoTimestamp;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.properties.DriverProperties;
 
 public class ProtoValueSerializer {
 
@@ -211,8 +212,10 @@ public class ProtoValueSerializer {
 
 
     private static ProtoValue serializeAsProtoDate( TypedValue typedValue ) throws SQLException {
+        long milliseconds = typedValue.asDate().getTime();
+        milliseconds += DriverProperties.getDEFAULT_TIMEZONE().getOffset(milliseconds);
         ProtoDate protoDate = ProtoDate.newBuilder()
-                .setDate( typedValue.asDate().getTime() / 86400000 )  // 86400000 = Milliseconds in a day = 24 * 60 * 60 * 1000
+                .setDate( milliseconds )
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )

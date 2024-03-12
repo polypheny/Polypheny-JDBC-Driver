@@ -1,11 +1,14 @@
 package org.polypheny.jdbc.deserialization;
 
 
+import com.google.protobuf.ByteString;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
-import java.time.LocalTime;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
@@ -24,7 +27,7 @@ public class ProtoValueDeserializer {
                 case BINARY:
                     return TypedValue.fromObject( value.getBinary().getBinary(), Types.BINARY );
                 case DATE:
-                    return TypedValue.fromDate(new Date( value.getDate().getDate()));
+                    return TypedValue.fromDate( new Date( value.getDate().getDate() ) );
                 case DOUBLE:
                     return TypedValue.fromDouble( value.getDouble().getDouble() );
                 case FLOAT:
@@ -35,10 +38,11 @@ public class ProtoValueDeserializer {
                 case STRING:
                     return TypedValue.fromString( value.getString().getString() );
                 case TIME:
-                    return TypedValue.fromTime( new Time(value.getTime().getTime()));
+                    return TypedValue.fromTime( new Time( value.getTime().getTime() ) );
                 case TIMESTAMP:
-                    return TypedValue.fromObject( value.getTimestamp().getTimestamp(), Types.TIMESTAMP );
+                    return TypedValue.fromTimestamp(new Timestamp(value.getTimestamp().getTimestamp()));
                 case BIG_DECIMAL:
+                    return TypedValue.fromBigDecimal(getBigDecimal( value.getBigDecimal().getUnscaledValue(), value.getBigDecimal().getScale() ) );
                 case INTERVAL:
                 case USER_DEFINED_TYPE:
                 case LIST:
@@ -55,6 +59,12 @@ public class ProtoValueDeserializer {
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    public static BigDecimal getBigDecimal( ByteString unscaledValue, int scale ) {
+        BigInteger value = new BigInteger( unscaledValue.toByteArray() );
+        return new BigDecimal( value, scale );
     }
 
 }

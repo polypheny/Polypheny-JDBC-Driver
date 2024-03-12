@@ -25,13 +25,13 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
-import org.polypheny.jdbc.meta.PolyphenyParameterMetaData;
-import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.db.protointerface.proto.StatementBatchResponse;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.meta.PolyphenyParameterMetaData;
+import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 
 public class PolyphenyPreparedStatement extends PolyphenyStatement implements PreparedStatement {
 
