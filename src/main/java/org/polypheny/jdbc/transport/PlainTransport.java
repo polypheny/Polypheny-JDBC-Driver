@@ -28,9 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class PlainTransport implements Transport {
 
     protected final SocketChannel con;
-
     private final Lock writeLock = new ReentrantLock();
-    private final Lock readLock = new ReentrantLock();
 
 
     public PlainTransport( String host, int port ) throws IOException {
@@ -77,21 +75,16 @@ public class PlainTransport implements Transport {
 
     @Override
     public byte[] receiveMessage() throws IOException {
-        readLock.lock();
-        try {
-            ByteBuffer bb = ByteBuffer.allocate( 8 );
-            readEntireBuffer( bb );
-            bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
-            long length = bb.getLong();
-            if ( length == 0 ) {
-                throw new IOException( "Invalid message length" );
-            }
-            bb = ByteBuffer.allocate( (int) length );
-            readEntireBuffer( bb );
-            return bb.array();
-        } finally {
-            readLock.unlock();
+        ByteBuffer bb = ByteBuffer.allocate( 8 );
+        readEntireBuffer( bb );
+        bb.order( ByteOrder.LITTLE_ENDIAN ); // TODO Big endian like other network protocols?
+        long length = bb.getLong();
+        if ( length == 0 ) {
+            throw new IOException( "Invalid message length" );
         }
+        bb = ByteBuffer.allocate( (int) length );
+        readEntireBuffer( bb );
+        return bb.array();
     }
 
 
