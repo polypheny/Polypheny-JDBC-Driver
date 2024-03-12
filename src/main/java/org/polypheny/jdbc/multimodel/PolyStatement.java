@@ -17,6 +17,7 @@
 package org.polypheny.jdbc.multimodel;
 
 import lombok.Getter;
+import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.ProtoInterfaceClient;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
@@ -66,7 +67,7 @@ public class PolyStatement {
 
     public Result execute( String namespaceName, String languageName, String statement ) throws ProtoInterfaceServiceException {
         resetStatement();
-        CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         int timeout = connection.getTimeout();
         getProtoInterfaceClient().executeUnparameterizedStatement(
                 namespaceName,

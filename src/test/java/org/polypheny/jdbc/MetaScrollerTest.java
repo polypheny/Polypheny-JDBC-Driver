@@ -7,14 +7,24 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.meta.MetaScroller;
 
 public class MetaScrollerTest {
 
-    private static final List<Integer> TEST_DATA_EMPTY = List.of();
-    private static final List<Integer> TEST_DATA_FOUR = List.of( 1, 2, 3, 4 );
+    private static final List<Integer> TEST_DATA_EMPTY = Collections.emptyList();
+    private static final List<Integer> TEST_DATA_FOUR = new ArrayList<>();
+
+
+    static {
+        TEST_DATA_FOUR.add( 1 );
+        TEST_DATA_FOUR.add( 2 );
+        TEST_DATA_FOUR.add( 3 );
+        TEST_DATA_FOUR.add( 4 );
+    }
 
 
     @Test

@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
@@ -105,7 +106,7 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         closeCurrentResult();
         discardStatementId();
-        CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
         while ( true ) {
@@ -137,7 +138,7 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         closeCurrentResult();
         discardStatementId();
-        CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
         while ( true ) {
@@ -279,7 +280,7 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         closeCurrentResult();
         discardStatementId();
-        CallbackQueue<StatementResponse> callback = new CallbackQueue<>();
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
         while ( true ) {
@@ -417,7 +418,7 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         closeCurrentResult();
         discardStatementId();
-        CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>();
+        CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse );
         List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
         clearBatch();
         getClient().executeUnparameterizedStatementBatch( requests, callback, getTimeout() );

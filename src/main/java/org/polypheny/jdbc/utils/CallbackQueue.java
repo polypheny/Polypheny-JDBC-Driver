@@ -4,6 +4,8 @@ import java.util.LinkedList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 
@@ -12,14 +14,14 @@ public class CallbackQueue<T> {
     private final Lock queueLock = new ReentrantLock();
     private final Condition hasNext = queueLock.newCondition();
     private final Condition isCompleted = queueLock.newCondition();
-    private LinkedList<T> messageQueue;
+    private boolean bIsCompleted = false;
+    private final LinkedList<T> messageQueue = new LinkedList<>();
+    private final Function<Response, T> extractResponse;
     private ProtoInterfaceServiceException propagatedException;
-    private boolean bIsCompleted;
 
 
-    public CallbackQueue() {
-        this.messageQueue = new LinkedList<>();
-        this.bIsCompleted = false;
+    public CallbackQueue( Function<Response, T> extractResponse ) {
+        this.extractResponse = extractResponse;
     }
 
 
@@ -54,9 +56,9 @@ public class CallbackQueue<T> {
     }
 
 
-    public void onNext( T message ) {
+    public void onNext( Response message ) {
         queueLock.lock();
-        messageQueue.add( message );
+        messageQueue.add( extractResponse.apply( message ) );
         hasNext.signal();
         queueLock.unlock();
     }
