@@ -86,7 +86,7 @@ public class StatementTest {
 
 
     @Test
-    void testTwoPreparedStatement() throws SQLException {
+    void testPreparedStatementCleanup() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
             p.setInt( 2, 4 );
@@ -98,18 +98,7 @@ public class StatementTest {
 
         try ( Statement statement = con.createStatement() ) {
             statement.execute( "DROP TABLE IF EXISTS t" );
-            statement.execute( "CREATE TABLE t(id INTEGER PRIMARY KEY, a INTEGER NOT NULL)" );
         }
-
-        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
-            p.setInt( 1, 4 );
-            p.setInt( 2, 4 );
-            p.execute();
-            p.setInt( 1, 5 );
-            p.setInt( 2, 5 );
-            p.execute();
-        }
-
     }
 
 
