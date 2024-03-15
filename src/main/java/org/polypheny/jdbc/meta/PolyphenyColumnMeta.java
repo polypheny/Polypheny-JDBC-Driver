@@ -1,11 +1,12 @@
 package org.polypheny.jdbc.meta;
 
+import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
+import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 
 public class PolyphenyColumnMeta {
 
@@ -78,10 +79,16 @@ public class PolyphenyColumnMeta {
         if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoPolyType.USER_DEFINED_TYPE ) {
             //TODO handle structured meta
             throw new NotImplementedException( "Struct types not implemented yet" );
-        } else {
-            this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( protoColumnMeta.getTypeMeta().getProtoValueType() );
         }
-        this.polyphenyFieldTypeName = protoColumnMeta.getTypeMeta().getProtoValueType().name();
+        if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoPolyType.ARRAY ) {
+            ProtoPolyType type = protoColumnMeta.getTypeMeta().getArrayMeta().getElementType().getProtoValueType();
+            this.sqlType = JDBCType.ARRAY.getVendorTypeNumber();
+            this.polyphenyFieldTypeName = type.name();
+            return;
+        }
+        ProtoPolyType type = protoColumnMeta.getTypeMeta().getProtoValueType();
+        this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( type );
+        this.polyphenyFieldTypeName = type.name();
     }
 
 

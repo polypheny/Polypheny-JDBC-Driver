@@ -39,12 +39,9 @@ public class PolyphenyArray implements Array {
 
     public PolyphenyArray( String protoBaseTypeName, Object[] elements ) {
         this.protoBaseTypeName = protoBaseTypeName;
-        Object[] shiftedElements = new Object[elements.length + 1];
-        // shifting array elements one to the right as first value has to be at index 1... duh!
-        int endIdx = elements.length + 1;
-        for ( int i = 1; i < endIdx; i++ ) {
-            shiftedElements[i] = elements[i - 1];
-        }
+        Object[] shiftedElements = new Object[elements.length];
+        int endIdx = elements.length;
+        System.arraycopy( elements, 0, shiftedElements, 0, endIdx );
         this.elements = shiftedElements;
     }
 
@@ -56,7 +53,6 @@ public class PolyphenyArray implements Array {
             Object object = v.asObject();
             objects.add( object );
         }
-        objects.add( 0, TypedValue.fromNull( values.get( 0 ).getJdbcType() ) );
         this.elements = objects.toArray( new Object[0] );
     }
 
@@ -92,7 +88,7 @@ public class PolyphenyArray implements Array {
 
     @Override
     public Object getArray( long index, int count ) {
-        return Arrays.copyOfRange( elements, longToInt( index ), count );
+        return Arrays.copyOfRange( elements, longToInt( index - 1 ), count );
     }
 
 

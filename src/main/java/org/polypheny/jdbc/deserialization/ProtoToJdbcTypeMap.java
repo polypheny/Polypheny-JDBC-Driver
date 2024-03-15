@@ -117,7 +117,7 @@ public class ProtoToJdbcTypeMap {
     public static int getJdbcTypeFromProto( ProtoPolyType ProtoPolyType ) {
         Integer jdbcType = PROTO_TYPE_TO_JDBC.get( ProtoPolyType );
         if ( jdbcType == null ) {
-            throw new IllegalArgumentException( "Invalid proto value type." );
+            throw new IllegalArgumentException( "Invalid proto value type: " + ProtoPolyType.name() + "." );
         }
         return jdbcType;
     }
@@ -126,7 +126,7 @@ public class ProtoToJdbcTypeMap {
     public static int getJdbcTypeFromProto( ValueCase ProtoPolyType ) {
         Integer jdbcType = PROTO_TYPE_TO_JDBC.get( ProtoPolyType );
         if ( jdbcType == null ) {
-            throw new IllegalArgumentException( "Invalid proto value type." );
+            throw new IllegalArgumentException( "Invalid proto value type: " + ProtoPolyType.name() + "." );
         }
         return jdbcType;
     }

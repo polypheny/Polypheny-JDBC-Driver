@@ -4,12 +4,16 @@ package org.polypheny.jdbc.deserialization;
 import com.google.protobuf.ByteString;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Array;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.jdbc.jdbctypes.PolyphenyArray;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class ProtoValueDeserializer {
@@ -40,12 +44,13 @@ public class ProtoValueDeserializer {
                 case TIME:
                     return TypedValue.fromTime( new Time( value.getTime().getTime() ) );
                 case TIMESTAMP:
-                    return TypedValue.fromTimestamp(new Timestamp(value.getTimestamp().getTimestamp()));
+                    return TypedValue.fromTimestamp( new Timestamp( value.getTimestamp().getTimestamp() ) );
                 case BIG_DECIMAL:
-                    return TypedValue.fromBigDecimal(getBigDecimal( value.getBigDecimal().getUnscaledValue(), value.getBigDecimal().getScale() ) );
+                    return TypedValue.fromBigDecimal( getBigDecimal( value.getBigDecimal().getUnscaledValue(), value.getBigDecimal().getScale() ) );
+                case LIST:
+                    return TypedValue.fromArray( getArray( value ) );
                 case INTERVAL:
                 case USER_DEFINED_TYPE:
-                case LIST:
                 case MAP:
                 case DOCUMENT:
                 case NODE:
@@ -59,6 +64,15 @@ public class ProtoValueDeserializer {
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    private static Array getArray( ProtoValue value ) throws SQLException {
+        String baseType = value.getValueCase().name();
+        List<TypedValue> values = value.getList().getValuesList().stream()
+                .map( ProtoValueDeserializer::deserializeToTypedValue )
+                .collect( Collectors.toList() );
+        return new PolyphenyArray( baseType, values );
     }
 
 
