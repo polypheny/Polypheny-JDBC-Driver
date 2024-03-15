@@ -25,13 +25,13 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.Frame.ResultCase;
+import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
-import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.db.protointerface.proto.Frame.ResultCase;
-import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class PolyhenyResultSet implements ResultSet {
 
@@ -145,6 +145,16 @@ public class PolyhenyResultSet implements ResultSet {
             rowUpdates = new LinkedHashMap<>();
         }
         return rowUpdates;
+    }
+
+
+    public void fetchAll() throws SQLException {
+        try {
+            resultScroller.fetchAllAndSync();
+        } catch ( InterruptedException e ) {
+            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, e.getMessage(), e );
+        }
+
     }
 
 

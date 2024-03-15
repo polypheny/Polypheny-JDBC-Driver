@@ -31,6 +31,11 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
 
     @Override
+    public void fetchAllAndSync() {
+    }
+
+
+    @Override
     public boolean absolute( int rowIndex ) {
         if ( rowIndex == 0 ) {
             current = null;

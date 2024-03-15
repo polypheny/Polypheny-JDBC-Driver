@@ -1,8 +1,8 @@
 package org.polypheny.jdbc;
 
-import java.sql.SQLException;
-
 public interface Scrollable<T> {
+
+    void fetchAllAndSync() throws InterruptedException;
 
     boolean next() throws ProtoInterfaceServiceException;
 

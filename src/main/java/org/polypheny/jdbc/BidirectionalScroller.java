@@ -3,9 +3,9 @@ package org.polypheny.jdbc;
 import static java.lang.Math.min;
 
 import java.util.ArrayList;
-import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<TypedValue>> {
@@ -47,6 +47,13 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             fetcherThread.join();
         }
         return true;
+    }
+
+
+    @Override
+    public void fetchAllAndSync() throws InterruptedException {
+        fetchAll();
+        syncFetch();
     }
 
 

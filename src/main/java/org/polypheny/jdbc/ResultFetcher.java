@@ -60,7 +60,6 @@ public class ResultFetcher implements Runnable {
         fetchedValues = TypedValueUtils.buildRows( rows );
         totalFetched = totalFetched + rows.size();
         isLast = nextFrame.getIsLast();
-
     }
 
 }

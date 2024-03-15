@@ -5,10 +5,9 @@ import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
-
-import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
@@ -42,10 +41,26 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
 
 
     @Override
+    public void fetchAllAndSync() throws InterruptedException {
+        if ( resultFetcher.isLast() ) {
+            return;
+        }
+        if ( fetcherThread != null ) {
+            return;
+        }
+        while ( !resultFetcher.isLast() ) {
+            fetcherThread = new Thread( resultFetcher );
+            fetcherThread.start();
+            syncFetch();
+        }
+    }
+
+
+    @Override
     public boolean next() throws ProtoInterfaceServiceException {
         try {
             considerPrefetch();
-            syncFetch();
+            syncFetchIfEmpty();
             currentRow = values.poll();
             if ( currentRow == null ) {
                 return false;
@@ -74,11 +89,16 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
     }
 
 
-    private void syncFetch() throws InterruptedException {
-        if ( fetcherThread == null ) {
+    private void syncFetchIfEmpty() throws InterruptedException {
+        if ( !values.isEmpty() ) {
             return;
         }
-        if ( !values.isEmpty() ) {
+        syncFetch();
+    }
+
+
+    private void syncFetch() throws InterruptedException {
+        if ( fetcherThread == null ) {
             return;
         }
         fetcherThread.join();
