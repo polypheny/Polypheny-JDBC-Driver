@@ -1,9 +1,5 @@
 package org.polypheny.jdbc.meta;
 
-import org.apache.commons.lang3.ObjectUtils;
-import org.polypheny.db.protointerface.proto.*;
-import org.polypheny.jdbc.utils.TypedValueUtils;
-
 import java.sql.DatabaseMetaData;
 import java.sql.PseudoColumnUsage;
 import java.sql.Types;
@@ -11,6 +7,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.commons.lang3.ObjectUtils;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
+import org.polypheny.db.protointerface.proto.Column;
+import org.polypheny.db.protointerface.proto.Database;
+import org.polypheny.db.protointerface.proto.Namespace;
+import org.polypheny.db.protointerface.proto.Procedure;
+import org.polypheny.db.protointerface.proto.Table;
+import org.polypheny.db.protointerface.proto.TableType;
+import org.polypheny.db.protointerface.proto.Type;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class MetaResultSetSignatures {
 
@@ -139,7 +145,7 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>( "CARDINALITY", Types.BIGINT, p -> (long) -1 ),
             new MetaResultSetParameter<>( "PAGES", Types.BIGINT, p -> null ),
             new MetaResultSetParameter<>( "FILTER_CONDITION", Types.VARCHAR, p -> null ),
-            new MetaResultSetParameter<>( "LOCATION", Types.VARCHAR, p -> p.getValue( 7 ) ),
+            new MetaResultSetParameter<>( "LOCATION", Types.INTEGER, p -> p.getValue( 7 ) ),
             new MetaResultSetParameter<>( "INDEX_TYPE", Types.INTEGER, p -> p.getValue( 8 ) )
     );
 
