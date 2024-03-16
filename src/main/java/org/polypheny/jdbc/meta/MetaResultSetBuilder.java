@@ -279,7 +279,7 @@ public class MetaResultSetBuilder {
 
     private static List<GenericMetaContainer> createDummyColumnPrivileges( Column colum, String userName ) {
         // This method is used to create a dummy full rights result set for a column because the requested information does not exist on the server side.
-        List<String> accessRights = Arrays.asList( "SELECT", "INSERT", "UPDATE", "REFERENCE" );
+        List<String> accessRights = Arrays.asList( "INSERT", "REFERENCE", "SELECT", "UPDATE" );
         return accessRights.stream().map( a -> new GenericMetaContainer(
                 colum.getDatabaseName(),
                 colum.getNamespaceName(),
