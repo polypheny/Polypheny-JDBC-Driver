@@ -18,6 +18,9 @@ import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class ProtoValueDeserializer {
 
+    private static final long MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+
     public static TypedValue deserializeToTypedValue( ProtoValue value ) {
         // TODO Java 17: Convert to switch expression
         try {
@@ -31,7 +34,7 @@ public class ProtoValueDeserializer {
                 case BINARY:
                     return TypedValue.fromObject( value.getBinary().getBinary(), Types.BINARY );
                 case DATE:
-                    return TypedValue.fromDate( new Date( value.getDate().getDate() ) );
+                    return TypedValue.fromDate( new Date( value.getDate().getDate() * MILLISECONDS_PER_DAY ) );
                 case DOUBLE:
                     return TypedValue.fromDouble( value.getDouble().getDouble() );
                 case FLOAT:
@@ -50,14 +53,8 @@ public class ProtoValueDeserializer {
                 case LIST:
                     return TypedValue.fromArray( getArray( value ) );
                 case INTERVAL:
-                case USER_DEFINED_TYPE:
                 case MAP:
                 case DOCUMENT:
-                case NODE:
-                case EDGE:
-                case PATH:
-                case GRAPH:
-                case ROW_ID:
                 default:
                     throw new RuntimeException( "Cannot deserialize ProtoValue of case " + value.getValueCase() );
             }

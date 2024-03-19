@@ -4,8 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import java.sql.Types;
 import java.util.Map;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.jdbc.jdbctypes.ExtraPolyTypes;
 
@@ -70,47 +68,6 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoPolyType.ANY, Types.JAVA_OBJECT )
                     .put( ProtoPolyType.USER_DEFINED_TYPE, Types.OTHER )
                     .put( ProtoPolyType.ROW, Types.ROWID )
-                    .build();
-
-
-    private static final Map<ValueCase, Integer> PROTO_VALUE_TO_JDBC =
-            ImmutableMap.<ValueCase, Integer>builder()
-                    .put( ValueCase.BOOLEAN, Types.BOOLEAN )
-                    .put( ValueCase.INTEGER, Types.INTEGER )
-                    .put( ValueCase.LONG, Types.BIGINT )
-                    .put( ValueCase.BIG_DECIMAL, Types.DECIMAL )
-                    .put( ValueCase.FLOAT, Types.FLOAT )
-                    .put( ValueCase.DOUBLE, Types.DOUBLE )
-                    .put( ValueCase.DATE, Types.DATE )
-                    .put( ValueCase.TIME, Types.TIME )
-                    // TODO .put( ProtoPolyType.TIME_WITH_LOCAL_TIME_ZONE, Types.TIMESTAMP_WITH_TIMEZONE )
-                    .put( ValueCase.TIMESTAMP, Types.TIMESTAMP )
-                    // TODO .put( ProtoPolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, Types.TIMESTAMP_WITH_TIMEZONE )
-                    .put( ValueCase.INTERVAL, Types.OTHER )
-                    .put( ValueCase.STRING, Types.VARCHAR )
-                    .put( ValueCase.BINARY, Types.BINARY )
-                    .put( ValueCase.NULL, Types.NULL )
-                    .put( ValueCase.LIST, Types.ARRAY )
-                    .put( ValueCase.MAP, Types.OTHER )
-                    .put( ValueCase.DOCUMENT, Types.STRUCT )
-                    .put( ValueCase.GRAPH, Types.JAVA_OBJECT )
-                    .put( ValueCase.NODE, Types.JAVA_OBJECT )
-                    .put( ValueCase.EDGE, Types.JAVA_OBJECT )
-                    .put( ValueCase.PATH, Types.JAVA_OBJECT )
-                    .put( ValueCase.FILE, Types.BINARY )
-                    // TODO .put( ValueCase.DISTINCT, Types.DISTINCT )
-                    // TODO .put( ValueCase.STRUCTURED, Types.STRUCT )
-                    // TODO .put( ValueCase.OTHER, Types.OTHER )
-                    // TODO .put( ProtoPolyType.CURSOR, Types.REF_CURSOR )
-                    // TODO .put( ValueCase.COLUMN_LIST, Types.OTHER + 2 )
-                    // TODO .put( ValueCase.DYNAMIC_STAR, Types.JAVA_OBJECT )
-                    // TODO .put( ProtoPolyType.GEOMETRY, ExtraPolyTypes.GEOMETRY )
-                    // TODO .put( ProtoPolyType.SYMBOL, Types.OTHER )
-                    // TODO .put( ProtoPolyType.JSON, Types.VARCHAR )
-                    // TODO .put( ProtoPolyType.MULTISET, Types.ARRAY )
-                    // TODO .put( ProtoPolyType.ANY, Types.JAVA_OBJECT )
-                    // TODO .put( ProtoPolyType.USER_DEFINED_TYPE, Types.OTHER )
-                    // TODO .put( ProtoPolyType.ROW, Types.ROWID )
                     .build();
 
 

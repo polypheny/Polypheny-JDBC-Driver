@@ -20,16 +20,17 @@ import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
 import org.polypheny.db.protointerface.proto.ProtoNull;
-import org.polypheny.db.protointerface.proto.ProtoRowId;
 import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTimestamp;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.properties.DriverProperties;
 
 public class ProtoValueSerializer {
+
+    private static final long MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
 
     public static Map<String, ProtoValue> serializeParameterMap( Map<String, TypedValue> parameters ) {
 
@@ -140,12 +141,13 @@ public class ProtoValueSerializer {
 
 
     private static ProtoValue serializeAsProtoRowId( TypedValue typedValue ) throws SQLException {
-        ProtoRowId protoRowId = ProtoRowId.newBuilder()
-                .setRowId( typedValue.asRowId().toString() )
-                .build();
-        return ProtoValue.newBuilder()
-                .setRowId( protoRowId )
-                .build();
+        throw new RuntimeException( "RowID serialization is not implemented" );
+//        ProtoRowId protoRowId = ProtoRowId.newBuilder()
+//                .setRowId( typedValue.asRowId().toString() )
+//                .build();
+//        return ProtoValue.newBuilder()
+//                .setRowId( protoRowId )
+//                .build();
     }
 
 
@@ -160,11 +162,6 @@ public class ProtoValueSerializer {
         return ProtoValue.newBuilder()
                 .setList( protoList )
                 .build();
-    }
-
-
-    private static ProtoPolyType getType( TypedValue typedValue ) {
-        return JdbcToProtoTypeMap.getTypeOf( typedValue );
     }
 
 
@@ -213,9 +210,9 @@ public class ProtoValueSerializer {
 
     private static ProtoValue serializeAsProtoDate( TypedValue typedValue ) throws SQLException {
         long milliseconds = typedValue.asDate().getTime();
-        milliseconds += DriverProperties.getDEFAULT_TIMEZONE().getOffset(milliseconds);
+        milliseconds += DriverProperties.getDEFAULT_TIMEZONE().getOffset( milliseconds );
         ProtoDate protoDate = ProtoDate.newBuilder()
-                .setDate( milliseconds )
+                .setDate( milliseconds / MILLISECONDS_PER_DAY )
                 .build();
         return ProtoValue.newBuilder()
                 .setDate( protoDate )
@@ -235,7 +232,7 @@ public class ProtoValueSerializer {
 
     private static ProtoValue serializeAsProtoTime( TypedValue typedValue ) throws SQLException {
         long ofDay = typedValue.asTime().getTime();
-        ofDay += DriverProperties.getDEFAULT_TIMEZONE().getOffset(ofDay);
+        ofDay += DriverProperties.getDEFAULT_TIMEZONE().getOffset( ofDay );
         ProtoTime protoTime = ProtoTime.newBuilder()
                 .setTime( (int) ofDay )
                 .build();
@@ -247,7 +244,7 @@ public class ProtoValueSerializer {
 
     private static ProtoValue serializeAsTimestamp( TypedValue typedValue ) throws SQLException {
         long milliseconds = typedValue.asTimestamp().getTime();
-        milliseconds += DriverProperties.getDEFAULT_TIMEZONE().getOffset(milliseconds);
+        milliseconds += DriverProperties.getDEFAULT_TIMEZONE().getOffset( milliseconds );
         ProtoTimestamp protoTimestamp = ProtoTimestamp.newBuilder()
                 .setTimestamp( milliseconds )
                 .build();
