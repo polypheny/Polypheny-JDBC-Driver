@@ -10,8 +10,7 @@ public class MetaResultSetComparators {
     public static final Comparator<Type> TYPE_INFO_COMPARATOR = Comparator
             .comparing( t -> TypedValueUtils.getJdbcTypeFromPolyTypeName( t.getTypeName() ) );
     public static final Comparator<Namespace> NAMESPACE_COMPARATOR = Comparator
-            .comparing( Namespace::getDatabaseName )
-            .thenComparing( Namespace::getNamespaceName );
+            .comparing( Namespace::getNamespaceName );
     public static final Comparator<GenericMetaContainer> PRIMARY_KEY_COMPARATOR = Comparator
             .comparing( g -> (String) (g.getValue( 3 )) );
     public static final Comparator<GenericMetaContainer> INDEX_COMPARATOR = Comparator
@@ -33,18 +32,15 @@ public class MetaResultSetComparators {
     public static final Comparator<Function> FUNCTION_COMPARATOR = Comparator
             .comparing( Function::getName );
     public static final Comparator<Column> COLUMN_COMPARATOR = Comparator
-            .comparing( Column::getDatabaseName )
-            .thenComparing( Column::getNamespaceName )
+            .comparing( Column::getNamespaceName )
             .thenComparing( Column::getTableName )
             .thenComparing( Column::getColumnIndex );
     public static final Comparator<Table> TABLE_COMPARATOR = Comparator
             .comparing( Table::getTableType )
-            .thenComparing( Table::getSourceDatabaseName )
             .thenComparing( Table::getNamespaceName )
             .thenComparing( Table::getTableName );
     public static final Comparator<Column> PSEUDO_COLUMN_COMPARATOR = Comparator
-            .comparing( Column::getDatabaseName )
-            .thenComparing( Column::getNamespaceName )
+            .comparing( Column::getNamespaceName )
             .thenComparing( Column::getTableName )
             .thenComparing( Column::getColumnName );
     public static final Comparator<ClientInfoPropertyMeta> CLIENT_INFO_PROPERTY_COMPARATOR = Comparator

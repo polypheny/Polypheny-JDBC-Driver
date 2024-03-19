@@ -25,7 +25,7 @@ public class MetaResultSetSignatures {
 
 
     public static final List<MetaResultSetParameter<Table>> TABLE_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, Table::getSourceDatabaseName ),
+            //new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, Table::getSourceDatabaseName ),
             new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, Table::getNamespaceName ),
             new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, Table::getTableName ),
             new MetaResultSetParameter<>( "TABLE_TYPE", Types.VARCHAR, Table::getTableType ),
@@ -34,8 +34,8 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>( "TYPE_SCHEM", Types.VARCHAR, p -> null ),
             new MetaResultSetParameter<>( "TYPE_NAME", Types.VARCHAR, p -> null ),
             new MetaResultSetParameter<>( "SELF_REFERENCING_COL_NAME", Types.VARCHAR, p -> null ),
-            new MetaResultSetParameter<>( "REF_GENERATION", Types.VARCHAR, p -> null ),
-            new MetaResultSetParameter<>( "OWNER", Types.VARCHAR, Table::getOwnerName )
+            new MetaResultSetParameter<>( "REF_GENERATION", Types.VARCHAR, p -> null )
+            //new MetaResultSetParameter<>( "OWNER", Types.VARCHAR, Table::getOwnerName )
     );
 
     public static final List<MetaResultSetParameter<TableType>> TABLE_TYPE_SIGNATURE = Collections.singletonList(
@@ -44,13 +44,13 @@ public class MetaResultSetSignatures {
 
     public static final List<MetaResultSetParameter<Namespace>> NAMESPACE_SIGNATURE = Arrays.asList(
             new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, Namespace::getNamespaceName ),
-            new MetaResultSetParameter<>( "TABLE_CATALOG", Types.VARCHAR, Namespace::getDatabaseName ),
-            new MetaResultSetParameter<>( "OWNER", Types.VARCHAR, Namespace::getOwnerName ),
+            //new MetaResultSetParameter<>( "TABLE_CATALOG", Types.VARCHAR, Namespace::getDatabaseName ),
+            //new MetaResultSetParameter<>( "OWNER", Types.VARCHAR, Namespace::getOwnerName ),
             new MetaResultSetParameter<>( "SCHEMA_TYPE", Types.VARCHAR, nullIfFalse( Namespace::getNamespaceName, Namespace::hasNamespaceType ) )
     );
 
     public static final List<MetaResultSetParameter<Column>> COLUMN_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, Column::getDatabaseName ),
+            //new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, Column::getDatabaseName ),
             new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, Column::getNamespaceName ),
             new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, Column::getTableName ),
             new MetaResultSetParameter<>( "COLUMN_NAME", Types.VARCHAR, Column::getColumnName ),
@@ -269,7 +269,7 @@ public class MetaResultSetSignatures {
     );
 
     public static final List<MetaResultSetParameter<Column>> PSEUDO_COLUMN_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, Column::getDatabaseName ),
+            //new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, Column::getDatabaseName ),
             new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, Column::getNamespaceName ),
             new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, Column::getTableName ),
             new MetaResultSetParameter<>( "COLUMN_NAME", Types.VARCHAR, Column::getColumnName ),

@@ -129,7 +129,6 @@ public class MetaResultSetBuilder {
     private static List<GenericMetaContainer> expandPrimaryKey( PrimaryKey primaryKey ) {
         AtomicInteger sequenceIndex = new AtomicInteger();
         return primaryKey.getColumnsList().stream().map( c -> new GenericMetaContainer(
-                c.getDatabaseName(),
                 c.getNamespaceName(),
                 c.getTableName(),
                 c.getColumnName(),
@@ -187,11 +186,8 @@ public class MetaResultSetBuilder {
         AtomicInteger sequenceIndex = new AtomicInteger();
         List<Column> referencedKeyColumns = foreignKey.getReferencedColumnsList();
         return foreignKey.getForeignColumnsList().stream().map( c -> new GenericMetaContainer(
-                foreignKey.getReferencedDatabaseName(),
                 foreignKey.getReferencedNamespaceName(),
                 foreignKey.getReferencedTableName(),
-                referencedKeyColumns.get( sequenceIndex.get() ).getDatabaseName(),
-                c.getDatabaseName(),
                 c.getNamespaceName(),
                 c.getTableName(),
                 c.getColumnName(),
@@ -232,7 +228,6 @@ public class MetaResultSetBuilder {
     private static List<GenericMetaContainer> expandIndex( Index index ) {
         AtomicInteger ordinalPosition = new AtomicInteger( 1 );
         return index.getColumnsList().stream().map( c -> new GenericMetaContainer(
-                index.getDatabaseName(),
                 index.getNamespaceName(),
                 index.getTableName(),
                 !index.getUnique(), // jdbc lists non uniqueness
@@ -281,7 +276,6 @@ public class MetaResultSetBuilder {
         // This method is used to create a dummy full rights result set for a column because the requested information does not exist on the server side.
         List<String> accessRights = Arrays.asList( "INSERT", "REFERENCE", "SELECT", "UPDATE" );
         return accessRights.stream().map( a -> new GenericMetaContainer(
-                colum.getDatabaseName(),
                 colum.getNamespaceName(),
                 colum.getTableName(),
                 colum.getColumnName(),
@@ -312,7 +306,6 @@ public class MetaResultSetBuilder {
         // This method is used to create a dummy full rights result set for a table because the requested information does not exist on the server side.
         List<String> accessRights = Arrays.asList( "SELECT", "INSERT", "UPDATE", "DELETE", "REFERENCE" );
         return accessRights.stream().map( a -> new GenericMetaContainer(
-                table.getSourceDatabaseName(),
                 table.getNamespaceName(),
                 table.getTableName(),
                 null,

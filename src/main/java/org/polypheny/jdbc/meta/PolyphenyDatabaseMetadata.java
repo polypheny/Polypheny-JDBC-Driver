@@ -1045,9 +1045,6 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         if ( !foreignKey.getReferencedNamespaceName().equals( table.getNamespaceName() ) ) {
             return false;
         }
-        if ( !foreignKey.getReferencedDatabaseName().equals( table.getSourceDatabaseName() ) ) {
-            return false;
-        }
         return true;
     }
 
