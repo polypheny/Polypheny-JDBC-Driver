@@ -52,9 +52,10 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.deserialization.UDTPrototype;
+import org.polypheny.jdbc.nativetypes.PolyInterval;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
@@ -84,8 +85,20 @@ public class TypedValue implements Convertible {
     }
 
 
+    private TypedValue( Object object, String internalType ) {
+        this.jdbcType = Types.OTHER;
+        this.value = object;
+        this.internalType = internalType;
+    }
+
+
     public static TypedValue fromUdtPrototype( UDTPrototype udtPrototype ) {
         return new TypedValue( udtPrototype );
+    }
+
+
+    public static TypedValue fromInterval( PolyInterval interval ) {
+        return new TypedValue( interval, "INTERVAL" );
     }
 
 
@@ -965,6 +978,10 @@ public class TypedValue implements Convertible {
                 return asNClob();
             case Types.SQLXML:
                 return asSQLXML();
+            case Types.OTHER:
+                if ( internalType.equals( "INTERVAL" ) ) {
+                    return value;
+                }
         }
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }
@@ -1033,6 +1050,10 @@ public class TypedValue implements Convertible {
                 return asNClob();
             case Types.SQLXML:
                 return asSQLXML();
+            case Types.OTHER:
+                if ( internalType.equals( "INTERVAL" ) ) {
+                    return value;
+                }
         }
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }

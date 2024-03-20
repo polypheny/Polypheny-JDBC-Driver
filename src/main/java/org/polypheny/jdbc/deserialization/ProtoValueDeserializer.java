@@ -12,9 +12,13 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.protointerface.proto.ProtoInterval;
+import org.polypheny.db.protointerface.proto.ProtoInterval.UnitCase;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.jdbctypes.PolyphenyArray;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.nativetypes.PolyInterval;
+import org.polypheny.jdbc.nativetypes.PolyInterval.Unit;
 
 public class ProtoValueDeserializer {
 
@@ -53,6 +57,7 @@ public class ProtoValueDeserializer {
                 case LIST:
                     return TypedValue.fromArray( getArray( value ) );
                 case INTERVAL:
+                    return TypedValue.fromInterval( getInterval( value.getInterval() ) );
                 case MAP:
                 case DOCUMENT:
                 default:
@@ -60,6 +65,15 @@ public class ProtoValueDeserializer {
             }
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
+        }
+    }
+
+
+    private static PolyInterval getInterval( ProtoInterval interval ) {
+        if ( interval.getUnitCase() == UnitCase.MILLISECONDS ) {
+            return new PolyInterval( interval.getMilliseconds(), Unit.MILLISECONDS );
+        } else {
+            return new PolyInterval( interval.getMilliseconds(), Unit.MONTHS );
         }
     }
 

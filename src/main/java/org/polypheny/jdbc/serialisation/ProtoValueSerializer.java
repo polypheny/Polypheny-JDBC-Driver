@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoBinary;
 import org.polypheny.db.protointerface.proto.ProtoBoolean;
@@ -17,6 +15,7 @@ import org.polypheny.db.protointerface.proto.ProtoDate;
 import org.polypheny.db.protointerface.proto.ProtoDouble;
 import org.polypheny.db.protointerface.proto.ProtoFloat;
 import org.polypheny.db.protointerface.proto.ProtoInteger;
+import org.polypheny.db.protointerface.proto.ProtoInterval;
 import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
 import org.polypheny.db.protointerface.proto.ProtoNull;
@@ -24,7 +23,10 @@ import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTimestamp;
 import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.nativetypes.PolyInterval;
 import org.polypheny.jdbc.properties.DriverProperties;
 
 public class ProtoValueSerializer {
@@ -96,7 +98,10 @@ public class ProtoValueSerializer {
             case Types.NULL:
                 return serializeAsProtoNull();
             case Types.OTHER:
-                // TODO TH: find something useful to do here...
+                switch ( typedValue.getInternalType() ) {
+                    case "INTERVAL":
+                        return serializeInterval( typedValue );
+                }
                 break;
             case Types.JAVA_OBJECT:
                 // TODO TH: find something useful to do here...
@@ -137,6 +142,23 @@ public class ProtoValueSerializer {
                 break;
         }
         throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Serialization of jdbc type " + typedValue.getJdbcType() + " not known" );
+    }
+
+
+    private static ProtoValue serializeInterval( TypedValue typedValue ) {
+        PolyInterval interval = (PolyInterval) typedValue.getValue();
+        ProtoInterval.Builder protoInterval = ProtoInterval.newBuilder();
+        switch ( interval.unit ) {
+            case MILLISECONDS:
+                protoInterval.setMilliseconds( interval.value );
+                break;
+            case MONTHS:
+                protoInterval.setMonths( interval.value );
+                break;
+        }
+        return ProtoValue.newBuilder()
+                .setInterval( protoInterval.build() )
+                .build();
     }
 
 
