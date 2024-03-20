@@ -289,7 +289,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public PolyInterval asInterval() {
-        return PolyInterval.of( null, null );
+        return PolyInterval.of( 0, null );
     }
 
 

@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.nativetypes.PolyInterval.Unit;
 import org.polypheny.jdbc.nativetypes.category.PolyBlob;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
@@ -425,8 +426,12 @@ public abstract class PolyValue implements Comparable<PolyValue> {
             case TIMESTAMP:
                 return new PolyTimeStamp( protoValue.getTimestamp().getTimestamp() );
             case INTERVAL:
-                BigDecimal value = deserializeToBigDecimal( protoValue.getInterval().getValue() );
-                return new PolyInterval( value, ProtoPolyType.UNSPECIFIED ); // TODO: Fix type
+                switch ( protoValue.getInterval().getUnitCase() ) {
+                    case MILLISECONDS:
+                        return new PolyInterval( protoValue.getInterval().getMilliseconds(), Unit.MILLISECONDS );
+                    case MONTHS:
+                        return new PolyInterval( protoValue.getInterval().getMonths(), Unit.MONTHS );
+                }
             case STRING:
                 return new PolyString( protoValue.getString().getString() );
             case BINARY:
