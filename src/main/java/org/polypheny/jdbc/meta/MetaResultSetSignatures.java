@@ -185,14 +185,14 @@ public class MetaResultSetSignatures {
     );
 
     public static final List<MetaResultSetParameter<GenericMetaContainer>> COLUMN_PRIVILEGES_GMC_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, p -> p.getValue( 0 ) ),
-            new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 1 ) ),
-            new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, p -> p.getValue( 2 ) ),
-            new MetaResultSetParameter<>( "COLUMN_NAME", Types.VARCHAR, p -> p.getValue( 3 ) ),
-            new MetaResultSetParameter<>( "GRANTOR", Types.VARCHAR, p -> p.getValue( 4 ) ),
-            new MetaResultSetParameter<>( "GRANTEE", Types.VARCHAR, p -> p.getValue( 5 ) ),
-            new MetaResultSetParameter<>( "PRIVILEGE", Types.VARCHAR, p -> p.getValue( 6 ) ),
-            new MetaResultSetParameter<>( "IS_GRANTABLE", Types.VARCHAR, p -> p.getValue( 7 ) )
+            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, p -> null ),
+            new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 0 ) ),
+            new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, p -> p.getValue( 1 ) ),
+            new MetaResultSetParameter<>( "COLUMN_NAME", Types.VARCHAR, p -> p.getValue( 2 ) ),
+            new MetaResultSetParameter<>( "GRANTOR", Types.VARCHAR, p -> p.getValue( 3 ) ),
+            new MetaResultSetParameter<>( "GRANTEE", Types.VARCHAR, p -> p.getValue( 4 ) ),
+            new MetaResultSetParameter<>( "PRIVILEGE", Types.VARCHAR, p -> p.getValue( 5 ) ),
+            new MetaResultSetParameter<>( "IS_GRANTABLE", Types.VARCHAR, p -> p.getValue( 6 ) )
     );
 
     public static final List<MetaResultSetParameter<GenericMetaContainer>> TABLE_PRIVILEGES_GMC_SIGNATURE = Arrays.asList(

@@ -53,7 +53,6 @@ public class MetaResultSetComparators {
             .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 2 )) )
             .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 5 )) );
     public static final Comparator<GenericMetaContainer> COLUMN_PRIVILEGE_COMPARATOR = Comparator
-            .comparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 6 )) )
-            .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 3 )) );
+            .comparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 6 )) );
 
 }
