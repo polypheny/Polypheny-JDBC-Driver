@@ -27,6 +27,7 @@ import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.nativetypes.PolyInterval;
+import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.properties.DriverProperties;
 
 public class ProtoValueSerializer {
@@ -98,10 +99,10 @@ public class ProtoValueSerializer {
             case Types.NULL:
                 return serializeAsProtoNull();
             case Types.OTHER:
-                switch ( typedValue.getInternalType() ) {
-                    case "INTERVAL":
-                        return serializeInterval( typedValue );
+                if ( !(typedValue.getValue() instanceof PolyValue) ) {
+                    throw new RuntimeException( "Can't serialize unknown value!" );
                 }
+                return ((PolyValue) typedValue.getValue()).toProto();
                 break;
             case Types.JAVA_OBJECT:
                 // TODO TH: find something useful to do here...

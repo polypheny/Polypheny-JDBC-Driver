@@ -56,6 +56,7 @@ import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.deserialization.UDTPrototype;
 import org.polypheny.jdbc.nativetypes.PolyInterval;
+import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
@@ -97,8 +98,8 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue fromInterval( PolyInterval interval ) {
-        return new TypedValue( interval, "INTERVAL" );
+    public static TypedValue fromPolyValue( PolyValue value ) {
+        return new TypedValue( value, value.type.name() );
     }
 
 
@@ -979,9 +980,7 @@ public class TypedValue implements Convertible {
             case Types.SQLXML:
                 return asSQLXML();
             case Types.OTHER:
-                if ( internalType.equals( "INTERVAL" ) ) {
-                    return value;
-                }
+                return value;
         }
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }
@@ -1051,9 +1050,7 @@ public class TypedValue implements Convertible {
             case Types.SQLXML:
                 return asSQLXML();
             case Types.OTHER:
-                if ( internalType.equals( "INTERVAL" ) ) {
-                    return value;
-                }
+                return value;
         }
         throw new IllegalArgumentException( "No conversion to object possible for jdbc type: " + getJdbcType() );
     }
