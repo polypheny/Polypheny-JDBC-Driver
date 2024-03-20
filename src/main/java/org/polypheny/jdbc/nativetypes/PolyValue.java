@@ -16,13 +16,34 @@
 
 package org.polypheny.jdbc.nativetypes;
 
+import static org.polypheny.db.protointerface.proto.ProtoValue.ValueCase.STRING;
+
+import com.google.protobuf.ByteString;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
+import org.polypheny.db.protointerface.proto.ProtoBinary;
+import org.polypheny.db.protointerface.proto.ProtoBoolean;
+import org.polypheny.db.protointerface.proto.ProtoDate;
+import org.polypheny.db.protointerface.proto.ProtoDocument;
+import org.polypheny.db.protointerface.proto.ProtoDouble;
+import org.polypheny.db.protointerface.proto.ProtoEntry;
+import org.polypheny.db.protointerface.proto.ProtoFloat;
+import org.polypheny.db.protointerface.proto.ProtoInteger;
+import org.polypheny.db.protointerface.proto.ProtoInterval;
+import org.polypheny.db.protointerface.proto.ProtoList;
+import org.polypheny.db.protointerface.proto.ProtoLong;
+import org.polypheny.db.protointerface.proto.ProtoMap;
+import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
+import org.polypheny.db.protointerface.proto.ProtoString;
+import org.polypheny.db.protointerface.proto.ProtoTime;
+import org.polypheny.db.protointerface.proto.ProtoTimestamp;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.ProtoInterfaceErrors;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyInterval.Unit;
@@ -34,13 +55,6 @@ import org.polypheny.jdbc.nativetypes.graph.PolyEdge;
 import org.polypheny.jdbc.nativetypes.graph.PolyGraph;
 import org.polypheny.jdbc.nativetypes.graph.PolyNode;
 import org.polypheny.jdbc.nativetypes.relational.PolyMap;
-import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
-import org.polypheny.db.protointerface.proto.ProtoDocument;
-import org.polypheny.db.protointerface.proto.ProtoEntry;
-import org.polypheny.db.protointerface.proto.ProtoList;
-import org.polypheny.db.protointerface.proto.ProtoMap;
-import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 
 public abstract class PolyValue implements Comparable<PolyValue> {
 
@@ -461,7 +475,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
     private static PolyMap<PolyString, PolyValue> deserializeToPolyMap( List<ProtoEntry> entries ) {
         return new PolyMap<>( entries.stream()
-                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
+                .filter( e -> e.getKey().getValueCase() == STRING )
                 .collect( Collectors.toMap(
                         e -> {
                             try {
@@ -492,6 +506,238 @@ public abstract class PolyValue implements Comparable<PolyValue> {
         MathContext context = new MathContext( bigDecimal.getPrecision() );
         byte[] unscaledValue = bigDecimal.getUnscaledValue().toByteArray();
         return new BigDecimal( new BigInteger( unscaledValue ), bigDecimal.getScale(), context );
+    }
+
+
+    public ProtoValue toProto() throws ProtoInterfaceServiceException {
+        switch ( type ) {
+            case BOOLEAN:
+                return toProtoBoolean( this.asBoolean() );
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                return toProtoInteger( this.asInteger() );
+            case BIGINT:
+                return toProtoLong( this.asLong() );
+            case DECIMAL:
+                return toProtoBigDecimal( this.asBigDecimal() );
+            case REAL:
+            case FLOAT:
+                return toProtoFloat( this.asFloat() );
+            case DOUBLE:
+                return toProtoDouble( this.asDouble() );
+            case DATE:
+                return toProtoDate( this.asDate() );
+            case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                // Assuming same handling for TIME and TIME_WITH_LOCAL_TIME_ZONE, adjust if needed
+                return toProtoTime( this.asTime() );
+            case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                // Assuming same handling for TIMESTAMP and TIMESTAMP_WITH_LOCAL_TIME_ZONE, adjust if needed
+                return toProtoTimestamp( this.asTimeStamp() );
+            case INTERVAL:
+                return toProtoInterval( this.asInterval() );
+            case CHAR:
+            case VARCHAR:
+                return toProtoString( this.asString() );
+            case BINARY:
+            case VARBINARY:
+                return toProtoBinary( this.asBinary() );
+            case NULL:
+                return toProtoNull(); // Assuming no conversion is needed for NULL type
+            case ARRAY:
+                // Placeholder for array handling
+                return toProtoList( this.asList() );
+            case MAP:
+                return toProtoMap( this.asMap() );
+            case DOCUMENT:
+                return toProtoDocument( this.asDocument() );
+            // Add additional cases here for other types as needed
+            default:
+                throw new RuntimeException( "Unsupported type." );
+        }
+    }
+
+
+    private static ProtoValue toProtoBoolean( PolyBoolean polyBoolean ) {
+        ProtoBoolean protoBoolean = ProtoBoolean.newBuilder()
+                .setBoolean( polyBoolean.value )
+                .build();
+        return ProtoValue.newBuilder()
+                .setBoolean( protoBoolean )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoInteger( PolyInteger polyInteger ) {
+        ProtoInteger protoInteger = ProtoInteger.newBuilder()
+                .setInteger( polyInteger.value )
+                .build();
+        return ProtoValue.newBuilder()
+                .setInteger( protoInteger )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoLong( PolyLong polyLong ) {
+        ProtoLong protoLong = ProtoLong.newBuilder()
+                .setLong( polyLong.value )
+                .build();
+        return ProtoValue.newBuilder()
+                .setLong( protoLong )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoFloat( PolyFloat polyFloat ) {
+        ProtoFloat protoFloat = ProtoFloat.newBuilder()
+                .setFloat( polyFloat.value )
+                .build();
+        return ProtoValue.newBuilder()
+                .setFloat( protoFloat )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoDouble( PolyDouble polyDouble ) {
+        ProtoDouble protoDouble = ProtoDouble.newBuilder()
+                .setDouble( polyDouble.value )
+                .build();
+        return ProtoValue.newBuilder()
+                .setDouble( protoDouble )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoDate( PolyDate polyDate ) {
+        ProtoDate protoDate = ProtoDate.newBuilder()
+                .setDate( polyDate.getDaysSinceEpoch() )
+                .build();
+        return ProtoValue.newBuilder()
+                .setDate( protoDate )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoTime( PolyTime polyTime ) {
+        ProtoTime protoTime = ProtoTime.newBuilder()
+                .setTime( polyTime.ofDay )
+                .build();
+        return ProtoValue.newBuilder()
+                .setTime( protoTime )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoTimestamp( PolyTimeStamp polyTimeStamp ) {
+        ProtoTimestamp protoTimestamp = ProtoTimestamp.newBuilder()
+                .setTimestamp( polyTimeStamp.getMilliSinceEpoch() )
+                .build();
+        return ProtoValue.newBuilder()
+                .setTimestamp( protoTimestamp )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoInterval( PolyInterval polyInterval ) {
+        ProtoInterval.Builder protoInterval = ProtoInterval.newBuilder();
+        if ( polyInterval.unit == Unit.MONTHS ) {
+            protoInterval.setMonths( polyInterval.value );
+        } else {
+            protoInterval.setMilliseconds( polyInterval.value );
+        }
+        return ProtoValue.newBuilder()
+                .setInterval( protoInterval.build() )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoString( PolyString polyString ) {
+        ProtoString protoString = ProtoString.newBuilder()
+                .setString( polyString.value )
+                .build();
+        return ProtoValue.newBuilder()
+                .setString( protoString )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoBinary( PolyBinary polyBinary ) {
+        ProtoBinary protoBinary = ProtoBinary.newBuilder()
+                .setBinary( ByteString.copyFrom( polyBinary.value ) )
+                .build();
+        return ProtoValue.newBuilder()
+                .setBinary( protoBinary )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoNull() {
+        return ProtoValue.newBuilder().setNull( ProtoNull.newBuilder().build() ).build();
+    }
+
+
+    private static ProtoValue toProtoBigDecimal( PolyBigDecimal polyBigDecimal ) {
+        BigDecimal bigDecimal = polyBigDecimal.value;
+        ProtoBigDecimal protoBigDecimal = ProtoBigDecimal.newBuilder()
+                .setUnscaledValue( ByteString.copyFrom( bigDecimal.unscaledValue().toByteArray() ) )
+                .setScale( bigDecimal.scale() )
+                .setPrecision( bigDecimal.precision() )
+                .build();
+        return ProtoValue.newBuilder()
+                .setBigDecimal( protoBigDecimal )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoList( PolyList polyList ) {
+        List<ProtoValue> values = polyList.getValue().stream()
+                .map( v -> v.toProto() )
+                .collect( Collectors.toList() );
+        ProtoList protoList = ProtoList.newBuilder()
+                .addAllValues( values )
+                .build();
+        return ProtoValue.newBuilder()
+                .setList( protoList )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoMap( PolyMap polyMap ) {
+        ProtoMap.Builder protoMapBuilder = ProtoMap.newBuilder();
+        List<ProtoEntry> protoEntries = polyMap.entrySet().stream().map( polyMapEntry -> {
+            ProtoValue protoKey = polyMapEntry.getKey().toProto();
+            ProtoValue protoValue = polyMapEntry.getValue().toProto();
+            return ProtoEntry.newBuilder()
+                    .setKey( protoKey )
+                    .setValue( protoValue )
+                    .build();
+        } ).collect( Collectors.toList() );
+        protoMapBuilder.addAllEntries( protoEntries );
+        ProtoMap protoMap = protoMapBuilder.build();
+        return ProtoValue.newBuilder()
+                .setMap( protoMap )
+                .build();
+    }
+
+
+    private static ProtoValue toProtoDocument( PolyDocument polyDocument ) throws ProtoInterfaceServiceException {
+        List<ProtoEntry> protoEntries = polyDocument.asMap().entrySet().stream().map( polyMapEntry -> {
+            ProtoValue protoKey = polyMapEntry.getKey().toProto(); // Reuse serialize() method for consistency
+            ProtoValue protoValue = polyMapEntry.getValue().toProto();
+            return ProtoEntry.newBuilder()
+                    .setKey( protoKey )
+                    .setValue( protoValue )
+                    .build();
+        } ).collect( Collectors.toList() );
+
+        ProtoDocument protoDocument = ProtoDocument.newBuilder()
+                .addAllEntries( protoEntries )
+                .build();
+        return ProtoValue.newBuilder()
+                .setDocument( protoDocument )
+                .build();
     }
 
 }
