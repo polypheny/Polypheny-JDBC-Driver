@@ -92,18 +92,18 @@ public class MetaResultSetSignatures {
     );
 
     public static final List<MetaResultSetParameter<GenericMetaContainer>> FOREIGN_KEY_GMC_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>( "PKTABLE_CAT", Types.VARCHAR, p -> p.getValue( 0 ) ),
-            new MetaResultSetParameter<>( "PKTABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 1 ) ),
-            new MetaResultSetParameter<>( "PKTABLE_NAME", Types.VARCHAR, p -> p.getValue( 2 ) ),
-            new MetaResultSetParameter<>( "PKCOLUMN_NAME", Types.VARCHAR, p -> p.getValue( 3 ) ),
-            new MetaResultSetParameter<>( "FKTABLE_CAT", Types.VARCHAR, p -> p.getValue( 4 ) ),
-            new MetaResultSetParameter<>( "FKTABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 5 ) ),
-            new MetaResultSetParameter<>( "FKTABLE_NAME", Types.VARCHAR, p -> p.getValue( 6 ) ),
-            new MetaResultSetParameter<>( "FKCOLUMN_NAME", Types.VARCHAR, p -> p.getValue( 7 ) ),
-            new MetaResultSetParameter<>( "KEY_SEQ", Types.SMALLINT, p -> p.getValue( 8 ) ),
-            new MetaResultSetParameter<>( "UPDATE_RULE", Types.SMALLINT, p -> p.getValue( 9 ) ),
-            new MetaResultSetParameter<>( "DELETE_RULE", Types.SMALLINT, p -> p.getValue( 10 ) ),
-            new MetaResultSetParameter<>( "FK_NAME", Types.VARCHAR, p -> p.getValue( 11 ) ),
+            new MetaResultSetParameter<>( "PKTABLE_CAT", Types.VARCHAR, p -> null ),
+            new MetaResultSetParameter<>( "PKTABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 0 ) ),
+            new MetaResultSetParameter<>( "PKTABLE_NAME", Types.VARCHAR, p -> p.getValue( 1 ) ),
+            new MetaResultSetParameter<>( "PKCOLUMN_NAME", Types.VARCHAR, p -> null ),  // TODO: This is not standard compliant!
+            new MetaResultSetParameter<>( "FKTABLE_CAT", Types.VARCHAR, p -> null ),
+            new MetaResultSetParameter<>( "FKTABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 2 ) ),
+            new MetaResultSetParameter<>( "FKTABLE_NAME", Types.VARCHAR, p -> p.getValue( 3 ) ),
+            new MetaResultSetParameter<>( "FKCOLUMN_NAME", Types.VARCHAR, p -> p.getValue( 4 ) ),
+            new MetaResultSetParameter<>( "KEY_SEQ", Types.SMALLINT, p -> p.getValue( 5 ) ),
+            new MetaResultSetParameter<>( "UPDATE_RULE", Types.SMALLINT, p -> p.getValue( 6 ) ),
+            new MetaResultSetParameter<>( "DELETE_RULE", Types.SMALLINT, p -> p.getValue( 7 ) ),
+            new MetaResultSetParameter<>( "FK_NAME", Types.VARCHAR, p -> p.getValue( 8 ) ),
             new MetaResultSetParameter<>( "PK_NAME", Types.VARCHAR, p -> null ),
             new MetaResultSetParameter<>( "DEFERRABILITY", Types.SMALLINT, p -> null )
     );

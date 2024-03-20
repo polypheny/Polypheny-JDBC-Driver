@@ -20,8 +20,7 @@ public class MetaResultSetComparators {
     public static final Comparator<GenericMetaContainer> IMPORTED_KEYS_COMPARATOR = Comparator
             .comparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 0 )) )
             .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 1 )) )
-            .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 2 )) )
-            .thenComparing( ( GenericMetaContainer g ) -> (Integer) (g.getValue( 8 )) );
+            .thenComparing( ( GenericMetaContainer g ) -> (Integer) (g.getValue( 5 )) );
     public static final Comparator<GenericMetaContainer> EXPORTED_KEYS_COMPARATOR = Comparator
             .comparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 4 )) )
             .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 5 )) )

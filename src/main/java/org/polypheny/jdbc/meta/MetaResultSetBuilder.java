@@ -10,7 +10,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.polypheny.jdbc.PolyhenyResultSet;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
 import org.polypheny.db.protointerface.proto.Column;
 import org.polypheny.db.protointerface.proto.Database;
@@ -23,6 +22,7 @@ import org.polypheny.db.protointerface.proto.Table;
 import org.polypheny.db.protointerface.proto.TableType;
 import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.UserDefinedType;
+import org.polypheny.jdbc.PolyhenyResultSet;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class MetaResultSetBuilder {
@@ -128,7 +128,7 @@ public class MetaResultSetBuilder {
 
     private static List<GenericMetaContainer> expandPrimaryKey( PrimaryKey primaryKey ) {
         // sequenceIndexes start with 1 in jdbc
-        AtomicInteger sequenceIndex = new AtomicInteger(1);
+        AtomicInteger sequenceIndex = new AtomicInteger( 1 );
         return primaryKey.getColumnsList().stream().map( c -> new GenericMetaContainer(
                 c.getNamespaceName(),
                 c.getTableName(),
@@ -184,15 +184,15 @@ public class MetaResultSetBuilder {
 
 
     private static List<GenericMetaContainer> expandForeignKey( ForeignKey foreignKey ) {
-        AtomicInteger sequenceIndex = new AtomicInteger();
-        List<Column> referencedKeyColumns = foreignKey.getReferencedColumnsList();
+        // key sequences start with 1 in jdbc
+        AtomicInteger sequenceIndex = new AtomicInteger(1);
         return foreignKey.getForeignColumnsList().stream().map( c -> new GenericMetaContainer(
                 foreignKey.getReferencedNamespaceName(),
                 foreignKey.getReferencedTableName(),
                 c.getNamespaceName(),
                 c.getTableName(),
                 c.getColumnName(),
-                sequenceIndex.getAndIncrement(), // ATTENTION: inc sequence index after all accesses to the referenced key columns so we access the proper columns (0-indexed) before and set the proper ordinal for jdbc (1-indexed)
+                sequenceIndex.getAndIncrement(),
                 foreignKey.getUpdateRule(),
                 foreignKey.getDeleteRule(),
                 foreignKey.getKeyName()
