@@ -16,26 +16,29 @@
 
 package org.polypheny.jdbc.nativetypes;
 
-import java.math.BigDecimal;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 
 public class PolyInterval extends PolyValue {
 
-    public BigDecimal value;
+    public long value;
+    public Unit unit;
 
 
-    public PolyInterval( BigDecimal value, ProtoPolyType intervalType ) {
-        super( intervalType );
-        if ( !TypeUtils.INTERVAL_TYPES.contains( intervalType ) ) {
-            throw new RuntimeException( "Type must be an interval type." );
-        }
+    public enum Unit {
+        MILLISECONDS,
+        MONTHS,
+    }
+
+
+    public PolyInterval( long value, Unit unit ) {
+        super( ProtoPolyType.UNSPECIFIED ); // TODO: Fix type
         this.value = value;
     }
 
 
-    public static PolyInterval of( BigDecimal value, ProtoPolyType intervalType ) {
-        return new PolyInterval( value, intervalType );
+    public static PolyInterval of( long value, Unit unit ) {
+        return new PolyInterval( value, unit );
     }
 
 
@@ -50,7 +53,7 @@ public class PolyInterval extends PolyValue {
 
     @Override
     public String toString() {
-        return value.toString() + type.toString();
+        return value + " " + unit.toString().toLowerCase();
     }
 
 }

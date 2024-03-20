@@ -73,11 +73,11 @@ public class ProtoInterfaceClient {
 
     public ProtoInterfaceClient( String host, int port, Map<String, String> parameters ) throws ProtoInterfaceServiceException {
         try {
-            String mode = parameters.getOrDefault( "mode", "plain" );
-            if ( mode.equals( "plain" ) ) {
+            String transport = parameters.getOrDefault( "transport", "plain" );
+            if ( transport.equals( "plain" ) ) {
                 con = new PlainTransport( host, port );
             } else {
-                throw new ProtoInterfaceServiceException( "Unknown mode " + mode );
+                throw new ProtoInterfaceServiceException( "Unknown mode " + transport );
             }
             rpc = new RpcService( con );
         } catch ( IOException e ) {
