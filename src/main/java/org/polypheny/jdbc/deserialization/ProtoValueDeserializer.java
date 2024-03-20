@@ -19,6 +19,7 @@ import org.polypheny.jdbc.jdbctypes.PolyphenyArray;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.nativetypes.PolyInterval;
 import org.polypheny.jdbc.nativetypes.PolyInterval.Unit;
+import org.polypheny.jdbc.nativetypes.PolyValue;
 
 public class ProtoValueDeserializer {
 
@@ -57,8 +58,9 @@ public class ProtoValueDeserializer {
                 case LIST:
                     return TypedValue.fromArray( getArray( value ) );
                 case INTERVAL:
-                    return TypedValue.fromInterval( getInterval( value.getInterval() ) );
+                    return TypedValue.fromPolyValue( getInterval( value.getInterval() ) );
                 case MAP:
+                    return TypedValue.fromPolyValue(PolyValue.fromProto( value ));
                 case DOCUMENT:
                 default:
                     throw new RuntimeException( "Cannot deserialize ProtoValue of case " + value.getValueCase() );
@@ -67,7 +69,6 @@ public class ProtoValueDeserializer {
             throw new RuntimeException( e );
         }
     }
-
 
     private static PolyInterval getInterval( ProtoInterval interval ) {
         if ( interval.getUnitCase() == UnitCase.MILLISECONDS ) {
