@@ -76,12 +76,12 @@ public class MetaResultSetSignatures {
     );
 
     public static final List<MetaResultSetParameter<GenericMetaContainer>> PRIMARY_KEY_GMC_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, p -> p.getValue( 0 ) ),
-            new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 1 ) ),
-            new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, p -> p.getValue( 2 ) ),
-            new MetaResultSetParameter<>( "COLUMN_NAME", Types.VARCHAR, p -> p.getValue( 3 ) ),
-            new MetaResultSetParameter<>( "KEY_SEQ", Types.SMALLINT, p -> p.getValue( 4 ) ),
-            new MetaResultSetParameter<>( "PK_NAME", Types.VARCHAR, p -> p.getValue( 5 ) )
+            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, p -> null ),
+            new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 0 ) ),
+            new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, p -> p.getValue( 1 ) ),
+            new MetaResultSetParameter<>( "COLUMN_NAME", Types.VARCHAR, p -> p.getValue( 2 ) ),
+            new MetaResultSetParameter<>( "KEY_SEQ", Types.SMALLINT, p -> p.getValue( 3 ) ),
+            new MetaResultSetParameter<>( "PK_NAME", Types.VARCHAR, p -> p.getValue( 4 ) )
     );
 
     // This signature uses the term catalog as this is what jdbc calls the results in the result set generated.

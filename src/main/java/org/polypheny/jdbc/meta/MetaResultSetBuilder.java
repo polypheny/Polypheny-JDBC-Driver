@@ -127,7 +127,8 @@ public class MetaResultSetBuilder {
 
 
     private static List<GenericMetaContainer> expandPrimaryKey( PrimaryKey primaryKey ) {
-        AtomicInteger sequenceIndex = new AtomicInteger();
+        // sequenceIndexes start with 1 in jdbc
+        AtomicInteger sequenceIndex = new AtomicInteger(1);
         return primaryKey.getColumnsList().stream().map( c -> new GenericMetaContainer(
                 c.getNamespaceName(),
                 c.getTableName(),

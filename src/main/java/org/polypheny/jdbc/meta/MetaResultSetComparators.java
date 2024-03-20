@@ -12,7 +12,7 @@ public class MetaResultSetComparators {
     public static final Comparator<Namespace> NAMESPACE_COMPARATOR = Comparator
             .comparing( Namespace::getNamespaceName );
     public static final Comparator<GenericMetaContainer> PRIMARY_KEY_COMPARATOR = Comparator
-            .comparing( g -> (String) (g.getValue( 3 )) );
+            .comparing( g -> (String) (g.getValue( 2 )) );
     public static final Comparator<GenericMetaContainer> INDEX_COMPARATOR = Comparator
             .comparing( ( GenericMetaContainer g ) -> (Boolean) (g.getValue( 3 )) )
             .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 4 )) )
