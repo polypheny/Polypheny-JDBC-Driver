@@ -44,7 +44,7 @@ public class MetaResultSetSignatures {
     public static final List<MetaResultSetParameter<Namespace>> NAMESPACE_SIGNATURE = Arrays.asList(
             new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, Namespace::getNamespaceName ),
             new MetaResultSetParameter<>( "TABLE_CATALOG", Types.VARCHAR, p -> null ),
-            new MetaResultSetParameter<>( "SCHEMA_TYPE", Types.VARCHAR, nullIfFalse( Namespace::getNamespaceName, Namespace::hasNamespaceType ) )
+            new MetaResultSetParameter<>( "SCHEMA_TYPE", Types.VARCHAR, nullIfFalse( Namespace::getNamespaceType, Namespace::hasNamespaceType ) )
     );
 
     public static final List<MetaResultSetParameter<Column>> COLUMN_SIGNATURE = Arrays.asList(
