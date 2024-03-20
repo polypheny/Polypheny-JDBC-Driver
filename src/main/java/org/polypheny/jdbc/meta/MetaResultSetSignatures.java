@@ -130,21 +130,21 @@ public class MetaResultSetSignatures {
     );
 
     public static final List<MetaResultSetParameter<GenericMetaContainer>> INDEX_GMC_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, p -> p.getValue( 0 ) ),
-            new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 1 ) ),
-            new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, p -> p.getValue( 2 ) ),
-            new MetaResultSetParameter<>( "NON_UNIQUE", Types.BOOLEAN, p -> p.getValue( 3 ) ),
+            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, p -> null ),
+            new MetaResultSetParameter<>( "TABLE_SCHEM", Types.VARCHAR, p -> p.getValue( 0 ) ),
+            new MetaResultSetParameter<>( "TABLE_NAME", Types.VARCHAR, p -> p.getValue( 1 ) ),
+            new MetaResultSetParameter<>( "NON_UNIQUE", Types.BOOLEAN, p -> p.getValue( 2 ) ),
             new MetaResultSetParameter<>( "INDEX_QUALIFIER", Types.VARCHAR, p -> null ),
-            new MetaResultSetParameter<>( "INDEX_NAME", Types.VARCHAR, p -> p.getValue( 4 ) ),
+            new MetaResultSetParameter<>( "INDEX_NAME", Types.VARCHAR, p -> p.getValue( 3 ) ),
             new MetaResultSetParameter<>( "TYPE", Types.TINYINT, p -> 0 ),
-            new MetaResultSetParameter<>( "ORDINAL_POSITION", Types.TINYINT, integerAsShort( p -> p.getValue( 5 ) ) ),
-            new MetaResultSetParameter<>( "COLUMN_NAME", Types.VARCHAR, p -> p.getValue( 6 ) ),
+            new MetaResultSetParameter<>( "ORDINAL_POSITION", Types.TINYINT, integerAsShort( p -> p.getValue( 4 ) ) ),
+            new MetaResultSetParameter<>( "COLUMN_NAME", Types.VARCHAR, p -> p.getValue( 5 ) ),
             new MetaResultSetParameter<>( "ASC_OR_DESC", Types.VARCHAR, p -> null ),
             new MetaResultSetParameter<>( "CARDINALITY", Types.BIGINT, p -> (long) -1 ),
             new MetaResultSetParameter<>( "PAGES", Types.BIGINT, p -> null ),
             new MetaResultSetParameter<>( "FILTER_CONDITION", Types.VARCHAR, p -> null ),
-            new MetaResultSetParameter<>( "LOCATION", Types.INTEGER, p -> p.getValue( 7 ) ),
-            new MetaResultSetParameter<>( "INDEX_TYPE", Types.INTEGER, p -> p.getValue( 8 ) )
+            new MetaResultSetParameter<>( "LOCATION", Types.INTEGER, p -> p.getValue( 6 ) ),
+            new MetaResultSetParameter<>( "INDEX_TYPE", Types.INTEGER, p -> p.getValue( 7 ) )
     );
 
     public static final List<MetaResultSetParameter<Procedure>> PROCEDURE_SIGNATURE = Arrays.asList(

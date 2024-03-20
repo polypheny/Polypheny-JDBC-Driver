@@ -14,9 +14,10 @@ public class MetaResultSetComparators {
     public static final Comparator<GenericMetaContainer> PRIMARY_KEY_COMPARATOR = Comparator
             .comparing( g -> (String) (g.getValue( 2 )) );
     public static final Comparator<GenericMetaContainer> INDEX_COMPARATOR = Comparator
-            .comparing( ( GenericMetaContainer g ) -> (Boolean) (g.getValue( 3 )) )
-            .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 4 )) )
-            .thenComparing( ( GenericMetaContainer g ) -> (Integer) (g.getValue( 5 )) );
+            .comparing( ( GenericMetaContainer g ) -> (Boolean) (g.getValue( 2 )) )
+            .thenComparing( (GenericMetaContainer g) -> (int) (g.getValue( 7 )) )
+            .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 3 )) )
+            .thenComparing( ( GenericMetaContainer g ) -> (Integer) (g.getValue( 4 )) );
     public static final Comparator<GenericMetaContainer> IMPORTED_KEYS_COMPARATOR = Comparator
             .comparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 0 )) )
             .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 1 )) )
