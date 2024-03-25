@@ -184,10 +184,7 @@ public class PolyhenyResultSet implements ResultSet {
         if ( isClosed ) {
             return;
         }
-        getStatement().setFetchSize( properties.getStatementFetchSize() );
-        if ( getStatement().isCloseOnCompletion() ) {
-            getStatement().unwrap( PolyphenyStatement.class ).closeStatementOnly();
-        }
+        statement.notifyResultClosure();
         isClosed = true;
     }
 

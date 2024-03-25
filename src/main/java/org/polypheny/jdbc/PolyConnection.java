@@ -17,25 +17,23 @@ import java.sql.SQLXML;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
-import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
-import org.polypheny.jdbc.multimodel.PolyStatement;
-import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
-import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
-import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.jdbctypes.PolyphenyArray;
 import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
 import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
 import org.polypheny.jdbc.jdbctypes.PolyphenyStruct;
+import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
+import org.polypheny.jdbc.multimodel.PolyStatement;
+import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
+import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
 
 public class PolyConnection implements Connection {
 
@@ -115,7 +113,12 @@ public class PolyConnection implements Connection {
     }
 
 
-    public void removeStatementFromOpen( Statement statement ) {
+    public void startTracking( Statement statement ) {
+        openStatements.add( statement );
+    }
+
+
+    public void endTracking( Statement statement ) {
         if ( !openStatements.contains( statement ) ) {
             return;
         }
@@ -137,7 +140,7 @@ public class PolyConnection implements Connection {
     public Statement createStatement() throws SQLException {
         throwIfClosed();
         PolyphenyStatement statement = new PolyphenyStatement( this, properties.toStatementProperties() );
-        openStatements.add( statement );
+        startTracking( statement );
         return statement;
     }
 
@@ -156,7 +159,7 @@ public class PolyConnection implements Connection {
                 getTimeout()
         );
         PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, properties.toStatementProperties(), signature );
-        openStatements.add( statement );
+        startTracking( statement );
         return statement;
     }
 
@@ -214,10 +217,8 @@ public class PolyConnection implements Connection {
         if ( isClosed() ) {
             return;
         }
-        List<Statement> statements = new ArrayList<>( openStatements );
-        for ( Statement statement : statements ) {
-            statement.close();
-            openStatements.remove( statement );
+        for ( Statement openStatement : new HashSet<>( openStatements ) ) {
+            openStatement.close();
         }
         getProtoInterfaceClient().unregister( properties.getNetworkTimeout() );
         isClosed = true;

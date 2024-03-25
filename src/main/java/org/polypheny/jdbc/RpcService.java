@@ -32,6 +32,8 @@ import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesResponse;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaRequest;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaResponse;
+import org.polypheny.db.protointerface.proto.CloseResultRequest;
+import org.polypheny.db.protointerface.proto.CloseResultResponse;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
 import org.polypheny.db.protointerface.proto.CommitRequest;
@@ -435,6 +437,13 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setCloseStatementRequest( msg );
         return completeSynchronously( req, timeout ).getCloseStatementResponse();
+    }
+
+
+    CloseResultResponse closeResult( CloseResultRequest msg, int timeout ) throws ProtoInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setCloseResultRequest( msg );
+        return completeSynchronously( req, timeout ).getCloseResultResponse();
     }
 
 }

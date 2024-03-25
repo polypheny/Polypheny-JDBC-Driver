@@ -86,7 +86,43 @@ public class StatementTest {
 
 
     @Test
-    void testPreparedStatementCleanup() throws SQLException {
+    void testStatementSingleExecCleanup() throws SQLException {
+        try ( Statement p = con.createStatement() ) {
+            p.execute( "INSERT INTO t(id, a) VALUES (1, 4)" );
+        }
+        try ( Statement statement = con.createStatement() ) {
+            statement.execute( "DROP TABLE IF EXISTS t" );
+        }
+    }
+
+
+    @Test
+    void testStatementMultipleExecCleanup() throws SQLException {
+        try ( Statement p = con.createStatement() ) {
+            p.execute( "INSERT INTO t(id, a) VALUES (1, 4)" );
+            p.execute( "INSERT INTO t(id, a) VALUES (2, 4)" );
+        }
+        try ( Statement statement = con.createStatement() ) {
+            statement.execute( "DROP TABLE IF EXISTS t" );
+        }
+    }
+
+
+    @Test
+    void testPreparedStatementSingleExecCleanup() throws SQLException {
+        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
+            p.setInt( 1, 4 );
+            p.setInt( 2, 4 );
+            p.execute();
+        }
+        try ( Statement statement = con.createStatement() ) {
+            statement.execute( "DROP TABLE IF EXISTS t" );
+        }
+    }
+
+
+    @Test
+    void testPreparedStatementDualExecCleanup() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
             p.setInt( 2, 4 );
@@ -95,7 +131,6 @@ public class StatementTest {
             p.setInt( 2, 5 );
             p.execute();
         }
-
         try ( Statement statement = con.createStatement() ) {
             statement.execute( "DROP TABLE IF EXISTS t" );
         }

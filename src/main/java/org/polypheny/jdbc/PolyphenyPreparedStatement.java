@@ -48,6 +48,13 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         this.parameterBatch = new LinkedList<>();
     }
 
+    private void prepareForReexecution() throws SQLException {
+        if (currentResult != null) {
+            currentResult.close();
+        }
+        currentUpdateCount = NO_UPDATE_COUNT;
+    }
+
 
     private TypedValue[] createParameterList( int parameterCount ) {
         return new TypedValue[parameterCount];
@@ -131,14 +138,13 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public ResultSet executeQuery() throws SQLException {
         throwIfClosed();
-
+        prepareForReexecution();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
                 Arrays.asList( parameters ),
                 properties.getFetchSize(),
                 getTimeout()
         );
-        closeCurrentResult();
         if ( !result.hasFrame() ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
         }
@@ -152,13 +158,13 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public long executeLargeUpdate() throws SQLException {
         throwIfClosed();
+        prepareForReexecution();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
                 Arrays.asList( parameters ),
                 properties.getFetchSize(),
                 getTimeout()
         );
-        closeCurrentResult();
         if ( result.hasFrame() ) {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
         }
@@ -362,13 +368,13 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public boolean execute() throws SQLException {
         throwIfClosed();
+        prepareForReexecution();
         StatementResult result = getClient().executeIndexedStatement(
                 statementId,
                 Arrays.asList( parameters ),
                 properties.getFetchSize(),
                 getTimeout()
         );
-        closeCurrentResult();
         if ( !result.hasFrame() ) {
             currentUpdateCount = result.getScalar();
             return false;

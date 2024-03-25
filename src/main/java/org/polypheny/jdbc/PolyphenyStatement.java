@@ -10,14 +10,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.protointerface.proto.Response;
-import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
-import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Frame.ResultCase;
+import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.db.protointerface.proto.StatementBatchResponse;
 import org.polypheny.db.protointerface.proto.StatementResponse;
+import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class PolyphenyStatement implements Statement {
@@ -66,23 +66,62 @@ public class PolyphenyStatement implements Statement {
         return Math.toIntExact( longNumber );
     }
 
+    /**
+     * protected void closeCurrentResult() throws SQLException {
+     * if ( currentResult != null ) {
+     * currentResult.close();
+     * }
+     * currentResult = null;
+     * currentUpdateCount = NO_UPDATE_COUNT;
+     * }
+     **/
 
-    protected void closeCurrentResult() throws SQLException {
-        if ( currentResult != null ) {
+    /**
+     * void discardStatement() throws SQLException {
+     * if (statementId == NO_STATEMENT_ID) {
+     * return;
+     * }
+     *
+     * statementId = NO_STATEMENT_ID;
+     * }
+     **/
+
+    /**
+     * public void closeStatementOnly() throws SQLException {
+     * this.statementId = NO_STATEMENT_ID;
+     * this.currentResult = null;
+     * close();
+     * }
+     **/
+    private void prepareForReexecution() throws SQLException {
+        if (currentResult != null) {
             currentResult.close();
         }
-        currentResult = null;
         currentUpdateCount = NO_UPDATE_COUNT;
+        if (statementId != NO_STATEMENT_ID) {
+            getClient().closeStatement( statementId, getTimeout() );
+            statementId = NO_STATEMENT_ID;
+        }
+    }
+
+    public void notifyResultClosure() throws SQLException {
+        this.currentResult = null;
+        getClient().closeResult( statementId, getTimeout() );
+    }
+
+    @Override
+    public void close() throws SQLException {
+        if ( isClosed ) {
+            return;
+        }
+        polyConnection.endTracking( this );
+        prepareForReexecution();
+        isClosed = true;
     }
 
 
     protected int getTimeout() throws SQLException {
         return Math.min( getConnection().getNetworkTimeout(), properties.getQueryTimeoutSeconds() * 1000 );
-    }
-
-
-    void discardStatementId() {
-        statementId = NO_STATEMENT_ID;
     }
 
 
@@ -104,8 +143,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
         throwIfClosed();
-        closeCurrentResult();
-        discardStatementId();
+        prepareForReexecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
@@ -136,8 +174,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public int executeUpdate( String statement ) throws SQLException {
         throwIfClosed();
-        closeCurrentResult();
-        discardStatementId();
+        prepareForReexecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
@@ -160,27 +197,6 @@ public class PolyphenyStatement implements Statement {
             currentUpdateCount = response.getResult().getScalar();
             return longToInt( currentUpdateCount );
         }
-    }
-
-
-    public void closeStatementOnly() throws SQLException {
-        this.statementId = NO_STATEMENT_ID;
-        this.currentResult = null;
-        close();
-    }
-
-
-    @Override
-    public void close() throws SQLException {
-        if ( isClosed ) {
-            return;
-        }
-        if ( currentResult != null ) {
-            currentResult.close();
-        }
-        polyConnection.removeStatementFromOpen( this );
-        getClient().closeStatement( statementId, getTimeout() );
-        isClosed = true;
     }
 
 
@@ -252,7 +268,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public void cancel() throws SQLException {
         throwIfClosed();
-        // TODO TH: implment cancelling
+        // TODO TH: implement cancelling
     }
 
 
@@ -278,8 +294,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean execute( String statement ) throws SQLException {
         throwIfClosed();
-        closeCurrentResult();
-        discardStatementId();
+        prepareForReexecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
@@ -331,7 +346,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean getMoreResults() throws SQLException {
         throwIfClosed();
-        closeCurrentResult();
+        prepareForReexecution();
         // statements can not return multiple result sets
         return false;
     }
@@ -416,8 +431,7 @@ public class PolyphenyStatement implements Statement {
 
     private List<Long> executeUnparameterizedBatch() throws SQLException {
         throwIfClosed();
-        closeCurrentResult();
-        discardStatementId();
+        prepareForReexecution();
         CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse );
         List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
         clearBatch();
@@ -476,7 +490,7 @@ public class PolyphenyStatement implements Statement {
             throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for closing behaviour: " + i );
         }
         throwIfClosed();
-        closeCurrentResult();
+        prepareForReexecution();
         // statements can not return multiple result sets
         return false;
     }
