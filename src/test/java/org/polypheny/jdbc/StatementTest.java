@@ -120,6 +120,24 @@ public class StatementTest {
         }
     }
 
+    @Test
+    void testMultipleStatements() throws SQLException {
+        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
+            p.setInt( 1, 4 );
+            p.setInt( 2, 4 );
+            p.execute();
+
+            try ( Statement s = con.createStatement() ) {
+                s.execute( "INSERT INTO t(id, a) VALUES (5, 5)" );
+                s.execute( "INSERT INTO t(id, a) VALUES (6, 6)" );
+            }
+
+            p.setInt( 1, 7 );
+            p.setInt( 2, 7 );
+            p.execute();
+        }
+    }
+
 
     @Test
     void testPreparedStatementDualExecCleanup() throws SQLException {
