@@ -48,11 +48,7 @@ public class PolyGraph extends GraphObject {
             return -1;
         }
         PolyGraph o = null;
-        try {
-            o = other.asGraph();
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should not be thrown." );
-        }
+        o = other.asGraph();
 
         if ( this.nodes.size() > o.nodes.size() ) {
             return 1;

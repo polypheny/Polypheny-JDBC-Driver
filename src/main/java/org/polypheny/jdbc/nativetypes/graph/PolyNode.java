@@ -85,11 +85,7 @@ public class PolyNode extends GraphPropertyHolder {
             return -1;
         }
 
-        try {
-            return id.compareTo( o.asNode().id );
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown." );
-        }
+        return id.compareTo( o.asNode().id );
     }
 
 }

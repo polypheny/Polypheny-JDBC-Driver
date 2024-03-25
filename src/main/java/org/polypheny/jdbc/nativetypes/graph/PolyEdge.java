@@ -109,11 +109,7 @@ public class PolyEdge extends GraphPropertyHolder {
         if ( !this.isSameType( o ) ) {
             return -1;
         }
-        try {
-            return this.equals( o.asEdge() ) ? 0 : -1;
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown." );
-        }
+        return this.equals( o.asEdge() ) ? 0 : -1;
 
     }
 

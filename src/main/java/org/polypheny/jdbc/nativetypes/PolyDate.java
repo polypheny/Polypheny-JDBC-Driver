@@ -75,11 +75,7 @@ public class PolyDate extends PolyTemporal {
         if ( !isDate() ) {
             return -1;
         }
-        try {
-            return Long.compare( milliSinceEpoch, o.asDate().milliSinceEpoch );
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown!" );
-        }
+        return Long.compare( milliSinceEpoch, o.asDate().milliSinceEpoch );
     }
 
 

@@ -23,7 +23,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoBinary;
@@ -44,8 +46,6 @@ import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTimestamp;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyInterval.Unit;
 import org.polypheny.jdbc.nativetypes.category.PolyBlob;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
@@ -87,7 +87,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyBoolean asBoolean() throws ProtoInterfaceServiceException {
+    public PolyBoolean asBoolean() {
         if ( isBoolean() ) {
             return (PolyBoolean) this;
         }
@@ -96,9 +96,8 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    private ProtoInterfaceServiceException cannotParse( PolyValue value, Class<?> clazz ) {
-        return new ProtoInterfaceServiceException(
-                ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE,
+    private RuntimeException cannotParse( PolyValue value, Class<?> clazz ) {
+        return new RuntimeException(
                 String.format( "Cannot parse %s to type %s", value, clazz.getSimpleName() )
         );
     }
@@ -110,7 +109,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyInteger asInteger() throws ProtoInterfaceServiceException {
+    public PolyInteger asInteger() {
         if ( isInteger() ) {
             return (PolyInteger) this;
         }
@@ -125,7 +124,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyDocument asDocument() throws ProtoInterfaceServiceException {
+    public PolyDocument asDocument() {
         if ( isDocument() ) {
             return (PolyDocument) this;
         }
@@ -139,7 +138,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public <T extends PolyValue> PolyList<T> asList() throws ProtoInterfaceServiceException {
+    public <T extends PolyValue> PolyList<T> asList() {
         if ( isList() ) {
             return (PolyList<T>) this;
         }
@@ -153,7 +152,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyString asString() throws ProtoInterfaceServiceException {
+    public PolyString asString() {
         if ( isString() ) {
             return (PolyString) this;
         }
@@ -167,7 +166,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyBinary asBinary() throws ProtoInterfaceServiceException {
+    public PolyBinary asBinary() {
         if ( isBinary() ) {
             return (PolyBinary) this;
         }
@@ -181,7 +180,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyBigDecimal asBigDecimal() throws ProtoInterfaceServiceException {
+    public PolyBigDecimal asBigDecimal() {
         if ( isBigDecimal() ) {
             return (PolyBigDecimal) this;
         }
@@ -196,7 +195,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyFloat asFloat() throws ProtoInterfaceServiceException {
+    public PolyFloat asFloat() {
         if ( isFloat() ) {
             return (PolyFloat) this;
         }
@@ -211,7 +210,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyDouble asDouble() throws ProtoInterfaceServiceException {
+    public PolyDouble asDouble() {
         if ( isDouble() ) {
             return (PolyDouble) this;
         }
@@ -226,7 +225,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyLong asLong() throws ProtoInterfaceServiceException {
+    public PolyLong asLong() {
         if ( isLong() ) {
             return (PolyLong) this;
         }
@@ -240,7 +239,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    public PolyTemporal asTemporal() throws ProtoInterfaceServiceException {
+    public PolyTemporal asTemporal() {
         if ( isTemporal() ) {
             return (PolyTemporal) this;
         }
@@ -254,7 +253,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyDate asDate() throws ProtoInterfaceServiceException {
+    public PolyDate asDate() {
         if ( isDate() ) {
             return (PolyDate) this;
         }
@@ -268,7 +267,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyTime asTime() throws ProtoInterfaceServiceException {
+    public PolyTime asTime() {
         if ( isTime() ) {
             return (PolyTime) this;
         }
@@ -283,7 +282,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyTimeStamp asTimeStamp() throws ProtoInterfaceServiceException {
+    public PolyTimeStamp asTimeStamp() {
         if ( isTimestamp() ) {
             return (PolyTimeStamp) this;
         }
@@ -298,7 +297,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyMap<PolyValue, PolyValue> asMap() throws ProtoInterfaceServiceException {
+    public PolyMap<PolyValue, PolyValue> asMap() {
         if ( isMap() || isDocument() ) {
             return (PolyMap<PolyValue, PolyValue>) this;
         }
@@ -312,7 +311,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyEdge asEdge() throws ProtoInterfaceServiceException {
+    public PolyEdge asEdge() {
         if ( isEdge() ) {
             return (PolyEdge) this;
         }
@@ -326,7 +325,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyNode asNode() throws ProtoInterfaceServiceException {
+    public PolyNode asNode() {
         if ( isNode() ) {
             return (PolyNode) this;
         }
@@ -345,7 +344,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyGraph asGraph() throws ProtoInterfaceServiceException {
+    public PolyGraph asGraph() {
         if ( isGraph() ) {
             return (PolyGraph) this;
         }
@@ -358,7 +357,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    public PolyNumber asNumber() throws ProtoInterfaceServiceException {
+    public PolyNumber asNumber() {
         if ( isNumber() ) {
             return (PolyNumber) this;
         }
@@ -367,11 +366,11 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     public boolean isInterval() {
-        return TypeUtils.INTERVAL_TYPES.contains( type );
+        return type == ProtoPolyType.INTERVAL;
     }
 
 
-    public PolyInterval asInterval() throws ProtoInterfaceServiceException {
+    public PolyInterval asInterval() {
         if ( isInterval() ) {
             return (PolyInterval) this;
         }
@@ -384,7 +383,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    public PolySymbol asSymbol() throws ProtoInterfaceServiceException {
+    public PolySymbol asSymbol() {
         if ( isSymbol() ) {
             return (PolySymbol) this;
         }
@@ -398,7 +397,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
 
     @NotNull
-    public PolyBlob asBlob() throws ProtoInterfaceServiceException {
+    public PolyBlob asBlob() {
         if ( isBlob() ) {
             return (PolyBlob) this;
         }
@@ -411,7 +410,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    public PolyUserDefinedValue asUserDefinedValue() throws ProtoInterfaceServiceException {
+    public PolyUserDefinedValue asUserDefinedValue() {
         if ( isUserDefinedValue() ) {
             return (PolyUserDefinedValue) this;
         }
@@ -477,13 +476,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
         return new PolyMap<>( entries.stream()
                 .filter( e -> e.getKey().getValueCase() == STRING )
                 .collect( Collectors.toMap(
-                        e -> {
-                            try {
-                                return PolyValue.fromProto( e.getKey() ).asString();
-                            } catch ( ProtoInterfaceServiceException ex ) {
-                                throw new RuntimeException( "Should never be thrown." );
-                            }
-                        },
+                        e -> PolyValue.fromProto( e.getKey() ).asString(),
                         e -> PolyValue.fromProto( e.getValue() ),
                         ( key1, key2 ) -> key1
                 ) ) );
@@ -509,7 +502,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    public ProtoValue toProto() throws ProtoInterfaceServiceException {
+    public ProtoValue toProto() {
         switch ( type ) {
             case BOOLEAN:
                 return toProtoBoolean( this.asBoolean() );
@@ -560,7 +553,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoBoolean( PolyBoolean polyBoolean ) {
+    private ProtoValue toProtoBoolean( PolyBoolean polyBoolean ) {
         ProtoBoolean protoBoolean = ProtoBoolean.newBuilder()
                 .setBoolean( polyBoolean.value )
                 .build();
@@ -570,7 +563,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoInteger( PolyInteger polyInteger ) {
+    private ProtoValue toProtoInteger( PolyInteger polyInteger ) {
         ProtoInteger protoInteger = ProtoInteger.newBuilder()
                 .setInteger( polyInteger.value )
                 .build();
@@ -580,7 +573,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoLong( PolyLong polyLong ) {
+    private ProtoValue toProtoLong( PolyLong polyLong ) {
         ProtoLong protoLong = ProtoLong.newBuilder()
                 .setLong( polyLong.value )
                 .build();
@@ -590,7 +583,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoFloat( PolyFloat polyFloat ) {
+    private ProtoValue toProtoFloat( PolyFloat polyFloat ) {
         ProtoFloat protoFloat = ProtoFloat.newBuilder()
                 .setFloat( polyFloat.value )
                 .build();
@@ -600,7 +593,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoDouble( PolyDouble polyDouble ) {
+    private ProtoValue toProtoDouble( PolyDouble polyDouble ) {
         ProtoDouble protoDouble = ProtoDouble.newBuilder()
                 .setDouble( polyDouble.value )
                 .build();
@@ -610,7 +603,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoDate( PolyDate polyDate ) {
+    private ProtoValue toProtoDate( PolyDate polyDate ) {
         ProtoDate protoDate = ProtoDate.newBuilder()
                 .setDate( polyDate.getDaysSinceEpoch() )
                 .build();
@@ -620,7 +613,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoTime( PolyTime polyTime ) {
+    private ProtoValue toProtoTime( PolyTime polyTime ) {
         ProtoTime protoTime = ProtoTime.newBuilder()
                 .setTime( polyTime.ofDay )
                 .build();
@@ -630,7 +623,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoTimestamp( PolyTimeStamp polyTimeStamp ) {
+    private ProtoValue toProtoTimestamp( PolyTimeStamp polyTimeStamp ) {
         ProtoTimestamp protoTimestamp = ProtoTimestamp.newBuilder()
                 .setTimestamp( polyTimeStamp.getMilliSinceEpoch() )
                 .build();
@@ -640,7 +633,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoInterval( PolyInterval polyInterval ) {
+    private ProtoValue toProtoInterval( PolyInterval polyInterval ) {
         ProtoInterval.Builder protoInterval = ProtoInterval.newBuilder();
         if ( polyInterval.unit == Unit.MONTHS ) {
             protoInterval.setMonths( polyInterval.value );
@@ -653,7 +646,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoString( PolyString polyString ) {
+    private ProtoValue toProtoString( PolyString polyString ) {
         ProtoString protoString = ProtoString.newBuilder()
                 .setString( polyString.value )
                 .build();
@@ -663,7 +656,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoBinary( PolyBinary polyBinary ) {
+    private ProtoValue toProtoBinary( PolyBinary polyBinary ) {
         ProtoBinary protoBinary = ProtoBinary.newBuilder()
                 .setBinary( ByteString.copyFrom( polyBinary.value ) )
                 .build();
@@ -673,12 +666,12 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoNull() {
+    private ProtoValue toProtoNull() {
         return ProtoValue.newBuilder().setNull( ProtoNull.newBuilder().build() ).build();
     }
 
 
-    private static ProtoValue toProtoBigDecimal( PolyBigDecimal polyBigDecimal ) {
+    private ProtoValue toProtoBigDecimal( PolyBigDecimal polyBigDecimal ) {
         BigDecimal bigDecimal = polyBigDecimal.value;
         ProtoBigDecimal protoBigDecimal = ProtoBigDecimal.newBuilder()
                 .setUnscaledValue( ByteString.copyFrom( bigDecimal.unscaledValue().toByteArray() ) )
@@ -691,9 +684,9 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoList( PolyList polyList ) {
-        List<ProtoValue> values = polyList.getValue().stream()
-                .map( v -> v.toProto() )
+    private ProtoValue toProtoList( PolyList polyList ) {
+        List<ProtoValue> values = ((Stream<PolyValue>) polyList.stream())
+                .map( PolyValue::toProto )
                 .collect( Collectors.toList() );
         ProtoList protoList = ProtoList.newBuilder()
                 .addAllValues( values )
@@ -704,9 +697,9 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoMap( PolyMap polyMap ) {
+    private ProtoValue toProtoMap( PolyMap polyMap ) {
         ProtoMap.Builder protoMapBuilder = ProtoMap.newBuilder();
-        List<ProtoEntry> protoEntries = polyMap.entrySet().stream().map( polyMapEntry -> {
+        List<ProtoEntry> protoEntries = ((Stream<Map.Entry<PolyValue, PolyValue>>) polyMap.entrySet().stream()).map( polyMapEntry -> {
             ProtoValue protoKey = polyMapEntry.getKey().toProto();
             ProtoValue protoValue = polyMapEntry.getValue().toProto();
             return ProtoEntry.newBuilder()
@@ -722,7 +715,7 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    private static ProtoValue toProtoDocument( PolyDocument polyDocument ) throws ProtoInterfaceServiceException {
+    private ProtoValue toProtoDocument( PolyDocument polyDocument ) {
         List<ProtoEntry> protoEntries = polyDocument.asMap().entrySet().stream().map( polyMapEntry -> {
             ProtoValue protoKey = polyMapEntry.getKey().toProto(); // Reuse serialize() method for consistency
             ProtoValue protoValue = polyMapEntry.getValue().toProto();

@@ -17,13 +17,26 @@
 package org.polypheny.jdbc.nativetypes;
 
 
-import static org.polypheny.db.protointerface.proto.ProtoPolyType.*;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.AUDIO;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.BIGINT;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.DATE;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.DECIMAL;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.DOUBLE;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.FILE;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.FLOAT;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.IMAGE;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.INTEGER;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.REAL;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.SMALLINT;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.TIME;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.TIMESTAMP;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.TIME_WITH_LOCAL_TIME_ZONE;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.TINYINT;
+import static org.polypheny.db.protointerface.proto.ProtoPolyType.VIDEO;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import java.util.List;
-import java.util.Set;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 
 public class TypeUtils {
@@ -39,34 +52,15 @@ public class TypeUtils {
 
     public static final List<ProtoPolyType> FRACTIONAL_TYPES = combine( APPROX_TYPES, ImmutableList.of( DECIMAL ) );
 
-    public static final Set<ProtoPolyType> YEAR_INTERVAL_TYPES =
-            Sets.immutableEnumSet(
-                    INTERVAL_YEAR,
-                    INTERVAL_YEAR_MONTH,
-                    INTERVAL_MONTH );
-
-    public static final Set<ProtoPolyType> DAY_INTERVAL_TYPES =
-            Sets.immutableEnumSet(
-                    INTERVAL_DAY,
-                    INTERVAL_DAY_HOUR,
-                    INTERVAL_DAY_MINUTE,
-                    INTERVAL_DAY_SECOND,
-                    INTERVAL_HOUR,
-                    INTERVAL_HOUR_MINUTE,
-                    INTERVAL_HOUR_SECOND,
-                    INTERVAL_MINUTE,
-                    INTERVAL_MINUTE_SECOND,
-                    INTERVAL_SECOND );
-
-    public static final Set<ProtoPolyType> INTERVAL_TYPES = Sets.immutableEnumSet( Iterables.concat( YEAR_INTERVAL_TYPES, DAY_INTERVAL_TYPES ) );
 
     public static final List<ProtoPolyType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
 
-        private static List<ProtoPolyType> combine (List < ProtoPolyType > list0, List < ProtoPolyType > list1 ){
-            return ImmutableList.<ProtoPolyType>builder()
-                .addAll( list0 )
-                    .addAll( list1 )
-                    .build();
-        }
 
+    private static List<ProtoPolyType> combine( List<ProtoPolyType> list0, List<ProtoPolyType> list1 ) {
+        return ImmutableList.<ProtoPolyType>builder()
+                .addAll( list0 )
+                .addAll( list1 )
+                .build();
     }
+
+}

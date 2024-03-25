@@ -91,11 +91,7 @@ public class PolyTimeStamp extends PolyTemporal {
             return -1;
         }
 
-        try {
-            return Long.compare( milliSinceEpoch, o.asTimeStamp().milliSinceEpoch );
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown." );
-        }
+        return Long.compare( milliSinceEpoch, o.asTimeStamp().milliSinceEpoch );
     }
 
 }

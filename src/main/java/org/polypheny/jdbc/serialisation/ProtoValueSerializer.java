@@ -103,7 +103,6 @@ public class ProtoValueSerializer {
                     throw new RuntimeException( "Can't serialize unknown value!" );
                 }
                 return ((PolyValue) typedValue.getValue()).toProto();
-                break;
             case Types.JAVA_OBJECT:
                 // TODO TH: find something useful to do here...
                 break;

@@ -80,11 +80,7 @@ public class PolyInteger extends PolyNumber {
         PolyValue val = (PolyValue) o;
 
         if ( val.isNumber() ) {
-            try {
-                return PolyNumber.compareTo( this, val.asNumber() ) == 0;
-            } catch ( ProtoInterfaceServiceException e ) {
-                throw new RuntimeException( "Should never be thrown!" );
-            }
+            return PolyNumber.compareTo( this, val.asNumber() ) == 0;
         }
 
         return false;
@@ -97,11 +93,7 @@ public class PolyInteger extends PolyNumber {
             return -1;
         }
 
-        try {
-            return PolyNumber.compareTo( this, o.asNumber() );
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown!" );
-        }
+        return PolyNumber.compareTo( this, o.asNumber() );
     }
 
 

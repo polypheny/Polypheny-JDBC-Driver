@@ -76,11 +76,7 @@ public class PolyString extends PolyValue {
             return -1;
         }
 
-        try {
-            return ObjectUtils.compare( value, o.asString().value );
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown." );
-        }
+        return ObjectUtils.compare( value, o.asString().value );
     }
 
 

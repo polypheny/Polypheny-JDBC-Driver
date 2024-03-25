@@ -23,7 +23,6 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.Delegate;
-import org.checkerframework.common.value.qual.PolyValue;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.jdbc.ProtoInterfaceServiceException;
@@ -70,21 +69,17 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
         if ( !isSameType( o ) ) {
             return -1;
         }
-        try {
-            PolyList<?> other = o.asList();
-            if ( value.size() != other.value.size() ) {
-                return value.size() - o.asList().value.size();
-            }
-            int size = Math.min( value.size(), other.size() );
-            for ( int i = 0; i < size; i++ ) {
-                if ( value.get( i ).compareTo( other.value.get( i ) ) != 0 ) {
-                    return value.get( i ).compareTo( other.value.get( i ) );
-                }
-            }
-            return 0;
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown." );
+        PolyList<?> other = o.asList();
+        if ( value.size() != other.value.size() ) {
+            return value.size() - o.asList().value.size();
         }
+        int size = Math.min( value.size(), other.size() );
+        for ( int i = 0; i < size; i++ ) {
+            if ( value.get( i ).compareTo( other.value.get( i ) ) != 0 ) {
+                return value.get( i ).compareTo( other.value.get( i ) );
+            }
+        }
+        return 0;
     }
 
 

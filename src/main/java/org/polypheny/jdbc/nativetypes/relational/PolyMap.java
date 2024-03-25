@@ -53,11 +53,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
             return -1;
         }
         Map<PolyValue, PolyValue> other;
-        try {
-            other = o.asMap();
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown." );
-        }
+        other = o.asMap();
         if ( map.size() != other.size() ) {
 
             return map.size() > other.size() ? 1 : -1;

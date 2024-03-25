@@ -53,11 +53,7 @@ public class PolyBoolean extends PolyValue {
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( isSameType( o ) ) {
-            try {
-                return ObjectUtils.compare( value, o.asBoolean().value );
-            } catch ( ProtoInterfaceServiceException e ) {
-                throw new RuntimeException( "Should never be thrown!" );
-            }
+            return ObjectUtils.compare( value, o.asBoolean().value );
         }
         return -1;
     }

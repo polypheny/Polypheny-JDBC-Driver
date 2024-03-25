@@ -76,11 +76,7 @@ public class PolyTime extends PolyTemporal {
             return -1;
         }
 
-        try {
-            return Long.compare( ofDay, o.asTime().ofDay );
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown." );
-        }
+        return Long.compare( ofDay, o.asTime().ofDay );
     }
 
 

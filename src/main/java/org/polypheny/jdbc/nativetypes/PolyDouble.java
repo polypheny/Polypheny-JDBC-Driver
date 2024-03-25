@@ -55,11 +55,7 @@ public class PolyDouble extends PolyNumber {
             return -1;
         }
 
-        try {
-            return ObjectUtils.compare( value, o.asNumber().DoubleValue() );
-        } catch ( ProtoInterfaceServiceException e ) {
-            throw new RuntimeException( "Should never be thrown!" );
-        }
+        return ObjectUtils.compare( value, o.asNumber().DoubleValue() );
     }
 
 
