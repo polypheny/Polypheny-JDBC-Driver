@@ -66,48 +66,24 @@ public class PolyphenyStatement implements Statement {
         return Math.toIntExact( longNumber );
     }
 
-    /**
-     * protected void closeCurrentResult() throws SQLException {
-     * if ( currentResult != null ) {
-     * currentResult.close();
-     * }
-     * currentResult = null;
-     * currentUpdateCount = NO_UPDATE_COUNT;
-     * }
-     **/
 
-    /**
-     * void discardStatement() throws SQLException {
-     * if (statementId == NO_STATEMENT_ID) {
-     * return;
-     * }
-     *
-     * statementId = NO_STATEMENT_ID;
-     * }
-     **/
-
-    /**
-     * public void closeStatementOnly() throws SQLException {
-     * this.statementId = NO_STATEMENT_ID;
-     * this.currentResult = null;
-     * close();
-     * }
-     **/
     private void prepareForReexecution() throws SQLException {
-        if (currentResult != null) {
+        if ( currentResult != null ) {
             currentResult.close();
         }
         currentUpdateCount = NO_UPDATE_COUNT;
-        if (statementId != NO_STATEMENT_ID) {
+        if ( statementId != NO_STATEMENT_ID ) {
             getClient().closeStatement( statementId, getTimeout() );
             statementId = NO_STATEMENT_ID;
         }
     }
 
+
     public void notifyResultClosure() throws SQLException {
         this.currentResult = null;
         getClient().closeResult( statementId, getTimeout() );
     }
+
 
     @Override
     public void close() throws SQLException {
@@ -165,7 +141,7 @@ public class PolyphenyStatement implements Statement {
             }
             Frame frame = response.getResult().getFrame();
             throwIfNotRelational( frame );
-            currentResult = new PolyhenyResultSet( this, frame, properties.toResultSetProperties() );
+            currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
             return currentResult;
         }
     }
@@ -317,7 +293,7 @@ public class PolyphenyStatement implements Statement {
             }
             Frame frame = response.getResult().getFrame();
             throwIfNotRelational( frame );
-            currentResult = new PolyhenyResultSet( this, frame, properties.toResultSetProperties() );
+            currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
             return true;
         }
     }

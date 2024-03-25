@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.polypheny.jdbc.PolyhenyResultSet;
+import org.polypheny.jdbc.PolyphenyResultSet;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
@@ -123,7 +123,7 @@ public class PolyphenyArray implements Array {
             currentRow.add( TypedValue.fromObject( elements[i], jdbcBaseType ) );
             rows.add( currentRow );
         }
-        return new PolyhenyResultSet( columnMetas, rows );
+        return new PolyphenyResultSet( columnMetas, rows );
     }
 
 

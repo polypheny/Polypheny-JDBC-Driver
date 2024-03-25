@@ -22,22 +22,22 @@ import org.polypheny.db.protointerface.proto.Table;
 import org.polypheny.db.protointerface.proto.TableType;
 import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.UserDefinedType;
-import org.polypheny.jdbc.PolyhenyResultSet;
+import org.polypheny.jdbc.PolyphenyResultSet;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 public class MetaResultSetBuilder {
 
-    private static <T> PolyhenyResultSet buildEmptyResultSet( String entityName, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
+    private static <T> PolyphenyResultSet buildEmptyResultSet( String entityName, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
         ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas( entityName, metaResultSetParameters );
         ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
-        return new PolyhenyResultSet( columnMetas, rows );
+        return new PolyphenyResultSet( columnMetas, rows );
     }
 
 
-    private static <T> PolyhenyResultSet buildResultSet( String entityName, List<T> messages, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
+    private static <T> PolyphenyResultSet buildResultSet( String entityName, List<T> messages, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
         ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas( entityName, metaResultSetParameters );
         ArrayList<ArrayList<TypedValue>> rows = buildRows( messages, metaResultSetParameters );
-        return new PolyhenyResultSet( columnMetas, rows );
+        return new PolyphenyResultSet( columnMetas, rows );
     }
 
 

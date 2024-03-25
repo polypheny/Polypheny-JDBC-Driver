@@ -33,7 +33,7 @@ import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 
-public class PolyhenyResultSet implements ResultSet {
+public class PolyphenyResultSet implements ResultSet {
 
     private boolean isMeta = false;
 
@@ -50,7 +50,7 @@ public class PolyhenyResultSet implements ResultSet {
     PolyphenyResultSetProperties properties;
 
 
-    public PolyhenyResultSet(
+    public PolyphenyResultSet(
             PolyphenyStatement statement,
             Frame frame,
             PolyphenyResultSetProperties properties
@@ -73,7 +73,7 @@ public class PolyhenyResultSet implements ResultSet {
     }
 
 
-    public PolyhenyResultSet( ArrayList<PolyphenyColumnMeta> columnMetas, ArrayList<ArrayList<TypedValue>> rows ) {
+    public PolyphenyResultSet( ArrayList<PolyphenyColumnMeta> columnMetas, ArrayList<ArrayList<TypedValue>> rows ) {
         this.resultScroller = new MetaScroller<>( rows );
         this.metadata = new PolyphenyResultSetMetadata( columnMetas );
         this.statement = null;
