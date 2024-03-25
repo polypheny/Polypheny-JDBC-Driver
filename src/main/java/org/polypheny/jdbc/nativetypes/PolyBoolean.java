@@ -19,7 +19,6 @@ package org.polypheny.jdbc.nativetypes;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 public class PolyBoolean extends PolyValue {
 

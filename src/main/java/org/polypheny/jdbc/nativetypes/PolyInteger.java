@@ -20,8 +20,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 
 public class PolyInteger extends PolyNumber {
@@ -109,13 +109,13 @@ public class PolyInteger extends PolyNumber {
     }
 
 
-    public static PolyValue from( PolyValue value ) throws ProtoInterfaceServiceException {
+    public static PolyValue from( PolyValue value ) throws PrismInterfaceServiceException {
         if ( TypeUtils.NUMERIC_TYPES.contains( value.type ) ) {
             return PolyInteger.of( value.asNumber().intValue() );
         }
 
-        throw new ProtoInterfaceServiceException(
-                ProtoInterfaceErrors.DATA_TYPE_MISSMATCH,
+        throw new PrismInterfaceServiceException(
+                PrismInterfaceErrors.DATA_TYPE_MISSMATCH,
                 String.format( "%s does not support conversion to %s.", value, value.type )
         );
     }

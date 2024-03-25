@@ -13,7 +13,7 @@ import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class ResultFetcher implements Runnable {
 
-    private ProtoInterfaceClient client;
+    private PrismInterfaceClient client;
     private int statementId;
     @Setter
     @Getter
@@ -27,7 +27,7 @@ public class ResultFetcher implements Runnable {
     private List<ArrayList<TypedValue>> fetchedValues;
 
 
-    public ResultFetcher( ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, long totalFetched, int fetchTimeout ) {
+    public ResultFetcher( PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, long totalFetched, int fetchTimeout ) {
         this.fetchTimeout = fetchTimeout;
         this.client = client;
         this.statementId = statementId;
@@ -43,11 +43,11 @@ public class ResultFetcher implements Runnable {
         Frame nextFrame;
         try {
             nextFrame = client.fetchResult( statementId, properties.getFetchSize(), fetchTimeout );
-        } catch ( ProtoInterfaceServiceException e ) {
+        } catch ( PrismInterfaceServiceException e ) {
             throw new RuntimeException( e );
         }
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
-            throw new RuntimeException( new ProtoInterfaceServiceException( "Illegal result type." ) );
+            throw new RuntimeException( new PrismInterfaceServiceException( "Illegal result type." ) );
         }
         List<Row> rows = nextFrame.getRelationalFrame().getRowsList();
         if ( properties.getLargeMaxRows() != 0 && fetchEnd > properties.getLargeMaxRows() ) {

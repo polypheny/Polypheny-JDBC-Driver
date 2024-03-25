@@ -6,8 +6,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import org.polypheny.db.protointerface.proto.Response;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
 
 public class CallbackQueue<T> {
 
@@ -17,7 +17,7 @@ public class CallbackQueue<T> {
     private boolean bIsCompleted = false;
     private final LinkedList<T> messageQueue = new LinkedList<>();
     private final Function<Response, T> extractResponse;
-    private ProtoInterfaceServiceException propagatedException;
+    private PrismInterfaceServiceException propagatedException;
 
 
     public CallbackQueue( Function<Response, T> extractResponse ) {
@@ -33,13 +33,13 @@ public class CallbackQueue<T> {
     }
 
 
-    public T takeNext() throws ProtoInterfaceServiceException {
+    public T takeNext() throws PrismInterfaceServiceException {
         queueLock.lock();
         while ( messageQueue.isEmpty() ) {
             try {
                 hasNext.await();
             } catch ( InterruptedException e ) {
-                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e );
             }
             throwReceivedException();
         }
@@ -49,7 +49,7 @@ public class CallbackQueue<T> {
     }
 
 
-    private void throwReceivedException() throws ProtoInterfaceServiceException {
+    private void throwReceivedException() throws PrismInterfaceServiceException {
         if ( propagatedException != null ) {
             throw propagatedException;
         }
@@ -66,7 +66,7 @@ public class CallbackQueue<T> {
 
     public void onError( Throwable propagatedException ) {
         queueLock.lock();
-        this.propagatedException = new ProtoInterfaceServiceException( propagatedException );
+        this.propagatedException = new PrismInterfaceServiceException( propagatedException );
         hasNext.signal();
         queueLock.unlock();
     }

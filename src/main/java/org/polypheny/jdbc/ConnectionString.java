@@ -55,10 +55,10 @@ public class ConnectionString {
 
     private void parseUrl( String url ) throws SQLException {
         if ( url == null ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.URL_PARSING_INVALID, "URL must no be null." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "URL must no be null." );
         }
         if ( !url.startsWith( DriverProperties.getDRIVER_URL_SCHEMA() ) ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.URL_PARSING_INVALID, "Invalid driver schema." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "Invalid driver schema." );
         }
         log.debug( "Parsing url: \"" + url + "\"" );
         /*
@@ -71,7 +71,7 @@ public class ConnectionString {
          */
         final int schemeSpecificPartStartIndex = url.indexOf( "//" );
         if ( schemeSpecificPartStartIndex == -1 ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.URL_PARSING_INVALID, "Invalid url format." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "Invalid url format." );
         }
         // + 1 removes the second / in //
         //url = substringAfter( schemeSpecificPartStartIndex + 1, url )
@@ -106,7 +106,7 @@ public class ConnectionString {
                 this.parameters.put( PropertyUtils.getNAMESPACE_KEY(), uri.getPath().substring( 1 ) ); // Leading /
             }
         } catch ( URISyntaxException e ) {
-            throw new ProtoInterfaceServiceException( e );
+            throw new PrismInterfaceServiceException( e );
         }
         /*
         final int authorityStartIndex = url.indexOf( "@" );
@@ -193,10 +193,10 @@ public class ConnectionString {
         while ( tokenizer.hasMoreTokens() ) {
             keyValuePair = tokenizer.nextToken().split( "=" );
             if ( keyValuePair.length != 2 ) {
-                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.URL_PARSING_INVALID, "Invalid parameter format." );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "Invalid parameter format." );
             }
             if ( keyValuePair[0].isEmpty() || keyValuePair[1].isEmpty() ) {
-                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.URL_PARSING_INVALID, "Invalid parameter format." );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "Invalid parameter format." );
             }
             try {
                 String value = URLDecoder.decode( keyValuePair[1], StandardCharsets.UTF_8.name() );

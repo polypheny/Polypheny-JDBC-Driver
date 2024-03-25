@@ -10,14 +10,14 @@ import java.util.Optional;
 import java.util.TimeZone;
 import lombok.Getter;
 import org.polypheny.jdbc.ConnectionString;
-import org.polypheny.jdbc.ProtoInterfaceClient;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
 
 public class PolyphenyConnectionProperties {
 
-    public PolyphenyConnectionProperties( ConnectionString connectionString, ProtoInterfaceClient protoInterfaceClient ) throws SQLException {
-        this.protoInterfaceClient = protoInterfaceClient;
+    public PolyphenyConnectionProperties( ConnectionString connectionString, PrismInterfaceClient prismInterfaceClient ) throws SQLException {
+        this.prismInterfaceClient = prismInterfaceClient;
         this.isAutoCommit = PropertyUtils.isDEFAULT_AUTOCOMMIT();
         this.isReadOnly = PropertyUtils.isDEFAULT_READ_ONLY();
         this.resultSetHoldability = PropertyUtils.getDEFAULT_RESULTSET_HOLDABILITY();
@@ -40,14 +40,14 @@ public class PolyphenyConnectionProperties {
         if ( parameters.containsKey( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY() ) ) {
             int resultSetHoldability = parseResultSetHoldability( parameters.get( PropertyUtils.getRESULT_SET_HOLDABILITY_KEY() ) );
             if ( !PropertyUtils.isValidResultSetHoldability( resultSetHoldability ) ) {
-                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Result set holdability not supported:" + resultSetHoldability );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Result set holdability not supported:" + resultSetHoldability );
             }
             this.resultSetHoldability = resultSetHoldability;
         }
         if ( parameters.containsKey( PropertyUtils.getTRANSACTION_ISOLATION_KEY() ) ) {
             int transactionIsolation = parseTransactionIsolation( parameters.get( PropertyUtils.getTRANSACTION_ISOLATION_KEY() ) );
             if ( !PropertyUtils.isValidIsolationLevel( transactionIsolation ) ) {
-                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Transaction isolation level not supported: " + transactionIsolation );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Transaction isolation level not supported: " + transactionIsolation );
             }
             this.transactionIsolation = transactionIsolation;
         }
@@ -65,7 +65,7 @@ public class PolyphenyConnectionProperties {
             case "REPEATABLE_READ":
                 return Connection.TRANSACTION_REPEATABLE_READ;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Invalid value for transaction isolation: " + string );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Invalid value for transaction isolation: " + string );
     }
 
 
@@ -76,12 +76,12 @@ public class PolyphenyConnectionProperties {
             case "CLOSE":
                 return ResultSet.CLOSE_CURSORS_AT_COMMIT;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Invalid value for result set holdability: " + string );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Invalid value for result set holdability: " + string );
     }
 
 
     @Getter
-    private ProtoInterfaceClient protoInterfaceClient;
+    private PrismInterfaceClient prismInterfaceClient;
     @Getter
     private String username;
     @Getter
@@ -107,13 +107,13 @@ public class PolyphenyConnectionProperties {
     private boolean isStrict;
 
 
-    public void setAutoCommit( boolean isAutoCommit ) throws ProtoInterfaceServiceException {
+    public void setAutoCommit( boolean isAutoCommit ) throws PrismInterfaceServiceException {
         this.isAutoCommit = isAutoCommit;
         sync();
     }
 
 
-    public void setReadOnly( boolean isReadOnly ) throws ProtoInterfaceServiceException {
+    public void setReadOnly( boolean isReadOnly ) throws PrismInterfaceServiceException {
         this.isReadOnly = isReadOnly;
         sync();
     }
@@ -121,14 +121,14 @@ public class PolyphenyConnectionProperties {
 
     public void setResultSetHoldability( int resultSetHoldability ) throws SQLException {
         if ( !PropertyUtils.isValidResultSetHoldability( resultSetHoldability ) ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Invalid value for result set holdability" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Invalid value for result set holdability" );
         }
         this.resultSetHoldability = resultSetHoldability;
         // not transmitted to server -> no sync()
     }
 
 
-    public void setNetworkTimeout( int networkTimeout ) throws ProtoInterfaceServiceException {
+    public void setNetworkTimeout( int networkTimeout ) throws PrismInterfaceServiceException {
         this.networkTimeout = networkTimeout;
         sync();
     }
@@ -136,7 +136,7 @@ public class PolyphenyConnectionProperties {
 
     public void setTransactionIsolation( int transactionIsolation ) throws SQLException {
         if ( !PropertyUtils.isValidIsolationLevel( transactionIsolation ) ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Invalid value for transaction isolation" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Invalid value for transaction isolation" );
         }
         this.transactionIsolation = transactionIsolation;
         sync();
@@ -149,14 +149,14 @@ public class PolyphenyConnectionProperties {
     }
 
 
-    public void setNamespaceName( String namespaceName ) throws ProtoInterfaceServiceException {
+    public void setNamespaceName( String namespaceName ) throws PrismInterfaceServiceException {
         this.namespaceName = namespaceName;
         sync();
     }
 
 
-    private void sync() throws ProtoInterfaceServiceException {
-        protoInterfaceClient.setConnectionProperties( this, getNetworkTimeout() );
+    private void sync() throws PrismInterfaceServiceException {
+        prismInterfaceClient.setConnectionProperties( this, getNetworkTimeout() );
     }
 
 
@@ -176,7 +176,7 @@ public class PolyphenyConnectionProperties {
     public PolyphenyStatementProperties toStatementProperties( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         PolyphenyStatementProperties properties = new PolyphenyStatementProperties();
         properties.setCalendar( calendar );
-        properties.setProtoInterfaceClient( protoInterfaceClient );
+        properties.setPrismInterfaceClient( prismInterfaceClient );
         properties.setQueryTimeoutSeconds( PropertyUtils.getDEFAULT_QUERY_TIMEOUT_SECONDS() );
         properties.setResultSetType( resultSetType );
         properties.setResultSetConcurrency( resultSetConcurrency );

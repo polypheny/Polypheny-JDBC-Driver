@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.PolyphenyStatement;
-import org.polypheny.jdbc.ProtoInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceClient;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,17 +25,17 @@ public class PolyConnectionPropertiesTest {
     }
 
 
-    private static final ProtoInterfaceClient protoInterfaceClient = mock(ProtoInterfaceClient.class);
+    private static final PrismInterfaceClient PRISM_INTERFACE_CLIENT = mock( PrismInterfaceClient.class);
     private static final PolyphenyStatement polyphenyStatement = mock(PolyphenyStatement.class);
 
 
     @Test
     public void toStatementProperties_Type_Concurrency_Holdability_Conversion() throws SQLException {
         when(polyphenyStatement.hasStatementId()).thenReturn(false);
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         PolyphenyStatementProperties expectedProperties = new PolyphenyStatementProperties();
         expectedProperties.setPolyphenyStatement(polyphenyStatement);
-        expectedProperties.setProtoInterfaceClient(protoInterfaceClient);
+        expectedProperties.setPrismInterfaceClient( PRISM_INTERFACE_CLIENT );
         expectedProperties.setQueryTimeoutSeconds(PropertyUtils.getDEFAULT_QUERY_TIMEOUT_SECONDS());
         expectedProperties.setResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE);
         expectedProperties.setResultSetConcurrency(ResultSet.CONCUR_READ_ONLY);
@@ -68,10 +68,10 @@ public class PolyConnectionPropertiesTest {
     @Test
     public void toStatementProperties_Type_Concurrency_Conversion() throws SQLException {
         when(polyphenyStatement.hasStatementId()).thenReturn(false);
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         PolyphenyStatementProperties expectedProperties = new PolyphenyStatementProperties();
         expectedProperties.setPolyphenyStatement(polyphenyStatement);
-        expectedProperties.setProtoInterfaceClient(protoInterfaceClient);
+        expectedProperties.setPrismInterfaceClient( PRISM_INTERFACE_CLIENT );
         expectedProperties.setQueryTimeoutSeconds(PropertyUtils.getDEFAULT_QUERY_TIMEOUT_SECONDS());
         expectedProperties.setResultSetType(ResultSet.TYPE_FORWARD_ONLY);
         expectedProperties.setResultSetConcurrency(ResultSet.CONCUR_READ_ONLY);
@@ -101,10 +101,10 @@ public class PolyConnectionPropertiesTest {
     @Test
     public void toStatementProperties_Defaults_Conversion() throws SQLException {
         when(polyphenyStatement.hasStatementId()).thenReturn(false);
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         PolyphenyStatementProperties expectedProperties = new PolyphenyStatementProperties();
         expectedProperties.setPolyphenyStatement(polyphenyStatement);
-        expectedProperties.setProtoInterfaceClient(protoInterfaceClient);
+        expectedProperties.setPrismInterfaceClient( PRISM_INTERFACE_CLIENT );
         expectedProperties.setQueryTimeoutSeconds(PropertyUtils.getDEFAULT_QUERY_TIMEOUT_SECONDS());
         expectedProperties.setResultSetType(ResultSet.TYPE_FORWARD_ONLY);
         expectedProperties.setResultSetConcurrency(ResultSet.CONCUR_READ_ONLY);
@@ -136,29 +136,29 @@ public class PolyConnectionPropertiesTest {
 
     @Test
     public void setNamespaceName_Valid_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         String namespaceName = "testNamespace";
 
         connectionProperties.setNamespaceName(namespaceName);
 
         assertEquals(namespaceName, connectionProperties.getNamespaceName());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
     public void setCatalogName_Valid_NoSync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         String catalogName = "test_catalog";
 
         connectionProperties.setCatalogName(catalogName);
 
         assertEquals(catalogName, connectionProperties.getCatalogName());
-        verify(protoInterfaceClient, times(0)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(0)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
     public void setTransactionIsolation_Invalid_Error() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
 
         try {
             connectionProperties.setTransactionIsolation(999);
@@ -170,7 +170,7 @@ public class PolyConnectionPropertiesTest {
 
     @Test
     public void setTransactionIsolation_Valid_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         int transactionIsolation = Connection.TRANSACTION_READ_COMMITTED;
 
         try {
@@ -180,23 +180,23 @@ public class PolyConnectionPropertiesTest {
         }
 
         assertEquals(transactionIsolation, connectionProperties.getTransactionIsolation());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
     public void setNetworkTimeout_Valid_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         int networkTimeout = 5000;
 
         connectionProperties.setNetworkTimeout(networkTimeout);
 
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
         assertEquals(connectionProperties.getNetworkTimeout(), networkTimeout);
     }
 
     @Test
     public void setResultSetHoldability_Invalid_Error() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
 
         try {
             connectionProperties.setResultSetHoldability(100);
@@ -207,7 +207,7 @@ public class PolyConnectionPropertiesTest {
 
     @Test
     public void setResultSetHoldability_Valid_NoSync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
 
         try {
             connectionProperties.setResultSetHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
@@ -217,44 +217,44 @@ public class PolyConnectionPropertiesTest {
 
         assertEquals(ResultSet.CLOSE_CURSORS_AT_COMMIT, connectionProperties.getResultSetHoldability());
 
-        verify(protoInterfaceClient, times(0)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(0)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
 
     @Test
     public void setReadOnly_False_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         connectionProperties.setReadOnly(false);
 
         assertFalse(connectionProperties.isReadOnly());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
     public void setReadOnly_True_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         connectionProperties.setReadOnly(true);
 
         assertTrue(connectionProperties.isReadOnly());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
 
     @Test
     public void setAutoCommit_False_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         connectionProperties.setAutoCommit(false);
 
         assertFalse(connectionProperties.isAutoCommit());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 
     @Test
     public void setAutoCommit_True_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, protoInterfaceClient);
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties(connectionString, PRISM_INTERFACE_CLIENT );
         connectionProperties.setAutoCommit(true);
 
         assertTrue(connectionProperties.isAutoCommit());
-        verify(protoInterfaceClient, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
+        verify( PRISM_INTERFACE_CLIENT, times(1)).setConnectionProperties(connectionProperties, connectionProperties.getNetworkTimeout());
     }
 }

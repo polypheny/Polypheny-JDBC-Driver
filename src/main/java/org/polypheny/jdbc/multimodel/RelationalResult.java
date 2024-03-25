@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.ProtoInterfaceClient;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Frame.ResultCase;
@@ -35,7 +35,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
     private boolean isFullyFetched;
 
 
-    public RelationalResult( Frame frame, PolyStatement polyStatement ) throws ProtoInterfaceServiceException {
+    public RelationalResult( Frame frame, PolyStatement polyStatement ) throws PrismInterfaceServiceException {
         super( ResultType.DOCUMENT );
         this.polyStatement = polyStatement;
         this.isFullyFetched = frame.getIsLast();
@@ -44,18 +44,18 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
     }
 
 
-    private void addRows( RelationalFrame relationalFrame ) throws ProtoInterfaceServiceException {
+    private void addRows( RelationalFrame relationalFrame ) throws PrismInterfaceServiceException {
         relationalFrame.getRowsList().forEach( d -> rows.add( PolyRow.fromProto( d ) ) );
     }
 
 
-    private void fetchMore() throws ProtoInterfaceServiceException {
+    private void fetchMore() throws PrismInterfaceServiceException {
         int id = polyStatement.getStatementId();
         int timeout = getPolyphenyConnection().getTimeout();
         Frame frame = getProtoInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
         if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
-            throw new ProtoInterfaceServiceException(
-                    ProtoInterfaceErrors.RESULT_TYPE_INVALID,
+            throw new PrismInterfaceServiceException(
+                    PrismInterfaceErrors.RESULT_TYPE_INVALID,
                     "Statement returned a result of illegal type "
                             + frame.getResultCase()
             );
@@ -70,7 +70,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
     }
 
 
-    private ProtoInterfaceClient getProtoInterfaceClient() {
+    private PrismInterfaceClient getProtoInterfaceClient() {
         return getPolyphenyConnection().getProtoInterfaceClient();
     }
 
@@ -94,7 +94,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
                 }
                 try {
                     fetchMore();
-                } catch ( ProtoInterfaceServiceException e ) {
+                } catch ( PrismInterfaceServiceException e ) {
                     throw new RuntimeException( e );
                 }
             }

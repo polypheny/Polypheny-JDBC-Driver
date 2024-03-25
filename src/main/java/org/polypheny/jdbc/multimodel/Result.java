@@ -17,8 +17,8 @@
 package org.polypheny.jdbc.multimodel;
 
 import lombok.Getter;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 @Getter
 public abstract class Result {
@@ -31,11 +31,11 @@ public abstract class Result {
     }
 
 
-    public <T> T unwrap( Class<T> aClass ) throws ProtoInterfaceServiceException {
+    public <T> T unwrap( Class<T> aClass ) throws PrismInterfaceServiceException {
         if ( aClass.isInstance( this ) ) {
             return aClass.cast( this );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
     }
 
 

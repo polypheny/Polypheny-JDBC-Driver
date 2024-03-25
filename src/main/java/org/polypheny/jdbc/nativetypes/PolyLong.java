@@ -22,8 +22,8 @@ import java.util.Objects;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 
 public class PolyLong extends PolyNumber {
@@ -63,12 +63,12 @@ public class PolyLong extends PolyNumber {
     }
 
 
-    public static PolyLong from( PolyValue value ) throws ProtoInterfaceServiceException {
+    public static PolyLong from( PolyValue value ) throws PrismInterfaceServiceException {
         if ( TypeUtils.NUMERIC_TYPES.contains( value.type ) ) {
             return PolyLong.of( value.asNumber().longValue() );
         }
-        throw new ProtoInterfaceServiceException(
-                ProtoInterfaceErrors.DATA_TYPE_MISSMATCH,
+        throw new PrismInterfaceServiceException(
+                PrismInterfaceErrors.DATA_TYPE_MISSMATCH,
                 String.format( "%s does not support conversion to %s.", value, value.type )
         );
     }

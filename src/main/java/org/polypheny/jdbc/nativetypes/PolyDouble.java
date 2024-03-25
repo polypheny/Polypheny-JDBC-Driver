@@ -19,7 +19,6 @@ package org.polypheny.jdbc.nativetypes;
 import java.math.BigDecimal;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 

@@ -64,7 +64,7 @@ import org.polypheny.jdbc.transport.PlainTransport;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.utils.CallbackQueue;
 
-public class ProtoInterfaceClient {
+public class PrismInterfaceClient {
 
     private static final int MAJOR_API_VERSION = 2;
     private static final int MINOR_API_VERSION = 0;
@@ -72,17 +72,17 @@ public class ProtoInterfaceClient {
     private final RpcService rpc;
 
 
-    public ProtoInterfaceClient( String host, int port, Map<String, String> parameters ) throws ProtoInterfaceServiceException {
+    public PrismInterfaceClient( String host, int port, Map<String, String> parameters ) throws PrismInterfaceServiceException {
         try {
             String transport = parameters.getOrDefault( "transport", "plain" );
             if ( transport.equals( "plain" ) ) {
                 con = new PlainTransport( host, port );
             } else {
-                throw new ProtoInterfaceServiceException( "Unknown mode " + transport );
+                throw new PrismInterfaceServiceException( "Unknown mode " + transport );
             }
             rpc = new RpcService( con );
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( e );
+            throw new PrismInterfaceServiceException( e );
         }
     }
 
@@ -93,7 +93,7 @@ public class ProtoInterfaceClient {
             /* ConnectionCheckResponses are empty messages */
             rpc.checkConnection( request, timeout );
             return true;
-        } catch ( ProtoInterfaceServiceException e ) {
+        } catch ( PrismInterfaceServiceException e ) {
             return false;
         }
     }
@@ -105,7 +105,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public ConnectionResponse register( PolyphenyConnectionProperties connectionProperties, int timeout ) throws ProtoInterfaceServiceException {
+    public ConnectionResponse register( PolyphenyConnectionProperties connectionProperties, int timeout ) throws PrismInterfaceServiceException {
         ConnectionRequest.Builder requestBuilder = ConnectionRequest.newBuilder();
         Optional.ofNullable( connectionProperties.getUsername() ).ifPresent( requestBuilder::setUsername );
         Optional.ofNullable( connectionProperties.getPassword() ).ifPresent( requestBuilder::setPassword );
@@ -116,7 +116,7 @@ public class ProtoInterfaceClient {
                 .setConnectionProperties( buildConnectionProperties( connectionProperties ) );
         ConnectionResponse connectionResponse = rpc.connect( requestBuilder.build(), timeout );
         if ( !connectionResponse.getIsCompatible() ) {
-            throw new ProtoInterfaceServiceException( "client version " + getClientApiVersionString()
+            throw new PrismInterfaceServiceException( "client version " + getClientApiVersionString()
                     + " not compatible with server version " + getServerApiVersionString( connectionResponse ) + "." );
         }
         return connectionResponse;
@@ -132,7 +132,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void unregister( int timeout ) throws ProtoInterfaceServiceException {
+    public void unregister( int timeout ) throws PrismInterfaceServiceException {
         DisconnectRequest request = DisconnectRequest.newBuilder().build();
         try {
             rpc.disconnect( request, timeout );
@@ -143,7 +143,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws ProtoInterfaceServiceException {
+    public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
         ExecuteUnparameterizedStatementRequest.Builder requestBuilder = ExecuteUnparameterizedStatementRequest.newBuilder();
         if ( namespaceName != null ) {
             requestBuilder.setNamespaceName( namespaceName );
@@ -156,7 +156,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void executeUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> requests, CallbackQueue<StatementBatchResponse> updateCallback, int timeout ) throws ProtoInterfaceServiceException {
+    public void executeUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> requests, CallbackQueue<StatementBatchResponse> updateCallback, int timeout ) throws PrismInterfaceServiceException {
         ExecuteUnparameterizedStatementBatchRequest request = ExecuteUnparameterizedStatementBatchRequest.newBuilder()
                 .addAllStatements( requests )
                 .build();
@@ -165,7 +165,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public PreparedStatementSignature prepareIndexedStatement( String namespaceName, String languageName, String statement, int timeout ) throws ProtoInterfaceServiceException {
+    public PreparedStatementSignature prepareIndexedStatement( String namespaceName, String languageName, String statement, int timeout ) throws PrismInterfaceServiceException {
         PrepareStatementRequest.Builder requestBuilder = PrepareStatementRequest.newBuilder();
         if ( namespaceName != null ) {
             requestBuilder.setNamespaceName( namespaceName );
@@ -179,7 +179,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws ProtoInterfaceServiceException {
+    public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
         IndexedParameters parameters = IndexedParameters.newBuilder()
                 .addAllParameters( ProtoValueSerializer.serializeParameterList( values ) )
                 .build();
@@ -193,7 +193,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws ProtoInterfaceServiceException {
+    public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws PrismInterfaceServiceException {
         List<IndexedParameters> parameters = parameterBatch.stream()
                 .map( ProtoValueSerializer::serializeParameterList )
                 .map( p -> IndexedParameters.newBuilder().addAllParameters( p ).build() )
@@ -207,21 +207,21 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void commitTransaction( int timeout ) throws ProtoInterfaceServiceException {
+    public void commitTransaction( int timeout ) throws PrismInterfaceServiceException {
         CommitRequest commitRequest = CommitRequest.newBuilder().build();
 
         rpc.commit( commitRequest, timeout );
     }
 
 
-    public void rollbackTransaction( int timeout ) throws ProtoInterfaceServiceException {
+    public void rollbackTransaction( int timeout ) throws PrismInterfaceServiceException {
         RollbackRequest rollbackRequest = RollbackRequest.newBuilder().build();
 
         rpc.rollback( rollbackRequest, timeout );
     }
 
 
-    public void closeStatement( int statementId, int timeout ) throws ProtoInterfaceServiceException {
+    public void closeStatement( int statementId, int timeout ) throws PrismInterfaceServiceException {
         CloseStatementRequest request = CloseStatementRequest.newBuilder()
                 .setStatementId( statementId )
                 .build();
@@ -230,7 +230,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public void closeResult( int statementId, int timeout ) throws ProtoInterfaceServiceException {
+    public void closeResult( int statementId, int timeout ) throws PrismInterfaceServiceException {
         CloseResultRequest resultCloseRequest = CloseResultRequest.newBuilder()
                 .setStatementId( statementId )
                 .build();
@@ -239,7 +239,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public Frame fetchResult( int statementId, int fetchSize, int timeout ) throws ProtoInterfaceServiceException {
+    public Frame fetchResult( int statementId, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
         FetchRequest fetchRequest = FetchRequest.newBuilder()
                 .setFetchSize( fetchSize )
                 .setStatementId( statementId )
@@ -260,54 +260,54 @@ public class ProtoInterfaceClient {
     }
 
 
-    public DbmsVersionResponse getDbmsVersion( int timeout ) throws ProtoInterfaceServiceException {
+    public DbmsVersionResponse getDbmsVersion( int timeout ) throws PrismInterfaceServiceException {
         DbmsVersionRequest dbmsVersionRequest = DbmsVersionRequest.newBuilder().build();
 
         return rpc.getDbmsVersion( dbmsVersionRequest, timeout );
     }
 
 
-    public List<Database> getDatabases( int timeout ) throws ProtoInterfaceServiceException {
+    public List<Database> getDatabases( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getDatabases( DatabasesRequest.newBuilder().build(), timeout ).getDatabasesList();
     }
 
 
-    public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas( int timeout ) throws ProtoInterfaceServiceException {
+    public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getClientInfoPropertiesMetas( ClientInfoPropertyMetaRequest.newBuilder().build(), timeout ).getClientInfoPropertyMetasList();
     }
 
 
-    public List<Type> getTypes( int timeout ) throws ProtoInterfaceServiceException {
+    public List<Type> getTypes( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getTypes( TypesRequest.newBuilder().build(), timeout ).getTypesList();
     }
 
 
-    public String getSqlStringFunctions( int timeout ) throws ProtoInterfaceServiceException {
+    public String getSqlStringFunctions( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getSqlStringFunctions( SqlStringFunctionsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
-    public String getSqlSystemFunctions( int timeout ) throws ProtoInterfaceServiceException {
+    public String getSqlSystemFunctions( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getSqlSystemFunctions( SqlSystemFunctionsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
-    public String getSqlTimeDateFunctions( int timeout ) throws ProtoInterfaceServiceException {
+    public String getSqlTimeDateFunctions( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
-    public String getSqlNumericFunctions( int timeout ) throws ProtoInterfaceServiceException {
+    public String getSqlNumericFunctions( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getSqlNumericFunctions( SqlNumericFunctionsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
-    public String getSqlKeywords( int timeout ) throws ProtoInterfaceServiceException {
+    public String getSqlKeywords( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getSqlKeywords( SqlKeywordsRequest.newBuilder().build(), timeout ).getString();
     }
 
 
-    public void setConnectionProperties( PolyphenyConnectionProperties connectionProperties, int timeout ) throws ProtoInterfaceServiceException {
+    public void setConnectionProperties( PolyphenyConnectionProperties connectionProperties, int timeout ) throws PrismInterfaceServiceException {
         ConnectionPropertiesUpdateRequest request = ConnectionPropertiesUpdateRequest.newBuilder()
                 .setConnectionProperties( buildConnectionProperties( connectionProperties ) )
                 .build();
@@ -315,7 +315,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public List<Procedure> searchProcedures( String languageName, String procedureNamePattern, int timeout ) throws ProtoInterfaceServiceException {
+    public List<Procedure> searchProcedures( String languageName, String procedureNamePattern, int timeout ) throws PrismInterfaceServiceException {
         ProceduresRequest.Builder requestBuilder = ProceduresRequest.newBuilder();
         requestBuilder.setLanguage( languageName );
         Optional.ofNullable( procedureNamePattern ).ifPresent( requestBuilder::setProcedureNamePattern );
@@ -323,12 +323,12 @@ public class ProtoInterfaceClient {
     }
 
 
-    public Map<String, String> getClientInfoProperties( int timeout ) throws ProtoInterfaceServiceException {
+    public Map<String, String> getClientInfoProperties( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build(), timeout ).getPropertiesMap();
     }
 
 
-    public List<Namespace> searchNamespaces( String schemaPattern, String protoNamespaceType, int timeout ) throws ProtoInterfaceServiceException {
+    public List<Namespace> searchNamespaces( String schemaPattern, String protoNamespaceType, int timeout ) throws PrismInterfaceServiceException {
         NamespacesRequest.Builder requestBuilder = NamespacesRequest.newBuilder();
         Optional.ofNullable( schemaPattern ).ifPresent( requestBuilder::setNamespacePattern );
         Optional.ofNullable( protoNamespaceType ).ifPresent( requestBuilder::setNamespaceType );
@@ -337,7 +337,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public List<Entity> searchEntities( String namespace, String entityNamePattern, int timeout ) throws ProtoInterfaceServiceException {
+    public List<Entity> searchEntities( String namespace, String entityNamePattern, int timeout ) throws PrismInterfaceServiceException {
         EntitiesRequest.Builder requestBuilder = EntitiesRequest.newBuilder();
         requestBuilder.setNamespaceName( namespace );
         Optional.ofNullable( entityNamePattern ).ifPresent( requestBuilder::setEntityPattern );
@@ -346,12 +346,12 @@ public class ProtoInterfaceClient {
     }
 
 
-    public List<TableType> getTablesTypes( int timeout ) throws ProtoInterfaceServiceException {
+    public List<TableType> getTablesTypes( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getTableTypes( TableTypesRequest.newBuilder().build(), timeout ).getTableTypesList();
     }
 
 
-    public Namespace getNamespace( String namespaceName, int timeout ) throws ProtoInterfaceServiceException {
+    public Namespace getNamespace( String namespaceName, int timeout ) throws PrismInterfaceServiceException {
         NamespaceRequest.Builder requestBuilder = NamespaceRequest.newBuilder();
         requestBuilder.setNamespaceName( namespaceName );
 
@@ -359,14 +359,14 @@ public class ProtoInterfaceClient {
     }
 
 
-    public List<UserDefinedType> getUserDefinedTypes( int timeout ) throws ProtoInterfaceServiceException {
+    public List<UserDefinedType> getUserDefinedTypes( int timeout ) throws PrismInterfaceServiceException {
         UserDefinedTypesRequest.Builder requestBuilder = UserDefinedTypesRequest.newBuilder();
 
         return rpc.getUserDefinedTypes( requestBuilder.build(), timeout ).getUserDefinedTypesList();
     }
 
 
-    public void setClientInfoProperties( Properties properties, int timeout ) throws ProtoInterfaceServiceException {
+    public void setClientInfoProperties( Properties properties, int timeout ) throws PrismInterfaceServiceException {
         ClientInfoProperties.Builder requestBuilder = ClientInfoProperties.newBuilder();
         properties.stringPropertyNames()
                 .forEach( s -> requestBuilder.putProperties( s, properties.getProperty( s ) ) );
@@ -375,7 +375,7 @@ public class ProtoInterfaceClient {
     }
 
 
-    public List<Function> searchFunctions( String languaheName, String functionCategory, int timeout ) throws ProtoInterfaceServiceException {
+    public List<Function> searchFunctions( String languaheName, String functionCategory, int timeout ) throws PrismInterfaceServiceException {
         FunctionsRequest functionsRequest = FunctionsRequest.newBuilder()
                 .setQueryLanguage( languaheName )
                 .setFunctionCategory( functionCategory )

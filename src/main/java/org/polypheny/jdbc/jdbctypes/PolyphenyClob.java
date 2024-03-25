@@ -27,8 +27,8 @@ import java.sql.Clob;
 import java.sql.NClob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
 
 public class PolyphenyClob implements Clob, NClob {
 
@@ -38,7 +38,7 @@ public class PolyphenyClob implements Clob, NClob {
 
     private void throwIfFreed() throws SQLException {
         if ( isFreed ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on freed blob" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on freed blob" );
         }
     }
 
@@ -110,10 +110,10 @@ public class PolyphenyClob implements Clob, NClob {
     }
 
 
-    private void replaceSection( int startIndex, int replacementLength, String replacement ) throws ProtoInterfaceServiceException {
+    private void replaceSection( int startIndex, int replacementLength, String replacement ) throws PrismInterfaceServiceException {
         if ( value == null ) {
             if ( startIndex > 0 ) {
-                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Can't replace section in empty string" );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Can't replace section in empty string" );
             }
             value = replacement;
             return;

@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
 
 public class PropertyUtils {
 
@@ -86,18 +86,18 @@ public class PropertyUtils {
     private static final String STRICT_MODE_KEY = "strict";
 
 
-    public static String getHoldabilityName( int resultSetHoldability ) throws ProtoInterfaceServiceException {
+    public static String getHoldabilityName( int resultSetHoldability ) throws PrismInterfaceServiceException {
         switch ( resultSetHoldability ) {
             case ResultSet.CLOSE_CURSORS_AT_COMMIT:
                 return "CLOSE";
             case ResultSet.HOLD_CURSORS_OVER_COMMIT:
                 return "HOLD";
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "The passed integer value does not match a result holdability." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "The passed integer value does not match a result holdability." );
     }
 
 
-    public static String getTransactionIsolationName( int transactionIsolation ) throws ProtoInterfaceServiceException {
+    public static String getTransactionIsolationName( int transactionIsolation ) throws PrismInterfaceServiceException {
         switch ( transactionIsolation ) {
             case Connection.TRANSACTION_READ_UNCOMMITTED:
                 return "DIRTY";
@@ -108,7 +108,7 @@ public class PropertyUtils {
             case Connection.TRANSACTION_REPEATABLE_READ:
                 return "REPEATABLE_READ";
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "The passed integer value does not match a transaction isolation level." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "The passed integer value does not match a transaction isolation level." );
     }
 
 
@@ -189,20 +189,20 @@ public class PropertyUtils {
     public static void throwIfInvalid( int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         throwIfInvalid( resultSetType, resultSetConcurrency );
         if ( !isValidResultSetHoldability( resultSetHoldability ) ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set holdability." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set holdability." );
         }
     }
 
 
     public static void throwIfInvalid( int resultSetType, int resultSetConcurrency ) throws SQLException {
         if ( !isValidResultSetType( resultSetType ) ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set type." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set type." );
         }
         if ( !isValidResultSetConcurrency( resultSetConcurrency ) ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set concurrency." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal value for result set concurrency." );
         }
         if ( !isValidResultSetConcurrency( resultSetType, resultSetConcurrency ) ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPTION_NOT_SUPPORTED, "The specified concurrency is not supported for the specified result set type" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPTION_NOT_SUPPORTED, "The specified concurrency is not supported for the specified result set type" );
         }
     }
 

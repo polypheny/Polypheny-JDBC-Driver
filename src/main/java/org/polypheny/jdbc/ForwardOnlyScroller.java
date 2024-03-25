@@ -23,7 +23,7 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
     private int baseIndex;
 
 
-    public ForwardOnlyScroller( Frame frame, ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
+    public ForwardOnlyScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
         this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
         if ( properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows() ) {
             values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
@@ -57,7 +57,7 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
 
 
     @Override
-    public boolean next() throws ProtoInterfaceServiceException {
+    public boolean next() throws PrismInterfaceServiceException {
         try {
             considerPrefetch();
             syncFetchIfEmpty();
@@ -68,7 +68,7 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
             baseIndex++;
             return true;
         } catch ( InterruptedException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more columns from server filed.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more columns from server filed.", e );
         }
     }
 

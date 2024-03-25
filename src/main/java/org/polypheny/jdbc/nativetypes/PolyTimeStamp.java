@@ -23,7 +23,6 @@ import java.util.TimeZone;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
 
 public class PolyTimeStamp extends PolyTemporal {

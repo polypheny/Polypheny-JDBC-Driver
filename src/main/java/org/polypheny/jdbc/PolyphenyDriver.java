@@ -37,10 +37,10 @@ public class PolyphenyDriver implements java.sql.Driver {
             return null;
         }
         ConnectionString connectionString = new ConnectionString( url, properties );
-        ProtoInterfaceClient protoInterfaceClient = new ProtoInterfaceClient(  connectionString.getHost(), connectionString.getPort(), connectionString.getParameters() );
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, protoInterfaceClient );
-        PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata( protoInterfaceClient, connectionString );
-        ConnectionResponse connectionReply = protoInterfaceClient.register( connectionProperties, connectionProperties.getNetworkTimeout() );
+        PrismInterfaceClient prismInterfaceClient = new PrismInterfaceClient(  connectionString.getHost(), connectionString.getPort(), connectionString.getParameters() );
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, prismInterfaceClient );
+        PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata( prismInterfaceClient, connectionString );
+        ConnectionResponse connectionReply = prismInterfaceClient.register( connectionProperties, connectionProperties.getNetworkTimeout() );
         if ( connectionReply.hasHeartbeatInterval() ) {
             return new PolyConnection( connectionProperties, databaseMetadata, connectionReply.getHeartbeatInterval() );
         }
@@ -51,7 +51,7 @@ public class PolyphenyDriver implements java.sql.Driver {
     @Override
     public boolean acceptsURL( String url ) throws SQLException {
         if ( url == null ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "URL must no be null." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "URL must no be null." );
         }
         return url.startsWith( DriverProperties.getDRIVER_URL_SCHEMA() );
     }

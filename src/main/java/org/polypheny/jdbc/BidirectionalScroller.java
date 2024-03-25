@@ -20,7 +20,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
     int currentIndex;
 
 
-    public BidirectionalScroller( Frame frame, ProtoInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
+    public BidirectionalScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
         if ( properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows() ) {
             values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
@@ -67,7 +67,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
 
     @Override
-    public boolean absolute( int rowIndex ) throws ProtoInterfaceServiceException {
+    public boolean absolute( int rowIndex ) throws PrismInterfaceServiceException {
         try {
             if ( rowToIndex( rowIndex ) == currentIndex ) {
                 return true;
@@ -105,7 +105,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             currentRow = null;
             return false;
         } catch ( InterruptedException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching of more rows failed", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching of more rows failed", e );
         }
     }
 
@@ -121,7 +121,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
 
     @Override
-    public boolean relative( int offset ) throws ProtoInterfaceServiceException {
+    public boolean relative( int offset ) throws PrismInterfaceServiceException {
         try {
             if ( offset == 0 ) {
                 return currentRow != null;
@@ -150,20 +150,20 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
                 return false;
             }
         } catch ( InterruptedException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more rows failed.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more rows failed.", e );
         }
-        throw new ProtoInterfaceServiceException( "Should never be thrown!" );
+        throw new PrismInterfaceServiceException( "Should never be thrown!" );
     }
 
 
     @Override
-    public boolean previous() throws ProtoInterfaceServiceException {
+    public boolean previous() throws PrismInterfaceServiceException {
         return relative( -1 );
     }
 
 
     @Override
-    public void beforeFirst() throws ProtoInterfaceServiceException {
+    public void beforeFirst() throws PrismInterfaceServiceException {
         absolute( 0 );
     }
 
@@ -206,7 +206,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
 
     @Override
-    public boolean next() throws ProtoInterfaceServiceException {
+    public boolean next() throws PrismInterfaceServiceException {
         try {
             considerPrefetch();
             syncFetch();
@@ -217,7 +217,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             }
             return true;
         } catch ( InterruptedException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching mor rows from server failed.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching mor rows from server failed.", e );
         }
     }
 

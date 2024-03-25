@@ -23,7 +23,7 @@ import java.net.URL;
 import java.sql.*;
 import java.util.Calendar;
 import java.util.Map;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public interface Convertible {
 
@@ -125,6 +125,6 @@ public interface Convertible {
 
     Object asObject( Calendar calendar ) throws SQLException;
 
-    <T> T asObject( Class<T> aClass ) throws SQLFeatureNotSupportedException, ProtoInterfaceServiceException;
+    <T> T asObject( Class<T> aClass ) throws SQLFeatureNotSupportedException, PrismInterfaceServiceException;
 
 }

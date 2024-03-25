@@ -52,10 +52,9 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.deserialization.UDTPrototype;
-import org.polypheny.jdbc.nativetypes.PolyInterval;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
@@ -455,7 +454,7 @@ public class TypedValue implements Convertible {
         if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
             return TypedValueUtils.getBooleanFromString( (String) value );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to BOOLEAN is not supported." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to BOOLEAN is not supported." );
     }
 
 
@@ -476,7 +475,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to byte" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to byte" );
     }
 
 
@@ -497,7 +496,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to short" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to short" );
     }
 
 
@@ -518,7 +517,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to int" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to int" );
     }
 
 
@@ -539,7 +538,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to long" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to long" );
     }
 
 
@@ -560,7 +559,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to float" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to float" );
     }
 
 
@@ -581,7 +580,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to double" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to double" );
     }
 
 
@@ -611,7 +610,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( NumberFormatException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to byte" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to byte" );
     }
 
 
@@ -629,7 +628,7 @@ public class TypedValue implements Convertible {
             objectOutputStream.writeObject( value );
             return byteArrayOutputStream.toByteArray();
         } catch ( IOException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.STREAM_ERROR, "Error in converting object to byte array.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error in converting object to byte array.", e );
         }
     }
 
@@ -642,7 +641,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof String ) {
             return new ByteArrayInputStream( ((String) value).getBytes( StandardCharsets.US_ASCII ) );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to ascii stream not supported." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to ascii stream not supported." );
     }
 
 
@@ -660,7 +659,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof String ) {
             return new ByteArrayInputStream( ((String) value).getBytes( StandardCharsets.UTF_8 ) );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to unicode stream not supported." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to unicode stream not supported." );
     }
 
 
@@ -672,7 +671,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof byte[] ) {
             return new ByteArrayInputStream( (byte[]) value );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to binary stream not supported." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion to binary stream not supported." );
     }
 
 
@@ -684,7 +683,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof String ) {
             return new StringReader( (String) value );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a character stream" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a character stream" );
 
     }
 
@@ -697,7 +696,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Blob ) {
             return (Blob) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a blob" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a blob" );
     }
 
 
@@ -709,7 +708,7 @@ public class TypedValue implements Convertible {
         if ( TypedValueUtils.isClobOrNClobRepresented( jdbcType ) ) {
             return (Clob) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a clob" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a clob" );
     }
 
 
@@ -721,7 +720,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Array ) {
             return (Array) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to an array" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to an array" );
     }
 
 
@@ -730,7 +729,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Struct ) {
             return (Struct) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a struct" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a struct" );
     }
 
 
@@ -751,7 +750,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( ParseException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a date" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a date" );
     }
 
 
@@ -784,7 +783,7 @@ public class TypedValue implements Convertible {
             }
         } catch ( ParseException ignored ) {
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time " + value + "with type " + jdbcType );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time " + value + "with type " + jdbcType );
     }
 
 
@@ -812,7 +811,7 @@ public class TypedValue implements Convertible {
         if ( TypedValueUtils.isStringRepresented( jdbcType ) ) {
             return TypedValueUtils.getTimestampFromString( (String) value );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to time" );
     }
 
 
@@ -833,7 +832,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof Ref ) {
             return (Ref) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a ref" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a ref" );
     }
 
 
@@ -845,7 +844,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof RowId ) {
             return (RowId) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a row id" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a row id" );
     }
 
 
@@ -857,7 +856,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof URL ) {
             return (URL) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a url" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a url" );
     }
 
 
@@ -869,7 +868,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof NClob ) {
             return (NClob) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a nclob" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a nclob" );
     }
 
 
@@ -881,7 +880,7 @@ public class TypedValue implements Convertible {
         if ( value instanceof SQLXML ) {
             return (SQLXML) value;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a nclob" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Can't convert this value to a nclob" );
     }
 
 
@@ -905,12 +904,12 @@ public class TypedValue implements Convertible {
     }
 
 
-    public UDTPrototype getUdtPrototype() throws ProtoInterfaceServiceException {
+    public UDTPrototype getUdtPrototype() throws PrismInterfaceServiceException {
         if ( !isUdtPrototype() ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
         }
         if ( !(value instanceof UDTPrototype) ) {
-            throw new ProtoInterfaceServiceException( "Should never be thrown" );
+            throw new PrismInterfaceServiceException( "Should never be thrown" );
         }
         return (UDTPrototype) value;
     }
@@ -1056,9 +1055,9 @@ public class TypedValue implements Convertible {
     }
 
 
-    public <T> T asObject( Class<T> aClass ) throws ProtoInterfaceServiceException {
+    public <T> T asObject( Class<T> aClass ) throws PrismInterfaceServiceException {
         if ( !isUdtPrototype() ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This typed value does not represent a udt prototype" );
         }
         return aClass.cast( buildFromUdtPrototype( aClass, getUdtPrototype() ) );
     }
@@ -1080,9 +1079,9 @@ public class TypedValue implements Convertible {
     }
 
 
-    private <T> Object buildFromUdtPrototype( Class<T> udtClass, UDTPrototype prototype ) throws ProtoInterfaceServiceException {
+    private <T> Object buildFromUdtPrototype( Class<T> udtClass, UDTPrototype prototype ) throws PrismInterfaceServiceException {
         if ( udtClass == null ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Type-map contains no type for internal type " + prototype.getTypeName() );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Type-map contains no type for internal type " + prototype.getTypeName() );
         }
         try {
             Constructor<?> udtConstructor = udtClass.getConstructor( SQLInput.class, String.class );
@@ -1090,9 +1089,9 @@ public class TypedValue implements Convertible {
             internalType = prototype.getTypeName();
             return value;
         } catch ( NoSuchMethodException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.MISSING_INTERFACE, "The type contained in the type map does not implement the SQLInput interface required for udt construction" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.MISSING_INTERFACE, "The type contained in the type map does not implement the SQLInput interface required for udt construction" );
         } catch ( InvocationTargetException | InstantiationException | IllegalAccessException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.UDT_CONSTRUCTION_FAILED, "Construction of user defined type failed", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.UDT_CONSTRUCTION_FAILED, "Construction of user defined type failed", e );
         }
     }
 
@@ -1101,7 +1100,7 @@ public class TypedValue implements Convertible {
         try {
             return TypedValueUtils.buildTypedValueFromObject( value );
         } catch ( ParseException | SQLFeatureNotSupportedException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
         }
     }
 
@@ -1110,7 +1109,7 @@ public class TypedValue implements Convertible {
         try {
             return TypedValueUtils.buildTypedValueFromObject( value, targetSqlType );
         } catch ( ParseException | SQLFeatureNotSupportedException e ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
         }
     }
 

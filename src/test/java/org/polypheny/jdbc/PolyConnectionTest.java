@@ -52,8 +52,8 @@ public class PolyConnectionTest {
     @Test
     public void getAutoCommitWhenConnectionIsClosedThenThrowException() throws SQLException {
         properties = mock( PolyphenyConnectionProperties.class );
-        ProtoInterfaceClient protoInterfaceClient = mock( ProtoInterfaceClient.class );
-        when( properties.getProtoInterfaceClient() ).thenReturn( protoInterfaceClient );
+        PrismInterfaceClient prismInterfaceClient = mock( PrismInterfaceClient.class );
+        when( properties.getPrismInterfaceClient() ).thenReturn( prismInterfaceClient );
         databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
         connection = new PolyConnection( properties, databaseMetaData );
         connection.close();
@@ -65,8 +65,8 @@ public class PolyConnectionTest {
     @Test
     public void setAutoCommitWhenConnectionIsClosedThenThrowException() throws SQLException {
         properties = mock( PolyphenyConnectionProperties.class );
-        ProtoInterfaceClient protoInterfaceClient = mock( ProtoInterfaceClient.class );
-        when( properties.getProtoInterfaceClient() ).thenReturn( protoInterfaceClient );
+        PrismInterfaceClient prismInterfaceClient = mock( PrismInterfaceClient.class );
+        when( properties.getPrismInterfaceClient() ).thenReturn( prismInterfaceClient );
         databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
         connection = new PolyConnection( properties, databaseMetaData );
         connection.close();
@@ -91,7 +91,7 @@ public class PolyConnectionTest {
 
 
     @Test
-    public void setAutoCommitToFalse() throws ProtoInterfaceServiceException {
+    public void setAutoCommitToFalse() throws PrismInterfaceServiceException {
         properties = mock( PolyphenyConnectionProperties.class );
         databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
         connection = new PolyConnection( properties, databaseMetaData );

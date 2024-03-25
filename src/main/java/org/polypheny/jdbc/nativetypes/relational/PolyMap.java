@@ -24,7 +24,6 @@ import lombok.experimental.Delegate;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyValue;
 
 @EqualsAndHashCode(callSuper = true)

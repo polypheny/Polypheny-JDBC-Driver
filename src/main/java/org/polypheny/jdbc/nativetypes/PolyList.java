@@ -25,7 +25,6 @@ import lombok.Value;
 import lombok.experimental.Delegate;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "copyOf")

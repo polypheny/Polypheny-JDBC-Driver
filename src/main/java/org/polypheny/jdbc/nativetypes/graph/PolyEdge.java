@@ -24,7 +24,6 @@ import lombok.experimental.Accessors;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.PolyList;
 import org.polypheny.jdbc.nativetypes.PolyString;
 import org.polypheny.jdbc.nativetypes.PolyValue;

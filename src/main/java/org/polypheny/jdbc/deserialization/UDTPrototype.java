@@ -1,8 +1,8 @@
 package org.polypheny.jdbc.deserialization;
 
 import lombok.Getter;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 
 import java.io.InputStream;
@@ -42,7 +42,7 @@ public class UDTPrototype implements SQLInput {
 
     public void addValue( TypedValue value ) throws SQLException {
         if ( isFinalized ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Can't add values to finalized prototype." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Can't add values to finalized prototype." );
         }
         values.add( value );
     }
@@ -50,11 +50,11 @@ public class UDTPrototype implements SQLInput {
 
     private TypedValue getNextValue() throws SQLException {
         if ( !isFinalized ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Can't read value from unfinalized prototype." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Can't read value from unfinalized prototype." );
         }
         currentIndex++;
         if ( currentIndex >= values.size() ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.UDT_REACHED_END, "Reached end of udt value stream." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.UDT_REACHED_END, "Reached end of udt value stream." );
         } else {
             TypedValue currentValue = values.get( currentIndex );
             lastValueWasNull = currentValue.isNull();

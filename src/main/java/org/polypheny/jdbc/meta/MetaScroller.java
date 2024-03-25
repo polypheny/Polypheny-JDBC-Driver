@@ -2,7 +2,7 @@ package org.polypheny.jdbc.meta;
 
 import java.util.List;
 import org.polypheny.jdbc.BidirectionalScrollable;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
@@ -139,7 +139,7 @@ public class MetaScroller<T> implements BidirectionalScrollable<T> {
 
 
     @Override
-    public boolean next() throws ProtoInterfaceServiceException {
+    public boolean next() throws PrismInterfaceServiceException {
         current = null;
         currentIndex++;
         if ( currentIndex >= data.size() ) {

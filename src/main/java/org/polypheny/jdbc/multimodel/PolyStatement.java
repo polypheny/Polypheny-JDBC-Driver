@@ -19,9 +19,9 @@ package org.polypheny.jdbc.multimodel;
 import lombok.Getter;
 import org.polypheny.db.protointerface.proto.Response;
 import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.ProtoInterfaceClient;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResponse;
 import org.polypheny.jdbc.utils.CallbackQueue;
@@ -42,12 +42,12 @@ public class PolyStatement {
     }
 
 
-    private ProtoInterfaceClient getProtoInterfaceClient() {
+    private PrismInterfaceClient getProtoInterfaceClient() {
         return connection.getProtoInterfaceClient();
     }
 
 
-    private Result getResultFromFrame( Frame frame ) throws ProtoInterfaceServiceException {
+    private Result getResultFromFrame( Frame frame ) throws PrismInterfaceServiceException {
         switch ( frame.getResultCase() ) {
             case RELATIONAL_FRAME:
                 return new RelationalResult( frame, this );
@@ -56,7 +56,7 @@ public class PolyStatement {
             case GRAPH_FRAME:
                 return new GraphResult( frame, this );
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.RESULT_TYPE_INVALID, "Statement produced unknown result type" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement produced unknown result type" );
     }
 
 
@@ -65,7 +65,7 @@ public class PolyStatement {
     }
 
 
-    public Result execute( String namespaceName, String languageName, String statement ) throws ProtoInterfaceServiceException {
+    public Result execute( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
         resetStatement();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         int timeout = connection.getTimeout();
@@ -87,7 +87,7 @@ public class PolyStatement {
             try {
                 callback.awaitCompletion();
             } catch ( InterruptedException e ) {
-                throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
             if ( !response.getResult().hasFrame() ) {
                 return new ScalarResult( response.getResult().getScalar() );

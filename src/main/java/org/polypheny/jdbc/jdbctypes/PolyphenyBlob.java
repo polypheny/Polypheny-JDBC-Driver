@@ -23,8 +23,8 @@ import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
 
 public class PolyphenyBlob implements Blob {
 
@@ -64,17 +64,17 @@ public class PolyphenyBlob implements Blob {
 
     private void throwIfIndexOutOfBounds( long index ) throws SQLException {
         if ( index < 0 ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Index out of bounds" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Index out of bounds" );
         }
         if ( index >= value.length ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Index out of bounds" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Index out of bounds" );
         }
     }
 
 
     private void throwIfFreed() throws SQLException {
         if ( isFreed ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on freed blob" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on freed blob" );
         }
     }
 
@@ -148,7 +148,7 @@ public class PolyphenyBlob implements Blob {
     public void truncate( long len ) throws SQLException {
         throwIfFreed();
         if ( len < 0 ) {
-            throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for len" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for len" );
         }
         len = Math.min( len, value.length );
         value = Arrays.copyOf( value, longToInt( len ) );

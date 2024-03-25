@@ -23,8 +23,8 @@ import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTimestamp;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.nativetypes.PolyInterval;
 import org.polypheny.jdbc.nativetypes.PolyValue;
@@ -141,7 +141,7 @@ public class ProtoValueSerializer {
                 // TODO TH: find something useful to do here...
                 break;
         }
-        throw new ProtoInterfaceServiceException( ProtoInterfaceErrors.DATA_TYPE_MISSMATCH, "Serialization of jdbc type " + typedValue.getJdbcType() + " not known" );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Serialization of jdbc type " + typedValue.getJdbcType() + " not known" );
     }
 
 

@@ -4,7 +4,7 @@ public interface Scrollable<T> {
 
     void fetchAllAndSync() throws InterruptedException;
 
-    boolean next() throws ProtoInterfaceServiceException;
+    boolean next() throws PrismInterfaceServiceException;
 
     T current();
 

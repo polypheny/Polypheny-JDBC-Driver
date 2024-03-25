@@ -16,7 +16,7 @@
 
 package org.polypheny.jdbc;
 
-public enum ProtoInterfaceErrors {
+public enum PrismInterfaceErrors {
     UNSPECIFIED( "UNSPECIFIED", -1 ),
     DRIVER_THREADING_ERROR( "I1001", 1 ),
     URL_PARSING_INVALID( "I2001", 2 ),
@@ -42,7 +42,7 @@ public enum ProtoInterfaceErrors {
     public final int errorCode;
 
 
-    ProtoInterfaceErrors( String state, int errorCode ) {
+    PrismInterfaceErrors( String state, int errorCode ) {
         this.state = state;
         this.errorCode = errorCode;
     }

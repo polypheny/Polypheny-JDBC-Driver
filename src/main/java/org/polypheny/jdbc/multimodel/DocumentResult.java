@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.ProtoInterfaceClient;
-import org.polypheny.jdbc.ProtoInterfaceErrors;
-import org.polypheny.jdbc.ProtoInterfaceServiceException;
+import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.nativetypes.document.PolyDocument;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.db.protointerface.proto.DocumentFrame;
@@ -36,7 +36,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     private boolean isFullyFetched;
 
 
-    public DocumentResult( Frame frame, PolyStatement polyStatement ) throws ProtoInterfaceServiceException {
+    public DocumentResult( Frame frame, PolyStatement polyStatement ) throws PrismInterfaceServiceException {
         super( ResultType.DOCUMENT );
         this.polyStatement = polyStatement;
         this.isFullyFetched = frame.getIsLast();
@@ -45,18 +45,18 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     }
 
 
-    private void addDocuments( DocumentFrame documentFrame ) throws ProtoInterfaceServiceException {
+    private void addDocuments( DocumentFrame documentFrame ) throws PrismInterfaceServiceException {
         documentFrame.getDocumentsList().forEach( d -> documents.add( PolyDocument.fromProto( d ) ) );
     }
 
 
-    private void fetchMore() throws ProtoInterfaceServiceException {
+    private void fetchMore() throws PrismInterfaceServiceException {
         int id = polyStatement.getStatementId();
         int timeout = getPolyphenyConnection().getTimeout();
         Frame frame = getProtoInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
         if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
-            throw new ProtoInterfaceServiceException(
-                    ProtoInterfaceErrors.RESULT_TYPE_INVALID,
+            throw new PrismInterfaceServiceException(
+                    PrismInterfaceErrors.RESULT_TYPE_INVALID,
                     "Statement returned a result of illegal type "
                             + frame.getResultCase()
             );
@@ -71,7 +71,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     }
 
 
-    private ProtoInterfaceClient getProtoInterfaceClient() {
+    private PrismInterfaceClient getProtoInterfaceClient() {
         return getPolyphenyConnection().getProtoInterfaceClient();
     }
 
@@ -95,7 +95,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
                 }
                 try {
                     fetchMore();
-                } catch ( ProtoInterfaceServiceException e ) {
+                } catch ( PrismInterfaceServiceException e ) {
                     throw new RuntimeException( e );
                 }
             }
