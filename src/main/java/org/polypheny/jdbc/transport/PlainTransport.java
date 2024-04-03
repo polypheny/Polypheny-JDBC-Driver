@@ -33,6 +33,7 @@ public class PlainTransport implements Transport {
 
     public PlainTransport( String host, int port ) throws IOException {
         con = SocketChannel.open( new InetSocketAddress( host, port ) );
+        con.socket().setTcpNoDelay( true );
     }
 
 
