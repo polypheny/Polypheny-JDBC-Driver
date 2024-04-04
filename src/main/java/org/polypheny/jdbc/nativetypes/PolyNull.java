@@ -17,7 +17,6 @@
 package org.polypheny.jdbc.nativetypes;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
@@ -25,10 +24,6 @@ import org.polypheny.jdbc.nativetypes.category.PolyBlob;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
 import org.polypheny.jdbc.nativetypes.document.PolyDocument;
-import org.polypheny.jdbc.nativetypes.graph.PolyDictionary;
-import org.polypheny.jdbc.nativetypes.graph.PolyEdge;
-import org.polypheny.jdbc.nativetypes.graph.PolyGraph;
-import org.polypheny.jdbc.nativetypes.graph.PolyNode;
 import org.polypheny.jdbc.nativetypes.relational.PolyMap;
 
 public class PolyNull extends PolyValue {
@@ -234,20 +229,8 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyEdge asEdge() {
-        return new PolyEdge( new PolyDictionary(), null, null, null, null, null );
-    }
-
-
-    @Override
     public boolean isNode() {
         return true;
-    }
-
-
-    @Override
-    public @NonNull PolyNode asNode() {
-        return new PolyNode( new PolyDictionary(), null, null );
     }
 
 
@@ -260,12 +243,6 @@ public class PolyNull extends PolyValue {
     @Override
     public boolean isGraph() {
         return true;
-    }
-
-
-    @Override
-    public @NonNull PolyGraph asGraph() {
-        return new PolyGraph( null, new HashMap<>(), new HashMap<>() );
     }
 
 

@@ -23,7 +23,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
@@ -50,9 +49,6 @@ import org.polypheny.jdbc.nativetypes.category.PolyBlob;
 import org.polypheny.jdbc.nativetypes.category.PolyNumber;
 import org.polypheny.jdbc.nativetypes.category.PolyTemporal;
 import org.polypheny.jdbc.nativetypes.document.PolyDocument;
-import org.polypheny.jdbc.nativetypes.graph.PolyEdge;
-import org.polypheny.jdbc.nativetypes.graph.PolyGraph;
-import org.polypheny.jdbc.nativetypes.graph.PolyNode;
 import org.polypheny.jdbc.nativetypes.relational.PolyMap;
 
 public abstract class PolyValue implements Comparable<PolyValue> {
@@ -309,26 +305,8 @@ public abstract class PolyValue implements Comparable<PolyValue> {
     }
 
 
-    @NotNull
-    public PolyEdge asEdge() {
-        if ( isEdge() ) {
-            return (PolyEdge) this;
-        }
-        throw cannotParse( this, PolyEdge.class );
-    }
-
-
     public boolean isNode() {
         return type == ProtoPolyType.NODE;
-    }
-
-
-    @NotNull
-    public PolyNode asNode() {
-        if ( isNode() ) {
-            return (PolyNode) this;
-        }
-        throw cannotParse( this, PolyNode.class );
     }
 
 
@@ -339,15 +317,6 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
     public boolean isGraph() {
         return type == ProtoPolyType.GRAPH;
-    }
-
-
-    @NotNull
-    public PolyGraph asGraph() {
-        if ( isGraph() ) {
-            return (PolyGraph) this;
-        }
-        throw cannotParse( this, PolyGraph.class );
     }
 
 
