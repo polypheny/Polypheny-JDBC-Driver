@@ -1,7 +1,5 @@
 package org.polypheny.jdbc.meta;
 
-import static java.util.stream.Collectors.toCollection;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -45,7 +43,7 @@ public class MetaResultSetBuilder {
         AtomicInteger ordinal = new AtomicInteger();
         return metaResultSetParameters.stream()
                 .map( p -> PolyphenyColumnMeta.fromSpecification( ordinal.getAndIncrement(), p.getName(), entityName, p.getJdbcType() ) )
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toCollection( ArrayList::new ) );
     }
 
 
@@ -116,7 +114,7 @@ public class MetaResultSetBuilder {
                 .map( MetaResultSetBuilder::expandPrimaryKey )
                 .flatMap( List::stream )
                 .sorted( MetaResultSetComparators.PRIMARY_KEY_COMPARATOR ) // jdbc standard about primary keys: Rows are ordered by COLUMN_NAME ascending
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toCollection( ArrayList::new ) );
 
         return buildResultSet(
                 "PRIMARY_KEYS",
@@ -173,7 +171,7 @@ public class MetaResultSetBuilder {
                 .map( MetaResultSetBuilder::expandForeignKey )
                 .flatMap( List::stream )
                 .sorted( comparator )
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toCollection( ArrayList::new ) );
 
         return buildResultSet(
                 entityName,
@@ -185,7 +183,7 @@ public class MetaResultSetBuilder {
 
     private static List<GenericMetaContainer> expandForeignKey( ForeignKey foreignKey ) {
         // key sequences start with 1 in jdbc
-        AtomicInteger sequenceIndex = new AtomicInteger(1);
+        AtomicInteger sequenceIndex = new AtomicInteger( 1 );
         return foreignKey.getForeignColumnsList().stream().map( c -> new GenericMetaContainer(
                 foreignKey.getReferencedNamespaceName(),
                 foreignKey.getReferencedTableName(),
@@ -216,7 +214,7 @@ public class MetaResultSetBuilder {
                 .map( MetaResultSetBuilder::expandIndex )
                 .flatMap( List::stream )
                 .sorted( MetaResultSetComparators.INDEX_COMPARATOR ) // jdbc standard about indexes: Rows are ordered by NON_UNIQUE, INDEX_NAME, and ORDINAL_POSITION ascending
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toCollection( ArrayList::new ) );
 
         return buildResultSet(
                 "INDEX_INFO",
