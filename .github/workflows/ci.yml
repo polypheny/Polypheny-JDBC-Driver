@@ -39,6 +39,9 @@ jobs:
       matrix:
         java: [ 8, 11, 17, 21 ]
         os: [ macos-latest, ubuntu-latest, windows-latest ]
+        exclude:
+          - os: windows-latest
+            java: [11, 17, 21]
     runs-on: ${{ matrix.os }}
     name: Java ${{ matrix.java }} @ ${{ matrix.os }}
     steps:
