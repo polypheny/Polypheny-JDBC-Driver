@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc.jdbctypes;
+package org.polypheny.jdbc.types;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -40,6 +40,14 @@ public class PolyphenyClob implements Clob, NClob {
         if ( isFreed ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on freed blob" );
         }
+    }
+
+    public PolyphenyClob(String string) {
+        this.isFreed = false;
+        this.value = string;
+    }
+
+    public PolyphenyClob() {
     }
 
 

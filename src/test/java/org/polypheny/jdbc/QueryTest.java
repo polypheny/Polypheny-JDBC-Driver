@@ -15,7 +15,7 @@ import org.polypheny.jdbc.multimodel.DocumentResult;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.Result;
 import org.polypheny.jdbc.multimodel.Result.ResultType;
-import org.polypheny.jdbc.nativetypes.document.PolyDocument;
+import org.polypheny.jdbc.types.PolyDocument;
 
 public class QueryTest {
 

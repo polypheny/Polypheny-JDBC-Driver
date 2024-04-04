@@ -1,6 +1,5 @@
 package org.polypheny.jdbc;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -29,7 +28,7 @@ import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.db.protointerface.proto.StatementBatchResponse;
 import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.meta.PolyphenyParameterMetaData;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 
@@ -198,7 +197,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNull( int parameterIndex, int sqlType ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNull( sqlType );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNull();
     }
 
 
@@ -310,11 +309,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setAsciiStream( int parameterIndex, InputStream x, int length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x, length );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x, length );
     }
 
 
@@ -322,11 +317,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setUnicodeStream( int parameterIndex, InputStream x, int length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromUnicodeStream( x, length );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromUnicodeStream( x, length );
     }
 
 
@@ -334,11 +325,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBinaryStream( int parameterIndex, InputStream x, int length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x, length );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x, length );
     }
 
 
@@ -496,7 +483,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNull( int parameterIndex, int sqlType, String typeName ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNull( sqlType, typeName );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNull();
     }
 
 
@@ -534,11 +521,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNCharacterStream( int parameterIndex, Reader value, long length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNCharacterStream( value );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting NCharacterStream.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNCharacterStream( value );
     }
 
 
@@ -594,11 +577,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setAsciiStream( int parameterIndex, InputStream x, long length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x, length );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting AsciiStream.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x, length );
     }
 
 
@@ -606,11 +585,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBinaryStream( int parameterIndex, InputStream x, long length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x, length );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting BinaryStream.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x, length );
     }
 
 
@@ -618,11 +593,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setCharacterStream( int parameterIndex, Reader reader, long length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromCharacterStream( reader, length );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting CharacterStream.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromCharacterStream( reader, length );
     }
 
 
@@ -630,11 +601,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setAsciiStream( int parameterIndex, InputStream x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting AsciiStream.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromAsciiStream( x );
     }
 
 
@@ -642,11 +609,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBinaryStream( int parameterIndex, InputStream x ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting BinaryStream.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBinaryStream( x );
     }
 
 
@@ -654,11 +617,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setCharacterStream( int parameterIndex, Reader reader ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromCharacterStream( reader );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting CharacterStream.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromCharacterStream( reader );
     }
 
 
@@ -666,11 +625,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNCharacterStream( int parameterIndex, Reader value ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNCharacterStream( value );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting NCharacterStream.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNCharacterStream( value );
     }
 
 
@@ -686,11 +641,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setBlob( int parameterIndex, InputStream inputStream ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        try {
-            parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBlob( inputStream );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Error while setting Blob.", e );
-        }
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromBlob( inputStream );
     }
 
 

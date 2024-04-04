@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc.jdbctypes;
+package org.polypheny.jdbc.types;
 
 import java.sql.Array;
 import java.sql.ResultSet;
@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.polypheny.jdbc.PolyphenyResultSet;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
-import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 
 public class PolyphenyArray implements Array {

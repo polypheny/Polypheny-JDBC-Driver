@@ -24,7 +24,6 @@ public class PrismInterfaceServiceException extends SQLException {
         this( message, sqlError.state, sqlError.errorCode );
     }
 
-
     public PrismInterfaceServiceException( PrismInterfaceErrors sqlError, String message, Throwable cause ) {
         this( message, sqlError.state, sqlError.errorCode, cause );
     }

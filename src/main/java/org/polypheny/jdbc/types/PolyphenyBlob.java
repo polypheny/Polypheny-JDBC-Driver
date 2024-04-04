@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc.jdbctypes;
+package org.polypheny.jdbc.types;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -38,6 +38,11 @@ public class PolyphenyBlob implements Blob {
 
     public PolyphenyBlob() {
         this.isFreed = false;
+    }
+
+    public PolyphenyBlob(byte[] bytes) {
+        this.isFreed = false;
+        this.value = bytes;
     }
 
 

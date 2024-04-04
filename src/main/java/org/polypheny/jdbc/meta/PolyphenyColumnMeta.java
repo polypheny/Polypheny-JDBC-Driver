@@ -6,7 +6,7 @@ import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
+import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 
 public class PolyphenyColumnMeta {
 

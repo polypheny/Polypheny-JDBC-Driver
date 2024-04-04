@@ -14,6 +14,7 @@ import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
 import java.sql.RowId;
+import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLXML;
 import java.sql.Struct;
@@ -34,12 +35,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.jdbc.deserialization.ProtoToJdbcTypeMap;
-import org.polypheny.jdbc.deserialization.ProtoValueDeserializer;
+import org.polypheny.jdbc.types.PolyDocument;
+import org.polypheny.jdbc.types.PolyInterval;
+import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 import org.polypheny.db.protointerface.proto.Row;
-import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.types.TypedValue;
 
 public class TypedValueUtils {
 
@@ -236,24 +237,18 @@ public class TypedValueUtils {
 
     public static ArrayList<TypedValue> buildRow( Row row ) {
         return row.getValuesList().stream()
-                .map( ProtoValueDeserializer::deserializeToTypedValue )
+                .map( TypedValue::new )
                 .collect( toCollection( ArrayList::new ) );
     }
-
-
-    public static ArrayList<Integer> getTypes( List<TypedValue> typedValues ) {
-        return typedValues.stream().map( TypedValue::getJdbcType ).collect( toCollection( ArrayList::new ) );
-    }
-
 
     public static int getJdbcTypeFromPolyTypeName( String polyTypeName ) {
         return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoPolyType.valueOf( polyTypeName ) );
     }
 
 
-    public static TypedValue buildTypedValueFromObject( Object value ) throws SQLFeatureNotSupportedException, ParseException {
+    public static TypedValue buildTypedValueFromObject( Object value ) throws SQLException, ParseException {
         if ( value == null ) {
-            return TypedValue.fromNull( Types.NULL );
+            return TypedValue.fromNull();
         }
         if ( value instanceof String ) {
             return buildTypedValueFromObject( value, Types.VARCHAR );
@@ -352,13 +347,19 @@ public class TypedValueUtils {
         if ( value instanceof OffsetDateTime ) {
             return buildTypedValueFromObject( value, Types.TIMESTAMP_WITH_TIMEZONE );
         }
+        if ( value instanceof PolyInterval ) {
+            return TypedValue.fromInterval( (PolyInterval) value );
+        }
+        if ( value instanceof PolyDocument ) {
+            return TypedValue.fromDocument( (PolyDocument) value );
+        }
         return buildTypedValueFromObject( value, Types.JAVA_OBJECT );
     }
 
 
-    public static TypedValue buildTypedValueFromObject( Object value, int targetSqlType ) throws ParseException, SQLFeatureNotSupportedException {
+    public static TypedValue buildTypedValueFromObject( Object value, int targetSqlType ) throws ParseException, SQLException {
         if ( value == null ) {
-            return TypedValue.fromNull( targetSqlType );
+            return TypedValue.fromNull();
         }
         if ( value instanceof String ) {
             return buildTypedValueFromString( (String) value, targetSqlType );
@@ -457,15 +458,21 @@ public class TypedValueUtils {
         if ( value instanceof OffsetDateTime ) {
             return buildTypedValueFromOffsetDateTime( (OffsetDateTime) value, targetSqlType );
         }
+        if ( value instanceof PolyInterval ) {
+            return TypedValue.fromInterval( (PolyInterval) value );
+        }
+        if ( value instanceof PolyDocument ) {
+            return TypedValue.fromDocument( (PolyDocument) value );
+        }
         return buildTypedValueFromJavaObject( value, targetSqlType );
     }
 
 
-    private static TypedValue buildTypedValueFromJavaObject( Object value, int targetSqlType ) throws ParseException {
+    private static TypedValue buildTypedValueFromJavaObject( Object value, int targetSqlType ) throws ParseException, SQLException {
         if ( targetSqlType != Types.JAVA_OBJECT ) {
             throw new ParseException( "Can't parse Object as type " + targetSqlType, 0 );
         }
-        return TypedValue.fromJavaObject( value );
+        return TypedValue.fromObject( value );
     }
 
 
@@ -576,7 +583,7 @@ public class TypedValueUtils {
     }
 
 
-    private static TypedValue buildTypedValueFromSQXML( SQLXML value, int targetSqlType ) throws ParseException {
+    private static TypedValue buildTypedValueFromSQXML( SQLXML value, int targetSqlType ) throws ParseException, SQLException {
         if ( targetSqlType != Types.SQLXML ) {
             throw new ParseException( "Can't parse SQLXML as type " + targetSqlType, 0 );
         }
@@ -584,7 +591,7 @@ public class TypedValueUtils {
     }
 
 
-    private static TypedValue buildTypedValueFromRowId( RowId value, int targetSqlType ) throws ParseException {
+    private static TypedValue buildTypedValueFromRowId( RowId value, int targetSqlType ) throws ParseException, SQLFeatureNotSupportedException {
         if ( targetSqlType != Types.ROWID ) {
             throw new ParseException( "Can't parse RowId as type " + targetSqlType, 0 );
         }
@@ -592,7 +599,7 @@ public class TypedValueUtils {
     }
 
 
-    private static TypedValue buildTypedValueFromURL( URL value, int targetSqlType ) throws ParseException {
+    private static TypedValue buildTypedValueFromURL( URL value, int targetSqlType ) throws ParseException, SQLException {
         if ( targetSqlType != Types.DATALINK ) {
             throw new ParseException( "Can't parse URL as type " + targetSqlType, 0 );
         }
@@ -600,7 +607,7 @@ public class TypedValueUtils {
     }
 
 
-    private static TypedValue buildTypedValueFromRef( Ref value, int targetSqlType ) throws ParseException {
+    private static TypedValue buildTypedValueFromRef( Ref value, int targetSqlType ) throws ParseException, SQLException {
         if ( targetSqlType != Types.REF ) {
             throw new ParseException( "Can't parse Ref as type " + targetSqlType, 0 );
         }
@@ -608,7 +615,7 @@ public class TypedValueUtils {
     }
 
 
-    private static TypedValue buildTypedValueFromStruct( Struct value, int targetSqlType ) throws ParseException {
+    private static TypedValue buildTypedValueFromStruct( Struct value, int targetSqlType ) throws ParseException, SQLFeatureNotSupportedException {
         if ( targetSqlType != Types.STRUCT ) {
             throw new ParseException( "Can't parse Struct as type " + targetSqlType, 0 );
         }
@@ -632,7 +639,7 @@ public class TypedValueUtils {
     }
 
 
-    private static TypedValue buildTypedValueFromClob( Clob value, int targetSqlType ) throws ParseException {
+    private static TypedValue buildTypedValueFromClob( Clob value, int targetSqlType ) throws ParseException, SQLException {
         if ( targetSqlType != Types.CLOB ) {
             throw new ParseException( "Can't parse Clob as type " + targetSqlType, 0 );
         }
@@ -640,7 +647,7 @@ public class TypedValueUtils {
     }
 
 
-    private static TypedValue buildTypedValueFromNClob( NClob value, int targetSqlType ) throws ParseException {
+    private static TypedValue buildTypedValueFromNClob( NClob value, int targetSqlType ) throws ParseException, SQLException {
         if ( targetSqlType != Types.NCLOB ) {
             throw new ParseException( "Can't parse NClob as type " + targetSqlType, 0 );
         }
@@ -1009,10 +1016,4 @@ public class TypedValueUtils {
         }
         throw new ParseException( "Can't parse String as type " + targetSqlType, 0 );
     }
-
-
-    public static TypedValue fromObject( Object value, int targetSqlType, int scaleOrLength ) throws NotImplementedException {
-        throw new NotImplementedException( "Not yet implemented..." );
-    }
-
 }

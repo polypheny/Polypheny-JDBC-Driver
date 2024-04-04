@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019-2024 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.polypheny.jdbc.types;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -24,35 +40,36 @@ import java.sql.Clob;
 import java.sql.Date;
 import java.sql.RowId;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Time;
-import java.sql.Types;
 import java.util.Calendar;
 import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.types.PolyInterval.Unit;
 
 public class TypedValueTest {
 
 
     @Test
-    public void fromNCharacterStreamWithReader() throws IOException {
+    public void fromNCharacterStreamWithReader() throws IOException, SQLException {
         String string = "test";
         Reader reader = new StringReader( string );
         TypedValue typedValue = TypedValue.fromNCharacterStream( reader );
         assertNotNull( typedValue );
-        assertEquals( Types.NVARCHAR, typedValue.getJdbcType() );
-        assertEquals( string, typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( string, typedValue.asString() );
     }
 
 
     @Test
-    public void fromNStringWithValidString() {
+    public void fromNStringWithValidString() throws SQLException {
         String value = "Hello World";
         TypedValue typedValue = TypedValue.fromNString( value );
-
-        assertEquals( Types.NVARCHAR, typedValue.getJdbcType() );
-        assertEquals( value, typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( value, typedValue.asString() );
     }
 
 
@@ -60,188 +77,175 @@ public class TypedValueTest {
     public void fromNStringWithNullString() {
         String value = null;
         TypedValue typedValue = TypedValue.fromNString( value );
-        assertNull( typedValue.getValue() );
-        assertEquals( Types.NVARCHAR, typedValue.getJdbcType() );
+        assertEquals( ValueCase.NULL, typedValue.getValueCase() );
     }
 
 
     @Test
     public void fromRowIdWithNullRowId() {
-        TypedValue typedValue = TypedValue.fromRowId( null );
-        assertNull( typedValue.getValue() );
-        assertEquals( Types.ROWID, typedValue.getJdbcType() );
+        assertThrows( SQLFeatureNotSupportedException.class, () -> TypedValue.fromRowId( null ) );
     }
 
 
     @Test
     public void fromRowIdWithValidRowId() {
         RowId rowId = Mockito.mock( RowId.class );
-
-        TypedValue typedValue = TypedValue.fromRowId( rowId );
-
-        assertEquals( Types.ROWID, typedValue.getJdbcType() );
-        assertEquals( rowId, typedValue.getValue() );
+        assertThrows( SQLFeatureNotSupportedException.class, () -> TypedValue.fromRowId( rowId ) );
     }
 
 
     @Test
     public void fromUrlWithNullUrl() {
-        TypedValue typedValue = TypedValue.fromUrl( null );
-        assertTrue( typedValue.isNull() );
-        assertFalse( typedValue.isSqlNull() );
-        assertNull( typedValue.getValue() );
+        assertThrows( SQLFeatureNotSupportedException.class, () -> TypedValue.fromUrl( null ) );
     }
 
 
     @Test
     public void fromUrlWithValidUrl() throws MalformedURLException {
         URL url = new URL( "https://example.com" );
-        TypedValue typedValue = TypedValue.fromUrl( url );
-
-        assertNotNull( typedValue );
-        assertEquals( Types.DATALINK, typedValue.getJdbcType() );
-        assertEquals( url, typedValue.getValue() );
+        assertThrows( SQLFeatureNotSupportedException.class, () -> TypedValue.fromUrl( url ) );
     }
 
 
     @Test
-    public void fromArrayWithGivenValue() {
+    public void fromArrayWithGivenValue() throws SQLException {
         Array value = Mockito.mock( Array.class );
         TypedValue typedValue = TypedValue.fromArray( value );
 
-        assertEquals( Types.ARRAY, typedValue.getJdbcType() );
-        assertEquals( value, typedValue.getValue() );
+        assertEquals( ValueCase.LIST, typedValue.getValueCase() );
+        assertEquals( value, typedValue.asArray() );
     }
 
 
     @Test
-    public void fromClobWithClobValue() {
-        Clob clob = Mockito.mock( Clob.class );
-
+    public void fromClobWithClobValue() throws SQLException {
+        String content = "This is awesome!";
+        Clob clob = new PolyphenyClob( content );
         TypedValue typedValue = TypedValue.fromClob( clob );
-
-        assertEquals( Types.CLOB, typedValue.getJdbcType() );
-
-        assertEquals( clob, typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( content, typedValue.asString() );
     }
 
 
     @Test
-    public void fromNullWhenSqlTypeNotInNullMap() {
-        int sqlType = Types.INTEGER;
-        TypedValue typedValue = TypedValue.fromNull( sqlType );
-
+    public void fromNull() {
+        TypedValue typedValue = TypedValue.fromNull();
         assertNotNull( typedValue );
-        assertEquals( sqlType, typedValue.getJdbcType() );
-        assertNull( typedValue.getValue() );
+        assertEquals( ValueCase.NULL, typedValue.getValueCase() );
         assertTrue( typedValue.isNull() );
-        assertFalse( typedValue.isSqlNull() );
-        assertNull( typedValue.getValue() );
     }
 
 
     @Test
-    public void fromBlobWithBlobValue() {
-        Blob blob = Mockito.mock( Blob.class );
-
+    public void fromBlobWithBlobValue() throws SQLException {
+        byte[] data = { 2, 34, 5, 7 };
+        Blob blob = new PolyphenyBlob( data );
         TypedValue typedValue = TypedValue.fromBlob( blob );
-
-        assertEquals( Types.BLOB, typedValue.getJdbcType() );
-
-        assertEquals( blob, typedValue.getValue() );
+        assertEquals( ValueCase.FILE, typedValue.getValueCase() );
+        assertEquals( blob, typedValue.asBlob() );
     }
 
 
     @Test
-    public void fromCharacterStreamWithLength1() throws IOException {
+    public void fromBlobWithBlobValueAsByteThrows() throws SQLException {
+        byte[] data = { 2, 34, 5, 7 };
+        Blob blob = new PolyphenyBlob( data );
+        TypedValue typedValue = TypedValue.fromBlob( blob );
+        assertEquals( ValueCase.FILE, typedValue.getValueCase() );
+        assertThrows( PrismInterfaceServiceException.class, typedValue::asBytes );
+    }
+
+
+    @Test
+    public void fromCharacterStreamWithLength1() throws SQLException {
         Reader reader = new StringReader( "Hello World" );
         int length = 11;
 
         TypedValue typedValue = TypedValue.fromCharacterStream( reader, length );
 
         assertNotNull( typedValue );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( "Hello World", typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( "Hello World", typedValue.asString() );
     }
 
 
     @Test
-    public void fromCharacterStreamWithLength2() throws IOException {
+    public void fromCharacterStreamWithLength2() throws SQLException {
         Reader reader = new StringReader( "Hello World" );
         long length = 11;
 
         TypedValue typedValue = TypedValue.fromCharacterStream( reader, length );
 
         assertNotNull( typedValue );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( "Hello World", typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( "Hello World", typedValue.asString() );
     }
 
 
     @Test
-    public void fromCharacterStreamWithValidStream() throws IOException {
+    public void fromCharacterStreamWithValidStream() throws SQLException {
         Reader reader = new StringReader( "Hello World" );
 
-        TypedValue result = TypedValue.fromCharacterStream( reader, 11 );
+        TypedValue typedValue = TypedValue.fromCharacterStream( reader, 11 );
 
-        assertNotNull( result );
-        assertEquals( Types.VARCHAR, result.getJdbcType() );
-        assertEquals( "Hello World", result.getValue() );
+        assertNotNull( typedValue );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( "Hello World", typedValue.asString() );
     }
 
 
     @Test
-    public void fromCharacterStreamThrowsIOException() throws IOException {
+    public void fromCharacterStreamThrowsSQLException() throws SQLException {
         String inputString = "Test";
         InputStream inputStream = new ByteArrayInputStream( inputString.getBytes( StandardCharsets.UTF_8 ) );
         Reader reader = new InputStreamReader( inputStream );
         TypedValue typedValue = TypedValue.fromCharacterStream( reader );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( inputString, typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( inputString, typedValue.asString() );
     }
 
 
     @Test
-    public void fromBinaryStreamWithValidStream2() throws IOException {
+    public void fromBinaryStreamWithValidStream2() throws SQLException {
         InputStream stream = new ByteArrayInputStream( new byte[]{ 1, 2, 3, 4, 5 } );
         TypedValue typedValue = TypedValue.fromBinaryStream( stream );
 
         assertNotNull( typedValue );
-        assertEquals( Types.BINARY, typedValue.getJdbcType() );
-        assertArrayEquals( new byte[]{ 1, 2, 3, 4, 5 }, (byte[]) typedValue.getValue() );
+        assertEquals( ValueCase.BINARY, typedValue.getValueCase() );
+        assertArrayEquals( new byte[]{ 1, 2, 3, 4, 5 }, typedValue.asBytes() );
     }
 
 
     @Test
-    public void fromBinaryStreamWithValidStream1() throws IOException {
+    public void fromBinaryStreamWithValidStream1() throws SQLException {
         InputStream stream = new ByteArrayInputStream( "Hello World".getBytes( StandardCharsets.UTF_8 ) );
         TypedValue typedValue = TypedValue.fromBinaryStream( stream );
 
         assertNotNull( typedValue );
-        assertEquals( Types.BINARY, typedValue.getJdbcType() );
-        assertArrayEquals( "Hello World".getBytes( StandardCharsets.UTF_8 ), (byte[]) typedValue.getValue() );
+        assertEquals( ValueCase.BINARY, typedValue.getValueCase() );
+        assertArrayEquals( "Hello World".getBytes( StandardCharsets.UTF_8 ), typedValue.asBytes() );
     }
 
 
     @Test
-    public void fromBinaryStreamWithValidStream3() throws IOException {
+    public void fromBinaryStreamWithValidStream3() throws SQLException {
         InputStream stream = new ByteArrayInputStream( "Hello World".getBytes( StandardCharsets.UTF_8 ) );
         TypedValue typedValue = TypedValue.fromBinaryStream( stream, 11 );
 
         assertNotNull( typedValue );
-        assertEquals( Types.BINARY, typedValue.getJdbcType() );
-        assertArrayEquals( "Hello World".getBytes( StandardCharsets.UTF_8 ), (byte[]) typedValue.getValue() );
+        assertEquals( ValueCase.BINARY, typedValue.getValueCase() );
+        assertArrayEquals( "Hello World".getBytes( StandardCharsets.UTF_8 ), typedValue.asBytes() );
     }
 
 
     @Test
-    public void fromBinaryStreamWithValidStream4() throws IOException {
+    public void fromBinaryStreamWithValidStream4() throws SQLException {
         InputStream stream = new ByteArrayInputStream( "Hello World".getBytes( StandardCharsets.UTF_8 ) );
         TypedValue typedValue = TypedValue.fromBinaryStream( stream, 11L );
 
         assertNotNull( typedValue );
-        assertEquals( Types.BINARY, typedValue.getJdbcType() );
-        assertArrayEquals( "Hello World".getBytes( StandardCharsets.UTF_8 ), (byte[]) typedValue.getValue() );
+        assertEquals( ValueCase.BINARY, typedValue.getValueCase() );
+        assertArrayEquals( "Hello World".getBytes( StandardCharsets.UTF_8 ), typedValue.asBytes() );
     }
 
 
@@ -252,13 +256,13 @@ public class TypedValueTest {
 
 
     @Test
-    public void fromUnicodeStreamWithValidStream() throws IOException {
+    public void fromUnicodeStreamWithValidStream() throws SQLException {
         InputStream stream = new ByteArrayInputStream( "Hello World".getBytes( StandardCharsets.UTF_8 ) );
         TypedValue typedValue = TypedValue.fromUnicodeStream( stream, 0 );
 
         assertNotNull( typedValue );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( "Hello World", typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( "Hello World", typedValue.asString() );
     }
 
 
@@ -275,39 +279,39 @@ public class TypedValueTest {
 
 
     @Test
-    public void fromAsciiStreamWithValidInputStreamAndLength() throws IOException {
+    public void fromAsciiStreamWithValidInputStreamAndLength() throws SQLException {
         String inputString = "Hello, World!";
         InputStream inputStream = new ByteArrayInputStream( inputString.getBytes( StandardCharsets.US_ASCII ) );
 
         TypedValue typedValue = TypedValue.fromAsciiStream( inputStream, inputString.length() );
 
         assertNotNull( typedValue );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( inputString, typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( inputString, typedValue.asString() );
     }
 
 
     @Test
-    public void fromAsciiStreamWithLength() throws IOException {
+    public void fromAsciiStreamWithLength() throws SQLException {
         String input = "Hello, World!";
         InputStream inputStream = new ByteArrayInputStream( input.getBytes( StandardCharsets.US_ASCII ) );
 
         TypedValue typedValue = TypedValue.fromAsciiStream( inputStream, input.length() );
 
         assertNotNull( typedValue );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( input, typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( input, typedValue.asString() );
     }
 
 
     @Test
-    public void fromAsciiStreamWithValidStream() throws IOException {
+    public void fromAsciiStreamWithValidStream() throws SQLException {
         InputStream stream = new ByteArrayInputStream( "Hello World".getBytes( StandardCharsets.US_ASCII ) );
         TypedValue typedValue = TypedValue.fromAsciiStream( stream );
 
         assertNotNull( typedValue );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( "Hello World", typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( "Hello World", typedValue.asString() );
     }
 
 
@@ -352,7 +356,7 @@ public class TypedValueTest {
 
 
     @Test
-    public void fromTimeWithValidTimeAndCalendar() {
+    public void fromTimeWithValidTimeAndCalendar() throws SQLException {
         Time time = new Time( 12, 30, 0 );
         Calendar calendar = Calendar.getInstance();
         calendar.set( Calendar.YEAR, 2022 );
@@ -363,8 +367,8 @@ public class TypedValueTest {
         TypedValue typedValue = TypedValue.fromTime( time, calendar );
 
         assertNotNull( typedValue );
-        assertEquals( Types.TIME, typedValue.getJdbcType() );
-        assertEquals( time, typedValue.getValue() );
+        assertEquals( ValueCase.TIME, typedValue.getValueCase() );
+        assertEquals( time, typedValue.asTime() );
     }
 
 
@@ -380,25 +384,24 @@ public class TypedValueTest {
 
 
     @Test
-    public void fromTimeWithNullTimeValue() {
+    public void fromTimeWithNullTimeValue() throws SQLException {
         TypedValue typedValue = TypedValue.fromTime( null );
 
         assertNotNull( typedValue );
         assertTrue( typedValue.isNull() );
-        assertFalse( typedValue.isSqlNull() );
-        assertEquals( Types.TIME, typedValue.getJdbcType() );
-        assertNull( typedValue.getValue() );
+        assertEquals( ValueCase.NULL, typedValue.getValueCase() );
+        assertNull( typedValue.asTime() );
     }
 
 
     @Test
-    public void fromTimeWithValidTimeValue() {
+    public void fromTimeWithValidTimeValue() throws SQLException {
         Time time = new Time( 12, 30, 0 );
         TypedValue typedValue = TypedValue.fromTime( time );
 
         assertNotNull( typedValue );
-        assertEquals( Types.TIME, typedValue.getJdbcType() );
-        assertEquals( time, typedValue.getValue() );
+        assertEquals( ValueCase.TIME, typedValue.getValueCase() );
+        assertEquals( time, typedValue.asTime() );
     }
 
 
@@ -417,7 +420,7 @@ public class TypedValueTest {
 
 
     @Test
-    public void fromDateWhenValidDateAndCalendarProvided() {
+    public void fromDateWhenValidDateAndCalendarProvided() throws SQLException {
         Date date = new Date( 2021, Calendar.JANUARY, 1 );
         Calendar calendar = Calendar.getInstance();
         calendar.set( 2022, Calendar.JANUARY, 1 );
@@ -425,8 +428,8 @@ public class TypedValueTest {
 
         TypedValue typedValue = TypedValue.fromDate( date, calendar );
 
-        assertEquals( Types.DATE, typedValue.getJdbcType() );
-        assertEquals( date, typedValue.getValue() );
+        assertEquals( ValueCase.DATE, typedValue.getValueCase() );
+        assertEquals( date, typedValue.asDate() );
     }
 
 
@@ -440,23 +443,22 @@ public class TypedValueTest {
 
 
     @Test
-    public void fromDateWithNullDate() {
+    public void fromDateWithNullDate() throws SQLException {
         TypedValue typedValue = TypedValue.fromDate( null );
 
         assertNotNull( typedValue );
         assertTrue( typedValue.isNull() );
-        assertFalse( typedValue.isSqlNull() );
-        assertEquals( Types.DATE, typedValue.getJdbcType() );
-        assertNull( typedValue.getValue() );
+        assertEquals( ValueCase.NULL, typedValue.getValueCase() );
+        assertNull( typedValue.asDate() );
     }
 
 
     @Test
-    public void fromDateWithValidDate() {
+    public void fromDateWithValidDate() throws SQLException {
         Date date = Date.valueOf( "2022-01-01" );
         TypedValue typedValue = TypedValue.fromDate( date );
-        assertEquals( Types.DATE, typedValue.getJdbcType() );
-        assertEquals( date, typedValue.getValue() );
+        assertEquals( ValueCase.DATE, typedValue.getValueCase() );
+        assertEquals( date, typedValue.asDate() );
     }
 
 
@@ -464,170 +466,216 @@ public class TypedValueTest {
     public void fromObjectWithValidDate() throws SQLException {
         Date date = Date.valueOf( "2022-01-01" );
         TypedValue typedValue = TypedValue.fromObject( date );
-        assertEquals( Types.DATE, typedValue.getJdbcType() );
-        assertEquals( date, typedValue.getValue() );
+        assertEquals( ValueCase.DATE, typedValue.getValueCase() );
+        assertEquals( date, typedValue.asDate() );
     }
 
 
     @Test
-    public void fromBytesWithByteArray() {
+    public void fromBytesWithByteArray() throws SQLException {
         byte[] bytes = { 1, 2, 3, 4, 5 };
         TypedValue typedValue = TypedValue.fromBytes( bytes );
-
-        assertEquals( Types.BINARY, typedValue.getJdbcType() );
-        assertEquals( bytes, typedValue.getValue() );
+        assertEquals( ValueCase.BINARY, typedValue.getValueCase() );
+        assertEquals( bytes, typedValue.asBytes() );
     }
 
 
     @Test
-    public void fromStringWithEmptyString() {
+    public void fromStringWithEmptyString() throws SQLException {
         TypedValue typedValue = TypedValue.fromString( "" );
 
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( "", typedValue.getValue() );
-        assertFalse( typedValue.isSqlNull() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( "", typedValue.asString() );
         assertFalse( typedValue.isNull() );
     }
 
 
     @Test
-    public void fromStringWithValidString() {
+    public void fromStringWithValidString() throws SQLException {
         TypedValue typedValue = TypedValue.fromString( "12345" );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertEquals( "12345", typedValue.getValue() );
+        assertEquals( ValueCase.STRING, typedValue.getValueCase() );
+        assertEquals( "12345", typedValue.asString() );
     }
 
 
     @Test
-    public void fromStringWithNullString() {
+    public void fromStringWithNullString() throws SQLException {
         TypedValue typedValue = TypedValue.fromString( null );
 
         assertTrue( typedValue.isNull() );
-        assertFalse( typedValue.isSqlNull() );
-        assertEquals( Types.VARCHAR, typedValue.getJdbcType() );
-        assertNull( typedValue.getValue() );
+        assertEquals( ValueCase.NULL, typedValue.getValueCase() );
+        assertNull( typedValue.asString() );
     }
 
 
     @Test
-    public void fromBigDecimalWithValidInput() {
+    public void fromBigDecimalWithValidInput() throws SQLException {
         BigDecimal value = new BigDecimal( "10.5" );
         TypedValue typedValue = TypedValue.fromBigDecimal( value );
 
-        assertEquals( Types.NUMERIC, typedValue.getJdbcType() );
-        assertEquals( value, typedValue.getValue() );
+        assertEquals( ValueCase.BIG_DECIMAL, typedValue.getValueCase() );
+        assertEquals( value, typedValue.asBigDecimal() );
     }
 
 
     @Test
-    public void fromBigDecimalWithNullInput() {
+    public void fromBigDecimalWithNullInput() throws SQLException {
         TypedValue typedValue = TypedValue.fromBigDecimal( null );
-        assertFalse( typedValue.isSqlNull() );
         assertTrue( typedValue.isNull() );
-        assertEquals( Types.NUMERIC, typedValue.getJdbcType() );
-        assertNull( typedValue.getValue() );
+        assertEquals( ValueCase.NULL, typedValue.getValueCase() );
+        assertNull( typedValue.asBigDecimal() );
     }
 
 
     @Test
-    public void fromDoubleWithValidInput() {
+    public void fromDoubleWithValidInput() throws SQLException {
         TypedValue typedValue = TypedValue.fromDouble( 3.14 );
 
-        assertEquals( Types.DOUBLE, typedValue.getJdbcType() );
-        assertEquals( 3.14, typedValue.getValue() );
+        assertEquals( ValueCase.DOUBLE, typedValue.getValueCase() );
+        assertEquals( 3.14, typedValue.asDouble() );
     }
 
 
     @Test
-    public void fromDoubleWithNegativeInput() {
+    public void fromDoubleWithNegativeInput() throws SQLException {
         TypedValue typedValue = TypedValue.fromDouble( -10.5 );
-
-        assertEquals( Types.DOUBLE, typedValue.getJdbcType() );
-        assertEquals( -10.5, typedValue.getValue() );
+        assertEquals( ValueCase.DOUBLE, typedValue.getValueCase() );
+        assertEquals( -10.5, typedValue.asDouble() );
     }
 
 
     @Test
-    public void fromDoubleWithZeroInput() {
+    public void fromDoubleWithZeroInput() throws SQLException {
         TypedValue typedValue = TypedValue.fromDouble( 0.0 );
 
-        assertEquals( Types.DOUBLE, typedValue.getJdbcType() );
-        assertEquals( 0.0, typedValue.getValue() );
+        assertEquals( ValueCase.DOUBLE, typedValue.getValueCase() );
+        assertEquals( 0.0, typedValue.asDouble() );
     }
 
 
     @Test
-    public void fromFloatWithValidFloatValue() {
+    public void fromFloatWithValidFloatValue() throws SQLException {
         TypedValue typedValue = TypedValue.fromFloat( 3.14f );
 
-        assertEquals( Types.REAL, typedValue.getJdbcType() );
-        assertEquals( 3.14f, typedValue.getValue() );
+        assertEquals( ValueCase.FLOAT, typedValue.getValueCase() );
+        assertEquals( 3.14f, typedValue.asFloat() );
     }
 
 
     @Test
-    public void fromLongWithValidInput() {
+    public void fromLongWithValidInput() throws SQLException {
         TypedValue typedValue = TypedValue.fromLong( 1234567890L );
 
-        assertEquals( Types.BIGINT, typedValue.getJdbcType() );
-        assertEquals( 1234567890L, typedValue.getValue() );
+        assertEquals( ValueCase.LONG, typedValue.getValueCase() );
+        assertEquals( 1234567890L, typedValue.asLong() );
     }
 
 
     @Test
-    public void fromIntWithValidInteger() {
+    public void fromIntWithValidInteger() throws SQLException {
         TypedValue typedValue = TypedValue.fromInteger( 10 );
 
-        assertEquals( Types.INTEGER, typedValue.getJdbcType() );
-        assertEquals( 10, typedValue.getValue() );
+        assertEquals( ValueCase.INTEGER, typedValue.getValueCase() );
+        assertEquals( 10, typedValue.asInt() );
         assertFalse( typedValue.isNull() );
     }
 
 
     @Test
-    public void fromShortWithValidShortValue() {
+    public void fromShortWithValidShortValue() throws SQLException {
         TypedValue typedValue = TypedValue.fromShort( (short) 10 );
 
-        assertEquals( Types.SMALLINT, typedValue.getJdbcType() );
-        assertEquals( (short) 10, typedValue.getValue() );
-        assertFalse( typedValue.isSqlNull() );
+        assertEquals( ValueCase.INTEGER, typedValue.getValueCase() );
+        assertEquals( (short) 10, typedValue.asShort() );
+        assertFalse( typedValue.isNull() );
         assertFalse( typedValue.isNull() );
     }
 
 
     @Test
-    public void fromByteWithValidByteValue() {
+    public void fromByteWithValidByteValue() throws SQLException {
         TypedValue typedValue = TypedValue.fromByte( (byte) 10 );
 
-        assertEquals( Types.TINYINT, typedValue.getJdbcType() );
-        assertEquals( (byte) 10, typedValue.getValue() );
+        assertEquals( ValueCase.INTEGER, typedValue.getValueCase() );
+        assertEquals( (byte) 10, typedValue.asByte() );
     }
 
 
     @Test
-    public void fromBooleanWithFalseValue() {
+    public void fromBooleanWithFalseValue() throws SQLException {
         TypedValue typedValue = TypedValue.fromBoolean( false );
 
-        assertEquals( Types.BOOLEAN, typedValue.getJdbcType() );
-        assertFalse( (boolean) typedValue.getValue() );
+        assertEquals( ValueCase.BOOLEAN, typedValue.getValueCase() );
+        assertFalse( typedValue.asBoolean() );
     }
 
 
     @Test
-    public void fromBooleanWithTrueValue() {
+    public void fromBooleanWithTrueValue() throws SQLException {
         TypedValue typedValue = TypedValue.fromBoolean( true );
 
-        assertEquals( Types.BOOLEAN, typedValue.getJdbcType() );
-        assertTrue( (Boolean) typedValue.getValue() );
+        assertEquals( ValueCase.BOOLEAN, typedValue.getValueCase() );
+        assertTrue( typedValue.asBoolean() );
     }
 
 
     @Test
-    public void fromBooleanWithValidBooleanValue() {
+    public void fromBooleanWithValidBooleanValue() throws SQLException {
         TypedValue typedValue = TypedValue.fromBoolean( true );
 
-        assertEquals( Types.BOOLEAN, typedValue.getJdbcType() );
-        assertEquals( true, typedValue.getValue() );
+        assertEquals( ValueCase.BOOLEAN, typedValue.getValueCase() );
+        assertTrue( typedValue.asBoolean() );
+    }
+
+
+    @Test
+    public void fromPolyIntervalMonths() throws SQLException {
+        PolyInterval interval = new PolyInterval( 23, Unit.MONTHS );
+        TypedValue value = TypedValue.fromInterval( interval );
+        assertFalse( value.isNull() );
+        assertEquals( ValueCase.INTERVAL, value.getValueCase() );
+        assertEquals( interval, value.asInterval() );
+    }
+
+
+    @Test
+    public void fromPolyIntervalMillis() throws SQLException {
+        PolyInterval interval = new PolyInterval( 23, Unit.MILLISECONDS );
+        TypedValue value = TypedValue.fromInterval( interval );
+        assertFalse( value.isNull() );
+        assertEquals( ValueCase.INTERVAL, value.getValueCase() );
+        assertEquals( interval, value.asInterval() );
+    }
+
+
+    @Test
+    public void fromPolyIntervalNull() throws SQLException {
+        TypedValue value = TypedValue.fromInterval( null );
+        assertTrue( value.isNull() );
+        assertEquals( ValueCase.NULL, value.getValueCase() );
+        assertNull( value.asInterval() );
+    }
+
+
+    @Test
+    public void fromPolyDocument() throws SQLException {
+        PolyDocument document = new PolyDocument();
+        document.put( "firstValue", TypedValue.fromBoolean( true ) );
+        document.put( "secondValue", TypedValue.fromDouble( 12.345 ) );
+        document.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, Unit.MONTHS ) ) );
+
+        TypedValue value = TypedValue.fromDocument( document );
+        assertFalse( value.isNull() );
+        assertEquals( ValueCase.DOCUMENT, value.getValueCase() );
+        assertEquals( document, value.asDocument() );
+    }
+
+    @Test
+    public void fromPolyDocumentNull() throws SQLException {
+        TypedValue value = TypedValue.fromDocument( null );
+        assertTrue( value.isNull() );
+        assertEquals( ValueCase.NULL, value.getValueCase() );
+        assertNull( value.asDocument() );
     }
 
 }

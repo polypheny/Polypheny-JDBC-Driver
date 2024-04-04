@@ -57,12 +57,12 @@ import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.TypesRequest;
 import org.polypheny.db.protointerface.proto.UserDefinedType;
 import org.polypheny.db.protointerface.proto.UserDefinedTypesRequest;
-import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
-import org.polypheny.jdbc.serialisation.ProtoValueSerializer;
 import org.polypheny.jdbc.transport.PlainTransport;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.utils.CallbackQueue;
+import org.polypheny.jdbc.utils.ProtoUtils;
 
 public class PrismInterfaceClient {
 
@@ -181,7 +181,7 @@ public class PrismInterfaceClient {
 
     public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
         IndexedParameters parameters = IndexedParameters.newBuilder()
-                .addAllParameters( ProtoValueSerializer.serializeParameterList( values ) )
+                .addAllParameters( ProtoUtils.serializeParameterList( values ) )
                 .build();
         ExecuteIndexedStatementRequest request = ExecuteIndexedStatementRequest.newBuilder()
                 .setStatementId( statementId )
@@ -195,7 +195,7 @@ public class PrismInterfaceClient {
 
     public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws PrismInterfaceServiceException {
         List<IndexedParameters> parameters = parameterBatch.stream()
-                .map( ProtoValueSerializer::serializeParameterList )
+                .map( ProtoUtils::serializeParameterList )
                 .map( p -> IndexedParameters.newBuilder().addAllParameters( p ).build() )
                 .collect( Collectors.toList() );
         ExecuteIndexedStatementBatchRequest request = ExecuteIndexedStatementBatchRequest.newBuilder()

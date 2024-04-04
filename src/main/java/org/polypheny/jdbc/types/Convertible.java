@@ -14,23 +14,35 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc.jdbctypes;
+package org.polypheny.jdbc.types;
 
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Struct;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public interface Convertible {
 
-    boolean isSqlNull();
-
     boolean isNull();
 
+
+    PolyDocument asDocument() throws SQLException;
+
+    PolyInterval asInterval() throws SQLException;
 
     String asString() throws SQLException;
 
@@ -125,6 +137,6 @@ public interface Convertible {
 
     Object asObject( Calendar calendar ) throws SQLException;
 
-    <T> T asObject( Class<T> aClass ) throws SQLFeatureNotSupportedException, PrismInterfaceServiceException;
+    <T> T asObject( Class<T> aClass ) throws SQLException;
 
 }

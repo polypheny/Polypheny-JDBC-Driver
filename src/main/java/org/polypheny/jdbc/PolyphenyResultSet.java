@@ -1,6 +1,5 @@
 package org.polypheny.jdbc;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -27,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Frame.ResultCase;
-import org.polypheny.jdbc.jdbctypes.TypedValue;
+import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
@@ -192,7 +191,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public boolean wasNull() throws SQLException {
         throwIfClosed();
-        return lastRead.isSqlNull();
+        return lastRead.isNull();
     }
 
 
@@ -431,7 +430,7 @@ public class PolyphenyResultSet implements ResultSet {
     public Object getObject( int columnIndex ) throws SQLException {
         throwIfClosed();
         TypedValue typedValue = accessValue( columnIndex );
-        if ( typedValue.isUdtPrototype() ) {
+        if ( typedValue.isUdt() ) {
             return typedValue.asObject( getStatement().getConnection().getTypeMap() );
         }
         return typedValue.asObject( properties.getCalendar() );
@@ -765,11 +764,7 @@ public class PolyphenyResultSet implements ResultSet {
         throwIfClosed();
         throwIfReadOnly();
         throwIfColumnIndexOutOfBounds( columnIndex );
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x, length ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x, length ) );
     }
 
 
@@ -777,11 +772,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateBinaryStream( int columnIndex, InputStream x, int length ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x, length ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x, length ) );
     }
 
 
@@ -789,11 +780,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateCharacterStream( int columnIndex, Reader x, int length ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x, length ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x, length ) );
     }
 
 
@@ -1305,11 +1292,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateNCharacterStream( int columnIndex, Reader x, long length ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromNCharacterStream( x, length ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromNCharacterStream( x, length ) );
     }
 
 
@@ -1323,11 +1306,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateAsciiStream( int columnIndex, InputStream x, long length ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x, length ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x, length ) );
     }
 
 
@@ -1335,11 +1314,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateBinaryStream( int columnIndex, InputStream x, long length ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x, length ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x, length ) );
     }
 
 
@@ -1347,11 +1322,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateCharacterStream( int columnIndex, Reader x, long length ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x, length ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x, length ) );
     }
 
 
@@ -1377,11 +1348,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateBlob( int columnIndex, InputStream x, long length ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBlob( x ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBlob( x ) );
     }
 
 
@@ -1423,11 +1390,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateNCharacterStream( int columnIndex, Reader x ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromNCharacterStream( x ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromNCharacterStream( x ) );
     }
 
 
@@ -1441,11 +1404,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateAsciiStream( int columnIndex, InputStream x ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromAsciiStream( x ) );
     }
 
 
@@ -1453,11 +1412,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateBinaryStream( int columnIndex, InputStream x ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBinaryStream( x ) );
     }
 
 
@@ -1465,11 +1420,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateCharacterStream( int columnIndex, Reader x ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromCharacterStream( x ) );
     }
 
 
@@ -1495,11 +1446,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateBlob( int columnIndex, InputStream x ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        try {
-            getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBlob( x ) );
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Handling of stream failed.", e );
-        }
+        getOrCreateRowUpdate().put( columnIndex, TypedValue.fromBlob( x ) );
     }
 
 

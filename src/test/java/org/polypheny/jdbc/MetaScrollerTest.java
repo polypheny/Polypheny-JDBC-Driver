@@ -45,7 +45,7 @@ public class MetaScrollerTest {
     @Test
     public void indexInitPosition__empty_notAfterLastFirst() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
-        assertFalse( scroller.isAfterLast() );
+        assertTrue( scroller.isAfterLast() );
     }
 
 

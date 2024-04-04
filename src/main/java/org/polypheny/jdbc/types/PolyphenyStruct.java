@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc.jdbctypes;
+package org.polypheny.jdbc.types;
 
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;

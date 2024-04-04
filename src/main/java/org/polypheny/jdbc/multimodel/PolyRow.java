@@ -20,20 +20,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.jdbc.nativetypes.PolyValue;
 import org.polypheny.db.protointerface.proto.Row;
+import org.polypheny.jdbc.types.TypedValue;
 
 public class PolyRow {
 
-    ArrayList<PolyValue> values;
+    ArrayList<TypedValue> values;
 
 
-    public PolyRow( List<PolyValue> value ) {
+    public PolyRow( List<TypedValue> value ) {
         this.values = new ArrayList<>( value );
     }
 
 
-    public PolyRow( PolyValue... value ) {
+    public PolyRow( TypedValue... value ) {
         this( Arrays.asList( value ) );
     }
 
@@ -43,18 +43,18 @@ public class PolyRow {
     }
 
 
-    public PolyValue getValue( int columnIndex ) {
+    public TypedValue getValue( int columnIndex ) {
         return values.get( columnIndex );
     }
 
 
-    public static <E extends PolyValue> PolyRow of( E... values ) {
+    public static <E extends TypedValue> PolyRow of( E... values ) {
         return new PolyRow( values );
     }
 
 
     public static PolyRow fromProto( Row protoRow ) {
-        return new PolyRow( protoRow.getValuesList().stream().map( PolyValue::fromProto ).collect( Collectors.toList() ) );
+        return new PolyRow( protoRow.getValuesList().stream().map( TypedValue::new ).collect( Collectors.toList() ) );
     }
 
 }
