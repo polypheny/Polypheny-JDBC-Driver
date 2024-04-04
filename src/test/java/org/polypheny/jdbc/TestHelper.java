@@ -47,6 +47,13 @@ class TestHelper implements BeforeAllCallback, AfterAllCallback {
                 while ( true ) {
                     String line = in.readLine();
                     if ( line == null ) {
+                        try ( BufferedReader err = new BufferedReader( new InputStreamReader( p.getErrorStream() ) ) ) {
+                            line = err.readLine();
+                            while ( line != null ) {
+                                System.err.println( line );
+                                line = err.readLine();
+                            }
+                        }
                         System.out.println( String.join( "\n", lines ) );
                         throw new RuntimeException( "Unexpected EOF" );
                     }

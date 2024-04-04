@@ -103,6 +103,7 @@ sourceSets {
 
 test {
     useJUnitPlatform()
+    testLogging.showStandardStreams = true
 }
 
 /**
