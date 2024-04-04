@@ -239,11 +239,6 @@ public class TypedValueUtils {
     }
 
 
-    public static List<Integer> getTypes( List<TypedValue> typedValues ) {
-        return typedValues.stream().map( TypedValue::getJdbcType ).collect( Collectors.toList() );
-    }
-
-
     public static int getJdbcTypeFromPolyTypeName( String polyTypeName ) {
         return ProtoToJdbcTypeMap.getJdbcTypeFromProto( ProtoPolyType.valueOf( polyTypeName ) );
     }
@@ -1019,4 +1014,5 @@ public class TypedValueUtils {
         }
         throw new ParseException( "Can't parse String as type " + targetSqlType, 0 );
     }
+
 }

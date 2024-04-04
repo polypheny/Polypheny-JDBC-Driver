@@ -25,7 +25,7 @@ import org.polypheny.jdbc.types.TypedValue;
 
 public class PolyRow {
 
-    List<PolyValue> values;
+    List<TypedValue> values;
 
 
     public PolyRow( List<TypedValue> value ) {
