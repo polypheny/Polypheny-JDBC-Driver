@@ -37,7 +37,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # test against latest update of each major Java version, as well as specific updates of LTS versions:
         java: [ 8, 11, 17, 21 ]
         os: [ macos-latest, ubuntu-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
@@ -48,7 +47,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: ${{ matrix.java }}
+          java-version: |
+            17
+            ${{ matrix.java }}
       - name: Load Polypheny JAR
         uses: actions/download-artifact@v4
         with:
@@ -57,3 +58,4 @@ jobs:
         run: ./gradlew build
         env:
           POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
+          POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_X64 }}/bin/java

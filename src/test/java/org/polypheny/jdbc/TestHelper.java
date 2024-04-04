@@ -36,12 +36,16 @@ class TestHelper implements BeforeAllCallback, AfterAllCallback {
 
     @Override
     public void beforeAll( ExtensionContext context ) {
+        String java = System.getenv( "POLYPHENY_JAVA" );
         String jar = System.getenv( "POLYPHENY_JAR" );
+        if ( java == null ) {
+            java = "java";
+        }
         if ( jar == null ) {
             return;
         }
         try {
-            p = new ProcessBuilder( "java", "-jar", jar, "-resetCatalog", "-resetDocker" ).start();
+            p = new ProcessBuilder( java, "-jar", jar, "-resetCatalog", "-resetDocker" ).start();
             try ( BufferedReader in = new BufferedReader( new InputStreamReader( p.getInputStream() ) ) ) {
                 List<String> lines = new ArrayList<>();
                 while ( true ) {
