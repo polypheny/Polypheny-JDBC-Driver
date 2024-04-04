@@ -59,8 +59,6 @@ public class ProtoValueDeserializer {
                     return TypedValue.fromArray( getArray( value ) );
                 case INTERVAL:
                     return TypedValue.fromPolyValue( getInterval( value.getInterval() ) );
-                case MAP:
-                    return TypedValue.fromPolyValue(PolyValue.fromProto( value ));
                 case DOCUMENT:
                 default:
                     throw new RuntimeException( "Cannot deserialize ProtoValue of case " + value.getValueCase() );

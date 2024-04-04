@@ -39,7 +39,6 @@ import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoInterval;
 import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
-import org.polypheny.db.protointerface.proto.ProtoMap;
 import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.ProtoString;
@@ -453,8 +452,6 @@ public abstract class PolyValue implements Comparable<PolyValue> {
                 return new PolyNull();
             case LIST:
                 return deserializeToPolyList( protoValue.getList() );
-            case MAP:
-                return deserializeToPolyMap( protoValue.getMap() );
             case DOCUMENT:
                 return deserializeToPolyDocument( protoValue.getDocument() );
         }
@@ -464,11 +461,6 @@ public abstract class PolyValue implements Comparable<PolyValue> {
 
     public static PolyDocument deserializeToPolyDocument( ProtoDocument document ) {
         return new PolyDocument( deserializeToPolyMap( document.getEntriesList() ) );
-    }
-
-
-    private static PolyMap<PolyString, PolyValue> deserializeToPolyMap( ProtoMap map ) {
-        return deserializeToPolyMap( map.getEntriesList() );
     }
 
 
@@ -542,8 +534,6 @@ public abstract class PolyValue implements Comparable<PolyValue> {
             case ARRAY:
                 // Placeholder for array handling
                 return toProtoList( this.asList() );
-            case MAP:
-                return toProtoMap( this.asMap() );
             case DOCUMENT:
                 return toProtoDocument( this.asDocument() );
             // Add additional cases here for other types as needed
@@ -693,24 +683,6 @@ public abstract class PolyValue implements Comparable<PolyValue> {
                 .build();
         return ProtoValue.newBuilder()
                 .setList( protoList )
-                .build();
-    }
-
-
-    private ProtoValue toProtoMap( PolyMap polyMap ) {
-        ProtoMap.Builder protoMapBuilder = ProtoMap.newBuilder();
-        List<ProtoEntry> protoEntries = ((Stream<Map.Entry<PolyValue, PolyValue>>) polyMap.entrySet().stream()).map( polyMapEntry -> {
-            ProtoValue protoKey = polyMapEntry.getKey().toProto();
-            ProtoValue protoValue = polyMapEntry.getValue().toProto();
-            return ProtoEntry.newBuilder()
-                    .setKey( protoKey )
-                    .setValue( protoValue )
-                    .build();
-        } ).collect( Collectors.toList() );
-        protoMapBuilder.addAllEntries( protoEntries );
-        ProtoMap protoMap = protoMapBuilder.build();
-        return ProtoValue.newBuilder()
-                .setMap( protoMap )
                 .build();
     }
 
