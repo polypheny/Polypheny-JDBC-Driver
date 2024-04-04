@@ -19,6 +19,8 @@ package org.polypheny.jdbc;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -41,8 +43,16 @@ class TestHelper implements BeforeAllCallback, AfterAllCallback {
         try {
             p = new ProcessBuilder( "java", "-jar", jar, "-resetCatalog", "-resetDocker" ).start();
             try ( BufferedReader in = new BufferedReader( new InputStreamReader( p.getInputStream() ) ) ) {
+                List<String> lines = new ArrayList<>();
                 while ( true ) {
                     String line = in.readLine();
+                    if ( line == null ) {
+                        System.out.println( String.join( "\n", lines ) );
+                        throw new RuntimeException( "Unexpected EOF" );
+                    }
+                    if ( !line.isEmpty() ) {
+                        lines.add( line );
+                    }
                     if ( line.contains( "Polypheny-DB successfully started" ) ) {
                         break;
                     }
