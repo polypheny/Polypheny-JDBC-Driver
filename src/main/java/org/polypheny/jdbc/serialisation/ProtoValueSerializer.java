@@ -35,12 +35,6 @@ public class ProtoValueSerializer {
     private static final long MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 
-    public static Map<String, ProtoValue> serializeParameterMap( Map<String, TypedValue> parameters ) {
-
-        return null;
-    }
-
-
     public static List<ProtoValue> serializeParameterList( List<TypedValue> values ) {
         return values.stream().map( ProtoValueSerializer::saveSerialize ).collect( Collectors.toList() );
     }
