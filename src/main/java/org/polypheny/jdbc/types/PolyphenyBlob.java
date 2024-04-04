@@ -95,6 +95,7 @@ public class PolyphenyBlob implements Blob {
         throwIfFreed();
         throwIfPositionOutOfBounds( pos );
         throwIfPositionOutOfBounds( pos + length - 1 );
+        pos = positionToIndex( pos );
         return Arrays.copyOfRange( value, longToInt( pos ), length );
     }
 

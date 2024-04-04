@@ -30,6 +30,7 @@ public class PolyInterval {
 
     public PolyInterval( long value, Unit unit ) {
         this.value = value;
+        this.unit = unit;
     }
 
 

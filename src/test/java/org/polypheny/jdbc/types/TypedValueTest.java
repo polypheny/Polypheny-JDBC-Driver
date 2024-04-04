@@ -42,12 +42,16 @@ import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.types.PolyInterval.Unit;
 
 public class TypedValueTest {
@@ -670,6 +674,7 @@ public class TypedValueTest {
         assertEquals( document, value.asDocument() );
     }
 
+
     @Test
     public void fromPolyDocumentNull() throws SQLException {
         TypedValue value = TypedValue.fromDocument( null );
@@ -677,5 +682,230 @@ public class TypedValueTest {
         assertEquals( ValueCase.NULL, value.getValueCase() );
         assertNull( value.asDocument() );
     }
+
+
+    @Test
+    void booleanTest() throws SQLException {
+        boolean value = true;
+        TypedValue typedValue1 = TypedValue.fromBoolean( true );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.BOOLEAN, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value, typedValue2.asBoolean() );
+    }
+
+
+    @Test
+    void integerTest() throws SQLException {
+        int value = 1234;
+        TypedValue typedValue1 = TypedValue.fromInteger( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.INTEGER, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value, typedValue2.asInt() );
+    }
+
+
+    @Test
+    void longTest() throws SQLException {
+        long value = 1234L;
+        TypedValue typedValue1 = TypedValue.fromLong( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.LONG, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value, typedValue2.asLong() );
+    }
+
+
+    @Test
+    void binaryTest() throws SQLException {
+        byte[] value = new byte[]{ 1, 2, 3, 4 };
+        TypedValue typedValue1 = TypedValue.fromBytes( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertArrayEquals( value, typedValue2.asBytes() );
+    }
+
+
+    @Test
+    void dateTest() throws SQLException {
+        Date value = new Date( 49852800000L );
+        TypedValue typedValue1 = TypedValue.fromDate( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.DATE, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value, typedValue2.asDate() );
+    }
+
+
+    @Test
+    void doubleTest() throws SQLException {
+        double value = 1.234;
+        TypedValue typedValue1 = TypedValue.fromDouble( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.DOUBLE, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value, typedValue2.asDouble() );
+    }
+
+
+    @Test
+    void floatTest() throws SQLException {
+        float value = 1.234f;
+        TypedValue typedValue1 = TypedValue.fromFloat( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.FLOAT, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value, typedValue2.asFloat() );
+    }
+
+
+    @Test
+    void nullTest() throws SQLException {
+        TypedValue typedValue1 = TypedValue.fromNull();
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.NULL, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertNull( typedValue2.asObject() );
+    }
+
+
+    @Test
+    void stringTest() throws SQLException {
+        String value = "a string";
+        TypedValue typedValue1 = TypedValue.fromString( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.STRING, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value, typedValue2.asString() );
+    }
+
+
+    @Test
+    void timeTest() throws SQLException {
+        Time value = new Time( 234975L );
+        TypedValue typedValue1 = TypedValue.fromTime( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.TIME, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        long millis = typedValue2.asTime().getTime();
+        millis -= DriverProperties.getDEFAULT_TIMEZONE().getOffset( millis );
+        assertEquals( 234975L, millis );
+    }
+
+
+    @Test
+    void timestampTest() throws SQLException {
+        Timestamp value = new Timestamp( 47285720L );
+        TypedValue typedValue1 = TypedValue.fromTimestamp( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.TIMESTAMP, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        long millis = typedValue2.asTimestamp().getTime();
+        millis -= DriverProperties.getDEFAULT_TIMEZONE().getOffset( millis );
+        assertEquals( 47285720L, millis );
+    }
+
+
+    @Test
+    void bigDecimalTest() throws SQLException {
+        BigDecimal value = new BigDecimal( "3457980.32453" );
+        TypedValue typedValue1 = TypedValue.fromBigDecimal( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.BIG_DECIMAL, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value, typedValue2.asBigDecimal() );
+    }
+
+
+    @Test
+    void listTest() throws SQLException {
+        ArrayList<TypedValue> values = new ArrayList<>();
+        values.add( TypedValue.fromInteger( 1 ) );
+        values.add( TypedValue.fromInteger( 2 ) );
+        values.add( TypedValue.fromInteger( 3 ) );
+        Array value = new PolyphenyArray( "INTEGER", values );
+
+        TypedValue typedValue1 = TypedValue.fromArray( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.LIST, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertArrayEquals( (Object[]) value.getArray(), (Object[]) typedValue2.asArray().getArray() );
+    }
+
+
+    @Test
+    void intervalTest() throws SQLException {
+        PolyInterval value = new PolyInterval( 32, Unit.MONTHS );
+        TypedValue typedValue1 = TypedValue.fromInterval( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.INTERVAL, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value.value, typedValue2.asInterval().value );
+        assertEquals( value.unit, typedValue2.asInterval().unit );
+    }
+
+
+    @Test
+    void documentTest() throws SQLException {
+        PolyDocument value = new PolyDocument();
+        value.put( "firstValue", TypedValue.fromBoolean( true ) );
+        value.put( "secondValue", TypedValue.fromDouble( 12.345 ) );
+        value.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, Unit.MONTHS ) ) );
+
+        TypedValue typedValue1 = TypedValue.fromDocument( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.DOCUMENT, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value.get( "firstValue" ).asBoolean(), typedValue2.asDocument().get( "firstValue" ).asBoolean() );
+        assertEquals( value.get( "secondValue" ).asDouble(), typedValue2.asDocument().get( "secondValue" ).asDouble() );
+        assertEquals( value.get( "thirdValue" ).asInterval().value, typedValue2.asDocument().get( "thirdValue" ).asInterval().value );
+        assertEquals( value.get( "thirdValue" ).asInterval().unit, typedValue2.asDocument().get( "thirdValue" ).asInterval().unit );
+    }
+
+
+    @Test
+    void fileTest() throws SQLException {
+        Blob value = new PolyphenyBlob( new byte[]{ 1, 2, 3, 4, 5 } );
+        TypedValue typedValue1 = TypedValue.fromBlob( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.FILE, protoValue.getValueCase() );
+
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertArrayEquals( value.getBytes( 1, 5 ), typedValue2.asBlob().getBytes( 1, 5 ) );
+    }
+
 
 }

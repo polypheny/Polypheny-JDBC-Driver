@@ -73,8 +73,8 @@ import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.types.PolyInterval.Unit;
 import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.types.PolyInterval.Unit;
 import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
@@ -324,8 +324,9 @@ public class TypedValue implements Convertible {
         throw new SQLFeatureNotSupportedException( "Refs are not supported yet." );
     }
 
-    public static TypedValue fromDocument(PolyDocument document) {
-        if (document == null) {
+
+    public static TypedValue fromDocument( PolyDocument document ) {
+        if ( document == null ) {
             return fromNull();
         }
         TypedValue value = new TypedValue();
@@ -334,8 +335,9 @@ public class TypedValue implements Convertible {
         return value;
     }
 
-    public static TypedValue fromInterval(PolyInterval interval) {
-        if (interval == null) {
+
+    public static TypedValue fromInterval( PolyInterval interval ) {
+        if ( interval == null ) {
             return fromNull();
         }
         TypedValue value = new TypedValue();
@@ -1181,10 +1183,10 @@ public class TypedValue implements Convertible {
                     otherValue = new PolyDocument( serialized.getDocument() );
                     break;
                 case FILE:
-                    blobValue = new PolyphenyBlob( serialized.getFile().toByteArray() );
+                    blobValue = new PolyphenyBlob( serialized.getFile().getBinary().toByteArray() );
                     break;
                 default:
-                    throw new RuntimeException( "Cannot deserialize ProtoValue of case " + valueCase);
+                    throw new RuntimeException( "Cannot deserialize ProtoValue of case " + valueCase );
             }
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
@@ -1232,13 +1234,17 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoFile() {
-        ProtoFile protoFile = ProtoFile.newBuilder()
-                .setBinary( ByteString.copyFrom( binaryValue ) )
-                .build();
-        return ProtoValue.newBuilder()
-                .setFile( protoFile )
-                .build();
+    private ProtoValue serializeAsProtoFile() throws SQLException {
+        try {
+            ProtoFile protoFile = ProtoFile.newBuilder()
+                    .setBinary( ByteString.copyFrom( collectByteStream( blobValue.getBinaryStream() ) ) )
+                    .build();
+            return ProtoValue.newBuilder()
+                    .setFile( protoFile )
+                    .build();
+        } catch ( IOException e ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Failed to read bytes from blob." );
+        }
     }
 
 
@@ -1418,7 +1424,8 @@ public class TypedValue implements Convertible {
         if ( interval.getUnitCase() == UnitCase.MILLISECONDS ) {
             return new PolyInterval( interval.getMilliseconds(), Unit.MILLISECONDS );
         } else {
-            return new PolyInterval( interval.getMilliseconds(), Unit.MONTHS );
+            return new PolyInterval( interval.getMonths(), Unit.MONTHS );
         }
     }
+
 }
