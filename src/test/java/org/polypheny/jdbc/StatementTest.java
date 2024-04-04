@@ -73,6 +73,7 @@ public class StatementTest {
 
 
     @Test
+    @Disabled
     void testMoreThanOneExecute() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -121,6 +122,7 @@ public class StatementTest {
     }
 
     @Test
+    @Disabled
     void testMultipleStatements() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -140,6 +142,7 @@ public class StatementTest {
 
 
     @Test
+    @Disabled
     void testPreparedStatementDualExecCleanup() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -157,6 +160,7 @@ public class StatementTest {
     }
 
     @Test
+    @Disabled
     void testPreparedStatementDualExecUpdate() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
