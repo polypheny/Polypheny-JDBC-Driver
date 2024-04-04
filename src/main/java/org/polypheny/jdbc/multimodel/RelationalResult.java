@@ -18,6 +18,7 @@ package org.polypheny.jdbc.multimodel;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
@@ -31,12 +32,12 @@ import org.polypheny.db.protointerface.proto.RelationalFrame;
 public class RelationalResult extends Result implements Iterable<PolyRow> {
 
     private final PolyStatement polyStatement;
-    private final ArrayList<PolyRow> rows;
+    private final List<PolyRow> rows;
     private boolean isFullyFetched;
 
 
     public RelationalResult( Frame frame, PolyStatement polyStatement ) throws PrismInterfaceServiceException {
-        super( ResultType.DOCUMENT );
+        super( ResultType.RELATIONAL );
         this.polyStatement = polyStatement;
         this.isFullyFetched = frame.getIsLast();
         this.rows = new ArrayList<>();
@@ -44,7 +45,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
     }
 
 
-    private void addRows( RelationalFrame relationalFrame ) throws PrismInterfaceServiceException {
+    private void addRows( RelationalFrame relationalFrame ) {
         relationalFrame.getRowsList().forEach( d -> rows.add( PolyRow.fromProto( d ) ) );
     }
 

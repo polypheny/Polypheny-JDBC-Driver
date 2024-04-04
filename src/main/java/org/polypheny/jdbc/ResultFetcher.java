@@ -24,7 +24,7 @@ public class ResultFetcher implements Runnable {
     @Getter
     private boolean isLast;
     @Getter
-    private List<ArrayList<TypedValue>> fetchedValues;
+    private List<List<TypedValue>> fetchedValues;
 
 
     public ResultFetcher( PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, long totalFetched, int fetchTimeout ) {

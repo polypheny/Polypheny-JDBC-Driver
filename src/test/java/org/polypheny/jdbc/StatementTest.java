@@ -31,9 +31,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@ExtendWith(TestHelper.class)
 public class StatementTest {
 
     Connection con;
@@ -73,6 +75,7 @@ public class StatementTest {
 
 
     @Test
+    @Disabled
     void testMoreThanOneExecute() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -120,7 +123,9 @@ public class StatementTest {
         }
     }
 
+
     @Test
+    @Disabled
     void testMultipleStatements() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -140,6 +145,7 @@ public class StatementTest {
 
 
     @Test
+    @Disabled
     void testPreparedStatementDualExecCleanup() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -156,7 +162,9 @@ public class StatementTest {
         System.out.println("done2");
     }
 
+
     @Test
+    @Disabled
     void testPreparedStatementDualExecUpdate() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );

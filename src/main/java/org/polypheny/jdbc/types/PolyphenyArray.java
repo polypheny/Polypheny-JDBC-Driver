@@ -49,8 +49,7 @@ public class PolyphenyArray implements Array {
         this.protoBaseTypeName = protoBaseTypeName;
         List<Object> objects = new ArrayList<>();
         for ( TypedValue v : values ) {
-            Object object = v.asObject();
-            objects.add( object );
+            objects.add( v.asObject() );
         }
         this.elements = objects.toArray( new Object[0] );
     }
@@ -112,12 +111,12 @@ public class PolyphenyArray implements Array {
     @Override
     public ResultSet getResultSet( long index, int count ) throws SQLException {
         int jdbcBaseType = getBaseType();
-        ArrayList<PolyphenyColumnMeta> columnMetas = new ArrayList<>();
+        List<PolyphenyColumnMeta> columnMetas = new ArrayList<>();
         columnMetas.add( PolyphenyColumnMeta.fromSpecification( 0, "INDEX", "ARRAY", Types.INTEGER ) );
         columnMetas.add( PolyphenyColumnMeta.fromSpecification( 1, "VALUE", "ARRAY", jdbcBaseType ) );
-        ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
+        List<List<TypedValue>> rows = new ArrayList<>();
         for ( int i = 1; i < elements.length; i++ ) {
-            ArrayList<TypedValue> currentRow = new ArrayList<>();
+            List<TypedValue> currentRow = new ArrayList<>();
             currentRow.add( TypedValue.fromInteger( i ) );
             currentRow.add( TypedValue.fromObject( elements[i], jdbcBaseType ) );
             rows.add( currentRow );

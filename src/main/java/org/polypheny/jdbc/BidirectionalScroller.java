@@ -3,17 +3,18 @@ package org.polypheny.jdbc;
 import static java.lang.Math.min;
 
 import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
-public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<TypedValue>> {
+public class BidirectionalScroller implements BidirectionalScrollable<List<TypedValue>> {
 
     private static final int INDEX_BEFORE_FIRST = -1;
     private static final int DEFAULT_PREFETCH_COUNT = 20;
-    private ArrayList<ArrayList<TypedValue>> values;
-    private ArrayList<TypedValue> currentRow;
+    private List<List<TypedValue>> values;
+    private List<TypedValue> currentRow;
     private ResultFetcher resultFetcher;
     private PolyphenyResultSetProperties properties;
     private Thread fetcherThread;
@@ -217,7 +218,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
             }
             return true;
         } catch ( InterruptedException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching mor rows from server failed.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more rows from server failed.", e );
         }
     }
 
@@ -253,7 +254,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<ArrayList<
 
 
     @Override
-    public ArrayList<TypedValue> current() {
+    public List<TypedValue> current() {
         return currentRow;
     }
 

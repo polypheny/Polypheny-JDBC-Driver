@@ -1,7 +1,5 @@
 package org.polypheny.jdbc.meta;
 
-import static java.util.stream.Collectors.toCollection;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -28,39 +26,38 @@ import org.polypheny.jdbc.types.TypedValue;
 public class MetaResultSetBuilder {
 
     private static <T> PolyphenyResultSet buildEmptyResultSet( String entityName, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
-        ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas( entityName, metaResultSetParameters );
-        ArrayList<ArrayList<TypedValue>> rows = new ArrayList<>();
+        List<PolyphenyColumnMeta> columnMetas = buildMetas( entityName, metaResultSetParameters );
+        List<List<TypedValue>> rows = new ArrayList<>();
         return new PolyphenyResultSet( columnMetas, rows );
     }
 
 
     private static <T> PolyphenyResultSet buildResultSet( String entityName, List<T> messages, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
-        ArrayList<PolyphenyColumnMeta> columnMetas = buildMetas( entityName, metaResultSetParameters );
-        ArrayList<ArrayList<TypedValue>> rows = buildRows( messages, metaResultSetParameters );
+        List<PolyphenyColumnMeta> columnMetas = buildMetas( entityName, metaResultSetParameters );
+        List<List<TypedValue>> rows = buildRows( messages, metaResultSetParameters );
         return new PolyphenyResultSet( columnMetas, rows );
     }
 
 
-    private static <T> ArrayList<PolyphenyColumnMeta> buildMetas( String entityName, List<MetaResultSetParameter<T>> metaResultSetParameters ) {
+    private static <T> List<PolyphenyColumnMeta> buildMetas( String entityName, List<MetaResultSetParameter<T>> metaResultSetParameters ) {
         AtomicInteger ordinal = new AtomicInteger();
         return metaResultSetParameters.stream()
                 .map( p -> PolyphenyColumnMeta.fromSpecification( ordinal.getAndIncrement(), p.getName(), entityName, p.getJdbcType() ) )
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toList() );
     }
 
 
-    private static <T> ArrayList<ArrayList<TypedValue>> buildRows( List<T> messages, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
-        ArrayList<ArrayList<TypedValue>> arrayLists = new ArrayList<>();
+    private static <T> List<List<TypedValue>> buildRows( List<T> messages, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
+        List<List<TypedValue>> arrayLists = new ArrayList<>();
         for ( T p : messages ) {
-            ArrayList<TypedValue> typedValues = buildRow( p, metaResultSetParameters );
-            arrayLists.add( typedValues );
+            arrayLists.add( buildRow( p, metaResultSetParameters ) );
         }
         return arrayLists;
     }
 
 
-    private static <T> ArrayList<TypedValue> buildRow( T message, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
-        ArrayList<TypedValue> typedValues = new ArrayList<>();
+    private static <T> List<TypedValue> buildRow( T message, List<MetaResultSetParameter<T>> metaResultSetParameters ) throws SQLException {
+        List<TypedValue> typedValues = new ArrayList<>();
         for ( MetaResultSetParameter<T> p : metaResultSetParameters ) {
             TypedValue typedValue = p.retrieveFrom( message );
             typedValues.add( typedValue );
@@ -112,11 +109,11 @@ public class MetaResultSetBuilder {
 
 
     public static ResultSet buildFromPrimaryKeys( List<PrimaryKey> primaryKeys ) throws SQLException {
-        ArrayList<GenericMetaContainer> metaColumns = primaryKeys.stream()
+        List<GenericMetaContainer> metaColumns = primaryKeys.stream()
                 .map( MetaResultSetBuilder::expandPrimaryKey )
                 .flatMap( List::stream )
                 .sorted( MetaResultSetComparators.PRIMARY_KEY_COMPARATOR ) // jdbc standard about primary keys: Rows are ordered by COLUMN_NAME ascending
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toList() );
 
         return buildResultSet(
                 "PRIMARY_KEYS",
@@ -169,11 +166,11 @@ public class MetaResultSetBuilder {
 
 
     private static ResultSet buildFromForeignKeys( List<ForeignKey> foreignKeys, String entityName, Comparator<GenericMetaContainer> comparator ) throws SQLException {
-        ArrayList<GenericMetaContainer> metaColumns = foreignKeys.stream()
+        List<GenericMetaContainer> metaColumns = foreignKeys.stream()
                 .map( MetaResultSetBuilder::expandForeignKey )
                 .flatMap( List::stream )
                 .sorted( comparator )
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toList() );
 
         return buildResultSet(
                 entityName,
@@ -185,7 +182,7 @@ public class MetaResultSetBuilder {
 
     private static List<GenericMetaContainer> expandForeignKey( ForeignKey foreignKey ) {
         // key sequences start with 1 in jdbc
-        AtomicInteger sequenceIndex = new AtomicInteger(1);
+        AtomicInteger sequenceIndex = new AtomicInteger( 1 );
         return foreignKey.getForeignColumnsList().stream().map( c -> new GenericMetaContainer(
                 foreignKey.getReferencedNamespaceName(),
                 foreignKey.getReferencedTableName(),
@@ -212,11 +209,11 @@ public class MetaResultSetBuilder {
 
 
     public static ResultSet buildFromIndexes( List<Index> indexes ) throws SQLException {
-        ArrayList<GenericMetaContainer> metaColumns = indexes.stream()
+        List<GenericMetaContainer> metaColumns = indexes.stream()
                 .map( MetaResultSetBuilder::expandIndex )
                 .flatMap( List::stream )
                 .sorted( MetaResultSetComparators.INDEX_COMPARATOR ) // jdbc standard about indexes: Rows are ordered by NON_UNIQUE, INDEX_NAME, and ORDINAL_POSITION ascending
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toList() );
 
         return buildResultSet(
                 "INDEX_INFO",

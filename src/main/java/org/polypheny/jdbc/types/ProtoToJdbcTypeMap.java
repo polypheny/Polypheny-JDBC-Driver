@@ -1,19 +1,3 @@
-/*
- * Copyright 2019-2024 The Polypheny Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.polypheny.jdbc.types;
 
 import com.google.common.collect.ImmutableMap;
@@ -39,6 +23,7 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoPolyType.TIME_WITH_LOCAL_TIME_ZONE, Types.TIMESTAMP_WITH_TIMEZONE )
                     .put( ProtoPolyType.TIMESTAMP, Types.TIMESTAMP )
                     .put( ProtoPolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, Types.TIMESTAMP_WITH_TIMEZONE )
+                    .put( ProtoPolyType.INTERVAL, Types.OTHER )
                     .put( ProtoPolyType.CHAR, Types.CHAR )
                     .put( ProtoPolyType.VARCHAR, Types.VARCHAR )
                     .put( ProtoPolyType.TEXT, Types.VARCHAR ) // TODO is Types.VARCHAR correct?
@@ -69,19 +54,6 @@ public class ProtoToJdbcTypeMap {
                     .put( ProtoPolyType.ANY, Types.JAVA_OBJECT )
                     .put( ProtoPolyType.USER_DEFINED_TYPE, Types.OTHER )
                     .put( ProtoPolyType.ROW, Types.ROWID )
-                    .put(ProtoPolyType.INTERVAL_SECOND, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_MINUTE_SECOND, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_MINUTE, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_HOUR_SECOND, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_HOUR_MINUTE, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_HOUR, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_DAY_SECOND, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_DAY_MINUTE, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_DAY_HOUR, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_DAY, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_MONTH, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_YEAR_MONTH, Types.OTHER)
-                    .put(ProtoPolyType.INTERVAL_YEAR, Types.OTHER)
                     .build();
 
 

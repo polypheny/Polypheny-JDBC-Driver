@@ -18,6 +18,7 @@ package org.polypheny.jdbc.multimodel;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
@@ -32,7 +33,7 @@ import org.polypheny.db.protointerface.proto.Frame.ResultCase;
 public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
     private final PolyStatement polyStatement;
-    private final ArrayList<PolyDocument> documents;
+    private final List<PolyDocument> documents;
     private boolean isFullyFetched;
 
 

@@ -53,8 +53,6 @@ public class PolyStatement {
                 return new RelationalResult( frame, this );
             case DOCUMENT_FRAME:
                 return new DocumentResult( frame, this );
-            case GRAPH_FRAME:
-                return new GraphResult( frame, this );
         }
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement produced unknown result type" );
     }

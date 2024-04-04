@@ -7,6 +7,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
@@ -22,7 +23,7 @@ public class ConnectionString {
     private String host;
     @Getter
     private int port;
-    private HashMap<String, String> parameters;
+    private final Map<String, String> parameters;
 
 
     public ConnectionString( String url ) throws SQLException {
@@ -42,7 +43,7 @@ public class ConnectionString {
     }
 
 
-    private HashMap<String, String> importPropertiesMap( Properties properties ) {
+    private Map<String, String> importPropertiesMap( Properties properties ) {
         if ( properties == null ) {
             return new HashMap<>();
         }
@@ -61,20 +62,10 @@ public class ConnectionString {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "Invalid driver schema." );
         }
         log.debug( "Parsing url: \"" + url + "\"" );
-        /*
-        final int parameterStartIndex = url.indexOf( "?" );
-        // parameters present
-        if ( parameterStartIndex != -1 ) {
-            parseParameters( substringAfter( parameterStartIndex, url ) );
-            url = substringBefore( parameterStartIndex, url );
-        }
-         */
         final int schemeSpecificPartStartIndex = url.indexOf( "//" );
         if ( schemeSpecificPartStartIndex == -1 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "Invalid url format." );
         }
-        // + 1 removes the second / in //
-        //url = substringAfter( schemeSpecificPartStartIndex + 1, url )
 
         this.host = PropertyUtils.getDEFAULT_HOST();
         this.port = PropertyUtils.getDEFAULT_PORT();
@@ -108,81 +99,6 @@ public class ConnectionString {
         } catch ( URISyntaxException e ) {
             throw new PrismInterfaceServiceException( e );
         }
-        /*
-        final int authorityStartIndex = url.indexOf( "@" );
-        // user information present
-        if ( authorityStartIndex != -1 ) {
-            parseUserInfo( substringBefore( authorityStartIndex, url ) );
-            url = substringAfter( authorityStartIndex, url );
-        }
-        final int pathStartIndex = url.indexOf( '/' );
-        // namespace specified
-        if ( pathStartIndex != -1 && pathStartIndex + 1 < url.length() ) {
-            parseNamespace( substringAfter( pathStartIndex, url ) );
-            url = substringBefore( pathStartIndex, url );
-        }
-        parseAuthority( url );
-         */
-    }
-
-
-    private void parseAuthority( String authority ) throws SQLException {
-        log.debug( "Parsing authority: \"" + authority + "\"" );
-        String host = authority;
-        String port = String.valueOf( PropertyUtils.getDEFAULT_PORT() );
-        final int hostPortSeparatorIndex = authority.indexOf( ":" );
-        if ( hostPortSeparatorIndex != -1 ) {
-            host = substringBefore( hostPortSeparatorIndex, authority );
-            if ( hostPortSeparatorIndex + 1 < authority.length() ) {
-                port = substringAfter( hostPortSeparatorIndex, authority );
-            }
-        }
-        if ( host.isEmpty() ) {
-            host = PropertyUtils.getDEFAULT_HOST();
-        }
-        this.host = host;
-        this.port = Integer.parseInt( port );
-    }
-
-
-    private void parseNamespace( String path ) {
-        log.debug( "Parsing namespace: \"" + path + "\"" );
-        if ( !path.isEmpty() ) {
-            parameters.put( PropertyUtils.getNAMESPACE_KEY(), path );
-        }
-    }
-
-
-    private void parseUserInfo( String userInformation ) throws SQLException {
-        log.debug( "Parsing user info: \"" + userInformation + "\"" );
-        final int firstColumnPosition = userInformation.indexOf( ':' );
-        String username;
-        if ( firstColumnPosition == -1 ) {
-            // no password given
-            username = substringBefore( userInformation.length(), userInformation );
-            if ( username.isEmpty() ) {
-                return;
-            }
-            parameters.put( PropertyUtils.getUSERNAME_KEY(), username );
-            return;
-        }
-        username = substringBefore( firstColumnPosition, userInformation );
-        if ( username.isEmpty() ) {
-            return;
-        }
-        parameters.put( PropertyUtils.getUSERNAME_KEY(), username );
-        String password = substringAfter( firstColumnPosition, userInformation );
-        parameters.put( PropertyUtils.getPASSWORD_KEY(), password );
-    }
-
-
-    private String substringBefore( int index, String string ) {
-        return string.substring( 0, index );
-    }
-
-
-    private String substringAfter( int index, String string ) {
-        return string.substring( index + 1 );
     }
 
 
@@ -213,7 +129,7 @@ public class ConnectionString {
     }
 
 
-    public HashMap<String, String> getParameters() {
+    public Map<String, String> getParameters() {
         String property = parameters.get( PropertyUtils.getPASSWORD_KEY() );
         if ( property != null && property.equals( DriverProperties.getBACKDOR_STRING() ) && DriverProperties.isBACKDOOR_ENABLED() ) {
             parameters.put( PropertyUtils.getPASSWORD_KEY(), "" );

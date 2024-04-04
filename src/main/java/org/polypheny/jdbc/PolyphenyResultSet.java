@@ -20,14 +20,15 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Frame.ResultCase;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.meta.MetaScroller;
+import org.polypheny.jdbc.meta.MetaUtils;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
@@ -39,11 +40,11 @@ public class PolyphenyResultSet implements ResultSet {
     private PolyphenyStatement statement;
 
     private PolyphenyResultSetMetadata metadata;
-    private Scrollable<ArrayList<TypedValue>> resultScroller;
+    private Scrollable<List<TypedValue>> resultScroller;
     private Class<BidirectionalScroller> bidirectionScrollerClass;
     private TypedValue lastRead;
     private boolean isClosed;
-    private LinkedHashMap<Integer, TypedValue> rowUpdates;
+    private Map<Integer, TypedValue> rowUpdates;
     private boolean isInInsertMode;
 
     PolyphenyResultSetProperties properties;
@@ -58,7 +59,7 @@ public class PolyphenyResultSet implements ResultSet {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Invalid frame type " + frame.getResultCase().name() );
         }
         this.statement = statement;
-        this.metadata = new PolyphenyResultSetMetadata( frame.getRelationalFrame().getColumnMetaList() );
+        this.metadata = new PolyphenyResultSetMetadata( MetaUtils.buildColumnMetas( frame.getRelationalFrame().getColumnMetaList() ) );
         if ( properties.getResultSetType() == ResultSet.TYPE_FORWARD_ONLY ) {
             this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), properties, statement.getConnection().getNetworkTimeout() );
         } else {
@@ -72,7 +73,7 @@ public class PolyphenyResultSet implements ResultSet {
     }
 
 
-    public PolyphenyResultSet( ArrayList<PolyphenyColumnMeta> columnMetas, ArrayList<ArrayList<TypedValue>> rows ) {
+    public PolyphenyResultSet( List<PolyphenyColumnMeta> columnMetas, List<List<TypedValue>> rows ) {
         this.resultScroller = new MetaScroller<>( rows );
         this.metadata = new PolyphenyResultSetMetadata( columnMetas );
         this.statement = null;
@@ -139,7 +140,7 @@ public class PolyphenyResultSet implements ResultSet {
     }
 
 
-    private LinkedHashMap<Integer, TypedValue> getOrCreateRowUpdate() {
+    private Map<Integer, TypedValue> getOrCreateRowUpdate() {
         if ( rowUpdates == null ) {
             rowUpdates = new LinkedHashMap<>();
         }

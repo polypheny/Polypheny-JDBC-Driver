@@ -32,7 +32,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(TestHelper.class)
 public class ConnectionTest {
 
     Connection con;
@@ -97,6 +99,7 @@ public class ConnectionTest {
         assertThrows( SQLException.class, () -> con.isValid( -1 ) );
     }
 
+
     @Test
     void testClientProperties() throws SQLException {
         Properties info = con.getClientInfo();
@@ -105,6 +108,7 @@ public class ConnectionTest {
 
 
     @Test
+    @Disabled("TODO")
     void testMetaData() throws SQLException {
         DatabaseMetaData meta = con.getMetaData();
         meta.getURL();

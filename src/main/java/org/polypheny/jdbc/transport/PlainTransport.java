@@ -19,6 +19,7 @@ package org.polypheny.jdbc.transport;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
@@ -33,7 +34,7 @@ public class PlainTransport implements Transport {
 
     public PlainTransport( String host, int port ) throws IOException {
         con = SocketChannel.open( new InetSocketAddress( host, port ) );
-        con.socket().setTcpNoDelay( true );
+        con.setOption( StandardSocketOptions.TCP_NODELAY, true );
     }
 
 
