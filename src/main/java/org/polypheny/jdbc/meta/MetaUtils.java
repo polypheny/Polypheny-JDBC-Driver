@@ -1,9 +1,9 @@
 package org.polypheny.jdbc.meta;
 
-import org.polypheny.db.protointerface.proto.*;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.protointerface.proto.ColumnMeta;
+import org.polypheny.db.protointerface.proto.ParameterMeta;
 
 public class MetaUtils {
 
