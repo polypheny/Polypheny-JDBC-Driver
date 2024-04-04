@@ -37,7 +37,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
 
 
     public RelationalResult( Frame frame, PolyStatement polyStatement ) throws PrismInterfaceServiceException {
-        super( ResultType.DOCUMENT );
+        super( ResultType.RELATIONAL );
         this.polyStatement = polyStatement;
         this.isFullyFetched = frame.getIsLast();
         this.rows = new ArrayList<>();

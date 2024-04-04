@@ -20,20 +20,24 @@ import org.polypheny.jdbc.nativetypes.document.PolyDocument;
 public class QueryTest {
 
     private static final String MQL_LANGUAGE_NAME = "mongo";
-    private static final String TEST_DATA = "db.test.insertOne({name: \"John Doe\", age: 20, subjects: [\"Math\", \"Physics\", \"Chemistry\"], address: {street: \"123 Main St\", city: \"Anytown\", state: \"CA\", postalCode: \"12345\"}, graduationYear: 2023});";
     private static final String TEST_QUERY = "db.emps.find({});";
 
 
-    @Test
-    public void thisOneWorks() throws ClassNotFoundException, SQLException {
+    private Connection getConnection() throws ClassNotFoundException, SQLException {
         final String DB_URL = "jdbc:polypheny://localhost:20590";
         final String USER = "pa";
         final String PASS = "";
 
         Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
 
+        return DriverManager.getConnection( DB_URL, USER, PASS );
+    }
+
+
+    @Test
+    public void thisOneWorks() throws ClassNotFoundException, SQLException {
         try (
-                Connection connection = DriverManager.getConnection( DB_URL, USER, PASS );
+                Connection connection = getConnection();
                 Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery( "SELECT * FROM emps" )
         ) {
@@ -45,15 +49,23 @@ public class QueryTest {
 
 
     @Test
+    public void simpleRelationalTest() throws ClassNotFoundException {
+        try ( Connection connection = getConnection() ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
+                fail( "Driver must support unwrapping to PolyphenyConnection" );
+            }
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
+            Result result = polyStatement.execute( "public", "sql", "SELECT* FROM emps" );
+            assertEquals( ResultType.RELATIONAL, result.getResultType() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @Test
     public void simpleMqlTest() throws ClassNotFoundException {
-
-        final String DB_URL = "jdbc:polypheny://localhost:20590";
-        final String USER = "pa";
-        final String PASS = "";
-
-        Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
-
-        try ( Connection connection = DriverManager.getConnection( DB_URL, USER, PASS ) ) {
+        try ( Connection connection = getConnection() ) {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
@@ -68,13 +80,7 @@ public class QueryTest {
 
     @Test
     public void mqlDataRetrievalTest() throws ClassNotFoundException {
-        final String DB_URL = "jdbc:polypheny://localhost:20590";
-        final String USER = "pa";
-        final String PASS = "";
-
-        Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
-
-        try ( Connection connection = DriverManager.getConnection( DB_URL, USER, PASS ) ) {
+        try ( Connection connection = getConnection() ) {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
