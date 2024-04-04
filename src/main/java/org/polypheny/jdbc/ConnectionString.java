@@ -7,6 +7,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
@@ -22,7 +23,7 @@ public class ConnectionString {
     private String host;
     @Getter
     private int port;
-    private HashMap<String, String> parameters;
+    private Map<String, String> parameters;
 
 
     public ConnectionString( String url ) throws SQLException {
@@ -213,7 +214,7 @@ public class ConnectionString {
     }
 
 
-    public HashMap<String, String> getParameters() {
+    public Map<String, String> getParameters() {
         String property = parameters.get( PropertyUtils.getPASSWORD_KEY() );
         if ( property != null && property.equals( DriverProperties.getBACKDOR_STRING() ) && DriverProperties.isBACKDOOR_ENABLED() ) {
             parameters.put( PropertyUtils.getPASSWORD_KEY(), "" );

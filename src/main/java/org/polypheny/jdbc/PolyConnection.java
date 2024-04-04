@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executor;
@@ -44,7 +45,7 @@ public class PolyConnection implements Connection {
 
     private boolean hasRunningTransaction;
 
-    private HashSet<Statement> openStatements;
+    private Set<Statement> openStatements;
 
     private Map<String, Class<?>> typeMap;
 

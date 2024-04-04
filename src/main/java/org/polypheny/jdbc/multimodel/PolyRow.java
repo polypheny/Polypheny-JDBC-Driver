@@ -25,7 +25,7 @@ import org.polypheny.db.protointerface.proto.Row;
 
 public class PolyRow {
 
-    ArrayList<PolyValue> values;
+    List<PolyValue> values;
 
 
     public PolyRow( List<PolyValue> value ) {

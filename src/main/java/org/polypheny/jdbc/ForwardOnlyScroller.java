@@ -2,21 +2,21 @@ package org.polypheny.jdbc;
 
 import static java.lang.Math.min;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
-public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
+public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
 
     private static final int DEFAULT_PREFETCH_COUNT = 20;
     private static final int INDEX_BEFORE_FIRST = -1;
 
-    private LinkedList<ArrayList<TypedValue>> values;
-    private ArrayList<TypedValue> currentRow;
+    private LinkedList<List<TypedValue>> values;
+    private List<TypedValue> currentRow;
     private ResultFetcher resultFetcher;
     private Thread fetcherThread;
     private PolyphenyResultSetProperties properties;
@@ -108,7 +108,7 @@ public class ForwardOnlyScroller implements Scrollable<ArrayList<TypedValue>> {
 
 
     @Override
-    public ArrayList<TypedValue> current() {
+    public List<TypedValue> current() {
         if ( currentRow == null ) {
             throw new NoSuchElementException( "Illegal cursor position." );
         }

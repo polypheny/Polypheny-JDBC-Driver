@@ -2,28 +2,20 @@ package org.polypheny.jdbc.meta;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.PrismInterfaceErrors;
-import org.polypheny.db.protointerface.proto.ColumnMeta;
 
 public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
-    private ArrayList<PolyphenyColumnMeta> columnMetas;
+    private List<PolyphenyColumnMeta> columnMetas;
     private Map<String, Integer> columnIndexes;
 
 
-    public PolyphenyResultSetMetadata( List<ColumnMeta> columnMetas ) {
-        this.columnMetas = MetaUtils.buildColumnMetas( columnMetas );
-        this.columnIndexes = this.columnMetas.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, c -> c.getOrdinal() + 1, ( m, n ) -> n ) );
-    }
-
-
-    public PolyphenyResultSetMetadata( ArrayList<PolyphenyColumnMeta> columnMetas ) {
+    public PolyphenyResultSetMetadata( List<PolyphenyColumnMeta> columnMetas ) {
         this.columnMetas = columnMetas;
         this.columnIndexes = this.columnMetas.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, c -> c.getOrdinal() + 1, ( m, n ) -> n ) );
 

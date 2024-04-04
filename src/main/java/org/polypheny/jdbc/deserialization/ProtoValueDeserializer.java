@@ -19,7 +19,6 @@ import org.polypheny.jdbc.jdbctypes.PolyphenyArray;
 import org.polypheny.jdbc.jdbctypes.TypedValue;
 import org.polypheny.jdbc.nativetypes.PolyInterval;
 import org.polypheny.jdbc.nativetypes.PolyInterval.Unit;
-import org.polypheny.jdbc.nativetypes.PolyValue;
 
 public class ProtoValueDeserializer {
 

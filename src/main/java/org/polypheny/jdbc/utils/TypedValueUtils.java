@@ -1,7 +1,5 @@
 package org.polypheny.jdbc.utils;
 
-import static java.util.stream.Collectors.toCollection;
-
 import com.google.common.collect.ImmutableSet;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -28,7 +26,6 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
@@ -227,22 +224,22 @@ public class TypedValueUtils {
     }
 
 
-    public static List<ArrayList<TypedValue>> buildRows( List<Row> rows ) {
+    public static List<List<TypedValue>> buildRows( List<Row> rows ) {
         return rows.stream()
                 .map( TypedValueUtils::buildRow )
                 .collect( Collectors.toList() );
     }
 
 
-    public static ArrayList<TypedValue> buildRow( Row row ) {
+    public static List<TypedValue> buildRow( Row row ) {
         return row.getValuesList().stream()
                 .map( ProtoValueDeserializer::deserializeToTypedValue )
-                .collect( toCollection( ArrayList::new ) );
+                .collect( Collectors.toList() );
     }
 
 
-    public static ArrayList<Integer> getTypes( List<TypedValue> typedValues ) {
-        return typedValues.stream().map( TypedValue::getJdbcType ).collect( toCollection( ArrayList::new ) );
+    public static List<Integer> getTypes( List<TypedValue> typedValues ) {
+        return typedValues.stream().map( TypedValue::getJdbcType ).collect( Collectors.toList() );
     }
 
 

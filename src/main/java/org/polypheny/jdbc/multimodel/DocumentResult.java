@@ -18,6 +18,7 @@ package org.polypheny.jdbc.multimodel;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
@@ -32,11 +33,11 @@ import org.polypheny.db.protointerface.proto.Frame.ResultCase;
 public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
     private final PolyStatement polyStatement;
-    private final ArrayList<PolyDocument> documents;
+    private final List<PolyDocument> documents;
     private boolean isFullyFetched;
 
 
-    public DocumentResult( Frame frame, PolyStatement polyStatement ) throws PrismInterfaceServiceException {
+    public DocumentResult( Frame frame, PolyStatement polyStatement ) {
         super( ResultType.DOCUMENT );
         this.polyStatement = polyStatement;
         this.isFullyFetched = frame.getIsLast();
@@ -45,7 +46,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     }
 
 
-    private void addDocuments( DocumentFrame documentFrame ) throws PrismInterfaceServiceException {
+    private void addDocuments( DocumentFrame documentFrame ) {
         documentFrame.getDocumentsList().forEach( d -> documents.add( PolyDocument.fromProto( d ) ) );
     }
 

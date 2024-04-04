@@ -1,6 +1,7 @@
 package org.polypheny.jdbc.utils;
 
 import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -15,7 +16,7 @@ public class CallbackQueue<T> {
     private final Condition hasNext = queueLock.newCondition();
     private final Condition isCompleted = queueLock.newCondition();
     private boolean bIsCompleted = false;
-    private final LinkedList<T> messageQueue = new LinkedList<>();
+    private final Queue<T> messageQueue = new LinkedList<>();
     private final Function<Response, T> extractResponse;
     private PrismInterfaceServiceException propagatedException;
 

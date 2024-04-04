@@ -68,7 +68,7 @@ public class TypedValue implements Convertible {
     private Object value;
     @Getter
     private String internalType;
-    private static final HashMap<Integer, TypedValue> NULL_MAP = new HashMap<>();
+    private static final Map<Integer, TypedValue> NULL_MAP = new HashMap<>();
 
 
     private TypedValue( int jdbcType, Object value ) {

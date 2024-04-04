@@ -36,16 +36,16 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 
 public class ArrayResultSet<T> implements ResultSet {
 
-    ArrayList<ArrayList<T>> data;
-    ArrayList<T> current;
+    List<List<T>> data;
+    List<T> current;
     T lastRead;
     PolyphenyResultSetMetadata metadata;
 
@@ -53,7 +53,7 @@ public class ArrayResultSet<T> implements ResultSet {
     boolean isClosed = false;
 
 
-    public ArrayResultSet( ArrayList<ArrayList<T>> data, PolyphenyResultSetMetadata metadata ) {
+    public ArrayResultSet( List<List<T>> data, PolyphenyResultSetMetadata metadata ) {
         this.data = data;
         this.metadata = metadata;
         this.current = null;
