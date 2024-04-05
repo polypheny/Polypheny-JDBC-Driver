@@ -69,6 +69,7 @@ import org.polypheny.db.protointerface.proto.ProceduresRequest;
 import org.polypheny.db.protointerface.proto.ProceduresResponse;
 import org.polypheny.db.protointerface.proto.Request;
 import org.polypheny.db.protointerface.proto.Response;
+import org.polypheny.db.protointerface.proto.Response.TypeCase;
 import org.polypheny.db.protointerface.proto.RollbackRequest;
 import org.polypheny.db.protointerface.proto.RollbackResponse;
 import org.polypheny.db.protointerface.proto.SqlKeywordsRequest;
@@ -102,7 +103,7 @@ public class RpcService {
 
     RpcService( Transport con ) {
         this.con = con;
-        this.service = new Thread( this::readResponses );
+        this.service = new Thread( this::readResponses, "PrismInterfaceResponseHandler" );
         this.service.start();
     }
 
@@ -168,6 +169,9 @@ public class RpcService {
                     callbacks.remove( resp.getId() );
                 }
                 c.complete( resp );
+                if ( resp.getTypeCase() == TypeCase.DISCONNECT_RESPONSE ) {
+                    throw new EOFException( "Connection closed: Disconnect by client" );
+                }
             } catch ( EOFException | ClosedChannelException e ) {
                 this.closed = true;
                 callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
