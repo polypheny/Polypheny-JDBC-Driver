@@ -96,6 +96,7 @@ public class RpcService {
     private final Transport con;
     private final Thread service;
     private boolean closed = false;
+    private boolean disconnectSent = false;
     private IOException error = null;
     private final Map<Long, CompletableFuture<Response>> callbacks = new ConcurrentHashMap<>();
     private final Map<Long, CallbackQueue<?>> callbackQueues = new ConcurrentHashMap<>();
@@ -180,6 +181,10 @@ public class RpcService {
                 this.closed = true;
                 callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
                 callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
+                /* For Windows */
+                if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) && disconnectSent ) {
+                    return;
+                }
                 // This will cause the exception to be thrown when the next call is made
                 // TODO: Is this good enough, or should the program be alerted sooner?
                 this.error = e;
@@ -212,6 +217,9 @@ public class RpcService {
         try {
             CompletableFuture<Response> f = new CompletableFuture<>();
             callbacks.put( req.getId(), f );
+            if ( req.getTypeCase() == Request.TypeCase.DISCONNECT_REQUEST ) {
+                disconnectSent = true;
+            }
             sendMessage( req.build() );
             Response resp = waitForCompletion( f, timeout );
             if ( resp.hasErrorResponse() ) {
