@@ -63,7 +63,6 @@ import org.polypheny.db.protointerface.proto.ProtoFile;
 import org.polypheny.db.protointerface.proto.ProtoFloat;
 import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoInterval;
-import org.polypheny.db.protointerface.proto.ProtoInterval.UnitCase;
 import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
 import org.polypheny.db.protointerface.proto.ProtoNull;
@@ -74,7 +73,6 @@ import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
-import org.polypheny.jdbc.types.PolyInterval.Unit;
 import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
@@ -1257,17 +1255,12 @@ public class TypedValue implements Convertible {
 
     private ProtoValue serializeAsInterval() {
         PolyInterval interval = (PolyInterval) otherValue;
-        ProtoInterval.Builder protoInterval = ProtoInterval.newBuilder();
-        switch ( interval.unit ) {
-            case MILLISECONDS:
-                protoInterval.setMilliseconds( interval.value );
-                break;
-            case MONTHS:
-                protoInterval.setMonths( interval.value );
-                break;
-        }
+        ProtoInterval protoInterval = ProtoInterval.newBuilder()
+                .setMonths( interval.getMonths() )
+                .setMilliseconds( interval.getMilliseconds() )
+                .build();
         return ProtoValue.newBuilder()
-                .setInterval( protoInterval.build() )
+                .setInterval( protoInterval )
                 .build();
     }
 
@@ -1421,11 +1414,7 @@ public class TypedValue implements Convertible {
 
 
     private static PolyInterval getInterval( ProtoInterval interval ) {
-        if ( interval.getUnitCase() == UnitCase.MILLISECONDS ) {
-            return new PolyInterval( interval.getMilliseconds(), Unit.MILLISECONDS );
-        } else {
-            return new PolyInterval( interval.getMonths(), Unit.MONTHS );
-        }
+        return new PolyInterval( interval.getMonths(), interval.getMilliseconds() );
     }
 
 }

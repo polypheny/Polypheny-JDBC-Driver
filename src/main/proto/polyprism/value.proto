@@ -35,18 +35,16 @@ enum ProtoPolyType {
   DATE = 10;
   // Time value without timezone in milliseconds since midnight.
   TIME = 11;
-  // Time with local timezone. Same as time but including a time zone enum value. Not supported yet!
-  TIME_WITH_LOCAL_TIME_ZONE = 12;
   // Timestamp without timezone. Specified as milliseconds since epoch.
   TIMESTAMP = 13;
-  // Timestamp with local timezone. Same as timestamp but including a time zon enum value. Not supported yet!
-  TIMESTAMP_WITH_LOCAL_TIME_ZONE = 14;
-  // Interval in seconds.
-  INTERVAL = 59;
+  // Interval
+  INTERVAL = 15;
   // Fixed length character string.
   CHAR = 28;
   // Variable length character string.
   VARCHAR = 29;
+  // Text data type.
+  TEXT = 58;
   // Binary data as byte string.
   BINARY = 30;
   // Variable length binary data as byte string.
@@ -103,8 +101,6 @@ enum ProtoPolyType {
   USER_DEFINED_TYPE = 56;
   // Row identifier type.
   ROW_ID = 57;
-  // Text data type.
-  TEXT = 58;
 }
 
 
@@ -181,7 +177,7 @@ The value is reconstructed by calculating unscaled_value * 10 ^ -scale.
 */
 message ProtoBigDecimal {
   // The scale of the BigDecimal.
-  uint32 scale = 1;
+  int32 scale = 1;
   // The precision of the BigDecimal.
   uint32 precision = 2;
   // The unscaled value of the BigDecimal.
@@ -229,16 +225,11 @@ message ProtoTimestamp {
 }
 
 /*
-Represents an interval value. Intervals ar specified either in months or milliseconds. The applicable unit is determined
-by the field set in the message. Only one of the fields is set.
+Represents an interval value.
 */
 message ProtoInterval {
-  oneof unit {
-    // Contains the duration of the interval in milliseconds if milliseconds where chosen as the unit of time for that interval.
-    int64 milliseconds = 1;
-    // Contains the duration of the interval in months if months where chosen as the unit of time for that interval.
-    int64 months = 2;
-  }
+  int64 milliseconds = 1;
+  int64 months = 2;
 }
 
 /*
@@ -272,7 +263,7 @@ message ProtoList {
 }
 
 /*
-Defines a key-value pair using ProtoValue for both key and value.
+Defines a key-value pair using ProtoValues for both key and value.
 */
 message ProtoEntry {
   // The key of the entry.
