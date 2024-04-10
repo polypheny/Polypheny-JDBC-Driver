@@ -11,7 +11,6 @@ import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.db.protointerface.proto.ConnectionResponse;
 
 public class PolyphenyDriver implements java.sql.Driver {
 
@@ -40,10 +39,7 @@ public class PolyphenyDriver implements java.sql.Driver {
         PrismInterfaceClient prismInterfaceClient = new PrismInterfaceClient(  connectionString.getHost(), connectionString.getPort(), connectionString.getParameters() );
         PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, prismInterfaceClient );
         PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata( prismInterfaceClient, connectionString );
-        ConnectionResponse connectionReply = prismInterfaceClient.register( connectionProperties, connectionProperties.getNetworkTimeout() );
-        if ( connectionReply.hasHeartbeatInterval() ) {
-            return new PolyConnection( connectionProperties, databaseMetadata, connectionReply.getHeartbeatInterval() );
-        }
+        prismInterfaceClient.register( connectionProperties, connectionProperties.getNetworkTimeout() );
         return new PolyConnection( connectionProperties, databaseMetadata );
     }
 

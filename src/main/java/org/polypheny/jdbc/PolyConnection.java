@@ -22,8 +22,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.Executor;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.jdbc.types.PolyphenyArray;
@@ -87,30 +85,8 @@ public class PolyConnection implements Connection {
     }
 
 
-    public PolyConnection(
-            PolyphenyConnectionProperties connectionProperties,
-            PolyphenyDatabaseMetadata databaseMetaData,
-            long heartbeatInterval ) {
-
-        this( connectionProperties, databaseMetaData );
-        Timer heartbeatTimer = new Timer();
-        heartbeatTimer.schedule( createNewHeartbeatTask(), 0, heartbeatInterval );
-    }
-
-
     public boolean isStrict() {
         return properties.isStrict();
-    }
-
-
-    private TimerTask createNewHeartbeatTask() {
-        Runnable runnable = () -> getProtoInterfaceClient().checkConnection( properties.getNetworkTimeout() );
-        return new TimerTask() {
-            @Override
-            public void run() {
-                runnable.run();
-            }
-        };
     }
 
 
@@ -486,7 +462,7 @@ public class PolyConnection implements Connection {
         try {
             getProtoInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
         } catch ( PrismInterfaceServiceException e ) {
-            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<String, ClientInfoStatus>(), e );
+            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
         }
     }
 
