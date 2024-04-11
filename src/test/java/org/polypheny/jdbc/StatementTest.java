@@ -124,18 +124,16 @@ public class StatementTest {
 
 
     @Test
-    //@Disabled("Whats the expected behaviour here?")
+        //@Disabled("Whats the expected behaviour here?")
     void testMultipleStatements() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
             p.setInt( 2, 4 );
             p.execute();
-
             try ( Statement s = con.createStatement() ) {
                 s.execute( "INSERT INTO t(id, a) VALUES (5, 5)" );
                 s.execute( "INSERT INTO t(id, a) VALUES (6, 6)" );
             }
-
             p.setInt( 1, 7 );
             p.setInt( 2, 7 );
             p.execute();
@@ -145,7 +143,23 @@ public class StatementTest {
 
 
     @Test
-    @Disabled("Check in avatica. Does this work there?")
+    void testMultipleStatements2() throws SQLException {
+        try ( Statement s1 = con.createStatement() ) {
+            s1.execute( "INSERT INTO t(id, a) VALUES (1, 4)" );
+            s1.execute( "INSERT INTO t(id, a) VALUES (2, 4)" );
+            try ( Statement s2 = con.createStatement() ) {
+                s2.execute( "INSERT INTO t(id, a) VALUES (5, 5)" );
+                s2.execute( "INSERT INTO t(id, a) VALUES (6, 6)" );
+            }
+            s1.execute( "INSERT INTO t(id, a) VALUES (1, 7)" );
+            s1.execute( "INSERT INTO t(id, a) VALUES (2, 7)" );
+            con.close();
+        }
+    }
+
+
+    @Test
+    //@Disabled("Check in avatica. Does this work there?")
     void testPreparedStatementDualExecCleanup() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -154,6 +168,24 @@ public class StatementTest {
             p.setInt( 1, 5 );
             p.setInt( 2, 5 );
             p.execute();
+        }
+        System.out.println( "done" );
+        try ( Statement statement = con.createStatement() ) {
+            statement.execute( "DROP TABLE IF EXISTS t" );
+        }
+        System.out.println( "done2" );
+    }
+
+    @Test
+    void testPreparedStatementBatchExecCleanup() throws SQLException {
+        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
+            p.setInt( 1, 4 );
+            p.setInt( 2, 4 );
+            p.addBatch();
+            p.setInt( 1, 5 );
+            p.setInt( 2, 5 );
+            p.addBatch();
+            p.executeBatch();
         }
         System.out.println( "done" );
         try ( Statement statement = con.createStatement() ) {
@@ -174,7 +206,6 @@ public class StatementTest {
             p.setInt( 2, 5 );
             p.execute();
         }
-        System.out.println( "done" );
         try ( Statement statement = con.createStatement() ) {
             statement.execute( "SELECT * FROM t" );
         }
@@ -233,4 +264,5 @@ public class StatementTest {
             assertArrayEquals( new long[]{ 2 }, res );
         }
     }
+
 }
