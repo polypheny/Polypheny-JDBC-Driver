@@ -4,13 +4,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
 import org.polypheny.db.protointerface.proto.Column;
-import org.polypheny.db.protointerface.proto.Database;
 import org.polypheny.db.protointerface.proto.ForeignKey;
 import org.polypheny.db.protointerface.proto.Index;
 import org.polypheny.db.protointerface.proto.Namespace;
@@ -136,12 +136,11 @@ public class MetaResultSetBuilder {
     }
 
 
-    public static ResultSet buildFromDatabases( List<Database> databases ) throws SQLException {
+    public static ResultSet buildFromDatabases( String defaultNamespace ) throws SQLException {
         // jdbc standard about catalogs: Rows are ordered by TABLE_CAT ascending
-        databases = databases.stream().sorted( MetaResultSetComparators.DATABASE_COMPARATOR ).collect( Collectors.toList() );
         return buildResultSet(
                 "CATALOGS",
-                databases,
+                Collections.singletonList( defaultNamespace ),
                 MetaResultSetSignatures.CATALOG_SIGNATURE
         );
     }

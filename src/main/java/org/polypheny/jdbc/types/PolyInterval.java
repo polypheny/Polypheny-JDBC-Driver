@@ -16,27 +16,40 @@
 
 package org.polypheny.jdbc.types;
 
+import lombok.Getter;
+
 public class PolyInterval {
 
-    public long value;
-    public Unit unit;
+    @Getter
+    private final long months;
+    @Getter
+    private final long milliseconds;
 
 
-    public enum Unit {
-        MILLISECONDS,
-        MONTHS,
+    public PolyInterval( long months, long milliseconds ) {
+        this.months = months;
+        this.milliseconds = milliseconds;
     }
 
 
-    public PolyInterval( long value, Unit unit ) {
-        this.value = value;
-        this.unit = unit;
+    private String plural( long count, String word ) {
+        return count + " " + (count != 1 ? word + "s" : word);
     }
 
 
     @Override
     public String toString() {
-        return value + " " + unit.toString().toLowerCase();
+        return plural( months, "month" ) + plural( milliseconds, "milliseconds" );
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( o instanceof PolyInterval ) {
+            PolyInterval i = (PolyInterval) o;
+            return months == i.getMonths() && milliseconds == i.getMilliseconds();
+        }
+        return false;
     }
 
 }

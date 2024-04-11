@@ -21,6 +21,7 @@ This message has no fields. It merely serves as an acknowledgement.
 message CloseResultResponse {
 }
 
+
 /*
 Represents the response after executing a statement.
 This message contains the identifier of the executed statement and optionally, the result of the execution.

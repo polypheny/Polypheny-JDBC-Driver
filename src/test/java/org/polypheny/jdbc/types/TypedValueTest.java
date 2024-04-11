@@ -52,7 +52,6 @@ import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
-import org.polypheny.jdbc.types.PolyInterval.Unit;
 
 public class TypedValueTest {
 
@@ -634,7 +633,7 @@ public class TypedValueTest {
 
     @Test
     public void fromPolyIntervalMonths() throws SQLException {
-        PolyInterval interval = new PolyInterval( 23, Unit.MONTHS );
+        PolyInterval interval = new PolyInterval( 23, 0 );
         TypedValue value = TypedValue.fromInterval( interval );
         assertFalse( value.isNull() );
         assertEquals( ValueCase.INTERVAL, value.getValueCase() );
@@ -644,7 +643,7 @@ public class TypedValueTest {
 
     @Test
     public void fromPolyIntervalMillis() throws SQLException {
-        PolyInterval interval = new PolyInterval( 23, Unit.MILLISECONDS );
+        PolyInterval interval = new PolyInterval( 0, 23 );
         TypedValue value = TypedValue.fromInterval( interval );
         assertFalse( value.isNull() );
         assertEquals( ValueCase.INTERVAL, value.getValueCase() );
@@ -666,7 +665,7 @@ public class TypedValueTest {
         PolyDocument document = new PolyDocument();
         document.put( "firstValue", TypedValue.fromBoolean( true ) );
         document.put( "secondValue", TypedValue.fromDouble( 12.345 ) );
-        document.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, Unit.MONTHS ) ) );
+        document.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, 0 ) ) );
 
         TypedValue value = TypedValue.fromDocument( document );
         assertFalse( value.isNull() );
@@ -863,15 +862,14 @@ public class TypedValueTest {
 
     @Test
     void intervalTest() throws SQLException {
-        PolyInterval value = new PolyInterval( 32, Unit.MONTHS );
+        PolyInterval value = new PolyInterval( 32, 0 );
         TypedValue typedValue1 = TypedValue.fromInterval( value );
         ProtoValue protoValue = typedValue1.serialize();
 
         assertEquals( ValueCase.INTERVAL, protoValue.getValueCase() );
 
         TypedValue typedValue2 = new TypedValue( protoValue );
-        assertEquals( value.value, typedValue2.asInterval().value );
-        assertEquals( value.unit, typedValue2.asInterval().unit );
+        assertEquals( value, typedValue2.asInterval() );
     }
 
 
@@ -880,7 +878,7 @@ public class TypedValueTest {
         PolyDocument value = new PolyDocument();
         value.put( "firstValue", TypedValue.fromBoolean( true ) );
         value.put( "secondValue", TypedValue.fromDouble( 12.345 ) );
-        value.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, Unit.MONTHS ) ) );
+        value.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, 0 ) ) );
 
         TypedValue typedValue1 = TypedValue.fromDocument( value );
         ProtoValue protoValue = typedValue1.serialize();
@@ -890,8 +888,7 @@ public class TypedValueTest {
         TypedValue typedValue2 = new TypedValue( protoValue );
         assertEquals( value.get( "firstValue" ).asBoolean(), typedValue2.asDocument().get( "firstValue" ).asBoolean() );
         assertEquals( value.get( "secondValue" ).asDouble(), typedValue2.asDocument().get( "secondValue" ).asDouble() );
-        assertEquals( value.get( "thirdValue" ).asInterval().value, typedValue2.asDocument().get( "thirdValue" ).asInterval().value );
-        assertEquals( value.get( "thirdValue" ).asInterval().unit, typedValue2.asDocument().get( "thirdValue" ).asInterval().unit );
+        assertEquals( value.get( "thirdValue" ).asInterval(), typedValue2.asDocument().get( "thirdValue" ).asInterval() );
     }
 
 

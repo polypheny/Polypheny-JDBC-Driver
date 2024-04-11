@@ -10,7 +10,6 @@ import java.util.function.Function;
 import org.apache.commons.lang3.ObjectUtils;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
 import org.polypheny.db.protointerface.proto.Column;
-import org.polypheny.db.protointerface.proto.Database;
 import org.polypheny.db.protointerface.proto.Namespace;
 import org.polypheny.db.protointerface.proto.Procedure;
 import org.polypheny.db.protointerface.proto.Table;
@@ -85,10 +84,10 @@ public class MetaResultSetSignatures {
     );
 
     // This signature uses the term catalog as this is what jdbc calls the results in the result set generated.
-    public static final List<MetaResultSetParameter<Database>> CATALOG_SIGNATURE = Arrays.asList(
-            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, Database::getDatabaseName ),
-            new MetaResultSetParameter<>( "OWNER", Types.VARCHAR, Database::getOwnerName ),
-            new MetaResultSetParameter<>( "DEFAULT_SCHEMA", Types.VARCHAR, Database::getDefaultNamespaceName )
+    public static final List<MetaResultSetParameter<String>> CATALOG_SIGNATURE = Arrays.asList(
+            new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, s -> "APP" ),
+            new MetaResultSetParameter<>( "OWNER", Types.VARCHAR, s -> "system" ),
+            new MetaResultSetParameter<>( "DEFAULT_SCHEMA", Types.VARCHAR, s -> s )
     );
 
     public static final List<MetaResultSetParameter<GenericMetaContainer>> FOREIGN_KEY_GMC_SIGNATURE = Arrays.asList(

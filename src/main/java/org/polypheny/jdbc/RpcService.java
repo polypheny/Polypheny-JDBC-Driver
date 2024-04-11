@@ -44,10 +44,10 @@ import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateRequest;
 import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateResponse;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.ConnectionResponse;
-import org.polypheny.db.protointerface.proto.DatabasesRequest;
-import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceRequest;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceResponse;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
 import org.polypheny.db.protointerface.proto.DisconnectResponse;
 import org.polypheny.db.protointerface.proto.EntitiesRequest;
@@ -257,10 +257,10 @@ public class RpcService {
     }
 
 
-    DatabasesResponse getDatabases( DatabasesRequest msg, int timeout ) throws PrismInterfaceServiceException {
+    DefaultNamespaceResponse defaultNamespaceRequest( DefaultNamespaceRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
-        req.setDatabasesRequest( msg );
-        return completeSynchronously( req, timeout ).getDatabasesResponse();
+        req.setDefaultNamespaceRequest( msg );
+        return completeSynchronously( req, timeout ).getDefaultNamespaceResponse();
     }
 
 

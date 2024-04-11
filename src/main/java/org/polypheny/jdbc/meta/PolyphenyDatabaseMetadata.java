@@ -22,7 +22,6 @@ import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
 import org.polypheny.db.protointerface.proto.Column;
-import org.polypheny.db.protointerface.proto.Database;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
 import org.polypheny.db.protointerface.proto.Entity;
 import org.polypheny.db.protointerface.proto.ForeignKey;
@@ -860,8 +859,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getCatalogs() throws SQLException {
-        List<Database> databases = prismInterfaceClient.getDatabases( getConnection().getNetworkTimeout() );
-        return MetaResultSetBuilder.buildFromDatabases( databases );
+        String defaultNamespace = prismInterfaceClient.getDefaultNamespace( getConnection().getNetworkTimeout() );
+        return MetaResultSetBuilder.buildFromDatabases( defaultNamespace );
     }
 
 
