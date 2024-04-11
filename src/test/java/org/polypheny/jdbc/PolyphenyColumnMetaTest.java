@@ -281,7 +281,6 @@ public class PolyphenyColumnMetaTest {
 
 
     @Test
-    @Disabled("TODO")
     public void fromSpecification__Ordinal_ColumnName_EntityName_JdbcType_ColumnName() {
         assertEquals(COLUMN_LABEL, specifiedColumnMeta.getColumnName() );
     }

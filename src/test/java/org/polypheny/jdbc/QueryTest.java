@@ -89,9 +89,8 @@ public class QueryTest {
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
             Result result = polyStatement.execute( "public", MQL_LANGUAGE_NAME, TEST_QUERY );
             DocumentResult docs = result.unwrap( DocumentResult.class );
-            Iterator<PolyDocument> iterator = docs.iterator();
-            while ( iterator.hasNext() ) {
-                System.out.println( iterator.next().toString() );
+            for ( PolyDocument doc : docs ) {
+                System.out.println( doc.toString() );
             }
             assertEquals( ResultType.DOCUMENT, result.getResultType() );
         } catch ( SQLException e ) {

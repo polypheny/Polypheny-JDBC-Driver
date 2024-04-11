@@ -44,7 +44,6 @@ public class MetaScrollerTest {
 
 
     @Test
-    @Disabled("TODO")
     public void indexInitPosition__empty_notAfterLastFirst() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertTrue( scroller.isAfterLast() );

@@ -75,7 +75,6 @@ public class StatementTest {
 
 
     @Test
-    @Disabled
     void testMoreThanOneExecute() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -125,7 +124,7 @@ public class StatementTest {
 
 
     @Test
-    @Disabled
+    //@Disabled("Whats the expected behaviour here?")
     void testMultipleStatements() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -140,12 +139,13 @@ public class StatementTest {
             p.setInt( 1, 7 );
             p.setInt( 2, 7 );
             p.execute();
+            con.close();
         }
     }
 
 
     @Test
-    @Disabled
+    @Disabled("Check in avatica. Does this work there?")
     void testPreparedStatementDualExecCleanup() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -155,11 +155,11 @@ public class StatementTest {
             p.setInt( 2, 5 );
             p.execute();
         }
-        System.out.println("done");
+        System.out.println( "done" );
         try ( Statement statement = con.createStatement() ) {
             statement.execute( "DROP TABLE IF EXISTS t" );
         }
-        System.out.println("done2");
+        System.out.println( "done2" );
     }
 
 
@@ -174,7 +174,7 @@ public class StatementTest {
             p.setInt( 2, 5 );
             p.execute();
         }
-        System.out.println("done");
+        System.out.println( "done" );
         try ( Statement statement = con.createStatement() ) {
             statement.execute( "SELECT * FROM t" );
         }
@@ -233,16 +233,4 @@ public class StatementTest {
             assertArrayEquals( new long[]{ 2 }, res );
         }
     }
-
-
-    @Test
-    @Disabled("Too slow")
-    void testSpeed() throws SQLException {
-        try ( Statement p = con.createStatement() ) {
-            for ( int i = 0; i < 30; i++ ) {
-                p.executeUpdate( String.format( "INSERT INTO t(id, a) VALUES (%s, %s)", i, i ) );
-            }
-        }
-    }
-
 }

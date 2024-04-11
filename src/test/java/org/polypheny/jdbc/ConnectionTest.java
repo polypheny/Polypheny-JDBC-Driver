@@ -56,6 +56,7 @@ public class ConnectionTest {
     }
 
 
+
     @Test
     void testCommit() throws SQLException {
         con.setAutoCommit( false );
@@ -108,7 +109,6 @@ public class ConnectionTest {
 
 
     @Test
-    @Disabled("TODO")
     void testMetaData() throws SQLException {
         DatabaseMetaData meta = con.getMetaData();
         meta.getURL();
