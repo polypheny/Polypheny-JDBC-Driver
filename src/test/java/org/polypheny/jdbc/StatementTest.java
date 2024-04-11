@@ -169,11 +169,9 @@ public class StatementTest {
             p.setInt( 2, 5 );
             p.execute();
         }
-        System.out.println( "done" );
         try ( Statement statement = con.createStatement() ) {
             statement.execute( "DROP TABLE IF EXISTS t" );
         }
-        System.out.println( "done2" );
     }
 
     @Test
@@ -187,16 +185,14 @@ public class StatementTest {
             p.addBatch();
             p.executeBatch();
         }
-        System.out.println( "done" );
         try ( Statement statement = con.createStatement() ) {
             statement.execute( "DROP TABLE IF EXISTS t" );
         }
-        System.out.println( "done2" );
     }
 
 
     @Test
-    @Disabled
+    //@Disabled
     void testPreparedStatementDualExecUpdate() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
