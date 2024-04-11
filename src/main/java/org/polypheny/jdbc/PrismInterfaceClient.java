@@ -18,10 +18,9 @@ import org.polypheny.db.protointerface.proto.ConnectionProperties;
 import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateRequest;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.ConnectionResponse;
-import org.polypheny.db.protointerface.proto.Database;
-import org.polypheny.db.protointerface.proto.DatabasesRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
+import org.polypheny.db.protointerface.proto.DefaultNamespaceRequest;
 import org.polypheny.db.protointerface.proto.DisconnectRequest;
 import org.polypheny.db.protointerface.proto.EntitiesRequest;
 import org.polypheny.db.protointerface.proto.Entity;
@@ -267,8 +266,8 @@ public class PrismInterfaceClient {
     }
 
 
-    public List<Database> getDatabases( int timeout ) throws PrismInterfaceServiceException {
-        return rpc.getDatabases( DatabasesRequest.newBuilder().build(), timeout ).getDatabasesList();
+    public String getDefaultNamespace( int timeout ) throws PrismInterfaceServiceException {
+        return rpc.defaultNamespaceRequest( DefaultNamespaceRequest.newBuilder().build(), timeout ).getDefaultNamespace();
     }
 
 

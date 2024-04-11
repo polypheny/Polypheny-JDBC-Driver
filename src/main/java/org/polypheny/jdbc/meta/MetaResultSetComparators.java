@@ -15,7 +15,7 @@ public class MetaResultSetComparators {
             .comparing( g -> (String) (g.getValue( 2 )) );
     public static final Comparator<GenericMetaContainer> INDEX_COMPARATOR = Comparator
             .comparing( ( GenericMetaContainer g ) -> (Boolean) (g.getValue( 2 )) )
-            .thenComparing( (GenericMetaContainer g) -> (int) (g.getValue( 7 )) )
+            .thenComparing( ( GenericMetaContainer g ) -> (int) (g.getValue( 7 )) )
             .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 3 )) )
             .thenComparing( ( GenericMetaContainer g ) -> (Integer) (g.getValue( 4 )) );
     public static final Comparator<GenericMetaContainer> IMPORTED_KEYS_COMPARATOR = Comparator
@@ -45,8 +45,6 @@ public class MetaResultSetComparators {
             .thenComparing( Column::getColumnName );
     public static final Comparator<ClientInfoPropertyMeta> CLIENT_INFO_PROPERTY_COMPARATOR = Comparator
             .comparing( ClientInfoPropertyMeta::getKey );
-    public static final Comparator<Database> DATABASE_COMPARATOR = Comparator
-            .comparing( Database::getDatabaseName );
     public static final Comparator<GenericMetaContainer> TABLE_PRIVILEGE_COMPARATOR = Comparator
             .comparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 0 )) )
             .thenComparing( ( GenericMetaContainer g ) -> (String) (g.getValue( 1 )) )
