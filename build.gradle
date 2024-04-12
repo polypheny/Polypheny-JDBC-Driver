@@ -14,7 +14,7 @@ description = "A standards-compliant JDBC driver for Polypheny."
 
 def versionMajor = 2
 def versionMinor = 0
-def versionQualifier = "-RC1"
+def versionQualifier = "SNAPSHOT"
 version = versionMajor + "." + versionMinor + versionQualifier
 
 repositories {
@@ -144,7 +144,7 @@ publishing {
             artifact source: javadocJar, classifier: 'javadoc', extension: 'jar'
             pom {
                 name = 'Polypheny JDBC Driver'
-                description = 'A standards-compliant JDBC driver for Polypheny-DB. '
+                description = 'A standards-compliant JDBC driver for Polypheny-DB.'
                 url = 'https://polypheny.org/'
                 licenses {
                     license {
