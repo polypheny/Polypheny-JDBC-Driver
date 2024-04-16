@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Properties;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.properties.PropertyUtils;
 
@@ -51,6 +50,17 @@ public class ConnectionStringTest {
         final String expectedTarget = "host:20590";
 
         final String url = "jdbc:polypheny://host:20590";
+        final ConnectionString cs = new ConnectionString( url );
+
+        assertEquals( expectedTarget, cs.getTarget() );
+    }
+
+
+    @Test
+    public void connectionString_String__MissingPortTrailingSlash() throws Exception {
+        final String expectedTarget = "host:20590";
+
+        final String url = "jdbc:polypheny://host/";
         final ConnectionString cs = new ConnectionString( url );
 
         assertEquals( expectedTarget, cs.getTarget() );

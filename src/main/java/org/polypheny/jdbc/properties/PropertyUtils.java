@@ -55,7 +55,7 @@ public class PropertyUtils {
     @Getter
     private static final String DEFAULT_HOST = "localhost";
     @Getter
-    private static final int DEFAULT_PORT = 20591;
+    private static final int DEFAULT_PORT = 20590;
     @Getter
     private static final String SQL_LANGUAGE_NAME = "sql";
     // Keys for properties
