@@ -68,12 +68,6 @@ public class ConnectionStringTest {
 
 
     @Test
-    public void connectionString_String__NoUsername() {
-
-    }
-
-
-    @Test
     public void connecitonString_String__NoPassword() throws Exception {
         final String expectedUsername = "username";
 
