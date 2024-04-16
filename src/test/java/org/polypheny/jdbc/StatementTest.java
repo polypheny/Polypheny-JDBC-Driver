@@ -124,7 +124,6 @@ public class StatementTest {
 
 
     @Test
-        //@Disabled("Whats the expected behaviour here?")
     void testMultipleStatements() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -159,7 +158,6 @@ public class StatementTest {
 
 
     @Test
-    //@Disabled("Check in avatica. Does this work there?")
     void testPreparedStatementDualExecCleanup() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -192,7 +190,6 @@ public class StatementTest {
 
 
     @Test
-    //@Disabled
     void testPreparedStatementDualExecUpdate() throws SQLException {
         try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
             p.setInt( 1, 4 );
@@ -211,15 +208,13 @@ public class StatementTest {
     @ParameterizedTest()
     @ValueSource(ints = { 99, 100, 101 })
     void testFetch( int n ) throws SQLException {
-        // TODO: Switch for and try if testMoreThanOneExecute works
-        try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
-            for ( int i = 0; i < n; i++ ) {
-
+        for ( int i = 0; i < n; i++ ) {
+            try ( PreparedStatement p = con.prepareStatement( "INSERT INTO t(id, a) VALUES (?, ?)" ) ) {
                 p.setInt( 1, i );
                 p.setInt( 2, i );
                 p.addBatch();
+                p.executeBatch();
             }
-            p.executeBatch();
         }
 
         try ( Statement s = con.createStatement() ) {
