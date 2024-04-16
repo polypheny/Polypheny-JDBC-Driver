@@ -137,7 +137,6 @@ public class PrismInterfaceClient {
             rpc.disconnect( request, timeout );
         } finally {
             rpc.close();
-            con.close();
         }
     }
 

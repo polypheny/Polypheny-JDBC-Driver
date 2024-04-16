@@ -111,6 +111,12 @@ public class RpcService {
 
     void close() {
         closed = true;
+        con.close();
+        try {
+            service.join();
+        } catch ( InterruptedException e ) {
+            log.warn( "Could not join response handler", e );
+        }
     }
 
 
@@ -141,8 +147,8 @@ public class RpcService {
 
 
     private void readResponses() {
-        while ( true ) {
-            try {
+        try {
+            while ( true ) {
                 Response resp = receiveMessage();
                 if ( resp.getId() == 0 ) {
                     throw new RuntimeException( "Invalid message id" );
@@ -170,29 +176,29 @@ public class RpcService {
                     callbacks.remove( resp.getId() );
                 }
                 c.complete( resp );
-            } catch ( EOFException | ClosedChannelException e ) {
-                this.closed = true;
-                callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
-                callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
-            } catch ( IOException e ) { // Communicate this to ProtoInterfaceClient
-                this.closed = true;
-                callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
-                callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
-                /* For Windows */
-                if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) && disconnectSent ) {
-                    return;
-                }
-                // This will cause the exception to be thrown when the next call is made
-                // TODO: Is this good enough, or should the program be alerted sooner?
-                this.error = e;
-                throw new RuntimeException( e );
-            } catch ( Throwable t ) {
-                this.closed = true;
-                callbacks.forEach( ( id, c ) -> c.completeExceptionally( t ) );
-                callbackQueues.forEach( ( id, cq ) -> cq.onError( t ) );
-                log.error( "Unhandled exception", t );
-                throw t;
             }
+        } catch ( EOFException | ClosedChannelException e ) {
+            this.closed = true;
+            callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
+            callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
+        } catch ( IOException e ) { // Communicate this to ProtoInterfaceClient
+            this.closed = true;
+            callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
+            callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
+            /* For Windows */
+            if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) && disconnectSent ) {
+                return;
+            }
+            // This will cause the exception to be thrown when the next call is made
+            // TODO: Is this good enough, or should the program be alerted sooner?
+            this.error = e;
+            throw new RuntimeException( e );
+        } catch ( Throwable t ) {
+            this.closed = true;
+            callbacks.forEach( ( id, c ) -> c.completeExceptionally( t ) );
+            callbackQueues.forEach( ( id, cq ) -> cq.onError( t ) );
+            log.error( "Unhandled exception", t );
+            throw t;
         }
     }
 

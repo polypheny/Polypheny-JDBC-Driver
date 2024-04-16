@@ -144,4 +144,12 @@ public class ConnectionTest {
         meta.getUDTs( "public", ".*", ".*", null );
     }
 
+
+    @Test
+    void properShutdown() throws SQLException {
+        // This test requires that there is only one active Driver instance (otherwise we will pick up the Thread name of another Connection)
+        con.close();
+        assertFalse( Thread.getAllStackTraces().keySet().stream().map( Thread::getName ).anyMatch( n -> n.equals( "PrismInterfaceResponseHandler" ) ) );
+    }
+
 }
