@@ -904,5 +904,13 @@ public class TypedValueTest {
         assertArrayEquals( value.getBytes( 1, 5 ), typedValue2.asBlob().getBytes( 1, 5 ) );
     }
 
+    @Test
+    void getLengthTest() throws SQLException {
+        String value = "12345678";
+        TypedValue typedValue1 = TypedValue.fromString( value );
+        ProtoValue protoValue = typedValue1.serialize();
+        TypedValue typedValue2 = new TypedValue( protoValue );
+        assertEquals( value.length(), typedValue2.getLength() );
+    }
 
 }

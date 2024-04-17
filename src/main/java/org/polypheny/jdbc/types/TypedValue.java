@@ -502,6 +502,9 @@ public class TypedValue implements Convertible {
 
 
     public int getLength() {
+        if ( isSerialized ) {
+            deserialize();
+        }
         switch ( valueCase ) {
             case BINARY:
                 return binaryValue.length;
