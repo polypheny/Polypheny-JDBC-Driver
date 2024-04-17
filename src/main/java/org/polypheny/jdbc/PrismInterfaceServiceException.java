@@ -1,8 +1,3 @@
-package org.polypheny.jdbc;
-
-import java.sql.SQLException;
-import org.polypheny.db.protointerface.proto.ErrorDetails;
-
 /*
  * Copyright 2019-2024 The Polypheny Project
  *
@@ -18,6 +13,12 @@ import org.polypheny.db.protointerface.proto.ErrorDetails;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.polypheny.jdbc;
+
+import java.sql.SQLException;
+import org.polypheny.db.protointerface.proto.ErrorDetails;
+
 public class PrismInterfaceServiceException extends SQLException {
 
     public PrismInterfaceServiceException( PrismInterfaceErrors sqlError, String message ) {
