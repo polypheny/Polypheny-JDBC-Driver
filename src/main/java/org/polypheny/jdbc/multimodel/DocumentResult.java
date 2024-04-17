@@ -20,15 +20,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.polypheny.db.protointerface.proto.DocumentFrame;
+import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.Frame.ResultCase;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.types.PolyDocument;
 import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.db.protointerface.proto.DocumentFrame;
-import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.db.protointerface.proto.Frame.ResultCase;
+import org.polypheny.jdbc.types.PolyDocument;
 
 public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
@@ -47,7 +47,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
 
     private void addDocuments( DocumentFrame documentFrame ) {
-        documentFrame.getDocumentsList().forEach( d -> documents.add( new PolyDocument( d )) );
+        documentFrame.getDocumentsList().forEach( d -> documents.add( new PolyDocument( d ) ) );
     }
 
 

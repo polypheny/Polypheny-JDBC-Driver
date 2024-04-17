@@ -33,10 +33,10 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
+import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.jdbc.types.PolyDocument;
 import org.polypheny.jdbc.types.PolyInterval;
 import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
-import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class TypedValueUtils {

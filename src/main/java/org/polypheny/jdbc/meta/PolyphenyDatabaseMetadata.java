@@ -13,13 +13,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.polypheny.jdbc.ConnectionString;
-import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.PrismInterfaceClient;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.PrismInterfaceErrors;
-import org.polypheny.jdbc.properties.DriverProperties;
-import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
 import org.polypheny.db.protointerface.proto.Column;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
@@ -34,6 +27,13 @@ import org.polypheny.db.protointerface.proto.Table;
 import org.polypheny.db.protointerface.proto.TableType;
 import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.UserDefinedType;
+import org.polypheny.jdbc.ConnectionString;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
 
 public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 

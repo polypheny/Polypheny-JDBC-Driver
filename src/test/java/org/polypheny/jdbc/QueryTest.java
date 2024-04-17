@@ -9,7 +9,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Iterator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.polypheny.jdbc.multimodel.DocumentResult;
@@ -99,4 +98,3 @@ public class QueryTest {
     }
 
 }
-

@@ -62,4 +62,5 @@ public class ProtoToJdbcTypeMap {
         }
         return jdbcType;
     }
+
 }

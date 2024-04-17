@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 
-@ExtendWith( TestHelper.class )
+@ExtendWith(TestHelper.class)
 public class PolyphenyDriverTest {
 
     private static final PolyphenyDriver DRIVER = new PolyphenyDriver();

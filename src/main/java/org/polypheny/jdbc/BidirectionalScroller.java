@@ -5,8 +5,8 @@ import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
+import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class BidirectionalScroller implements BidirectionalScrollable<List<TypedValue>> {

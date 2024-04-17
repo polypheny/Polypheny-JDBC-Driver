@@ -1,9 +1,13 @@
 package org.polypheny.jdbc.meta;
 
-import org.polypheny.db.protointerface.proto.*;
-import org.polypheny.jdbc.utils.TypedValueUtils;
-
 import java.util.Comparator;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
+import org.polypheny.db.protointerface.proto.Column;
+import org.polypheny.db.protointerface.proto.Function;
+import org.polypheny.db.protointerface.proto.Namespace;
+import org.polypheny.db.protointerface.proto.Table;
+import org.polypheny.db.protointerface.proto.Type;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class MetaResultSetComparators {
 

@@ -37,28 +37,29 @@ public class BlockingTest {
         con.close();
     }
 
+
     @Test
     void execAndDisconnect() throws SQLException {
         con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590", "pa", "" );
-        try ( Statement s = con.createStatement()) {
+        try ( Statement s = con.createStatement() ) {
             s.execute( "DROP TABLE IF EXISTS t" );
             s.execute( "CREATE TABLE t(id INTEGER PRIMARY KEY, a INTEGER NOT NULL)" );
             s.execute( "INSERT INTO t(id, a) VALUES (1, 1), (2, 2), (3, 3)" );
-            s.execute("DROP TABLE IF EXISTS t");
+            s.execute( "DROP TABLE IF EXISTS t" );
         }
         con.close();
     }
+
 
     @Test
     void failAndDisconnect() throws SQLException {
         con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590", "pa", "" );
-        try ( Statement s = con.createStatement()) {
+        try ( Statement s = con.createStatement() ) {
             s.execute( "DROP TABLE IF EXISTS t" );
-            assertThrows(SQLException.class, () -> s.execute( "INSERT INTO t(id, a) VALUES (1, 1), (2, 2), (3, 3)" ));
+            assertThrows( SQLException.class, () -> s.execute( "INSERT INTO t(id, a) VALUES (1, 1), (2, 2), (3, 3)" ) );
         }
         con.close();
     }
-
 
 
 }

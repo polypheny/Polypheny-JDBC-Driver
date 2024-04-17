@@ -24,6 +24,7 @@ import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.jdbc.types.TypedValue;
 
 public class ProtoUtils {
+
     public static ProtoValue serializeAsProtoString( String string ) {
         ProtoString protoString = ProtoString.newBuilder()
                 .setString( string )
@@ -32,6 +33,7 @@ public class ProtoUtils {
                 .setString( protoString )
                 .build();
     }
+
 
     public static List<ProtoValue> serializeParameterList( List<TypedValue> values ) {
         return values.stream().map( v -> {

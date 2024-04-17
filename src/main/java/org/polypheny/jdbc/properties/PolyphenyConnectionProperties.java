@@ -11,8 +11,8 @@ import java.util.TimeZone;
 import lombok.Getter;
 import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.PrismInterfaceClient;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class PolyphenyConnectionProperties {
 

@@ -27,8 +27,8 @@ import java.sql.Clob;
 import java.sql.NClob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class PolyphenyClob implements Clob, NClob {
 
@@ -42,10 +42,12 @@ public class PolyphenyClob implements Clob, NClob {
         }
     }
 
-    public PolyphenyClob(String string) {
+
+    public PolyphenyClob( String string ) {
         this.isFreed = false;
         this.value = string;
     }
+
 
     public PolyphenyClob() {
     }

@@ -9,13 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.ResultSetMetaData;
 import java.sql.Types;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
-import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
 import org.polypheny.db.protointerface.proto.TypeMeta;
+import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
+import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 
 public class PolyphenyColumnMetaTest {
 
@@ -282,7 +281,7 @@ public class PolyphenyColumnMetaTest {
 
     @Test
     public void fromSpecification__Ordinal_ColumnName_EntityName_JdbcType_ColumnName() {
-        assertEquals(COLUMN_LABEL, specifiedColumnMeta.getColumnName() );
+        assertEquals( COLUMN_LABEL, specifiedColumnMeta.getColumnName() );
     }
 
 

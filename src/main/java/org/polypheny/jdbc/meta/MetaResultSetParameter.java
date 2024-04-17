@@ -1,10 +1,9 @@
 package org.polypheny.jdbc.meta;
 
-import lombok.Getter;
-import org.polypheny.jdbc.types.TypedValue;
-
 import java.sql.SQLException;
 import java.util.function.Function;
+import lombok.Getter;
+import org.polypheny.jdbc.types.TypedValue;
 
 class MetaResultSetParameter<T> {
 

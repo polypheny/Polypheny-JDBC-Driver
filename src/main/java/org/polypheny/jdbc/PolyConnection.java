@@ -24,15 +24,15 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
-import org.polypheny.jdbc.types.PolyphenyArray;
-import org.polypheny.jdbc.types.PolyphenyBlob;
-import org.polypheny.jdbc.types.PolyphenyClob;
-import org.polypheny.jdbc.types.PolyphenyStruct;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
+import org.polypheny.jdbc.types.PolyphenyArray;
+import org.polypheny.jdbc.types.PolyphenyBlob;
+import org.polypheny.jdbc.types.PolyphenyClob;
+import org.polypheny.jdbc.types.PolyphenyStruct;
 
 public class PolyConnection implements Connection {
 

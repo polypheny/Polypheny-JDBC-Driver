@@ -5,9 +5,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 

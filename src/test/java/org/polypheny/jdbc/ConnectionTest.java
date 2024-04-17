@@ -56,7 +56,6 @@ public class ConnectionTest {
     }
 
 
-
     @Test
     void testCommit() throws SQLException {
         con.setAutoCommit( false );

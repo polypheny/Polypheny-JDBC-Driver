@@ -3,10 +3,9 @@ package org.polypheny.jdbc.meta;
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import java.util.List;
-
-import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class PolyphenyParameterMetaData implements ParameterMetaData {
 

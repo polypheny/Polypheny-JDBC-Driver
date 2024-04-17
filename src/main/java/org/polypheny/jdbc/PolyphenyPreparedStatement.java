@@ -28,9 +28,9 @@ import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.db.protointerface.proto.StatementBatchResponse;
 import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.meta.PolyphenyParameterMetaData;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
+import org.polypheny.jdbc.types.TypedValue;
 
 public class PolyphenyPreparedStatement extends PolyphenyStatement implements PreparedStatement {
 
@@ -47,8 +47,9 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         this.parameterBatch = new LinkedList<>();
     }
 
+
     private void prepareForReexecution() throws SQLException {
-        if (currentResult != null) {
+        if ( currentResult != null ) {
             currentResult.close();
         }
         currentUpdateCount = NO_UPDATE_COUNT;

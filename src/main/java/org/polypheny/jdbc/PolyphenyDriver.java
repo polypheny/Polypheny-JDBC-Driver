@@ -36,7 +36,7 @@ public class PolyphenyDriver implements java.sql.Driver {
             return null;
         }
         ConnectionString connectionString = new ConnectionString( url, properties );
-        PrismInterfaceClient prismInterfaceClient = new PrismInterfaceClient(  connectionString.getHost(), connectionString.getPort(), connectionString.getParameters() );
+        PrismInterfaceClient prismInterfaceClient = new PrismInterfaceClient( connectionString.getHost(), connectionString.getPort(), connectionString.getParameters() );
         PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, prismInterfaceClient );
         PolyphenyDatabaseMetadata databaseMetadata = new PolyphenyDatabaseMetadata( prismInterfaceClient, connectionString );
         prismInterfaceClient.register( connectionProperties, connectionProperties.getNetworkTimeout() );

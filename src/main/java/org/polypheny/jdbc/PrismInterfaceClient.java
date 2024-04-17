@@ -56,10 +56,10 @@ import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.TypesRequest;
 import org.polypheny.db.protointerface.proto.UserDefinedType;
 import org.polypheny.db.protointerface.proto.UserDefinedTypesRequest;
-import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.PlainTransport;
 import org.polypheny.jdbc.transport.Transport;
+import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.jdbc.utils.ProtoUtils;
 

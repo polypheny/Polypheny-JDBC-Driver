@@ -23,8 +23,8 @@ import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class PolyphenyBlob implements Blob {
 
@@ -40,7 +40,8 @@ public class PolyphenyBlob implements Blob {
         this.isFreed = false;
     }
 
-    public PolyphenyBlob(byte[] bytes) {
+
+    public PolyphenyBlob( byte[] bytes ) {
         this.isFreed = false;
         this.value = bytes;
     }

@@ -16,16 +16,26 @@
 
 package org.polypheny.jdbc.types;
 
-import lombok.Getter;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.PrismInterfaceErrors;
-
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLInput;
+import java.sql.SQLXML;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import lombok.Getter;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class UDTPrototype implements SQLInput {
 
