@@ -221,12 +221,7 @@ public class PolyConnectionPropertiesTest {
     public void setResultSetHoldability_Valid_NoSync() throws SQLException {
         PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, PRISM_INTERFACE_CLIENT );
 
-        try {
-            connectionProperties.setResultSetHoldability( ResultSet.CLOSE_CURSORS_AT_COMMIT );
-        } catch ( SQLException e ) {
-            e.printStackTrace();
-        }
-
+        connectionProperties.setResultSetHoldability( ResultSet.CLOSE_CURSORS_AT_COMMIT );
         assertEquals( ResultSet.CLOSE_CURSORS_AT_COMMIT, connectionProperties.getResultSetHoldability() );
 
         verify( PRISM_INTERFACE_CLIENT, times( 0 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );

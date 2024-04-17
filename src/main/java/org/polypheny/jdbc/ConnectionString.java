@@ -61,7 +61,9 @@ public class ConnectionString {
         if ( !url.startsWith( DriverProperties.getDRIVER_URL_SCHEMA() ) ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "Invalid driver schema." );
         }
-        log.debug( "Parsing url: \"" + url + "\"" );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Parsing url: \"{}\"", url );
+        }
         final int schemeSpecificPartStartIndex = url.indexOf( "//" );
         if ( schemeSpecificPartStartIndex == -1 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.URL_PARSING_INVALID, "Invalid url format." );
@@ -103,7 +105,9 @@ public class ConnectionString {
 
 
     private void parseParameters( String parameters ) throws SQLException {
-        log.debug( "Parsing url parameters: \"" + parameters + "\"" );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Parsing url parameters: \"{}\"", parameters );
+        }
         StringTokenizer tokenizer = new StringTokenizer( parameters, "&" );
         String[] keyValuePair;
         while ( tokenizer.hasMoreTokens() ) {

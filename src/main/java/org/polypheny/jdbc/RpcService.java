@@ -168,7 +168,9 @@ public class RpcService {
                             }
                         }
                     } else {
-                        log.info( "No callback for response of type " + resp.getTypeCase() );
+                        if ( log.isDebugEnabled() ) {
+                            log.info( "No callback for response of type {}", resp.getTypeCase() );
+                        }
                     }
                     continue;
                 }
