@@ -26,11 +26,11 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.Properties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -136,11 +136,10 @@ public class ConnectionTest {
 
 
     @Test
-    @Disabled("Not yet implemented")
     void testUnimplemented() throws SQLException {
         DatabaseMetaData meta = con.getMetaData();
-        meta.getClientInfoProperties();
-        meta.getUDTs( "public", ".*", ".*", null );
+        assertThrows( SQLFeatureNotSupportedException.class, meta::getClientInfoProperties );
+        assertThrows( SQLFeatureNotSupportedException.class, () -> meta.getUDTs( "public", ".*", ".*", null ) );
     }
 
 

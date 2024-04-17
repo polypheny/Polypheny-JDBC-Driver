@@ -1141,8 +1141,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getUDTs( String catalog, String schemaPattern, String typeNamePattern, int[] types ) throws SQLException {
         throwNotSupportedIfStrict();
-        List<UserDefinedType> userDefinedTypes = prismInterfaceClient.getUserDefinedTypes( getConnection().getNetworkTimeout() );
-        return MetaResultSetBuilder.buildFromUserDefinedTypes( userDefinedTypes );
+        throw new SQLFeatureNotSupportedException("This feature is not yet supported.");
+        //List<UserDefinedType> userDefinedTypes = prismInterfaceClient.getUserDefinedTypes( getConnection().getNetworkTimeout() );
+        //return MetaResultSetBuilder.buildFromUserDefinedTypes( userDefinedTypes );
     }
 
 
@@ -1286,8 +1287,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getClientInfoProperties() throws SQLException {
-        List<ClientInfoPropertyMeta> metas = prismInterfaceClient.getClientInfoPropertyMetas( getConnection().getNetworkTimeout() );
-        return MetaResultSetBuilder.buildFromClientInfoPropertyMetas( metas );
+        throw new SQLFeatureNotSupportedException("This feature is not yet supported.");
+        //List<ClientInfoPropertyMeta> metas = prismInterfaceClient.getClientInfoPropertyMetas( getConnection().getNetworkTimeout() );
+        //return MetaResultSetBuilder.buildFromClientInfoPropertyMetas( metas );
     }
 
 

@@ -25,7 +25,7 @@ public class DriverProperties {
     @Getter
     private static final TimeZone DEFAULT_TIMEZONE = TimeZone.getDefault();
     @Getter
-    // This feature is for testing purposes only!
+    // This feature is for testing purposes only! Always set to false before release!
     private static final boolean BACKDOOR_ENABLED = false;
     @Getter
     private static final String BACKDOR_STRING = "dasKannKeinEmptyString";
