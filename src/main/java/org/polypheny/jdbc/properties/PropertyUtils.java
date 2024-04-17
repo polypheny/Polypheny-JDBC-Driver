@@ -1,12 +1,12 @@
 package org.polypheny.jdbc.properties;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -113,48 +113,64 @@ public class PropertyUtils {
 
 
     // Methods for input checking
-    private static final Map<Integer, List<Integer>> SUPPORTED_CONCURRENCIES =
-            ImmutableMap.<Integer, List<Integer>>builder()
-                    .put( ResultSet.TYPE_FORWARD_ONLY, Collections.singletonList( ResultSet.CONCUR_READ_ONLY ) )
-                    .put( ResultSet.TYPE_SCROLL_INSENSITIVE, Collections.singletonList( ResultSet.CONCUR_READ_ONLY ) )
-                    .build();
+    private static Map<Integer, List<Integer>> SUPPORTED_CONCURRENCIES = new HashMap<>();
 
-    private static final Set<Integer> RESULT_SET_TYPES = ImmutableSet.<Integer>builder()
-            .add( ResultSet.TYPE_FORWARD_ONLY )
-            .add( ResultSet.TYPE_SCROLL_INSENSITIVE )
-            // Exclusive support of committed reads contradicts sensitive result sets.
-            // These are for easy expansion in the future...
-            //.add( ResultSet.TYPE_SCROLL_SENSITIVE )
-            .build();
 
-    private static final Set<Integer> RESULT_SET_CONCURRENCIES = ImmutableSet.<Integer>builder()
-            .add( ResultSet.CONCUR_READ_ONLY )
-            .add( ResultSet.CONCUR_UPDATABLE )
-            .build();
+    static {
+        SUPPORTED_CONCURRENCIES.put( ResultSet.TYPE_FORWARD_ONLY, Collections.singletonList( ResultSet.CONCUR_READ_ONLY ) );
+        SUPPORTED_CONCURRENCIES.put( ResultSet.TYPE_SCROLL_INSENSITIVE, Collections.singletonList( ResultSet.CONCUR_READ_ONLY ) );
+    }
 
-    private static final Set<Integer> RESULT_SET_HOLDABILITIES = ImmutableSet.<Integer>builder()
-            .add( ResultSet.CLOSE_CURSORS_AT_COMMIT )
-            .build();
 
-    private static final Set<Integer> TRANSACTION_ISOLATION_LEVELS = ImmutableSet.<Integer>builder()
-            .add( Connection.TRANSACTION_READ_COMMITTED )
-            // Only committed reads are supported by polypheny. These are for easy expansion in the future...
-            //.add( Connection.TRANSACTION_READ_UNCOMMITTED )
-            //.add( Connection.TRANSACTION_SERIALIZABLE )
-            //.add( Connection.TRANSACTION_REPEATABLE_READ )
-            .build();
+    private static final Set<Integer> RESULT_SET_TYPES = new HashSet<>();
 
-    private static final Set<Integer> AUTO_GENERATED_KEYS = ImmutableSet.<Integer>builder()
-            .add( Statement.NO_GENERATED_KEYS )
-            .add( Statement.RETURN_GENERATED_KEYS )
-            .build();
 
-    private static final Set<Integer> FETCH_DIRECTIONS = ImmutableSet.<Integer>builder()
-            .add( ResultSet.FETCH_FORWARD )
-            // Only forward fetching is supported. These are for easy expansion in the future...
-            //.add(ResultSet.FETCH_REVERSE)
-            //.add(ResultSet.FETCH_UNKNOWN)
-            .build();
+    static {
+        RESULT_SET_TYPES.add( ResultSet.TYPE_FORWARD_ONLY );
+        RESULT_SET_TYPES.add( ResultSet.TYPE_SCROLL_INSENSITIVE );
+    }
+
+
+    private static final Set<Integer> RESULT_SET_CONCURRENCIES = new HashSet<>();
+
+
+    static {
+        RESULT_SET_CONCURRENCIES.add( ResultSet.CONCUR_READ_ONLY );
+        RESULT_SET_CONCURRENCIES.add( ResultSet.CONCUR_UPDATABLE );
+    }
+
+
+    private static final Set<Integer> RESULT_SET_HOLDABILITIES = new HashSet<>();
+
+
+    static {
+        RESULT_SET_HOLDABILITIES.add( ResultSet.CLOSE_CURSORS_AT_COMMIT );
+    }
+
+
+    private static final Set<Integer> TRANSACTION_ISOLATION_LEVELS = new HashSet<>();
+
+
+    static {
+        TRANSACTION_ISOLATION_LEVELS.add( Connection.TRANSACTION_READ_COMMITTED );
+    }
+
+
+    private static final Set<Integer> AUTO_GENERATED_KEYS = new HashSet<>();
+
+
+    static {
+        AUTO_GENERATED_KEYS.add( Statement.RETURN_GENERATED_KEYS );
+        AUTO_GENERATED_KEYS.add( Statement.NO_GENERATED_KEYS );
+    }
+
+
+    private static final Set<Integer> FETCH_DIRECTIONS = new HashSet<>();
+
+
+    static {
+        FETCH_DIRECTIONS.add( ResultSet.FETCH_FORWARD );
+    }
 
 
     public static boolean isValidResultSetConcurrency( int resultSetType, int resultSeteConcurrency ) {
@@ -214,11 +230,6 @@ public class PropertyUtils {
 
     public static boolean isInvalidFetchDdirection( int fetchDirection ) {
         return !FETCH_DIRECTIONS.contains( fetchDirection );
-    }
-
-
-    public static boolean isForwardFetching( int fetchDirection ) {
-        return fetchDirection == ResultSet.FETCH_FORWARD;
     }
 
 }

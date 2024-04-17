@@ -1,6 +1,5 @@
 package org.polypheny.jdbc.utils;
 
-import com.google.common.collect.ImmutableSet;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
@@ -29,7 +28,6 @@ import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.proto.ProtoPolyType;
@@ -54,70 +52,6 @@ public class TypedValueUtils {
         SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat( "HH:mm:ss" );
         simpleDateFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
         SQL_TIME_FORMAT = simpleDateFormat1;
-    }
-
-
-    private static final Set<Integer> NUMERIC_RETURNING_TYPES =
-            ImmutableSet.<Integer>builder()
-                    .add( Types.TINYINT )
-                    .add( Types.SMALLINT )
-                    .add( Types.INTEGER )
-                    .add( Types.BIGINT )
-                    .add( Types.REAL )
-                    .add( Types.FLOAT )
-                    .add( Types.DOUBLE )
-                    .add( Types.DECIMAL )
-                    .add( Types.NUMERIC )
-                    .build();
-
-    private static final Set<Integer> STRING_RETURNING_TYPES =
-            ImmutableSet.<Integer>builder()
-                    .add( Types.CHAR )
-                    .add( Types.VARCHAR )
-                    .add( Types.LONGVARCHAR )
-                    .build();
-
-    private static final Set<Integer> BOOLEAN_RETURNING_TYPES =
-            ImmutableSet.<Integer>builder()
-                    .add( Types.BIT )
-                    .add( Types.BOOLEAN )
-                    .build();
-
-    private static final Set<Integer> BINARY_RETURNING_TYPES =
-            ImmutableSet.<Integer>builder()
-                    .add( Types.BIT )
-                    .add( Types.BOOLEAN )
-                    .build();
-
-    private static final Set<Integer> CLOB_RETURNING_TYPES =
-            ImmutableSet.<Integer>builder()
-                    .add( Types.CLOB )
-                    .add( Types.NCLOB )
-                    .build();
-
-
-    public static boolean isNumberRepresented( int jdbcType ) {
-        return NUMERIC_RETURNING_TYPES.contains( jdbcType );
-    }
-
-
-    public static boolean isStringRepresented( int jdbcType ) {
-        return STRING_RETURNING_TYPES.contains( jdbcType );
-    }
-
-
-    public static boolean isBooleanRepresented( int jdbcType ) {
-        return BOOLEAN_RETURNING_TYPES.contains( jdbcType );
-    }
-
-
-    public static boolean isBinaryRepresented( int jdbcType ) {
-        return BINARY_RETURNING_TYPES.contains( jdbcType );
-    }
-
-
-    public static boolean isClobOrNClobRepresented( int jdbcType ) {
-        return CLOB_RETURNING_TYPES.contains( jdbcType );
     }
 
 
@@ -146,14 +80,6 @@ public class TypedValueUtils {
             return 1;
         }
         return 0;
-    }
-
-
-    public static BigDecimal getBigDecimalFromBoolean( Boolean bool ) {
-        if ( bool ) {
-            return BigDecimal.ONE;
-        }
-        return BigDecimal.ZERO;
     }
 
 
@@ -187,11 +113,6 @@ public class TypedValueUtils {
 
     private static Time getTimeFromOffsetTime( OffsetTime offsetTime ) {
         return Time.valueOf( offsetTime.toLocalTime() );
-    }
-
-
-    public static Time getTimeFromDate( Date date ) {
-        return TypedValueUtils.getTimeFromTimestamp( TypedValueUtils.getTimestampFromDate( date ) );
     }
 
 
