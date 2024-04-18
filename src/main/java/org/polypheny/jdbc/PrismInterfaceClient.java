@@ -93,7 +93,7 @@ public class PrismInterfaceClient {
             if ( transport.equals( "plain" ) ) {
                 con = new PlainTransport( host, port );
             } else {
-                throw new PrismInterfaceServiceException( "Unknown mode " + transport );
+                throw new PrismInterfaceServiceException( "Unknown transport " + transport );
             }
             rpc = new RpcService( con );
         } catch ( IOException e ) {
