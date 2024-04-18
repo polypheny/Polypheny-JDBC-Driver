@@ -3,63 +3,90 @@ name: Polypheny JDBC Driver CI
 on: [ push, pull_request ]
 
 jobs:
-  build-polypheny:
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
-    steps:
-      -   uses: actions/setup-java@v4
-          with:
-            distribution: 'temurin'
-            java-version: '17'
+    build-polypheny:
+        timeout-minutes: 15
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: '17'
 
-      -   name: Checkout Polypheny
-          uses: actions/checkout@v4
-          with:
-            repository: polypheny/Polypheny-DB
-            ref: proto-without-grpc
+            -   name: Checkout Polypheny
+                uses: actions/checkout@v4
+                with:
+                    repository: polypheny/Polypheny-DB
+                    ref: proto-without-grpc
 
-      -   name: Build Polypheny
-          run: |
-            ./gradlew build -x test -x licensee
+            -   name: Build Polypheny
+                run: |
+                    ./gradlew build -x test -x licensee
 
-      -   name: Build Polypheny
-          run: |
-            ./gradlew build -x test -x licensee
+            -   name: Build Polypheny
+                run: |
+                    ./gradlew build -x test -x licensee
 
-      -   name: Store Polypheny JAR
-          uses: actions/upload-artifact@v4
-          with:
-            name: polypheny-jar
-            path: dbms/build/libs/dbms-0.10.0-SNAPSHOT.jar
+            -   name: Store Polypheny JAR
+                uses: actions/upload-artifact@v4
+                with:
+                    name: polypheny-jar
+                    path: dbms/build/libs/dbms-0.10.0-SNAPSHOT.jar
 
-  build:
-    needs: build-polypheny
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ 8, 11, 17, 21 ]
-        os: [ macos-latest, ubuntu-latest ]
-        include:
-          - os: windows-latest
-            java: 8
-    timeout-minutes: 20
-    runs-on: ${{ matrix.os }}
-    name: Java ${{ matrix.java }} @ ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: |
-            17
-            ${{ matrix.java }}
-      - name: Load Polypheny JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: polypheny-jar
-      - name: Build with Gradle
-        run: ./gradlew build
-        env:
-          POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
-          POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_X64 }}/bin/java
+    build:
+        needs: build-polypheny
+        strategy:
+            fail-fast: false
+            matrix:
+                java: [ 8, 11, 17, 21 ]
+                os: [ macos-latest, ubuntu-latest ]
+                include:
+                    -   os: windows-latest
+                        java: 8
+        timeout-minutes: 20
+        runs-on: ${{ matrix.os }}
+        name: Java ${{ matrix.java }} @ ${{ matrix.os }}
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: |
+                        17
+                        ${{ matrix.java }}
+            -   name: Load Polypheny JAR
+                uses: actions/download-artifact@v4
+                with:
+                    name: polypheny-jar
+            -   name: Build with Gradle
+                run: ./gradlew build
+                env:
+                    POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
+                    POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_X64 }}/bin/java
+
+    test-stores:
+        needs: build-polypheny
+        strategy:
+            fail-fast: false
+            matrix:
+                adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, neo4j ]
+        timeout-minutes: 20
+        runs-on: ubuntu-latest
+        name: Test on ${{ matrix.adapter }}
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: 17
+            -   name: Load Polypheny JAR
+                uses: actions/download-artifact@v4
+                with:
+                    name: polypheny-jar
+            -   name: Build with Gradle
+                run: ./gradlew build
+                env:
+                    POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
+                    POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_X64 }}/bin/java
+                    POLYPHENY_DEFAULT_STORE: ${{ matrix.adapter }}

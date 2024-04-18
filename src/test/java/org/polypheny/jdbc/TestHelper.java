@@ -38,6 +38,7 @@ class TestHelper implements BeforeAllCallback, AfterAllCallback {
     public void beforeAll( ExtensionContext context ) {
         String java = System.getenv( "POLYPHENY_JAVA" );
         String jar = System.getenv( "POLYPHENY_JAR" );
+        String defaultStore = System.getenv( "POLYPHENY_DEFAULT_STORE" );
         if ( java == null ) {
             java = "java";
         }
@@ -45,7 +46,11 @@ class TestHelper implements BeforeAllCallback, AfterAllCallback {
             return;
         }
         try {
-            p = new ProcessBuilder( java, "-jar", jar, "-resetCatalog", "-resetDocker" ).start();
+            if ( defaultStore == null ) {
+                p = new ProcessBuilder( java, "-jar", jar, "-resetCatalog", "-resetDocker" ).start();
+            } else {
+                p = new ProcessBuilder( java, "-jar", jar, "-resetCatalog", "-resetDocker", "-defaultStore", defaultStore ).start();
+            }
             try ( BufferedReader in = new BufferedReader( new InputStreamReader( p.getInputStream() ) ) ) {
                 List<String> lines = new ArrayList<>();
                 while ( true ) {
