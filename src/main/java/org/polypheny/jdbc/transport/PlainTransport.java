@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class PlainTransport implements Transport {
 
-    private final static byte[] VERSION = "plain-v1@polypheny.com".getBytes( StandardCharsets.US_ASCII );
+    private final static String VERSION = "plain-v1@polypheny.com";
 
     protected final SocketChannel con;
     private final Lock writeLock = new ReentrantLock();
@@ -56,10 +56,10 @@ public class PlainTransport implements Transport {
         byte[] remoteTransport = new byte[len - 1]; // trailing newline
         response.position( 1 );
         response.get( remoteTransport );
-        if ( !Arrays.equals( VERSION, remoteTransport ) ) {
-            String s = StandardCharsets.US_ASCII.decode( response ).toString();
+        if ( !Arrays.equals( VERSION.getBytes( StandardCharsets.US_ASCII ), remoteTransport ) ) {
+            String s = StandardCharsets.US_ASCII.decode( ByteBuffer.wrap( remoteTransport ) ).toString();
             if ( s.matches( "\\A[a-z0-9@.-]+\\z" ) ) {
-                throw new IOException( "Unsupported version: " + s );
+                throw new IOException( "Unsupported version: '" + s + "' expected '" + VERSION + "'" );
             } else {
                 throw new IOException( "Unsupported version" );
             }
