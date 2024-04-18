@@ -53,11 +53,11 @@ public class PlainTransport implements Transport {
         ByteBuffer response = ByteBuffer.allocate( 1 + len ); // Leading size
         response.put( len );
         readEntireBuffer( response );
-        byte[] remoteTransport = new byte[len - 1]; // trailing newline
+        byte[] remoteVersion = new byte[len - 1]; // trailing newline
         response.position( 1 );
-        response.get( remoteTransport );
-        if ( !Arrays.equals( VERSION.getBytes( StandardCharsets.US_ASCII ), remoteTransport ) ) {
-            String s = StandardCharsets.US_ASCII.decode( ByteBuffer.wrap( remoteTransport ) ).toString();
+        response.get( remoteVersion );
+        if ( !Arrays.equals( VERSION.getBytes( StandardCharsets.US_ASCII ), remoteVersion ) ) {
+            String s = StandardCharsets.US_ASCII.decode( ByteBuffer.wrap( remoteVersion ) ).toString();
             if ( s.matches( "\\A[a-z0-9@.-]+\\z" ) ) {
                 throw new IOException( "Unsupported version: '" + s + "' expected '" + VERSION + "'" );
             } else {
