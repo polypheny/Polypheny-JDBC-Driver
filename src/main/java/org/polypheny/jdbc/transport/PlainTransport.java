@@ -23,10 +23,14 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class PlainTransport implements Transport {
+
+    private final static byte[] VERSION = "plain-v1@polypheny.com".getBytes( StandardCharsets.US_ASCII );
 
     protected final SocketChannel con;
     private final Lock writeLock = new ReentrantLock();
@@ -35,6 +39,36 @@ public class PlainTransport implements Transport {
     public PlainTransport( String host, int port ) throws IOException {
         con = SocketChannel.open( new InetSocketAddress( host, port ) );
         con.setOption( StandardSocketOptions.TCP_NODELAY, true );
+        exchangeVersion();
+    }
+
+
+    private void exchangeVersion() throws IOException {
+        ByteBuffer length = ByteBuffer.allocate( 1 );
+        readEntireBuffer( length );
+        byte len = length.get();
+        if ( len <= 0 ) {
+            throw new IOException( "Invalid version length" );
+        }
+        ByteBuffer response = ByteBuffer.allocate( 1 + len ); // Leading size
+        response.put( len );
+        readEntireBuffer( response );
+        byte[] remoteTransport = new byte[len - 1]; // trailing newline
+        response.position( 1 );
+        response.get( remoteTransport );
+        if ( !Arrays.equals( VERSION, remoteTransport ) ) {
+            String s = StandardCharsets.US_ASCII.decode( response ).toString();
+            if ( s.matches( "\\A[a-z0-9@.-]+\\z" ) ) {
+                throw new IOException( "Unsupported version: " + s );
+            } else {
+                throw new IOException( "Unsupported version" );
+            }
+        }
+        if ( response.get() != (byte) 0x0a ) {
+            throw new IOException( "Invalid version message" );
+        }
+        response.rewind();
+        writeEntireBuffer( response );
     }
 
 
