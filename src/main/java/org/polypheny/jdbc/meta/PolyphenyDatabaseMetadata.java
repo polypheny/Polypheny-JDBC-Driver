@@ -1284,7 +1284,8 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getSchemas( String catalog, String schemaPattern ) throws SQLException {
-        List<Namespace> namespaces = prismInterfaceClient.searchNamespaces( schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout() );
+        // TODO: Always search all namespace types?
+        List<Namespace> namespaces = prismInterfaceClient.searchNamespaces( schemaPattern, null, getConnection().getNetworkTimeout() );
         return MetaResultSetBuilder.buildFromNamespaces( namespaces );
     }
 
