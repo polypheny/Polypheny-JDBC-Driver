@@ -85,8 +85,8 @@ public class MetaResultSetSignatures {
             new MetaResultSetParameter<>( "SCOPE_SCHEMA", Types.VARCHAR, p -> null ),
             new MetaResultSetParameter<>( "SCOPE_TABLE", Types.VARCHAR, p -> null ),
             new MetaResultSetParameter<>( "SOURCE_DATA_TYPE", Types.SMALLINT, p -> null ),
-            new MetaResultSetParameter<>( "IS_AUTOINCREMENT", Types.VARCHAR, p -> "No" ),
-            new MetaResultSetParameter<>( "IS_GENERATEDCOLUMN", Types.VARCHAR, p -> "No" ),
+            new MetaResultSetParameter<>( "IS_AUTOINCREMENT", Types.VARCHAR, p -> "NO" ),
+            new MetaResultSetParameter<>( "IS_GENERATEDCOLUMN", Types.VARCHAR, p -> "NO" ),
             new MetaResultSetParameter<>( "COLLATION", Types.VARCHAR, nullIfFalse( Column::getCollation, Column::hasCollation ) )
     );
 
@@ -102,7 +102,6 @@ public class MetaResultSetSignatures {
     // This signature uses the term catalog as this is what jdbc calls the results in the result set generated.
     public static final List<MetaResultSetParameter<String>> CATALOG_SIGNATURE = Arrays.asList(
             new MetaResultSetParameter<>( "TABLE_CAT", Types.VARCHAR, s -> "APP" ),
-            new MetaResultSetParameter<>( "OWNER", Types.VARCHAR, s -> "system" ),
             new MetaResultSetParameter<>( "DEFAULT_SCHEMA", Types.VARCHAR, s -> s )
     );
 
