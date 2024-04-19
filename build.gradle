@@ -124,6 +124,7 @@ shadowJar {
     relocate 'com.google', 'org.polypheny.dependency.com.google'
     relocate 'javax', 'org.polypheny.dependency.javax'
     relocate 'org.checkerframework', 'org.polypheny.dependency.org.checkerframework'
+    relocate 'org.polypheny.db.protointerface.proto', 'org.polypheny.jdbc.proto' // Prevents Polypheny-DB from using this during tests
 }
 
 assemble.dependsOn shadowJar
