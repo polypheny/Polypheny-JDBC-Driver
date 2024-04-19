@@ -930,9 +930,9 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getColumnPrivileges( String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern ) throws SQLException {
-        /* This feature is currently not supported by polypheny thus the following workaround is used:
+        /* This feature is currently not supported by Polypheny thus the following workaround is used:
          * 1) get all columns using getColumns()
-         * 2) the MetaResultSetBuilder constructs a full rights result set from the response of the getCoumns() api call.
+         * 2) the MetaResultSetBuilder constructs a full rights result set from the response of the getColumns() api call.
          *
          * For proper implementation a dedicated api call should be used the result of witch should be passed to the MetaResultSet builder.
          */
@@ -1157,7 +1157,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getUDTs( String catalog, String schemaPattern, String typeNamePattern, int[] types ) throws SQLException {
         throwNotSupportedIfStrict();
-        throw new SQLFeatureNotSupportedException("This feature is not yet supported.");
+        throw new SQLFeatureNotSupportedException( "This feature is not yet supported." );
         //List<UserDefinedType> userDefinedTypes = prismInterfaceClient.getUserDefinedTypes( getConnection().getNetworkTimeout() );
         //return MetaResultSetBuilder.buildFromUserDefinedTypes( userDefinedTypes );
     }
@@ -1303,7 +1303,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getClientInfoProperties() throws SQLException {
-        throw new SQLFeatureNotSupportedException("This feature is not yet supported.");
+        throw new SQLFeatureNotSupportedException( "This feature is not yet supported." );
         //List<ClientInfoPropertyMeta> metas = prismInterfaceClient.getClientInfoPropertyMetas( getConnection().getNetworkTimeout() );
         //return MetaResultSetBuilder.buildFromClientInfoPropertyMetas( metas );
     }
