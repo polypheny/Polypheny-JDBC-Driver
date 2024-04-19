@@ -678,7 +678,10 @@ public class TypedValue implements Convertible {
             return doubleValue.doubleValue();
         }
         if ( floatValue != null ) {
-            floatValue.doubleValue();
+            return floatValue.doubleValue();
+        }
+        if (bigDecimalValue != null) {
+            return bigDecimalValue.doubleValue();
         }
         if ( isNull() ) {
             return 0;
