@@ -24,8 +24,6 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.proto.ClientInfoProperties;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
-import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
-import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaRequest;
 import org.polypheny.db.protointerface.proto.CloseResultRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CommitRequest;
@@ -49,9 +47,7 @@ import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.Function;
 import org.polypheny.db.protointerface.proto.FunctionsRequest;
 import org.polypheny.db.protointerface.proto.IndexedParameters;
-import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.Namespace;
-import org.polypheny.db.protointerface.proto.NamespaceRequest;
 import org.polypheny.db.protointerface.proto.NamespacesRequest;
 import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
@@ -70,8 +66,6 @@ import org.polypheny.db.protointerface.proto.TableType;
 import org.polypheny.db.protointerface.proto.TableTypesRequest;
 import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.TypesRequest;
-import org.polypheny.db.protointerface.proto.UserDefinedType;
-import org.polypheny.db.protointerface.proto.UserDefinedTypesRequest;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.PlainTransport;
 import org.polypheny.jdbc.transport.Transport;
@@ -111,12 +105,6 @@ public class PrismInterfaceClient {
         } catch ( PrismInterfaceServiceException e ) {
             return false;
         }
-    }
-
-
-    public List<String> requestSupportedLanguages( int timeout ) {
-        LanguageRequest languageRequest = LanguageRequest.newBuilder().build();
-        throw new RuntimeException( "Not yet implemented" );
     }
 
 
@@ -286,11 +274,6 @@ public class PrismInterfaceClient {
     }
 
 
-    public List<ClientInfoPropertyMeta> getClientInfoPropertyMetas( int timeout ) throws PrismInterfaceServiceException {
-        return rpc.getClientInfoPropertiesMetas( ClientInfoPropertyMetaRequest.newBuilder().build(), timeout ).getClientInfoPropertyMetasList();
-    }
-
-
     public List<Type> getTypes( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getTypes( TypesRequest.newBuilder().build(), timeout ).getTypesList();
     }
@@ -362,21 +345,6 @@ public class PrismInterfaceClient {
 
     public List<TableType> getTablesTypes( int timeout ) throws PrismInterfaceServiceException {
         return rpc.getTableTypes( TableTypesRequest.newBuilder().build(), timeout ).getTableTypesList();
-    }
-
-
-    public Namespace getNamespace( String namespaceName, int timeout ) throws PrismInterfaceServiceException {
-        NamespaceRequest.Builder requestBuilder = NamespaceRequest.newBuilder();
-        requestBuilder.setNamespaceName( namespaceName );
-
-        throw new RuntimeException( "Not yet implemented" );
-    }
-
-
-    public List<UserDefinedType> getUserDefinedTypes( int timeout ) throws PrismInterfaceServiceException {
-        UserDefinedTypesRequest.Builder requestBuilder = UserDefinedTypesRequest.newBuilder();
-
-        return rpc.getUserDefinedTypes( requestBuilder.build(), timeout ).getUserDefinedTypesList();
     }
 
 
