@@ -35,7 +35,6 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
@@ -51,8 +50,8 @@ import org.polypheny.jdbc.types.TypedValue;
 public class PolyphenyPreparedStatement extends PolyphenyStatement implements PreparedStatement {
 
     private TypedValue[] parameters;
-    private List<List<TypedValue>> parameterBatch;
-    private PolyphenyParameterMetaData parameterMetaData;
+    private final List<List<TypedValue>> parameterBatch = new LinkedList<>();
+    private final PolyphenyParameterMetaData parameterMetaData;
 
 
     public PolyphenyPreparedStatement( PolyConnection connection, PolyphenyStatementProperties properties, PreparedStatementSignature statementSignature ) throws SQLException {
@@ -60,7 +59,6 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         this.statementId = statementSignature.getStatementId();
         this.parameterMetaData = new PolyphenyParameterMetaData( statementSignature );
         this.parameters = createParameterList( statementSignature.getParameterMetasCount() );
-        this.parameterBatch = new LinkedList<>();
     }
 
 
@@ -393,7 +391,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public void addBatch() throws SQLException {
         throwIfClosed();
-        parameterBatch.add( new ArrayList<>( Arrays.asList( parameters ) ) );
+        parameterBatch.add( Arrays.asList( parameters ) );
     }
 
 
