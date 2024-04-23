@@ -391,7 +391,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public void addBatch() throws SQLException {
         throwIfClosed();
-        parameterBatch.add( Arrays.asList( parameters ) );
+        parameterBatch.add( Arrays.asList( parameters.clone() ) );
     }
 
 
