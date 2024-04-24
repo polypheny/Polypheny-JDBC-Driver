@@ -50,7 +50,7 @@ import org.polypheny.jdbc.types.TypedValue;
 public class PolyphenyPreparedStatement extends PolyphenyStatement implements PreparedStatement {
 
     private TypedValue[] parameters;
-    private final List<List<TypedValue>> parameterBatch = new LinkedList<>();
+    private List<List<TypedValue>> parameterBatch = new LinkedList<>();
     private final PolyphenyParameterMetaData parameterMetaData;
 
 
@@ -350,6 +350,10 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         parameters = createParameterList( parameterMetaData.getParameterCount() );
     }
 
+    private void clearParameterBatch() {
+        parameterBatch = new LinkedList<>();
+    }
+
 
     @Override
     public void setObject( int parameterIndex, Object x, int targetSqlType ) throws SQLException {
@@ -420,7 +424,8 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
         StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
-        clearParameters();
+        // jdbc: only batch is cleared, parameters remain beyond executions
+        clearParameterBatch();
         return status.getScalarsList();
     }
 
