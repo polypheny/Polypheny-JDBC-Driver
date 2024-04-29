@@ -38,13 +38,10 @@ jobs:
             fail-fast: false
             matrix:
                 java: [ 8, 11, 17, 21 ]
-                os: [ macos-latest, ubuntu-latest ]
+                os: [ ubuntu-latest ]
                 include:
                     -   os: windows-latest
                         java: 8
-                exclude:
-                    -   os: macos-latest
-                        java: 8  # No Java 8 for ARM
         timeout-minutes: 20
         runs-on: ${{ matrix.os }}
         name: Java ${{ matrix.java }} @ ${{ matrix.os }}
@@ -66,6 +63,34 @@ jobs:
                 env:
                     POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
                     POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_X64 }}/bin/java
+
+    build-macos:
+        needs: build-polypheny
+        strategy:
+            fail-fast: false
+            matrix:
+                java: [ 11, 17, 21 ]
+        timeout-minutes: 20
+        runs-on: macos-latest
+        name: Java ${{ matrix.java }} @ macos-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: |
+                        17
+                        ${{ matrix.java }}
+            -   name: Load Polypheny JAR
+                uses: actions/download-artifact@v4
+                with:
+                    name: polypheny-jar
+            -   name: Build with Gradle
+                run: ./gradlew build
+                env:
+                    POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
+                    POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_ARM64 }}/bin/java
 
     test-stores:
         needs: build-polypheny
