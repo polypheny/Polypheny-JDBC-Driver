@@ -146,11 +146,11 @@ public class StatementTest {
             s1.execute( "INSERT INTO t(id, a) VALUES (1, 4)" );
             s1.execute( "INSERT INTO t(id, a) VALUES (2, 4)" );
             try ( Statement s2 = con.createStatement() ) {
-                s2.execute( "INSERT INTO t(id, a) VALUES (5, 5)" );
-                s2.execute( "INSERT INTO t(id, a) VALUES (6, 6)" );
+                s2.execute( "INSERT INTO t(id, a) VALUES (3, 5)" );
+                s2.execute( "INSERT INTO t(id, a) VALUES (4, 6)" );
             }
-            s1.execute( "INSERT INTO t(id, a) VALUES (1, 7)" );
-            s1.execute( "INSERT INTO t(id, a) VALUES (2, 7)" );
+            s1.execute( "INSERT INTO t(id, a) VALUES (5, 7)" );
+            s1.execute( "INSERT INTO t(id, a) VALUES (6, 7)" );
             con.close();
         }
     }
