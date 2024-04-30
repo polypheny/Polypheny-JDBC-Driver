@@ -42,7 +42,7 @@ jobs:
                 exclude:
                     -   os: macos-latest
                         java: 8
-        timeout-minutes: 20
+        timeout-minutes: 5
         runs-on: ${{ matrix.os }}
         name: Java ${{ matrix.java }} @ ${{ matrix.os }}
         steps:
@@ -100,7 +100,7 @@ jobs:
             fail-fast: false
             matrix:
                 adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, neo4j ]
-        timeout-minutes: 20
+        timeout-minutes: 10
         runs-on: ubuntu-latest
         name: Test on ${{ matrix.adapter }}
         steps:
