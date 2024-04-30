@@ -680,7 +680,7 @@ public class TypedValue implements Convertible {
         if ( floatValue != null ) {
             return floatValue.doubleValue();
         }
-        if (bigDecimalValue != null) {
+        if ( bigDecimalValue != null ) {
             return bigDecimalValue.doubleValue();
         }
         if ( isNull() ) {
@@ -825,17 +825,17 @@ public class TypedValue implements Convertible {
             case TIMESTAMP:
                 return asTimestamp();
             case INTERVAL:
-                return otherValue;
+                return asInterval();
             case STRING:
                 return asString();
             case BINARY:
-                asBytes();
+                return asBytes();
             case NULL:
                 return null;
             case LIST:
                 return asArray();
             case DOCUMENT:
-                return otherValue;
+                return asDocument();
             case FILE:
                 return asBlob();
             default:
@@ -866,17 +866,17 @@ public class TypedValue implements Convertible {
             case TIMESTAMP:
                 return asTimestamp( calendar );
             case INTERVAL:
-                return otherValue;
+                return asInterval();
             case STRING:
                 return asString();
             case BINARY:
-                asBytes();
+                return asBytes();
             case NULL:
                 return null;
             case LIST:
                 return asArray();
             case DOCUMENT:
-                return otherValue;
+                return asDocument();
             case FILE:
                 return asBlob();
             default:

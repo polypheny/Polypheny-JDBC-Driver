@@ -736,6 +736,18 @@ public class TypedValueTest {
 
 
     @Test
+    void binaryTestAsObject() throws SQLException {
+        byte[] value = new byte[]{ 1, 2, 3, 4 };
+        TypedValue typedValue1 = TypedValue.fromBytes( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
+
+        assertArrayEquals( value, (byte[]) new TypedValue( protoValue ).asObject() );
+    }
+
+
+    @Test
     void dateTest() throws SQLException {
         Date value = new Date( 49852800000L );
         TypedValue typedValue1 = TypedValue.fromDate( value );
@@ -874,6 +886,18 @@ public class TypedValueTest {
 
 
     @Test
+    void intervalTestAsObject() throws SQLException {
+        PolyInterval value = new PolyInterval( 32, 0 );
+        TypedValue typedValue1 = TypedValue.fromInterval( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        assertEquals( ValueCase.INTERVAL, protoValue.getValueCase() );
+
+        assertEquals( value, new TypedValue( protoValue ).asObject() );
+    }
+
+
+    @Test
     void documentTest() throws SQLException {
         PolyDocument value = new PolyDocument();
         value.put( "firstValue", TypedValue.fromBoolean( true ) );
@@ -893,6 +917,23 @@ public class TypedValueTest {
 
 
     @Test
+    void documentTestAsObject() throws SQLException {
+        PolyDocument value = new PolyDocument();
+        value.put( "firstValue", TypedValue.fromBoolean( true ) );
+        value.put( "secondValue", TypedValue.fromDouble( 12.345 ) );
+        value.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, 0 ) ) );
+
+        TypedValue typedValue1 = TypedValue.fromDocument( value );
+        ProtoValue protoValue = typedValue1.serialize();
+
+        PolyDocument document = (PolyDocument) new TypedValue( protoValue ).asObject();
+        assertEquals( value.get( "firstValue" ).asBoolean(), document.get( "firstValue" ).asBoolean() );
+        assertEquals( value.get( "secondValue" ).asDouble(), document.get( "secondValue" ).asDouble() );
+        assertEquals( value.get( "thirdValue" ).asInterval(), document.get( "thirdValue" ).asInterval() );
+    }
+
+
+    @Test
     void fileTest() throws SQLException {
         Blob value = new PolyphenyBlob( new byte[]{ 1, 2, 3, 4, 5 } );
         TypedValue typedValue1 = TypedValue.fromBlob( value );
@@ -903,6 +944,7 @@ public class TypedValueTest {
         TypedValue typedValue2 = new TypedValue( protoValue );
         assertArrayEquals( value.getBytes( 1, 5 ), typedValue2.asBlob().getBytes( 1, 5 ) );
     }
+
 
     @Test
     void getLengthTest() throws SQLException {
