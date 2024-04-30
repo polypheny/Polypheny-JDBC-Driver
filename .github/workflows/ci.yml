@@ -38,9 +38,12 @@ jobs:
             fail-fast: false
             matrix:
                 java: [ 8, 11, 17, 21 ]
-                os: [ ubuntu-latest ]
+                os: [ ubuntu-latest, macos-latest ]
                 include:
                     -   os: windows-latest
+                        java: 8
+                exclude:
+                    -   os: macos-latest
                         java: 8
         timeout-minutes: 20
         runs-on: ${{ matrix.os }}
@@ -58,39 +61,12 @@ jobs:
                 uses: actions/download-artifact@v4
                 with:
                     name: polypheny-jar
-            -   name: Build with Gradle
-                run: ./gradlew build
-                env:
-                    POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
-                    POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_X64 }}/bin/java
 
-    build-macos:
-        needs: build-polypheny
-        strategy:
-            fail-fast: false
-            matrix:
-                java: [ 11, 17, 21 ]
-        timeout-minutes: 20
-        runs-on: macos-latest
-        name: Java ${{ matrix.java }} @ macos-latest
-        steps:
-            -   uses: actions/checkout@v4
-            -   name: Set up JDK
-                uses: actions/setup-java@v4
+            -   name: Build & test with Gradle
+                uses: polypheny/GitHub-Action-Run-Polypheny@dev
                 with:
-                    distribution: 'temurin'
-                    java-version: |
-                        17
-                        ${{ matrix.java }}
-            -   name: Load Polypheny JAR
-                uses: actions/download-artifact@v4
-                with:
-                    name: polypheny-jar
-            -   name: Build with Gradle
-                run: ./gradlew build
-                env:
-                    POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
-                    POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_ARM64 }}/bin/java
+                  cmd: ./gradlew build
+                  jar: dbms-0.10.0-SNAPSHOT.jar
 
     test-stores:
         needs: build-polypheny
@@ -115,6 +91,8 @@ jobs:
             -   name: Build with Gradle
                 run: ./gradlew build
                 env:
-                    POLYPHENY_JAR: dbms-0.10.0-SNAPSHOT.jar
-                    POLYPHENY_JAVA: ${{ env.JAVA_HOME_17_X64 }}/bin/java
-                    POLYPHENY_DEFAULT_STORE: ${{ matrix.adapter }}
+                  uses: polypheny/GitHub-Action-Run-Polypheny@dev
+                  with:
+                    cmd: ./gradlew build
+                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    default-store: ${{ matrix.adapter }}
