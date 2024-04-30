@@ -90,7 +90,7 @@ jobs:
             -   name: Build & test with Gradle
                 uses: polypheny/GitHub-Action-Run-Polypheny@dev
                 with:
-                  cmd: ./gradlew build
+                  cmd: gradlew.bat build
                   jar: dbms-0.10.0-SNAPSHOT.jar
                   java: ${{ env.JAVA_HOME_17_X64 }}\bin\java
 
