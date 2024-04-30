@@ -55,6 +55,9 @@ public class PolyphenyStatementProperties {
     @Getter
     @Setter
     private Calendar calendar;
+    @Getter
+    @Setter
+    private boolean isCloseOnCompletion;
 
 
     public void setPolyphenyStatement( PolyphenyStatement polyphenyStatement ) throws SQLException {

@@ -46,7 +46,6 @@ public class PolyphenyStatement implements Statement {
     protected int statementId;
 
     private boolean isClosed;
-    private boolean isClosedOnCompletion;
     protected PolyphenyStatementProperties properties;
 
     // Value used to represent that no value is set for the update count according to JDBC.
@@ -60,7 +59,6 @@ public class PolyphenyStatement implements Statement {
         this.polyConnection = connection;
         this.properties = properties;
         this.isClosed = false;
-        this.isClosedOnCompletion = false;
         this.statementBatch = new LinkedList<>();
         this.properties.setPolyphenyStatement( this );
         this.statementId = NO_STATEMENT_ID;
@@ -98,6 +96,9 @@ public class PolyphenyStatement implements Statement {
     public void notifyResultClosure() throws SQLException {
         this.currentResult = null;
         getClient().closeResult( statementId, getTimeout() );
+        if (isCloseOnCompletion()) {
+            close();
+        }
     }
 
 
@@ -135,6 +136,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
         throwIfClosed();
+        clearBatch();
         prepareForReexecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
@@ -166,6 +168,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public int executeUpdate( String statement ) throws SQLException {
         throwIfClosed();
+        clearBatch();
         prepareForReexecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
@@ -286,6 +289,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean execute( String statement ) throws SQLException {
         throwIfClosed();
+        clearBatch();
         prepareForReexecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
@@ -395,6 +399,9 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void clearBatch() throws SQLException {
+        if ( statementBatch.isEmpty() ) {
+            return;
+        }
         statementBatch.clear();
     }
 
@@ -422,26 +429,30 @@ public class PolyphenyStatement implements Statement {
 
 
     private List<Long> executeUnparameterizedBatch() throws SQLException {
-        throwIfClosed();
-        prepareForReexecution();
-        CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse );
-        List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
-        clearBatch();
-        getClient().executeUnparameterizedStatementBatch( requests, callback, getTimeout() );
-        while ( true ) {
-            StatementBatchResponse status = callback.takeNext();
-            if ( !hasStatementId() ) {
-                statementId = status.getBatchId();
+        try {
+            throwIfClosed();
+            prepareForReexecution();
+            CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse );
+            List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
+            clearBatch();
+            getClient().executeUnparameterizedStatementBatch( requests, callback, getTimeout() );
+            while ( true ) {
+                StatementBatchResponse status = callback.takeNext();
+                if ( !hasStatementId() ) {
+                    statementId = status.getBatchId();
+                }
+                if ( status.getScalarsCount() == 0 ) {
+                    continue;
+                }
+                try {
+                    callback.awaitCompletion();
+                } catch ( InterruptedException e ) {
+                    throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
+                }
+                return status.getScalarsList();
             }
-            if ( status.getScalarsCount() == 0 ) {
-                continue;
-            }
-            try {
-                callback.awaitCompletion();
-            } catch ( InterruptedException e ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
-            }
-            return status.getScalarsList();
+        } finally {
+            clearBatch();
         }
 
     }
@@ -581,14 +592,14 @@ public class PolyphenyStatement implements Statement {
     @Override
     public void closeOnCompletion() throws SQLException {
         throwIfClosed();
-        isClosedOnCompletion = true;
+        properties.setCloseOnCompletion( true );
     }
 
 
     @Override
     public boolean isCloseOnCompletion() throws SQLException {
         throwIfClosed();
-        return isClosedOnCompletion;
+        return properties.isCloseOnCompletion();
     }
 
 

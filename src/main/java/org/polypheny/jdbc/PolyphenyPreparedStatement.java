@@ -151,39 +151,49 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
     @Override
     public ResultSet executeQuery() throws SQLException {
-        throwIfClosed();
-        prepareForReexecution();
-        StatementResult result = getClient().executeIndexedStatement(
-                statementId,
-                Arrays.asList( parameters ),
-                properties.getFetchSize(),
-                getTimeout()
-        );
-        if ( !result.hasFrame() ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
+        try {
+            throwIfClosed();
+            prepareForReexecution();
+            StatementResult result = getClient().executeIndexedStatement(
+                    statementId,
+                    Arrays.asList( parameters ),
+                    properties.getFetchSize(),
+                    getTimeout()
+            );
+            if ( !result.hasFrame() ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
+            }
+            Frame frame = result.getFrame();
+            throwIfNotRelational( frame );
+            currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+            return currentResult;
+        } finally {
+            clearParameters();
+            clearParameterBatch();
         }
-        Frame frame = result.getFrame();
-        throwIfNotRelational( frame );
-        currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
-        return currentResult;
     }
 
 
     @Override
     public long executeLargeUpdate() throws SQLException {
-        throwIfClosed();
-        prepareForReexecution();
-        StatementResult result = getClient().executeIndexedStatement(
-                statementId,
-                Arrays.asList( parameters ),
-                properties.getFetchSize(),
-                getTimeout()
-        );
-        if ( result.hasFrame() ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
+        try {
+            throwIfClosed();
+            prepareForReexecution();
+            StatementResult result = getClient().executeIndexedStatement(
+                    statementId,
+                    Arrays.asList( parameters ),
+                    properties.getFetchSize(),
+                    getTimeout()
+            );
+            if ( result.hasFrame() ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
+            }
+            currentUpdateCount = result.getScalar();
+            return currentUpdateCount;
+        } finally {
+            clearParameters();
+            clearParameterBatch();
         }
-        currentUpdateCount = result.getScalar();
-        return currentUpdateCount;
     }
 
 
@@ -350,6 +360,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         parameters = createParameterList( parameterMetaData.getParameterCount() );
     }
 
+
     private void clearParameterBatch() {
         parameterBatch = new LinkedList<>();
     }
@@ -373,22 +384,27 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
     @Override
     public boolean execute() throws SQLException {
-        throwIfClosed();
-        prepareForReexecution();
-        StatementResult result = getClient().executeIndexedStatement(
-                statementId,
-                Arrays.asList( parameters ),
-                properties.getFetchSize(),
-                getTimeout()
-        );
-        if ( !result.hasFrame() ) {
-            currentUpdateCount = result.getScalar();
-            return false;
+        try {
+            throwIfClosed();
+            prepareForReexecution();
+            StatementResult result = getClient().executeIndexedStatement(
+                    statementId,
+                    Arrays.asList( parameters ),
+                    properties.getFetchSize(),
+                    getTimeout()
+            );
+            if ( !result.hasFrame() ) {
+                currentUpdateCount = result.getScalar();
+                return false;
+            }
+            Frame frame = result.getFrame();
+            throwIfNotRelational( frame );
+            currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+            return true;
+        } finally {
+            clearParameters();
+            clearParameterBatch();
         }
-        Frame frame = result.getFrame();
-        throwIfNotRelational( frame );
-        currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
-        return true;
     }
 
 
@@ -423,10 +439,14 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
-        StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
-        // jdbc: only batch is cleared, parameters remain beyond executions
-        clearParameterBatch();
-        return status.getScalarsList();
+        try {
+            StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
+            return status.getScalarsList();
+        } finally {
+            // jdbc: batch and individual parameters are always cleared even in the execution fails.
+            clearParameters();
+            clearParameterBatch();
+        }
     }
 
 

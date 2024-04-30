@@ -203,6 +203,7 @@ public class PolyphenyConnectionProperties {
         properties.setLargeMaxRows( PropertyUtils.getDEFAULT_LARGE_MAX_ROWS() );
         properties.setDoesEscapeProcessing( PropertyUtils.isDEFAULT_DOING_ESCAPE_PROCESSING() );
         properties.setIsPoolable( PropertyUtils.isDEFAULT_STATEMENT_POOLABLE() );
+        properties.setCloseOnCompletion( false );
         return properties;
     }
 
