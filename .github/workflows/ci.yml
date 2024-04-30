@@ -89,10 +89,8 @@ jobs:
                 with:
                     name: polypheny-jar
             -   name: Build with Gradle
-                run: ./gradlew build
-                env:
-                  uses: polypheny/GitHub-Action-Run-Polypheny@dev
-                  with:
+                uses: polypheny/GitHub-Action-Run-Polypheny@dev
+                with:
                     cmd: ./gradlew build
                     jar: dbms-0.10.0-SNAPSHOT.jar
                     default-store: ${{ matrix.adapter }}
