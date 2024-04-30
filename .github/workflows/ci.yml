@@ -67,6 +67,7 @@ jobs:
                 with:
                   cmd: ./gradlew build
                   jar: dbms-0.10.0-SNAPSHOT.jar
+                  java: ${{ env.JAVA_HOME_17_X64 || env.JAVA_HOME_17_ARM64 }}/bin/java
 
     test-stores:
         needs: build-polypheny
