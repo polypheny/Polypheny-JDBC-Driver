@@ -26,14 +26,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.polypheny.jdbc.multimodel.DocumentResult;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.Result;
 import org.polypheny.jdbc.multimodel.Result.ResultType;
 import org.polypheny.jdbc.types.PolyDocument;
 
-@ExtendWith(TestHelper.class)
 public class QueryTest {
 
     private static final String MQL_LANGUAGE_NAME = "mongo";
