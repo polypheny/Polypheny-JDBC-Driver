@@ -626,6 +626,9 @@ public class TypedValue implements Convertible {
         if ( bigintValue != null ) {
             return bigintValue.intValue();
         }
+        if ( bigDecimalValue != null ) {
+            return bigDecimalValue.intValue();
+        }
         if ( isNull() ) {
             return 0;
         }
