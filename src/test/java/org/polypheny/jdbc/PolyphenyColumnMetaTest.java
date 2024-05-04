@@ -200,7 +200,6 @@ public class PolyphenyColumnMetaTest {
     public void protoConstructor__ColumnMeta_ReadOnly() {
         PolyphenyColumnMeta meta = new PolyphenyColumnMeta( protoColumnMeta );
         assertFalse( meta.isReadOnly() );
-
     }
 
 
@@ -339,21 +338,18 @@ public class PolyphenyColumnMetaTest {
 
     @Test
     public void fromSpecification__Ordinal_ColumnName_EntityName_JdbcType_Writable() {
-
         assertFalse( specifiedColumnMeta.isWritable() );
     }
 
 
     @Test
     public void fromSpecification__Ordinal_ColumnName_EntityName_JdbcType_DefinitelyWritable() {
-
         assertFalse( specifiedColumnMeta.isDefinitelyWritable() );
     }
 
 
     @Test
     public void fromSpecification__Ordinal_ColumnName_EntityName_JdbcType_ColumnClassName() {
-
         assertEquals( "", specifiedColumnMeta.getColumnClassName() );
     }
 

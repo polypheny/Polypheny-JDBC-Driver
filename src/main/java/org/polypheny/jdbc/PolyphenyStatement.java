@@ -270,7 +270,6 @@ public class PolyphenyStatement implements Statement {
     @Override
     public SQLWarning getWarnings() throws SQLException {
         return null;
-
     }
 
 
@@ -454,7 +453,6 @@ public class PolyphenyStatement implements Statement {
         } finally {
             clearBatch();
         }
-
     }
 
 
@@ -544,21 +542,18 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean execute( String s, int i ) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
 
     @Override
     public boolean execute( String s, int[] ints ) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
 
     @Override
     public boolean execute( String s, String[] strings ) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
 
@@ -615,8 +610,6 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean isWrapperFor( Class<?> aClass ) {
         return aClass.isInstance( this );
-
     }
-
 
 }

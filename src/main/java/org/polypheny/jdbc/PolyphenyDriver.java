@@ -39,9 +39,7 @@ public class PolyphenyDriver implements java.sql.Driver {
         try {
             DriverManager.registerDriver( this );
         } catch ( SQLException e ) {
-            System.out.println(
-                    "Error occurred while registering JDBC driver "
-                            + this + ": " + e );
+            System.out.println( "Error occurred while registering JDBC driver " + this + ": " + e );
         }
     }
 

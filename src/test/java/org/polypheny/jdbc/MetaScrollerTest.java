@@ -16,7 +16,6 @@
 
 package org.polypheny.jdbc;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -552,6 +551,5 @@ public class MetaScrollerTest {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         assertTrue( scroller.absolute( -2 ) );
     }
-
 
 }

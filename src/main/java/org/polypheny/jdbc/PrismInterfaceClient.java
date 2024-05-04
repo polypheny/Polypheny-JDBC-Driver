@@ -162,7 +162,6 @@ public class PrismInterfaceClient {
         ExecuteUnparameterizedStatementBatchRequest request = ExecuteUnparameterizedStatementBatchRequest.newBuilder()
                 .addAllStatements( requests )
                 .build();
-
         rpc.executeUnparameterizedStatementBatch( request, updateCallback ); // TODO timeout
     }
 
@@ -253,7 +252,6 @@ public class PrismInterfaceClient {
 
     private String getServerApiVersionString( ConnectionResponse response ) {
         return response.getMajorApiVersion() + "." + response.getMinorApiVersion();
-
     }
 
 
@@ -350,9 +348,7 @@ public class PrismInterfaceClient {
 
     public void setClientInfoProperties( Properties properties, int timeout ) throws PrismInterfaceServiceException {
         ClientInfoProperties.Builder requestBuilder = ClientInfoProperties.newBuilder();
-        properties.stringPropertyNames()
-                .forEach( s -> requestBuilder.putProperties( s, properties.getProperty( s ) ) );
-
+        properties.stringPropertyNames().forEach( s -> requestBuilder.putProperties( s, properties.getProperty( s ) ) );
         rpc.setClientInfoProperties( requestBuilder.build(), timeout );
     }
 

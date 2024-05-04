@@ -170,7 +170,6 @@ public class PolyphenyResultSet implements ResultSet {
         } catch ( InterruptedException e ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, e.getMessage(), e );
         }
-
     }
 
 
@@ -1526,7 +1525,6 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public boolean isWrapperFor( Class<?> aClass ) {
         return aClass.isInstance( this );
-
     }
 
 }
