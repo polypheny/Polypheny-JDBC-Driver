@@ -8,7 +8,9 @@
 
 # Polypheny JDBC Driver
 
-This repository contains a standards-compliant JDBC driver for Polypheny.
+This repository contains s JDBC driver for Polypheny. It utilizes the *Prism query interface* deployed with every instance of Polypheny by default. The driver adheres to the JDBC 4.2 standard, ensuring compatibility with Java applications, including those written in Scala and Kotlin, as well as tools like DataGrip.
+
+This driver is compatible with JVM version 8 or higher.
 
 ## Getting Started
 
