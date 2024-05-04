@@ -62,9 +62,9 @@ jobs:
             -   name: Build & test with Gradle
                 uses: polypheny/GitHub-Action-Run-Polypheny@dev
                 with:
-                  cmd: ./gradlew build
-                  jar: dbms-0.10.0-SNAPSHOT.jar
-                  java: ${{ env.JAVA_HOME_17_X64 || env.JAVA_HOME_17_ARM64 }}/bin/java
+                    cmd: ./gradlew build -PdisableToolchain=true
+                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    java: ${{ env.JAVA_HOME_17_X64 || env.JAVA_HOME_17_ARM64 }}/bin/java
 
     build-windows:
         needs: build-polypheny
@@ -90,9 +90,9 @@ jobs:
             -   name: Build & test with Gradle
                 uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
                 with:
-                  cmd: gradlew.bat build
-                  jar: dbms-0.10.0-SNAPSHOT.jar
-                  java: ${{ env.JAVA_HOME_17_X64 }}\bin\java
+                    cmd: gradlew.bat build -PdisableToolchain=true
+                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    java: ${{ env.JAVA_HOME_17_X64 }}\bin\java
 
     test-stores:
         needs: build-polypheny
@@ -117,6 +117,6 @@ jobs:
             -   name: Build with Gradle
                 uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
                 with:
-                    cmd: ./gradlew build
+                    cmd: ./gradlew build -PdisableToolchain=true
                     jar: dbms-0.10.0-SNAPSHOT.jar
                     default-store: ${{ matrix.adapter }}

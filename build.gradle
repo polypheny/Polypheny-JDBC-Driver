@@ -28,10 +28,18 @@ compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
 javadoc.options.encoding = "UTF-8"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+
+// Allow to disable toolchain setting and use the java available on the system. Important for CI pipelines to test different
+// java versions.
+if (!hasProperty('disableToolchain')) {
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(8)
+        }
     }
+}
+
+java {
     withJavadocJar()
     withSourcesJar()
 }
