@@ -25,6 +25,7 @@ public class ProtoToJdbcTypeMap {
 
     private static final Map<ProtoPolyType, Integer> PROTO_TYPE_TO_JDBC = new HashMap<>();
 
+
     static {
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.BOOLEAN, Types.BOOLEAN );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.TINYINT, Types.TINYINT );

@@ -30,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.protointerface.proto.ClientInfoProperties;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesResponse;
-import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaResponse;
 import org.polypheny.db.protointerface.proto.CloseResultRequest;
 import org.polypheny.db.protointerface.proto.CloseResultResponse;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;

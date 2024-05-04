@@ -17,6 +17,7 @@
 package org.polypheny.jdbc.types;
 
 public interface ExtraPolyTypes {
+
     int GEOMETRY = 2015; // TODO: confirm
 
 }

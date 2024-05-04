@@ -51,6 +51,7 @@ public class PolyphenyResultSetProperties {
     @Setter
     private Calendar calendar;
 
+
     public boolean isReadOnly() {
         return resultSetConcurrency == ResultSet.CONCUR_READ_ONLY;
     }

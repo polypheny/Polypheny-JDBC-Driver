@@ -96,7 +96,7 @@ public class PolyphenyStatement implements Statement {
     public void notifyResultClosure() throws SQLException {
         this.currentResult = null;
         getClient().closeResult( statementId, getTimeout() );
-        if (isCloseOnCompletion()) {
+        if ( isCloseOnCompletion() ) {
             close();
         }
     }
