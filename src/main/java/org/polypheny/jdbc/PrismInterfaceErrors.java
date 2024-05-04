@@ -24,7 +24,7 @@ public enum PrismInterfaceErrors {
     COLUMN_NOT_EXISTS( "42S22", 4 ),
     COLUMN_ACCESS_ILLEGAL( "22003", 5 ),
     OPERATION_ILLEGAL( "42000", 6 ),
-    MODIFICATION_NOT_PERMITED( "2F002", 7 ),
+    MODIFICATION_NOT_PERMITTED( "2F002", 7 ),
     VALUE_ILLEGAL( "22003", 8 ),
     STREAM_ERROR( "I4001", 9 ),
     WRAPPER_INCORRECT_TYPE( "I5001", 10 ),
@@ -32,7 +32,7 @@ public enum PrismInterfaceErrors {
     UDT_REACHED_END( "I4002", 12 ),
     PARAMETER_NOT_EXISTS( "42000", 13 ),
     OPTION_NOT_SUPPORTED( "0A000", 14 ),
-    DATA_TYPE_MISSMATCH( "42S22", 17 ),
+    DATA_TYPE_MISMATCH( "42S22", 17 ),
     MISSING_INTERFACE( "I4003", 18 ),
     UDT_CONSTRUCTION_FAILED( "I4003", 19 ),
     ENTRY_NOT_EXISTS( "I5001", 20 );
@@ -46,4 +46,5 @@ public enum PrismInterfaceErrors {
         this.state = state;
         this.errorCode = errorCode;
     }
+
 }

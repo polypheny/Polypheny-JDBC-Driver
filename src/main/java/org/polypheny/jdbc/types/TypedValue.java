@@ -425,7 +425,7 @@ public class TypedValue implements Convertible {
         try {
             return TypedValueUtils.buildTypedValueFromObject( value );
         } catch ( ParseException | SQLFeatureNotSupportedException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Conversion from object failed.", e );
         }
     }
 
@@ -434,7 +434,7 @@ public class TypedValue implements Convertible {
         try {
             return TypedValueUtils.buildTypedValueFromObject( value, targetSqlType );
         } catch ( ParseException | SQLFeatureNotSupportedException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Conversion from object failed.", e );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Conversion from object failed.", e );
         }
     }
 
@@ -454,8 +454,8 @@ public class TypedValue implements Convertible {
     }
 
 
-    public static TypedValue fromNCharacterStream( Reader chatacterStream, long length ) throws SQLException {
-        return fromCharacterStream( chatacterStream, length );
+    public static TypedValue fromNCharacterStream( Reader characterStream, long length ) throws SQLException {
+        return fromCharacterStream( characterStream, length );
     }
 
 
@@ -539,7 +539,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type CHAR or VARCHAR." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type CHAR or VARCHAR." );
     }
 
 
@@ -575,7 +575,7 @@ public class TypedValue implements Convertible {
                 return true;
             }
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type BOOLEAN." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type BOOLEAN." );
     }
 
 
@@ -593,7 +593,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return 0;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type TYNYINT, SMALLINT, INTEGER or BIGINT." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TINYINT, SMALLINT, INTEGER or BIGINT." );
     }
 
 
@@ -611,7 +611,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return 0;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type TYNYINT, SMALLINT, INTEGER or BIGINT." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TINYINT, SMALLINT, INTEGER or BIGINT." );
     }
 
 
@@ -632,7 +632,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return 0;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type TYNYINT, SMALLINT, INTEGER or BIGINT." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TINYINT, SMALLINT, INTEGER or BIGINT." );
     }
 
 
@@ -650,7 +650,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return 0;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type TYNYINT, SMALLINT, INTEGER or BIGINT." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TINYINT, SMALLINT, INTEGER or BIGINT." );
     }
 
 
@@ -671,7 +671,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return 0;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type REAL, FLOT or DOUBLE." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type REAL, FLOT or DOUBLE." );
     }
 
 
@@ -692,7 +692,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return 0;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type REAL, FLOT or DOUBLE." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type REAL, FLOT or DOUBLE." );
     }
 
 
@@ -707,7 +707,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type DECIMAL." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type DECIMAL." );
     }
 
 
@@ -729,7 +729,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type BINARY or VARBINARY." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type BINARY or VARBINARY." );
     }
 
 
@@ -744,7 +744,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type CHAR or VARCHAR." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type CHAR or VARCHAR." );
     }
 
 
@@ -760,7 +760,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type CHAR or VARCHAR." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type CHAR or VARCHAR." );
     }
 
 
@@ -775,7 +775,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not streamable." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not streamable." );
     }
 
 
@@ -790,7 +790,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type DOCUMENT." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type DOCUMENT." );
     }
 
 
@@ -805,7 +805,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type INTERVAL." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type INTERVAL." );
     }
 
 
@@ -845,7 +845,7 @@ public class TypedValue implements Convertible {
             case FILE:
                 return asBlob();
             default:
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value has unknown type and thus can not be returned." );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value has unknown type and thus can not be returned." );
         }
     }
 
@@ -886,7 +886,7 @@ public class TypedValue implements Convertible {
             case FILE:
                 return asBlob();
             default:
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value has unknown type and thus can not be returned." );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value has unknown type and thus can not be returned." );
         }
     }
 
@@ -902,7 +902,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type CHAR or VARCHAR." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type CHAR or VARCHAR." );
     }
 
 
@@ -917,7 +917,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type FILE, AUDIO, VIDEO or IMAGE." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type FILE, AUDIO, VIDEO or IMAGE." );
     }
 
 
@@ -932,7 +932,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type CHAR or VARCHAR." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type CHAR or VARCHAR." );
     }
 
 
@@ -947,13 +947,13 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type ARRAY." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type ARRAY." );
     }
 
 
     @Override
     public Struct asStruct() throws SQLException {
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "No type retrievable as a struct exists in Polypheny." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "No type retrievable as a struct exists in Polypheny." );
     }
 
 
@@ -968,7 +968,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type DATE." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type DATE." );
     }
 
 
@@ -989,7 +989,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type TIME." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TIME." );
     }
 
 
@@ -1010,7 +1010,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type TIMESTAMP." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TIMESTAMP." );
     }
 
 
@@ -1022,7 +1022,7 @@ public class TypedValue implements Convertible {
 
     @Override
     public Ref asRef() throws SQLException {
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "No type retrievable as a reference exists in Polypheny." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "No type retrievable as a reference exists in Polypheny." );
     }
 
 
@@ -1037,13 +1037,13 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type ROW_ID." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type ROW_ID." );
     }
 
 
     @Override
     public URL asUrl() throws SQLException {
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "No type retrievable as a url exists in Polypheny." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "No type retrievable as a url exists in Polypheny." );
     }
 
 
@@ -1058,13 +1058,13 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type FILE, AUDIO, VIDEO or IMAGE." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type FILE, AUDIO, VIDEO or IMAGE." );
     }
 
 
     @Override
     public SQLXML asSQLXML() throws SQLException {
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "No type retrievable as SQLXML exists in Polypheny." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "No type retrievable as SQLXML exists in Polypheny." );
     }
 
 
@@ -1086,7 +1086,7 @@ public class TypedValue implements Convertible {
             deserialize();
         }
         if ( otherValue == null || !(otherValue instanceof UDTPrototype) ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type USER_DEFINED_TYPE." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type USER_DEFINED_TYPE." );
         }
         UDTPrototype prototype = (UDTPrototype) otherValue;
         Class<?> udtClass = map.get( prototype.getTypeName() );
@@ -1100,7 +1100,7 @@ public class TypedValue implements Convertible {
             deserialize();
         }
         if ( otherValue == null || !(otherValue instanceof UDTPrototype) ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "This value is not of type USER_DEFINED_TYPE." );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type USER_DEFINED_TYPE." );
         }
         return aClass.cast( buildFromUdtPrototype( aClass, (UDTPrototype) otherValue ) );
     }
@@ -1108,7 +1108,7 @@ public class TypedValue implements Convertible {
 
     private <T> Object buildFromUdtPrototype( Class<T> udtClass, UDTPrototype prototype ) throws SQLException {
         if ( udtClass == null ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Type-map contains no type for internal type " + prototype.getTypeName() );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Type-map contains no type for internal type " + prototype.getTypeName() );
         }
         try {
             Constructor<?> udtConstructor = udtClass.getConstructor( SQLInput.class, String.class );
@@ -1240,7 +1240,7 @@ public class TypedValue implements Convertible {
                 return serializeAsProtoDocument();
 
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISSMATCH, "Failed to serialize unknown type: " + valueCase.name() );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Failed to serialize unknown type: " + valueCase.name() );
     }
 
 

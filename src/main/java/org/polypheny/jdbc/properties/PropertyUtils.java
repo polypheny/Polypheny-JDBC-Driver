@@ -189,12 +189,12 @@ public class PropertyUtils {
     }
 
 
-    public static boolean isValidResultSetConcurrency( int resultSetType, int resultSeteConcurrency ) {
+    public static boolean isValidResultSetConcurrency( int resultSetType, int resultSetConcurrency ) {
         List<Integer> supportedConcurrencies = SUPPORTED_CONCURRENCIES.get( resultSetType );
         if ( supportedConcurrencies == null ) {
             return false;
         }
-        return supportedConcurrencies.contains( resultSeteConcurrency );
+        return supportedConcurrencies.contains( resultSetConcurrency );
     }
 
 
@@ -213,8 +213,8 @@ public class PropertyUtils {
     }
 
 
-    public static boolean isValidIsolationLevel( int transacitonIsolationLevel ) {
-        return TRANSACTION_ISOLATION_LEVELS.contains( transacitonIsolationLevel );
+    public static boolean isValidIsolationLevel( int transactionIsolationLevel ) {
+        return TRANSACTION_ISOLATION_LEVELS.contains( transactionIsolationLevel );
     }
 
 
@@ -244,7 +244,7 @@ public class PropertyUtils {
     }
 
 
-    public static boolean isInvalidFetchDdirection( int fetchDirection ) {
+    public static boolean isInvalidFetchDirection( int fetchDirection ) {
         return !FETCH_DIRECTIONS.contains( fetchDirection );
     }
 

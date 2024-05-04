@@ -81,7 +81,7 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    private void prepareForReexecution() throws SQLException {
+    private void prepareForReExecution() throws SQLException {
         if ( currentResult != null ) {
             currentResult.close();
         }
@@ -108,7 +108,7 @@ public class PolyphenyStatement implements Statement {
             return;
         }
         polyConnection.endTracking( this );
-        prepareForReexecution();
+        prepareForReExecution();
         isClosed = true;
     }
 
@@ -137,7 +137,7 @@ public class PolyphenyStatement implements Statement {
     public ResultSet executeQuery( String statement ) throws SQLException {
         throwIfClosed();
         clearBatch();
-        prepareForReexecution();
+        prepareForReExecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
@@ -169,7 +169,7 @@ public class PolyphenyStatement implements Statement {
     public int executeUpdate( String statement ) throws SQLException {
         throwIfClosed();
         clearBatch();
-        prepareForReexecution();
+        prepareForReExecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
@@ -290,7 +290,7 @@ public class PolyphenyStatement implements Statement {
     public boolean execute( String statement ) throws SQLException {
         throwIfClosed();
         clearBatch();
-        prepareForReexecution();
+        prepareForReExecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
         getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
@@ -342,7 +342,7 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean getMoreResults() throws SQLException {
         throwIfClosed();
-        prepareForReexecution();
+        prepareForReExecution();
         // statements can not return multiple result sets
         return false;
     }
@@ -431,7 +431,7 @@ public class PolyphenyStatement implements Statement {
     private List<Long> executeUnparameterizedBatch() throws SQLException {
         try {
             throwIfClosed();
-            prepareForReexecution();
+            prepareForReExecution();
             CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse );
             List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
             clearBatch();
@@ -493,7 +493,7 @@ public class PolyphenyStatement implements Statement {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal value for closing behaviour: " + i );
         }
         throwIfClosed();
-        prepareForReexecution();
+        prepareForReExecution();
         // statements can not return multiple result sets
         return false;
     }

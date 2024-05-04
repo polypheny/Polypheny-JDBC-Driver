@@ -143,7 +143,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     private void throwIfReadOnly() throws SQLException {
         if ( properties.isReadOnly() ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.MODIFICATION_NOT_PERMITED, "Modification of result sets in read only mode is not permitted" );
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.MODIFICATION_NOT_PERMITTED, "Modification of result sets in read only mode is not permitted" );
         }
     }
 
@@ -805,7 +805,7 @@ public class PolyphenyResultSet implements ResultSet {
     public void updateObject( int columnIndex, Object x, int saleOrLength ) throws SQLException {
         throwIfClosed();
         throwIfReadOnly();
-        // TODO: propert implmentation. scaleOrLength only applies to streams (length) and bigdecimals(scale)
+        // TODO: proper implementation. scaleOrLength only applies to streams (length) and bigDecimals(scale)
     }
 
 
@@ -920,8 +920,8 @@ public class PolyphenyResultSet implements ResultSet {
 
 
     @Override
-    public void updateObject( String columnLabel, Object x, int scaleOrlength ) throws SQLException {
-        updateObject( metadata.getColumnIndexFromLabel( columnLabel ), x, scaleOrlength );
+    public void updateObject( String columnLabel, Object x, int scaleOrLength ) throws SQLException {
+        updateObject( metadata.getColumnIndexFromLabel( columnLabel ), x, scaleOrLength );
     }
 
 

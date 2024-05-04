@@ -251,8 +251,8 @@ public class PrismInterfaceClient {
     }
 
 
-    private String getServerApiVersionString( ConnectionResponse repsonse ) {
-        return repsonse.getMajorApiVersion() + "." + repsonse.getMinorApiVersion();
+    private String getServerApiVersionString( ConnectionResponse response ) {
+        return response.getMajorApiVersion() + "." + response.getMinorApiVersion();
 
     }
 
@@ -357,9 +357,9 @@ public class PrismInterfaceClient {
     }
 
 
-    public List<Function> searchFunctions( String languaheName, String functionCategory, int timeout ) throws PrismInterfaceServiceException {
+    public List<Function> searchFunctions( String languageName, String functionCategory, int timeout ) throws PrismInterfaceServiceException {
         FunctionsRequest functionsRequest = FunctionsRequest.newBuilder()
-                .setQueryLanguage( languaheName )
+                .setQueryLanguage( languageName )
                 .setFunctionCategory( functionCategory )
                 .build();
 

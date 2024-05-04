@@ -351,7 +351,7 @@ public class TypedValueTest {
 
 
     @Test
-    public void asBytesReturnsPropertValue() throws SQLException {
+    public void asBytesReturnsProperValue() throws SQLException {
         byte[] data = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         TypedValue value = TypedValue.fromBytes( data );
         assertArrayEquals( data, value.asBytes() );

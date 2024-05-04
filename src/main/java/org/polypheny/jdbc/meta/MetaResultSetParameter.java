@@ -31,10 +31,10 @@ class MetaResultSetParameter<T> {
     private final Function<T, Object> accessFunction;
 
 
-    MetaResultSetParameter( String name, int jdbcType, Function<T, Object> acessor ) {
+    MetaResultSetParameter( String name, int jdbcType, Function<T, Object> accessor ) {
         this.name = name;
         this.jdbcType = jdbcType;
-        this.accessFunction = acessor;
+        this.accessFunction = accessor;
     }
 
 

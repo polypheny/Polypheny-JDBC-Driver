@@ -115,7 +115,7 @@ public class PolyphenyColumnMeta {
 
 
     /* This constructor is used exclusively to create metadata for the responses of the meta endpoint since these must be
-     * represented as resultsets.
+     * represented as ResultSets.
      */
     private PolyphenyColumnMeta( int ordinal, String columnLabel, String entityName, int jdbcType ) {
         this.ordinal = ordinal;

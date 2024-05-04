@@ -84,7 +84,7 @@ public class ConnectionStringTest {
 
 
     @Test
-    public void connecitonString_String__NoPassword() throws Exception {
+    public void connectionString_String__NoPassword() throws Exception {
         final String expectedUsername = "username";
 
         final String url = "jdbc:polypheny://username@localhost:20569";
@@ -155,14 +155,14 @@ public class ConnectionStringTest {
 
 
     @Test()
-    public void connectionString_String__MissplacedAt() {
+    public void connectionString_String__MisplacedAt() {
         final String url = "jdbc:polypheny://username:password@localhost:20569/namespace?k1@v1&k2";
         assertThrows( SQLException.class, () -> new ConnectionString( url ) );
     }
 
 
     @Test()
-    public void connectionString_String__MissplacedAt2() throws Exception {
+    public void connectionString_String__MisplacedAt2() throws Exception {
         final String url = "jdbc:polypheny://username@password:localhost:20569/namespace?k1@v1&k2";
         assertThrows( SQLException.class, () -> new ConnectionString( url ) );
     }

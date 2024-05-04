@@ -98,10 +98,10 @@ public class PolyphenyClob implements Clob, NClob {
 
 
     @Override
-    public long position( String searchstr, long start ) throws SQLException {
+    public long position( String searchStr, long start ) throws SQLException {
         throwIfFreed();
         int startIndex = longToInt( positionToIndex( start ) );
-        return value.indexOf( searchstr, startIndex );
+        return value.indexOf( searchStr, startIndex );
     }
 
 

@@ -1099,7 +1099,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     @Override
-    public boolean ownDeletesAreVisible( int tyoe ) throws SQLException {
+    public boolean ownDeletesAreVisible( int type ) throws SQLException {
         return false;
     }
 

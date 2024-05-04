@@ -62,7 +62,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     }
 
 
-    private void prepareForReexecution() throws SQLException {
+    private void prepareForReExecution() throws SQLException {
         if ( currentResult != null ) {
             currentResult.close();
         }
@@ -153,7 +153,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public ResultSet executeQuery() throws SQLException {
         try {
             throwIfClosed();
-            prepareForReexecution();
+            prepareForReExecution();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
                     Arrays.asList( parameters ),
@@ -178,7 +178,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public long executeLargeUpdate() throws SQLException {
         try {
             throwIfClosed();
-            prepareForReexecution();
+            prepareForReExecution();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
                     Arrays.asList( parameters ),
@@ -386,7 +386,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public boolean execute() throws SQLException {
         try {
             throwIfClosed();
-            prepareForReexecution();
+            prepareForReExecution();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
                     Arrays.asList( parameters ),

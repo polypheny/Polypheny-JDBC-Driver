@@ -119,7 +119,7 @@ public class PolyphenyStatementProperties {
 
 
     public void setFetchDirection( int fetchDirection ) throws SQLException {
-        if ( PropertyUtils.isInvalidFetchDdirection( fetchDirection ) ) {
+        if ( PropertyUtils.isInvalidFetchDirection( fetchDirection ) ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal value for fetch direction" );
         }
         this.fetchDirection = fetchDirection;

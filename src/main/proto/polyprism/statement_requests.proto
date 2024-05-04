@@ -149,4 +149,3 @@ message FetchRequest {
   // (Optional) Number of rows to retrieve in this batch. If no fetch size is specified, a default value is used.
   optional int32 fetch_size = 2;
 }
-
