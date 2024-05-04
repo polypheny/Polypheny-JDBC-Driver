@@ -26,9 +26,6 @@ public class Main {
         final String PASS = "";
 
         Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
-
-
     }
-
 
 }

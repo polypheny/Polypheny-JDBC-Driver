@@ -14,8 +14,9 @@ description = "A standards-compliant JDBC driver for Polypheny."
 
 def versionMajor = 2
 def versionMinor = 0
-def versionQualifier = "-SNAPSHOT"
-version = versionMajor + "." + versionMinor + versionQualifier
+def versionQualifier = "SNAPSHOT"
+def version = versionMajor + "." + versionMinor + (versionQualifier != '' ? "-" + versionQualifier : '')
+
 
 repositories {
     mavenCentral()
@@ -147,6 +148,24 @@ artifacts {
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
+
+// generate version properties file
+task generateVersionProperties {
+    def versionPropsFile = file('src/main/resources/version.properties')
+    versionPropsFile.parentFile.mkdirs()
+
+    // Generate version properties file with project version
+    versionPropsFile.withWriter { writer ->
+        writer.write("version=${version}\n")
+        writer.write("major=${versionMajor}\n")
+        writer.write("minor=${versionMinor}\n")
+        writer.write("qualifier=${versionQualifier}\n")
+        writer.write("buildTimestamp=${new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")}")
+    }
+}
+
+// Ensure the generated version properties file is created before compilation
+compileJava.dependsOn generateVersionProperties
 
 publishing {
     publications {

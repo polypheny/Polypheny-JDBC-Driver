@@ -55,7 +55,6 @@ public class PolyphenyParameterMeta {
         this.scale = parameterMeta.getScale();
         this.isNullable = NULLABILITY;
         this.isSigned = SIGNEDNESS;
-
     }
 
 }

@@ -250,3 +250,6 @@ nbdist/
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !/gradle/wrapper/gradle-wrapper.jar
 !/libs/avatica-1.16.0-POLYPHENYDB-shaded.jar
+
+# Ignore dynamically generated version file
+src/main/resources/version.properties

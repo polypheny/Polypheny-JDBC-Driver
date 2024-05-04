@@ -18,22 +18,20 @@ package org.polypheny.jdbc.properties;
 
 import java.util.TimeZone;
 import lombok.Getter;
+import org.polypheny.jdbc.utils.VersionUtil;
 
 public class DriverProperties {
 
     @Getter
     private static final String DRIVER_NAME = "JDBC driver for PolyphenyDB";
     @Getter
-    //TODO TH can we automate this?
-    private static final int DRIVER_MAJOR_VERSION = 2;
+    private static final int DRIVER_MAJOR_VERSION = VersionUtil.getMajor();
     @Getter
-    //TODO TH can we automate this?
-    private static final int DRIVER_MINOR_VERSION = 0;
+    private static final int DRIVER_MINOR_VERSION = VersionUtil.getMinor();
     @Getter
-    //TODO TH can we automate this?
-    private static final String DRIVER_VERSION_QUALIFIER = "-SNAPSHOT";
+    private static final String DRIVER_VERSION_QUALIFIER = VersionUtil.getQualifier();
     @Getter
-    private static final String DRIVER_VERSION = DRIVER_MAJOR_VERSION + '.' + DRIVER_MINOR_VERSION + DRIVER_VERSION_QUALIFIER;
+    private static final String DRIVER_VERSION = VersionUtil.getVersion();
     @Getter
     private static final boolean JDBC_COMPLIANT = false;
     @Getter

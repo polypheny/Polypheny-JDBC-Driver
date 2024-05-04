@@ -193,7 +193,6 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
     @Override
     public boolean isWrapperFor( Class<?> aClass ) {
         return aClass.isInstance( this );
-
     }
 
 }

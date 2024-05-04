@@ -88,10 +88,7 @@ public class PolyConnection implements Connection {
     }
 
 
-    public PolyConnection(
-            PolyphenyConnectionProperties connectionProperties,
-            PolyphenyDatabaseMetadata databaseMetaData ) {
-
+    public PolyConnection( PolyphenyConnectionProperties connectionProperties, PolyphenyDatabaseMetadata databaseMetaData ) {
         this.properties = connectionProperties;
         databaseMetaData.setConnection( this );
         this.databaseMetaData = databaseMetaData;
@@ -160,7 +157,6 @@ public class PolyConnection implements Connection {
     @Override
     public CallableStatement prepareCall( String sql ) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
 
@@ -243,7 +239,6 @@ public class PolyConnection implements Connection {
     public boolean isReadOnly() throws SQLException {
         throwIfClosed();
         return properties.isReadOnly();
-
     }
 
 
@@ -311,7 +306,6 @@ public class PolyConnection implements Connection {
                 getTimeout()
         );
         return new PolyphenyPreparedStatement( this, statementProperties, signature );
-
     }
 
 
@@ -346,7 +340,6 @@ public class PolyConnection implements Connection {
     public int getHoldability() throws SQLException {
         throwIfClosed();
         return properties.getResultSetHoldability();
-
     }
 
 
@@ -437,14 +430,12 @@ public class PolyConnection implements Connection {
     @Override
     public Clob createClob() throws SQLException {
         return new PolyphenyClob();
-
     }
 
 
     @Override
     public Blob createBlob() throws SQLException {
         return new PolyphenyBlob();
-
     }
 
 
@@ -537,7 +528,6 @@ public class PolyConnection implements Connection {
     public String getSchema() throws SQLException {
         throwIfClosed();
         return properties.getNamespaceName();
-
     }
 
 
@@ -561,7 +551,6 @@ public class PolyConnection implements Connection {
     public int getNetworkTimeout() throws SQLException {
         throwIfClosed();
         return properties.getNetworkTimeout();
-
     }
 
 
@@ -577,7 +566,6 @@ public class PolyConnection implements Connection {
     @Override
     public boolean isWrapperFor( Class<?> aClass ) {
         return aClass.isInstance( this );
-
     }
 
 }

@@ -57,8 +57,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
         if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
             throw new PrismInterfaceServiceException(
                     PrismInterfaceErrors.RESULT_TYPE_INVALID,
-                    "Statement returned a result of illegal type "
-                            + frame.getResultCase()
+                    "Statement returned a result of illegal type " + frame.getResultCase()
             );
         }
         isFullyFetched = frame.getIsLast();
