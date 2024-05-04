@@ -22,7 +22,7 @@ jobs:
                 run: |
                     ./gradlew build -x test -x licensee
 
-            -   name: Build Polypheny
+            -   name: Build Polypheny again (just to be sure all plugins are available)
                 run: |
                     ./gradlew build -x test -x licensee
 

@@ -37,6 +37,11 @@ if (!hasProperty('disableToolchain')) {
             languageVersion = JavaLanguageVersion.of(8)
         }
     }
+} else {
+    println "Disabled toolchain"
+    // Without this, it fails for Java 21
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 java {
