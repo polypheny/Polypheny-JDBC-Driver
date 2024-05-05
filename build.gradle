@@ -54,6 +54,8 @@ def protobufVersion = "3.23.4"
 
 
 dependencies {
+    implementation 'org.polypheny:prism:1.0'
+
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobufVersion
 
@@ -65,6 +67,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation(group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.10.2')
+
     // https://mvnrepository.com/artifact/org.mockito/mockito-core
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '4.11.0'
 }
@@ -119,6 +122,7 @@ jar {
         attributes 'Version': project.version
     }
 }
+
 /*
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier "sources"
@@ -128,6 +132,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier "javadoc"
     from javadoc.destinationDir
 }*/
+
 shadowJar {
     archiveClassifier = ''
     mergeServiceFiles() // merge the META-INF/services/java.sql.Driver files
@@ -138,7 +143,7 @@ shadowJar {
     relocate 'com.google', 'org.polypheny.dependency.com.google'
     relocate 'javax', 'org.polypheny.dependency.javax'
     relocate 'org.checkerframework', 'org.polypheny.dependency.org.checkerframework'
-    relocate 'org.polypheny.db.protointerface.proto', 'org.polypheny.jdbc.proto' // Prevents Polypheny-DB from using this during tests
+    relocate 'org.polypheny.prism', 'org.polypheny.jdbc.proto' // Prevents Polypheny-DB from using this during tests
 }
 
 assemble.dependsOn shadowJar
@@ -256,3 +261,23 @@ idea {
         }
     }
 }
+
+
+task copyProtoFiles {
+    def subDir = 'org/polypheny/prism'
+    copy {
+        configurations.runtimeClasspath.files.each { file ->
+            if (file.name.startsWith('prism')) {
+                from zipTree(file).matching { include "$subDir/**" }
+                into 'src/main/proto'
+                eachFile { fcp ->
+                    fcp.path = fcp.path.replaceFirst("^$subDir", '')
+                }
+                includeEmptyDirs false
+            }
+        }
+    }
+}
+
+
+generateProto.dependsOn copyProtoFiles

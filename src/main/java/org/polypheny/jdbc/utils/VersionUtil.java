@@ -16,9 +16,11 @@
 
 package org.polypheny.jdbc.utils;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -28,7 +30,15 @@ import lombok.extern.slf4j.Slf4j;
 public class VersionUtil {
 
     private static final String VERSION_FILE = "version.properties";
+    private static final String API_VERSION_PROPERTIES = "prism-api-version-properties.properties";
     private static final Properties properties = new Properties();
+
+    @Getter
+    private static final int MAJOR_API_VERSION;
+    @Getter
+    private static final int MINOR_API_VERSION;
+    @Getter
+    private static final String API_VERSION_STRING;
 
 
     static {
@@ -36,6 +46,20 @@ public class VersionUtil {
             properties.load( inputStream );
         } catch ( IOException e ) {
             log.error( "Error loading version.properties", e );
+        }
+
+        Properties properties = new Properties();
+        try (InputStream inputStream = VersionUtil.class.getClassLoader().getResourceAsStream(API_VERSION_PROPERTIES)) {
+            if (inputStream != null) {
+                properties.load(inputStream);
+                API_VERSION_STRING = properties.getProperty("version");
+                MAJOR_API_VERSION = Integer.parseInt(properties.getProperty("majorVersion"));
+                MINOR_API_VERSION = Integer.parseInt(properties.getProperty("minorVersion"));
+            } else {
+                throw new FileNotFoundException("The prism api version properties could not be found.");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error loading API version properties", e);
         }
     }
 
