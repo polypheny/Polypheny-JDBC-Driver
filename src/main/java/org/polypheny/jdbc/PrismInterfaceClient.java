@@ -72,11 +72,10 @@ import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.jdbc.utils.ProtoUtils;
+import org.polypheny.jdbc.utils.VersionUtil;
 
 public class PrismInterfaceClient {
 
-    private static final int MAJOR_API_VERSION = 2;
-    private static final int MINOR_API_VERSION = 0;
     private final Transport con;
     private final RpcService rpc;
 
@@ -113,8 +112,8 @@ public class PrismInterfaceClient {
         Optional.ofNullable( connectionProperties.getUsername() ).ifPresent( requestBuilder::setUsername );
         Optional.ofNullable( connectionProperties.getPassword() ).ifPresent( requestBuilder::setPassword );
         requestBuilder
-                .setMajorApiVersion( MAJOR_API_VERSION )
-                .setMinorApiVersion( MINOR_API_VERSION )
+                .setMajorApiVersion( VersionUtil.getMajor() )
+                .setMinorApiVersion( VersionUtil.getMinor() )
                 //.setClientUuid( clientUUID )
                 .setConnectionProperties( buildConnectionProperties( connectionProperties ) );
         ConnectionResponse connectionResponse = rpc.connect( requestBuilder.build(), timeout );
@@ -256,7 +255,7 @@ public class PrismInterfaceClient {
 
 
     private static String getClientApiVersionString() {
-        return MAJOR_API_VERSION + "." + MINOR_API_VERSION;
+        return VersionUtil.getMajor() + "." + VersionUtil.getMinor();
     }
 
 
