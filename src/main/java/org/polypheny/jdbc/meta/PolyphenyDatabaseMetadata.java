@@ -77,7 +77,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     public PolyphenyDatabaseMetadata( PrismInterfaceClient prismInterfaceClient, ConnectionString target ) {
         this.prismInterfaceClient = prismInterfaceClient;
         this.connectionString = target;
-        this.nullSorting = NullSorting.HIGH;
+        this.nullSorting = NullSorting.END;
     }
 
 
