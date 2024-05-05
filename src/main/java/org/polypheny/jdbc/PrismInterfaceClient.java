@@ -112,8 +112,8 @@ public class PrismInterfaceClient {
         Optional.ofNullable( connectionProperties.getUsername() ).ifPresent( requestBuilder::setUsername );
         Optional.ofNullable( connectionProperties.getPassword() ).ifPresent( requestBuilder::setPassword );
         requestBuilder
-                .setMajorApiVersion( VersionUtil.getMAJOR_API_VERSION() )
-                .setMinorApiVersion( VersionUtil.getMINOR_API_VERSION() )
+                .setMajorApiVersion( VersionUtil.MAJOR_API_VERSION )
+                .setMinorApiVersion( VersionUtil.MINOR_API_VERSION )
                 //.setClientUuid( clientUUID )
                 .setConnectionProperties( buildConnectionProperties( connectionProperties ) );
         ConnectionResponse connectionResponse = rpc.connect( requestBuilder.build(), timeout );
@@ -255,7 +255,7 @@ public class PrismInterfaceClient {
 
 
     private static String getClientApiVersionString() {
-        return VersionUtil.getMajor() + "." + VersionUtil.getMinor();
+        return VersionUtil.MAJOR + "." + VersionUtil.MINOR;
     }
 
 

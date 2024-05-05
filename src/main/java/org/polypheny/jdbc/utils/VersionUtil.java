@@ -20,7 +20,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -31,61 +30,48 @@ public class VersionUtil {
 
     private static final String VERSION_FILE = "version.properties";
     private static final String API_VERSION_PROPERTIES = "prism-api-version.properties";
-    private static final Properties properties = new Properties();
 
-    @Getter
-    private static final int MAJOR_API_VERSION;
-    @Getter
-    private static final int MINOR_API_VERSION;
-    @Getter
-    private static final String API_VERSION_STRING;
+    public static final int MAJOR;
+    public static final int MINOR;
+    public static final String QUALIFIER;
+    public static final String BUILD_TIMESTAMP;
+    public static final String VERSION_STRING;
+
+    public static final int MAJOR_API_VERSION;
+    public static final int MINOR_API_VERSION;
+    public static final String API_VERSION_STRING;
 
 
     static {
-        try ( InputStream inputStream = VersionUtil.class.getClassLoader().getResourceAsStream( VERSION_FILE ) ) {
-            properties.load( inputStream );
-        } catch ( IOException e ) {
-            log.error( "Error loading version.properties", e );
-        }
-
         Properties properties = new Properties();
-        try (InputStream inputStream = VersionUtil.class.getClassLoader().getResourceAsStream(API_VERSION_PROPERTIES)) {
-            if (inputStream != null) {
-                properties.load(inputStream);
-                API_VERSION_STRING = properties.getProperty("version");
-                MAJOR_API_VERSION = Integer.parseInt(properties.getProperty("majorVersion"));
-                MINOR_API_VERSION = Integer.parseInt(properties.getProperty("minorVersion"));
+        try ( InputStream inputStream = VersionUtil.class.getClassLoader().getResourceAsStream( VERSION_FILE ) ) {
+            if ( inputStream != null ) {
+                properties.load( inputStream );
+                MAJOR = Integer.parseInt( properties.getProperty( "major" ) );
+                MINOR = Integer.parseInt( properties.getProperty( "minor" ) );
+                QUALIFIER = properties.getProperty( "qualifier" );
+                BUILD_TIMESTAMP = properties.getProperty( "buildTimestamp" );
+                VERSION_STRING = properties.getProperty( "version" );
             } else {
-                throw new FileNotFoundException("The prism api version properties could not be found.");
+                throw new FileNotFoundException( "The version properties could not be found." );
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Error loading API version properties", e);
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Error loading version properties", e );
         }
-    }
 
-
-    public static String getVersion() {
-        return properties.getProperty( "version" );
-    }
-
-
-    public static int getMajor() {
-        return Integer.parseInt( properties.getProperty( "major" ) );
-    }
-
-
-    public static int getMinor() {
-        return Integer.parseInt( properties.getProperty( "minor" ) );
-    }
-
-
-    public static String getQualifier() {
-        return properties.getProperty( "qualifier" );
-    }
-
-
-    public static String getBuildTimestamp() {
-        return properties.getProperty( "buildTimestamp" );
+        properties = new Properties();
+        try ( InputStream inputStream = VersionUtil.class.getClassLoader().getResourceAsStream( API_VERSION_PROPERTIES ) ) {
+            if ( inputStream != null ) {
+                properties.load( inputStream );
+                API_VERSION_STRING = properties.getProperty( "version" );
+                MAJOR_API_VERSION = Integer.parseInt( properties.getProperty( "majorVersion" ) );
+                MINOR_API_VERSION = Integer.parseInt( properties.getProperty( "minorVersion" ) );
+            } else {
+                throw new FileNotFoundException( "The prism api version properties could not be found." );
+            }
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Error loading API version properties", e );
+        }
     }
 
 }

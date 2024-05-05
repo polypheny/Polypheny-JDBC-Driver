@@ -23,15 +23,15 @@ import org.polypheny.jdbc.utils.VersionUtil;
 public class DriverProperties {
 
     @Getter
-    private static final String DRIVER_NAME = "JDBC driver for PolyphenyDB";
+    private static final String DRIVER_NAME = "JDBC driver for Polypheny";
     @Getter
-    private static final int DRIVER_MAJOR_VERSION = VersionUtil.getMajor();
+    private static final int DRIVER_MAJOR_VERSION = VersionUtil.MAJOR;
     @Getter
-    private static final int DRIVER_MINOR_VERSION = VersionUtil.getMinor();
+    private static final int DRIVER_MINOR_VERSION = VersionUtil.MINOR;
     @Getter
-    private static final String DRIVER_VERSION_QUALIFIER = VersionUtil.getQualifier();
+    private static final String DRIVER_VERSION_QUALIFIER = VersionUtil.QUALIFIER;
     @Getter
-    private static final String DRIVER_VERSION = VersionUtil.getVersion();
+    private static final String DRIVER_VERSION = VersionUtil.VERSION_STRING;
     @Getter
     private static final boolean JDBC_COMPLIANT = false;
     @Getter
