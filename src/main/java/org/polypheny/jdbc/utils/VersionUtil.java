@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class VersionUtil {
 
     private static final String VERSION_FILE = "version.properties";
-    private static final String API_VERSION_PROPERTIES = "prism-api-version-properties.properties";
+    private static final String API_VERSION_PROPERTIES = "prism-api-version.properties";
     private static final Properties properties = new Properties();
 
     @Getter
