@@ -15,8 +15,8 @@ This driver is compatible with JVM version 8 or higher.
 ## Getting Started
 
 - The driver is published to Maven Central. Make sure that you have added `mavenCentral()` to the repositories section in your gradle build file.
-- Add `implementation group: 'org.polypheny', name: 'polypheny-jdbc-driver', version: '1.5.3'` .
-- Load the driver `org.polypheny.jdbc.Driver`, for example via
+- Add `implementation group: 'org.polypheny', name: 'polypheny-jdbc-driver', version: '2.0'` .
+- Optionally: load the driver `org.polypheny.jdbc.PolyphenyDriver`, for example via
   ```
   Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
   ```
