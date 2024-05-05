@@ -33,7 +33,7 @@ public class DriverProperties {
     @Getter
     private static final String DRIVER_VERSION = VersionUtil.VERSION_STRING;
     @Getter
-    private static final boolean JDBC_COMPLIANT = false;
+    private static final boolean JDBC_COMPLIANT = true;
     @Getter
     private static final String DRIVER_URL_SCHEMA = "jdbc:polypheny:";
     @Getter
