@@ -19,7 +19,7 @@ package org.polypheny.jdbc.meta;
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import java.util.List;
-import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
+import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 

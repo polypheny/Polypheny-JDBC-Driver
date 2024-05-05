@@ -17,7 +17,7 @@
 package org.polypheny.jdbc;
 
 import java.sql.SQLException;
-import org.polypheny.db.protointerface.proto.ErrorDetails;
+import org.polypheny.prism.ErrorDetails;
 
 public class PrismInterfaceServiceException extends SQLException {
 

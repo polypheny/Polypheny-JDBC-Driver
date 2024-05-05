@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executor;
-import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
+import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;

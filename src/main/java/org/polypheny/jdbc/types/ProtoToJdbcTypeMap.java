@@ -19,7 +19,7 @@ package org.polypheny.jdbc.types;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
-import org.polypheny.db.protointerface.proto.ProtoPolyType;
+import org.polypheny.prism.ProtoPolyType;
 
 public class ProtoToJdbcTypeMap {
 

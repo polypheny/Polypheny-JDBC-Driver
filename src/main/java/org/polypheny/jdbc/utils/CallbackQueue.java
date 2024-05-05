@@ -22,7 +22,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
-import org.polypheny.db.protointerface.proto.Response;
+import org.polypheny.prism.Response;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 

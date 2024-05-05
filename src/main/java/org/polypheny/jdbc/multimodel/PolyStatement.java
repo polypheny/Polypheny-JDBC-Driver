@@ -17,9 +17,9 @@
 package org.polypheny.jdbc.multimodel;
 
 import lombok.Getter;
-import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.db.protointerface.proto.Response;
-import org.polypheny.db.protointerface.proto.StatementResponse;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.Response;
+import org.polypheny.prism.StatementResponse;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;

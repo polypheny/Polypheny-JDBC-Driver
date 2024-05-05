@@ -21,7 +21,7 @@ import static java.lang.Math.min;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.prism.Frame;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;

@@ -18,8 +18,8 @@ package org.polypheny.jdbc.meta;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.protointerface.proto.ColumnMeta;
-import org.polypheny.db.protointerface.proto.ParameterMeta;
+import org.polypheny.prism.ColumnMeta;
+import org.polypheny.prism.ParameterMeta;
 
 public class MetaUtils {
 

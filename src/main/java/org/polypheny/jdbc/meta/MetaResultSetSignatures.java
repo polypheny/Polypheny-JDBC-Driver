@@ -24,13 +24,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import org.apache.commons.lang3.ObjectUtils;
-import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
-import org.polypheny.db.protointerface.proto.Column;
-import org.polypheny.db.protointerface.proto.Namespace;
-import org.polypheny.db.protointerface.proto.Procedure;
-import org.polypheny.db.protointerface.proto.Table;
-import org.polypheny.db.protointerface.proto.TableType;
-import org.polypheny.db.protointerface.proto.Type;
+import org.polypheny.prism.ClientInfoPropertyMeta;
+import org.polypheny.prism.Column;
+import org.polypheny.prism.Namespace;
+import org.polypheny.prism.Procedure;
+import org.polypheny.prism.Table;
+import org.polypheny.prism.TableType;
+import org.polypheny.prism.Type;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class MetaResultSetSignatures {
@@ -321,15 +321,15 @@ public class MetaResultSetSignatures {
     );
 
     // Used to build an EMPTY result set thus no types and accessors are specified.
-    public static final List<MetaResultSetParameter<org.polypheny.db.protointerface.proto.Function>> FUNCTION_SIGNATURE = Arrays.asList(
+    public static final List<MetaResultSetParameter<org.polypheny.prism.Function>> FUNCTION_SIGNATURE = Arrays.asList(
             new MetaResultSetParameter<>( "FUNCTION_CAT", Types.VARCHAR, p -> null ),
             new MetaResultSetParameter<>( "FUNCTION_SCHEM", Types.VARCHAR, p -> null ),
-            new MetaResultSetParameter<>( "FUNCTION_NAME", Types.VARCHAR, org.polypheny.db.protointerface.proto.Function::getName ),
-            new MetaResultSetParameter<>( "REMARKS", Types.VARCHAR, org.polypheny.db.protointerface.proto.Function::getSyntax ),
+            new MetaResultSetParameter<>( "FUNCTION_NAME", Types.VARCHAR, org.polypheny.prism.Function::getName ),
+            new MetaResultSetParameter<>( "REMARKS", Types.VARCHAR, org.polypheny.prism.Function::getSyntax ),
             new MetaResultSetParameter<>( "FUNCTION_TYPE", Types.SMALLINT, p -> p.getIsTableFunction()
                     ? DatabaseMetaData.functionReturnsTable
                     : DatabaseMetaData.functionNoTable ),
-            new MetaResultSetParameter<>( "REMARKS", Types.VARCHAR, org.polypheny.db.protointerface.proto.Function::getName )
+            new MetaResultSetParameter<>( "REMARKS", Types.VARCHAR, org.polypheny.prism.Function::getName )
     );
 
     // Used to build an EMPTY result set thus no types and accessors are specified.

@@ -16,15 +16,15 @@
 
 package org.polypheny.jdbc.types;
 
-import static org.polypheny.db.protointerface.proto.ProtoValue.ValueCase.STRING;
+import static org.polypheny.prism.ProtoValue.ValueCase.STRING;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.protointerface.proto.ProtoDocument;
-import org.polypheny.db.protointerface.proto.ProtoEntry;
-import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.prism.ProtoDocument;
+import org.polypheny.prism.ProtoEntry;
+import org.polypheny.prism.ProtoValue;
 import org.polypheny.jdbc.utils.ProtoUtils;
 
 public class PolyDocument extends HashMap<String, TypedValue> {

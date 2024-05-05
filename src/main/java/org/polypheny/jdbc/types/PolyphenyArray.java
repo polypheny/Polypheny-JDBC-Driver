@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.protointerface.proto.ProtoPolyType;
+import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.jdbc.PolyphenyResultSet;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 
