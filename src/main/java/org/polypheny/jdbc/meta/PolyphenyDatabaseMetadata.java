@@ -66,7 +66,6 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     private int databaseMajorVersion = NO_VERSION;
 
 
-    // TODO TH: remove and hardcode this
     private enum NullSorting {
         START,
         END,
@@ -78,7 +77,6 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     public PolyphenyDatabaseMetadata( PrismInterfaceClient prismInterfaceClient, ConnectionString target ) {
         this.prismInterfaceClient = prismInterfaceClient;
         this.connectionString = target;
-        //TODO TH: check what polypheny does...
         this.nullSorting = NullSorting.HIGH;
     }
 
