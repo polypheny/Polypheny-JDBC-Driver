@@ -54,7 +54,8 @@ def protobufVersion = "3.23.4"
 
 
 dependencies {
-    implementation 'org.polypheny:prism:1.0'
+    // Prism API Files (protobuf files)
+    compileOnly group: 'org.polypheny', name: 'prism', version: '1.1'
 
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobufVersion
@@ -83,25 +84,33 @@ build.dependsOn(generateProto)
 delombok.dependsOn(generateProto)
 sourcesJar.dependsOn(generateProto)
 compileJava.dependsOn(generateProto)
+processResources.dependsOn(extractIncludeProto)
 
 protobuf {
     // Configure the protoc executable
     protoc {
         artifact = "com.google.protobuf:protoc:$protobufVersion"
     }
-}
 
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {}
+            }
+        }
+    }
+}
 
 sourceSets {
     main {
-        proto {
-            srcDir "${protobuf.generatedFilesBaseDir}/proto/main/java"
-        }
         java {
-            srcDirs = ["src/main/java", "build/generated-sources", 'build/generated/source/proto/main/java']
+            srcDirs = ["src/main/java", "build/generated/source/proto/main/java"]
         }
         resources {
             srcDirs = ["src/main/resources"]
+        }
+        proto {
+            srcDirs = ["build/extracted-include-protos/main"]
         }
     }
 }
@@ -137,13 +146,13 @@ shadowJar {
     archiveClassifier = ''
     mergeServiceFiles() // merge the META-INF/services/java.sql.Driver files
     exclude('META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'module-info.class', 'META-INF/services/com.fasterxml.jackson.core.*')
-    relocate 'google.protobuf', 'org.polypheny.dependency.google.protobuf'
-    relocate 'org.slf4j', 'org.polypheny.dependency.org.slf4j'
-    relocate 'org.apache.commons', 'org.polypheny.dependency.org.apache.commons'
-    relocate 'com.google', 'org.polypheny.dependency.com.google'
-    relocate 'javax', 'org.polypheny.dependency.javax'
-    relocate 'org.checkerframework', 'org.polypheny.dependency.org.checkerframework'
-    relocate 'org.polypheny.prism', 'org.polypheny.jdbc.proto' // Prevents Polypheny-DB from using this during tests
+    relocate 'google.protobuf', 'org.polypheny.jdbc.dependency.google.protobuf'
+    relocate 'org.slf4j', 'org.polypheny.jdbc.dependency.org.slf4j'
+    relocate 'org.apache.commons', 'org.polypheny.jdbc.dependency.org.apache.commons'
+    relocate 'com.google', 'org.polypheny.jdbc.dependency.com.google'
+    relocate 'javax', 'org.polypheny.jdbc.dependency.javax'
+    relocate 'org.checkerframework', 'org.polypheny.jdbc.dependency.org.checkerframework'
+    relocate 'org.polypheny.prism', 'org.polypheny.jdbc.dependency.prism' // Prevents Polypheny-DB from using this during tests
 }
 
 assemble.dependsOn shadowJar
@@ -171,6 +180,12 @@ task generateVersionProperties {
 
 // Ensure the generated version properties file is created before compilation
 compileJava.dependsOn generateVersionProperties
+
+
+javadoc {
+    exclude 'org/polypheny/prism/**'
+    exclude 'com/google/protobuf/**'
+}
 
 publishing {
     publications {
@@ -261,23 +276,3 @@ idea {
         }
     }
 }
-
-
-task copyProtoFiles {
-    def subDir = 'org/polypheny/prism'
-    copy {
-        configurations.runtimeClasspath.files.each { file ->
-            if (file.name.startsWith('prism')) {
-                from zipTree(file).matching { include "$subDir/**" }
-                into 'src/main/proto'
-                eachFile { fcp ->
-                    fcp.path = fcp.path.replaceFirst("^$subDir", '')
-                }
-                includeEmptyDirs false
-            }
-        }
-    }
-}
-
-
-generateProto.dependsOn copyProtoFiles
