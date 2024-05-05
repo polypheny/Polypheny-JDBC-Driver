@@ -278,7 +278,7 @@ public class MetaResultSetBuilder {
                 .collect( Collectors.toList() );
 
         return buildResultSet(
-                "COLUMN_PRIVELEGES",
+                "COLUMN_PRIVILEGES",
                 columnPrivileges,
                 MetaResultSetSignatures.COLUMN_PRIVILEGES_GMC_SIGNATURE
         );
