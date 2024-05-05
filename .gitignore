@@ -253,3 +253,6 @@ nbdist/
 
 # Ignore dynamically generated version file
 src/main/resources/version.properties
+
+# Ignoreproto files
+src/main/proto/
