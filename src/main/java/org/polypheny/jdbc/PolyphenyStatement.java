@@ -26,15 +26,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
+import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.Frame.ResultCase;
 import org.polypheny.prism.Response;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
-import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
-import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.jdbc.utils.CallbackQueue;
 
 public class PolyphenyStatement implements Statement {
 

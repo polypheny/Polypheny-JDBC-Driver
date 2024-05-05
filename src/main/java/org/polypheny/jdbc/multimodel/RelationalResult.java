@@ -20,14 +20,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.polypheny.prism.Frame;
-import org.polypheny.prism.Frame.ResultCase;
-import org.polypheny.prism.RelationalFrame;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.PropertyUtils;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.Frame.ResultCase;
+import org.polypheny.prism.RelationalFrame;
 
 public class RelationalResult extends Result implements Iterable<PolyRow> {
 

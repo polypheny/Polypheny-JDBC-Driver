@@ -19,9 +19,9 @@ package org.polypheny.jdbc.utils;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoValue;
-import org.polypheny.jdbc.types.TypedValue;
 
 public class ProtoUtils {
 

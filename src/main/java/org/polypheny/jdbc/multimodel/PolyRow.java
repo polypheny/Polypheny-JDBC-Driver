@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.prism.Row;
 import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.prism.Row;
 
 public class PolyRow {
 

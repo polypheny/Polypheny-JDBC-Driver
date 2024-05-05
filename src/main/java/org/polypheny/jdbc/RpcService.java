@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.jdbc.transport.Transport;
+import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.prism.ClientInfoProperties;
 import org.polypheny.prism.ClientInfoPropertiesRequest;
 import org.polypheny.prism.ClientInfoPropertiesResponse;
@@ -82,8 +84,6 @@ import org.polypheny.prism.TableTypesRequest;
 import org.polypheny.prism.TableTypesResponse;
 import org.polypheny.prism.TypesRequest;
 import org.polypheny.prism.TypesResponse;
-import org.polypheny.jdbc.transport.Transport;
-import org.polypheny.jdbc.utils.CallbackQueue;
 
 @Slf4j
 public class RpcService {

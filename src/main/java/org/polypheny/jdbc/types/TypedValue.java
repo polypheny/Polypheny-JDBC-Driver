@@ -54,6 +54,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.utils.ProtoUtils;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 import org.polypheny.prism.ProtoBigDecimal;
 import org.polypheny.prism.ProtoBinary;
 import org.polypheny.prism.ProtoBoolean;
@@ -70,11 +75,6 @@ import org.polypheny.prism.ProtoTime;
 import org.polypheny.prism.ProtoTimestamp;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.ProtoValue.ValueCase;
-import org.polypheny.jdbc.PrismInterfaceErrors;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.properties.DriverProperties;
-import org.polypheny.jdbc.utils.ProtoUtils;
-import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class TypedValue implements Convertible {
 

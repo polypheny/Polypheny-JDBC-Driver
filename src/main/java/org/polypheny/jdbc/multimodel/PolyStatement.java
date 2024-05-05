@@ -17,14 +17,14 @@
 package org.polypheny.jdbc.multimodel;
 
 import lombok.Getter;
-import org.polypheny.prism.Frame;
-import org.polypheny.prism.Response;
-import org.polypheny.prism.StatementResponse;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.utils.CallbackQueue;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.Response;
+import org.polypheny.prism.StatementResponse;
 
 public class PolyStatement {
 

@@ -22,10 +22,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoEntry;
 import org.polypheny.prism.ProtoValue;
-import org.polypheny.jdbc.utils.ProtoUtils;
 
 public class PolyDocument extends HashMap<String, TypedValue> {
 

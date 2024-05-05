@@ -40,14 +40,14 @@ import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.prism.Frame;
-import org.polypheny.prism.Frame.ResultCase;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.MetaUtils;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.Frame.ResultCase;
 
 public class PolyphenyResultSet implements ResultSet {
 

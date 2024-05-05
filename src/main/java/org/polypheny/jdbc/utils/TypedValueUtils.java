@@ -46,12 +46,12 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
-import org.polypheny.prism.ProtoPolyType;
-import org.polypheny.prism.Row;
 import org.polypheny.jdbc.types.PolyDocument;
 import org.polypheny.jdbc.types.PolyInterval;
 import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.prism.ProtoPolyType;
+import org.polypheny.prism.Row;
 
 public class TypedValueUtils {
 

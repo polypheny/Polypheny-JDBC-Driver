@@ -25,6 +25,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.PolyphenyResultSet;
+import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.ClientInfoPropertyMeta;
 import org.polypheny.prism.Column;
 import org.polypheny.prism.ForeignKey;
@@ -37,8 +39,6 @@ import org.polypheny.prism.Table;
 import org.polypheny.prism.TableType;
 import org.polypheny.prism.Type;
 import org.polypheny.prism.UserDefinedType;
-import org.polypheny.jdbc.PolyphenyResultSet;
-import org.polypheny.jdbc.types.TypedValue;
 
 public class MetaResultSetBuilder {
 

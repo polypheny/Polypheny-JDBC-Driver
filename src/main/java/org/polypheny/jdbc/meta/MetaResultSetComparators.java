@@ -17,13 +17,13 @@
 package org.polypheny.jdbc.meta;
 
 import java.util.Comparator;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 import org.polypheny.prism.ClientInfoPropertyMeta;
 import org.polypheny.prism.Column;
 import org.polypheny.prism.Function;
 import org.polypheny.prism.Namespace;
 import org.polypheny.prism.Table;
 import org.polypheny.prism.Type;
-import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class MetaResultSetComparators {
 

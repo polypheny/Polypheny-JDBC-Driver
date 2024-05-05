@@ -20,9 +20,9 @@ import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.ProtoPolyType;
-import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 
 public class PolyphenyColumnMeta {
 

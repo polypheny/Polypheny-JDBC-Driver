@@ -19,12 +19,12 @@ package org.polypheny.jdbc;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.prism.Frame;
-import org.polypheny.prism.Frame.ResultCase;
-import org.polypheny.prism.Row;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.Frame.ResultCase;
+import org.polypheny.prism.Row;
 
 public class ResultFetcher implements Runnable {
 

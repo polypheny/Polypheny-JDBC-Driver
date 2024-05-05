@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import org.apache.commons.lang3.ObjectUtils;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 import org.polypheny.prism.ClientInfoPropertyMeta;
 import org.polypheny.prism.Column;
 import org.polypheny.prism.Namespace;
@@ -31,7 +32,6 @@ import org.polypheny.prism.Procedure;
 import org.polypheny.prism.Table;
 import org.polypheny.prism.TableType;
 import org.polypheny.prism.Type;
-import org.polypheny.jdbc.utils.TypedValueUtils;
 
 public class MetaResultSetSignatures {
 

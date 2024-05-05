@@ -18,8 +18,8 @@ package org.polypheny.jdbc.meta;
 
 import java.sql.ParameterMetaData;
 import lombok.Getter;
-import org.polypheny.prism.ParameterMeta;
 import org.polypheny.jdbc.utils.TypedValueUtils;
+import org.polypheny.prism.ParameterMeta;
 
 public class PolyphenyParameterMeta {
 
