@@ -26,11 +26,11 @@ import java.sql.ResultSetMetaData;
 import java.sql.Types;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.protointerface.proto.ColumnMeta;
-import org.polypheny.db.protointerface.proto.ProtoPolyType;
-import org.polypheny.db.protointerface.proto.TypeMeta;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
+import org.polypheny.prism.ColumnMeta;
+import org.polypheny.prism.ProtoPolyType;
+import org.polypheny.prism.TypeMeta;
 
 public class PolyphenyColumnMetaTest {
 

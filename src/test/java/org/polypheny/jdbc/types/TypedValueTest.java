@@ -48,10 +48,10 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.prism.ProtoValue;
+import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class TypedValueTest {
 
