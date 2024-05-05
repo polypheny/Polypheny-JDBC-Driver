@@ -54,22 +54,21 @@ def protobufVersion = "3.23.4"
 
 
 dependencies {
-    // Prism API Files (protobuf files)
-    compileOnly group: 'org.polypheny', name: 'prism', version: '1.1'
+    // Prism API files (protobuf files), needs to be implementation due to the prism-api-version.properties
+    implementation group: 'org.polypheny', name: 'prism', version: '1.2'
 
-    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+    // Protobuf
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobufVersion
 
-    ////// APACHE COMMONS LANG
-    implementation group: "org.apache.commons", name: "commons-lang3", version: "3.12.0"
+    // Apache Commons Lang
+    implementation group: "org.apache.commons", name: "commons-lang3", version: "3.14.0"
 
-    ////// LOGGING
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.12'
+    // Logging
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.13'
+
 
     // --- Test Compile ---
-    testImplementation(group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.10.2')
-
-    // https://mvnrepository.com/artifact/org.mockito/mockito-core
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.10.2'
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '4.11.0'
 }
 
