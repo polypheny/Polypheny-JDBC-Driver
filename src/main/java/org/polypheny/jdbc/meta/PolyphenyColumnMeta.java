@@ -93,7 +93,7 @@ public class PolyphenyColumnMeta {
         this.definitelyWritable = false;
         this.columnClassName = "";
         if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoPolyType.USER_DEFINED_TYPE ) {
-            //TODO handle structured meta
+            //TODO: This is required once user defined types are introduced. Depending on their implementation this might even become obsolete.
             throw new NotImplementedException( "Struct types not implemented yet" );
         }
         if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoPolyType.ARRAY ) {
