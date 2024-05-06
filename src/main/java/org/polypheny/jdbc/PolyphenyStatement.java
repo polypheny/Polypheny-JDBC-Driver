@@ -72,7 +72,7 @@ public class PolyphenyStatement implements Statement {
 
 
     protected PrismInterfaceClient getClient() {
-        return polyConnection.getProtoInterfaceClient();
+        return polyConnection.getPrismInterfaceClient();
     }
 
 

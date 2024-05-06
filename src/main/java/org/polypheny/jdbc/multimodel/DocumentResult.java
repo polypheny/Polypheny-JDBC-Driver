@@ -54,7 +54,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     private void fetchMore() throws PrismInterfaceServiceException {
         int id = polyStatement.getStatementId();
         int timeout = getPolyphenyConnection().getTimeout();
-        Frame frame = getProtoInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
+        Frame frame = getPrismInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
         if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
             throw new PrismInterfaceServiceException(
                     PrismInterfaceErrors.RESULT_TYPE_INVALID,
@@ -71,8 +71,8 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
     }
 
 
-    private PrismInterfaceClient getProtoInterfaceClient() {
-        return getPolyphenyConnection().getProtoInterfaceClient();
+    private PrismInterfaceClient getPrismInterfaceClient() {
+        return getPolyphenyConnection().getPrismInterfaceClient();
     }
 
 

@@ -42,8 +42,8 @@ public class PolyStatement {
     }
 
 
-    private PrismInterfaceClient getProtoInterfaceClient() {
-        return connection.getProtoInterfaceClient();
+    private PrismInterfaceClient getPrismInterfaceClient() {
+        return connection.getPrismInterfaceClient();
     }
 
 
@@ -67,7 +67,7 @@ public class PolyStatement {
         resetStatement();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         int timeout = connection.getTimeout();
-        getProtoInterfaceClient().executeUnparameterizedStatement(
+        getPrismInterfaceClient().executeUnparameterizedStatement(
                 namespaceName,
                 languageName,
                 statement,

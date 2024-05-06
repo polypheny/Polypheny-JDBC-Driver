@@ -69,7 +69,7 @@ public class QueryTest {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
-            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
             Result result = polyStatement.execute( "public", "sql", "SELECT* FROM emps" );
             assertEquals( ResultType.RELATIONAL, result.getResultType() );
         } catch ( SQLException e ) {
@@ -84,7 +84,7 @@ public class QueryTest {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
-            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
             Result result = polyStatement.execute( "public", MQL_LANGUAGE_NAME, TEST_QUERY );
             assertEquals( ResultType.DOCUMENT, result.getResultType() );
         } catch ( SQLException e ) {
@@ -99,7 +99,7 @@ public class QueryTest {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
-            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
             Result result = polyStatement.execute( "public", MQL_LANGUAGE_NAME, TEST_QUERY );
             DocumentResult docs = result.unwrap( DocumentResult.class );
             for ( PolyDocument doc : docs ) {

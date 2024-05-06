@@ -121,7 +121,7 @@ public class PolyConnection implements Connection {
     }
 
 
-    public PrismInterfaceClient getProtoInterfaceClient() {
+    public PrismInterfaceClient getPrismInterfaceClient() {
         return properties.getPrismInterfaceClient();
     }
 
@@ -135,14 +135,14 @@ public class PolyConnection implements Connection {
     }
 
 
-    public PolyStatement createProtoStatement() {
+    public PolyStatement createPolyStatement() {
         return new PolyStatement( this );
     }
 
 
     @Override
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement(
+        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
                 properties.getNamespaceName(),
                 PropertyUtils.getSQL_LANGUAGE_NAME(),
                 sql,
@@ -188,7 +188,7 @@ public class PolyConnection implements Connection {
     public void commit() throws SQLException {
         throwIfClosed();
         throwIfAutoCommit();
-        getProtoInterfaceClient().commitTransaction( getNetworkTimeout() );
+        getPrismInterfaceClient().commitTransaction( getNetworkTimeout() );
         hasRunningTransaction = false;
     }
 
@@ -197,7 +197,7 @@ public class PolyConnection implements Connection {
     public void rollback() throws SQLException {
         throwIfClosed();
         throwIfAutoCommit();
-        getProtoInterfaceClient().rollbackTransaction( getNetworkTimeout() );
+        getPrismInterfaceClient().rollbackTransaction( getNetworkTimeout() );
     }
 
 
@@ -209,7 +209,7 @@ public class PolyConnection implements Connection {
         for ( Statement openStatement : new HashSet<>( openStatements ) ) {
             openStatement.close();
         }
-        getProtoInterfaceClient().unregister( properties.getNetworkTimeout() );
+        getPrismInterfaceClient().unregister( properties.getNetworkTimeout() );
         isClosed = true;
     }
 
@@ -299,7 +299,7 @@ public class PolyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement(
+        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
                 properties.getNamespaceName(),
                 PropertyUtils.getSQL_LANGUAGE_NAME(),
                 sql,
@@ -383,7 +383,7 @@ public class PolyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
-        PreparedStatementSignature signature = getProtoInterfaceClient().prepareIndexedStatement(
+        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
                 properties.getNamespaceName(),
                 PropertyUtils.getSQL_LANGUAGE_NAME(),
                 sql,
@@ -457,8 +457,8 @@ public class PolyConnection implements Connection {
         if ( timeout < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
         }
-        // the proto-interface uses milliseconds for timeouts, jdbc uses seconds
-        return getProtoInterfaceClient().checkConnection( timeout * 1000 );
+        // the prism-interface uses milliseconds for timeouts, jdbc uses seconds
+        return getPrismInterfaceClient().checkConnection( timeout * 1000 );
     }
 
 
@@ -467,7 +467,7 @@ public class PolyConnection implements Connection {
         Properties clientInfoProperties = getClientInfo();
         clientInfoProperties.setProperty( name, value );
         try {
-            getProtoInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
+            getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
         } catch ( PrismInterfaceServiceException e ) {
             throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
         }
@@ -477,7 +477,7 @@ public class PolyConnection implements Connection {
     @Override
     public void setClientInfo( Properties clientInfoProperties ) throws SQLClientInfoException {
         try {
-            getProtoInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
+            getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
         } catch ( PrismInterfaceServiceException e ) {
             HashMap<String, ClientInfoStatus> failedOptions = new HashMap<>();
             throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
@@ -495,7 +495,7 @@ public class PolyConnection implements Connection {
     public Properties getClientInfo() throws SQLClientInfoException {
         try {
             Properties properties = new Properties();
-            properties.putAll( getProtoInterfaceClient().getClientInfoProperties( getNetworkTimeout() ) );
+            properties.putAll( getPrismInterfaceClient().getClientInfoProperties( getNetworkTimeout() ) );
             return properties;
         } catch ( SQLException e ) {
             throw new SQLClientInfoException();
