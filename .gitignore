@@ -252,4 +252,4 @@ nbdist/
 !/libs/avatica-1.16.0-POLYPHENYDB-shaded.jar
 
 # Ignore dynamically generated version file
-src/main/resources/version.properties
+src/main/resources/polypheny-jdbc-driver-version.properties

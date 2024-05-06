@@ -164,7 +164,7 @@ artifacts {
 
 // generate version properties file
 task generateVersionProperties {
-    def versionPropsFile = file('src/main/resources/version.properties')
+    def versionPropsFile = file('src/main/resources/polypheny-jdbc-driver-version.properties')
     versionPropsFile.parentFile.mkdirs()
 
     // Generate version properties file with project version
