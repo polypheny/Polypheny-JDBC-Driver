@@ -358,7 +358,7 @@ public class TypedValue implements Convertible {
 
     public static TypedValue fromBlob( InputStream binaryStream ) throws SQLException {
         try {
-            return fromBlob( new PolyphenyBlob( collectByteStream( binaryStream ) ) );
+            return fromBlob( new PolyBlob( collectByteStream( binaryStream ) ) );
         } catch ( IOException e ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Failed to read blob form binary stream.", e );
         }
@@ -927,7 +927,7 @@ public class TypedValue implements Convertible {
             deserialize();
         }
         if ( varcharValue != null ) {
-            return new PolyphenyClob( varcharValue );
+            return new PolyClob( varcharValue );
         }
         if ( isNull() ) {
             return null;
@@ -1053,7 +1053,7 @@ public class TypedValue implements Convertible {
             deserialize();
         }
         if ( varcharValue != null ) {
-            return new PolyphenyClob( varcharValue );
+            return new PolyClob( varcharValue );
         }
         if ( isNull() ) {
             return null;
@@ -1193,7 +1193,7 @@ public class TypedValue implements Convertible {
                     otherValue = new PolyDocument( serialized.getDocument() );
                     break;
                 case FILE:
-                    blobValue = new PolyphenyBlob( serialized.getFile().getBinary().toByteArray() );
+                    blobValue = new PolyBlob( serialized.getFile().getBinary().toByteArray() );
                     break;
                 default:
                     throw new RuntimeException( "Cannot deserialize ProtoValue of case " + valueCase );
@@ -1421,7 +1421,7 @@ public class TypedValue implements Convertible {
         List<TypedValue> values = value.getList().getValuesList().stream()
                 .map( TypedValue::new )
                 .collect( Collectors.toList() );
-        return new PolyphenyArray( baseType, values );
+        return new PolyArray( baseType, values );
     }
 
 

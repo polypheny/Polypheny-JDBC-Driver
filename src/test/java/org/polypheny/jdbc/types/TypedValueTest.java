@@ -123,7 +123,7 @@ public class TypedValueTest {
     @Test
     public void fromClobWithClobValue() throws SQLException {
         String content = "This is awesome!";
-        Clob clob = new PolyphenyClob( content );
+        Clob clob = new PolyClob( content );
         TypedValue typedValue = TypedValue.fromClob( clob );
         assertEquals( ValueCase.STRING, typedValue.getValueCase() );
         assertEquals( content, typedValue.asString() );
@@ -142,7 +142,7 @@ public class TypedValueTest {
     @Test
     public void fromBlobWithBlobValue() throws SQLException {
         byte[] data = { 2, 34, 5, 7 };
-        Blob blob = new PolyphenyBlob( data );
+        Blob blob = new PolyBlob( data );
         TypedValue typedValue = TypedValue.fromBlob( blob );
         assertEquals( ValueCase.FILE, typedValue.getValueCase() );
         assertEquals( blob, typedValue.asBlob() );
@@ -152,7 +152,7 @@ public class TypedValueTest {
     @Test
     public void fromBlobWithBlobValueAsByteThrows() throws SQLException {
         byte[] data = { 2, 34, 5, 7 };
-        Blob blob = new PolyphenyBlob( data );
+        Blob blob = new PolyBlob( data );
         TypedValue typedValue = TypedValue.fromBlob( blob );
         assertEquals( ValueCase.FILE, typedValue.getValueCase() );
         assertThrows( PrismInterfaceServiceException.class, typedValue::asBytes );
@@ -860,7 +860,7 @@ public class TypedValueTest {
         values.add( TypedValue.fromInteger( 1 ) );
         values.add( TypedValue.fromInteger( 2 ) );
         values.add( TypedValue.fromInteger( 3 ) );
-        Array value = new PolyphenyArray( "INTEGER", values );
+        Array value = new PolyArray( "INTEGER", values );
 
         TypedValue typedValue1 = TypedValue.fromArray( value );
         ProtoValue protoValue = typedValue1.serialize();
@@ -935,7 +935,7 @@ public class TypedValueTest {
 
     @Test
     void fileTest() throws SQLException {
-        Blob value = new PolyphenyBlob( new byte[]{ 1, 2, 3, 4, 5 } );
+        Blob value = new PolyBlob( new byte[]{ 1, 2, 3, 4, 5 } );
         TypedValue typedValue1 = TypedValue.fromBlob( value );
         ProtoValue protoValue = typedValue1.serialize();
 

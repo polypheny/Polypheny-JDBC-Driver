@@ -24,13 +24,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class PolyphenyStruct implements Struct {
+public class PolyStruct implements Struct {
 
     List<Object> attributes;
     String typeName;
 
 
-    public PolyphenyStruct( String typeName, Object[] attributes ) {
+    public PolyStruct( String typeName, Object[] attributes ) {
         this.typeName = typeName;
         this.attributes = new ArrayList<>( Arrays.asList( attributes ) );
     }

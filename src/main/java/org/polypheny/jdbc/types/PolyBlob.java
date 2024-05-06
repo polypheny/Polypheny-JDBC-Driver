@@ -26,7 +26,7 @@ import java.util.Arrays;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 
-public class PolyphenyBlob implements Blob {
+public class PolyBlob implements Blob {
 
     /*
      * This array should be replaced with an objet capable of either storing a collection of bytes larger than MAX_INT
@@ -36,12 +36,12 @@ public class PolyphenyBlob implements Blob {
     boolean isFreed;
 
 
-    public PolyphenyBlob() {
+    public PolyBlob() {
         this.isFreed = false;
     }
 
 
-    public PolyphenyBlob( byte[] bytes ) {
+    public PolyBlob( byte[] bytes ) {
         this.isFreed = false;
         this.value = bytes;
     }

@@ -30,7 +30,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 
-public class PolyphenyClob implements Clob, NClob {
+public class PolyClob implements Clob, NClob {
 
     String value;
     boolean isFreed;
@@ -43,13 +43,13 @@ public class PolyphenyClob implements Clob, NClob {
     }
 
 
-    public PolyphenyClob( String string ) {
+    public PolyClob( String string ) {
         this.isFreed = false;
         this.value = string;
     }
 
 
-    public PolyphenyClob() {
+    public PolyClob() {
     }
 
 

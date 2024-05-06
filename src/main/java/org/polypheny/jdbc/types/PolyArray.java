@@ -29,13 +29,13 @@ import org.polypheny.jdbc.PolyphenyResultSet;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.prism.ProtoPolyType;
 
-public class PolyphenyArray implements Array {
+public class PolyArray implements Array {
 
     private final String protoBaseTypeName;
     private final Object[] elements;
 
 
-    public PolyphenyArray( String protoBaseTypeName, Object[] elements ) {
+    public PolyArray( String protoBaseTypeName, Object[] elements ) {
         this.protoBaseTypeName = protoBaseTypeName;
         Object[] shiftedElements = new Object[elements.length];
         int endIdx = elements.length;
@@ -44,7 +44,7 @@ public class PolyphenyArray implements Array {
     }
 
 
-    public PolyphenyArray( String protoBaseTypeName, List<TypedValue> values ) throws SQLException {
+    public PolyArray( String protoBaseTypeName, List<TypedValue> values ) throws SQLException {
         this.protoBaseTypeName = protoBaseTypeName;
         List<Object> objects = new ArrayList<>();
         for ( TypedValue v : values ) {
