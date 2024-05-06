@@ -16,8 +16,6 @@
 
 package org.polypheny.jdbc.types;
 
-import static org.polypheny.prism.ProtoValue.ValueCase.STRING;
-
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +24,7 @@ import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoEntry;
 import org.polypheny.prism.ProtoValue;
+import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class PolyDocument extends HashMap<String, TypedValue> {
 
@@ -42,7 +41,7 @@ public class PolyDocument extends HashMap<String, TypedValue> {
     public PolyDocument( ProtoDocument document ) {
         super();
         document.getEntriesList().stream()
-                .filter( e -> e.getKey().getValueCase() == STRING )
+                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
                 .forEach( e -> put(
                         e.getKey().getString().getString(),
                         new TypedValue( e.getValue() )
