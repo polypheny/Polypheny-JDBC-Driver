@@ -16,8 +16,6 @@
 
 package org.polypheny.jdbc;
 
-import static java.lang.Math.min;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
@@ -240,7 +238,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
 
 
     private void considerPrefetch() {
-        int prefetch_count = min( DEFAULT_PREFETCH_COUNT, properties.getStatementFetchSize() );
+        int prefetch_count = Math.min( DEFAULT_PREFETCH_COUNT, properties.getStatementFetchSize() );
         if ( values.size() > prefetch_count ) {
             return;
         }

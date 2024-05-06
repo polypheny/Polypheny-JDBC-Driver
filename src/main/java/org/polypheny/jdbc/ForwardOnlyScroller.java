@@ -16,8 +16,6 @@
 
 package org.polypheny.jdbc;
 
-import static java.lang.Math.min;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -90,7 +88,7 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
 
 
     private void considerPrefetch() {
-        int prefetch_count = min( DEFAULT_PREFETCH_COUNT, properties.getStatementFetchSize() );
+        int prefetch_count = Math.min( DEFAULT_PREFETCH_COUNT, properties.getStatementFetchSize() );
         if ( values.size() > prefetch_count ) {
             return;
         }
