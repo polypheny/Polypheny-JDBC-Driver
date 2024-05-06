@@ -47,8 +47,8 @@ public class ProtoToJdbcTypeMap {
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.VARBINARY, Types.VARBINARY );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.NULL, Types.NULL );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.ARRAY, Types.ARRAY );
-        PROTO_TYPE_TO_JDBC.put( ProtoPolyType.MAP, Types.OTHER );
-        PROTO_TYPE_TO_JDBC.put( ProtoPolyType.DOCUMENT, Types.STRUCT );
+        PROTO_TYPE_TO_JDBC.put( ProtoPolyType.MAP, Types.JAVA_OBJECT );
+        PROTO_TYPE_TO_JDBC.put( ProtoPolyType.DOCUMENT, Types.JAVA_OBJECT );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.GRAPH, Types.JAVA_OBJECT );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.NODE, Types.JAVA_OBJECT );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.EDGE, Types.JAVA_OBJECT );
@@ -63,7 +63,7 @@ public class ProtoToJdbcTypeMap {
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.CURSOR, Types.REF_CURSOR );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.COLUMN_LIST, Types.OTHER + 2 );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.DYNAMIC_STAR, Types.JAVA_OBJECT );
-        PROTO_TYPE_TO_JDBC.put( ProtoPolyType.GEOMETRY, ExtraPolyTypes.GEOMETRY );
+        PROTO_TYPE_TO_JDBC.put( ProtoPolyType.GEOMETRY, Types.JAVA_OBJECT );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.SYMBOL, Types.OTHER );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.JSON, Types.VARCHAR );
         PROTO_TYPE_TO_JDBC.put( ProtoPolyType.MULTISET, Types.ARRAY );
