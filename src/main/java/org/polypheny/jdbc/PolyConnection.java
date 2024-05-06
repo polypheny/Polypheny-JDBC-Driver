@@ -44,10 +44,10 @@ import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.jdbc.types.PolyphenyArray;
-import org.polypheny.jdbc.types.PolyphenyBlob;
-import org.polypheny.jdbc.types.PolyphenyClob;
-import org.polypheny.jdbc.types.PolyphenyStruct;
+import org.polypheny.jdbc.types.PolyArray;
+import org.polypheny.jdbc.types.PolyBlob;
+import org.polypheny.jdbc.types.PolyClob;
+import org.polypheny.jdbc.types.PolyStruct;
 import org.polypheny.prism.PreparedStatementSignature;
 
 public class PolyConnection implements Connection {
@@ -429,20 +429,20 @@ public class PolyConnection implements Connection {
 
     @Override
     public Clob createClob() throws SQLException {
-        return new PolyphenyClob();
+        return new PolyClob();
     }
 
 
     @Override
     public Blob createBlob() throws SQLException {
-        return new PolyphenyBlob();
+        return new PolyBlob();
     }
 
 
     @Override
     public NClob createNClob() throws SQLException {
         // implements both clob and nclob as both are utf-8
-        return new PolyphenyClob();
+        return new PolyClob();
     }
 
 
@@ -506,14 +506,14 @@ public class PolyConnection implements Connection {
     @Override
     public Array createArrayOf( String typeName, Object[] elements ) throws SQLException {
         throwIfClosed();
-        return new PolyphenyArray( typeName, elements );
+        return new PolyArray( typeName, elements );
     }
 
 
     @Override
     public Struct createStruct( String typeName, Object[] attributes ) throws SQLException {
         throwIfClosed();
-        return new PolyphenyStruct( typeName, attributes );
+        return new PolyStruct( typeName, attributes );
     }
 
 
