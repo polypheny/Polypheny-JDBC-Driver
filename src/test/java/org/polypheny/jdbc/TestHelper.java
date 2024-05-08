@@ -48,10 +48,10 @@ public class TestHelper {
             statement.execute( "DROP TABLE IF EXISTS customers" );
             statement.execute(
                     "CREATE TABLE customers(\n"
-                            + "            id INTEGER PRIMARY KEY,\n"
-                            + "            name TEXT NOT NULL,\n"
-                            + "            year_joined INTEGER NOT NULL\n"
-                            + "        )"
+                            + "  id INTEGER PRIMARY KEY,\n"
+                            + "  name TEXT NOT NULL,\n"
+                            + "  year_joined INTEGER NOT NULL\n"
+                            + ")"
             );
             try ( PreparedStatement insert = connection.prepareStatement( "INSERT INTO customers(id, name, year_joined) VALUES (?, ?, ?)" ) ) {
                 insert.setInt( 1, 1 );
