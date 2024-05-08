@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -57,7 +56,7 @@ public class TypedValueTest {
 
 
     @Test
-    public void fromNCharacterStreamWithReader() throws IOException, SQLException {
+    public void fromNCharacterStreamWithReader() throws SQLException {
         String string = "test";
         Reader reader = new StringReader( string );
         TypedValue typedValue = TypedValue.fromNCharacterStream( reader );

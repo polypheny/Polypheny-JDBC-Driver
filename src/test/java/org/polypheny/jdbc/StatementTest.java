@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,7 +39,7 @@ public class StatementTest {
 
     @BeforeEach
     void createConnection() throws SQLException {
-        con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590", "pa", "" );
+        con = TestHelper.getConnection();
         try ( Statement statement = con.createStatement() ) {
             statement.execute( "DROP TABLE IF EXISTS t" );
             statement.execute( "CREATE TABLE t(id INTEGER PRIMARY KEY, a INTEGER NOT NULL)" );
