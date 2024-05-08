@@ -18,6 +18,8 @@ package org.polypheny.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -77,12 +79,12 @@ public class PolyphenyDriverTest {
             assertEquals( "user", propertyInfo[0].name );
             assertEquals( "testuser", propertyInfo[0].value );
             assertEquals( "Specifies the username for authentication. If not specified, the database uses the default user.", propertyInfo[0].description );
-            assertEquals( false, propertyInfo[0].required );
+            assertFalse( propertyInfo[0].required );
 
             assertEquals( "password", propertyInfo[1].name );
             assertEquals( "testpassword", propertyInfo[1].value );
             assertEquals( "Specifies the password associated with the given username. If not specified the database assumes that the user does not have a password.", propertyInfo[1].description );
-            assertEquals( false, propertyInfo[1].required );
+            assertFalse( propertyInfo[1].required );
 
             assertEquals( "autocommit", propertyInfo[2].name );
             assertEquals( "true", propertyInfo[2].value );
@@ -125,14 +127,14 @@ public class PolyphenyDriverTest {
             assertEquals( 7, infoProperties.length );
 
             assertEquals( PropertyUtils.getUSERNAME_KEY(), infoProperties[0].name );
-            assertEquals( null, infoProperties[0].value );
+            assertNull( infoProperties[0].value );
             assertEquals( "Specifies the username for authentication. If not specified, the database uses the default user.", infoProperties[0].description );
-            assertEquals( false, infoProperties[0].required );
+            assertFalse( infoProperties[0].required );
 
             assertEquals( PropertyUtils.getPASSWORD_KEY(), infoProperties[1].name );
-            assertEquals( null, infoProperties[1].value );
+            assertNull( infoProperties[1].value );
             assertEquals( "Specifies the password associated with the given username. If not specified the database assumes that the user does not have a password.", infoProperties[1].description );
-            assertEquals( false, infoProperties[1].required );
+            assertFalse( infoProperties[1].required );
 
             assertEquals( PropertyUtils.getAUTOCOMMIT_KEY(), infoProperties[2].name );
             assertEquals( String.valueOf( PropertyUtils.isDEFAULT_AUTOCOMMIT() ), infoProperties[2].value );
@@ -184,12 +186,12 @@ public class PolyphenyDriverTest {
             assertEquals( "user", propertyInfo[0].name );
             assertEquals( "testuser", propertyInfo[0].value );
             assertEquals( "Specifies the username for authentication. If not specified, the database uses the default user.", propertyInfo[0].description );
-            assertEquals( false, propertyInfo[0].required );
+            assertFalse( propertyInfo[0].required );
 
             assertEquals( "password", propertyInfo[1].name );
             assertEquals( "testpassword", propertyInfo[1].value );
             assertEquals( "Specifies the password associated with the given username. If not specified the database assumes that the user does not have a password.", propertyInfo[1].description );
-            assertEquals( false, propertyInfo[1].required );
+            assertFalse( propertyInfo[1].required );
 
             assertEquals( "autocommit", propertyInfo[2].name );
             assertEquals( "false", propertyInfo[2].value );
