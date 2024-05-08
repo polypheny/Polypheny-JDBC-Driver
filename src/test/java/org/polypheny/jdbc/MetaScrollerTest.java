@@ -86,63 +86,63 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void next__empty_false() throws SQLException, InterruptedException {
+    public void next__empty_false() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertFalse( scroller.next() );
     }
 
 
     @Test
-    public void nextGetRow__empty_0() throws SQLException, InterruptedException {
+    public void nextGetRow__empty_0() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertEquals( 0, scroller.getRow() );
     }
 
 
     @Test
-    public void nextCurrent__empty_null() throws SQLException, InterruptedException {
+    public void nextCurrent__empty_null() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertNull( scroller.current() );
     }
 
 
     @Test
-    public void previous__empty_false() throws SQLException, InterruptedException {
+    public void previous__empty_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertFalse( scroller.previous() );
     }
 
 
     @Test
-    public void previousGetRow__empty_0() throws SQLException, InterruptedException {
+    public void previousGetRow__empty_0() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertEquals( 0, scroller.getRow() );
     }
 
 
     @Test
-    public void previousCurrent__empty_null() throws SQLException, InterruptedException {
+    public void previousCurrent__empty_null() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertNull( scroller.current() );
     }
 
 
     @Test
-    public void absolute0__empty_false() throws SQLException, InterruptedException {
+    public void absolute0__empty_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertFalse( scroller.absolute( 0 ) );
     }
 
 
     @Test
-    public void absolute0Current__empty_null() throws SQLException, InterruptedException {
+    public void absolute0Current__empty_null() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertNull( scroller.current() );
     }
 
 
     @Test
-    public void absolute0IsBefore__empty_true() throws SQLException, InterruptedException {
+    public void absolute0IsBefore__empty_true() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         scroller.absolute( 0 );
         assertTrue( scroller.isBeforeFirst() );
@@ -150,14 +150,14 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absolute5IsAfter__empty_false() throws SQLException, InterruptedException {
+    public void absolute5IsAfter__empty_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertFalse( scroller.absolute( 5 ) );
     }
 
 
     @Test
-    public void absolute5IsAfter__empty_true() throws SQLException, InterruptedException {
+    public void absolute5IsAfter__empty_true() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         scroller.absolute( 5 );
         assertTrue( scroller.isAfterLast() );
@@ -165,7 +165,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absoluteMinus5IsBefore__empty_true() throws SQLException, InterruptedException {
+    public void absoluteMinus5IsBefore__empty_true() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         scroller.absolute( -5 );
         assertTrue( scroller.isBeforeFirst() );
@@ -173,14 +173,14 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absoluteMinus5IsBefore__empty_false() throws SQLException, InterruptedException {
+    public void absoluteMinus5IsBefore__empty_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertFalse( scroller.absolute( -5 ) );
     }
 
 
     @Test
-    public void relative1IsAfter__empty_true() throws SQLException, InterruptedException {
+    public void relative1IsAfter__empty_true() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         scroller.relative( 1 );
         assertTrue( scroller.isAfterLast() );
@@ -188,21 +188,21 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relative1__empty_false() throws SQLException, InterruptedException {
+    public void relative1__empty_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertFalse( scroller.relative( 1 ) );
     }
 
 
     @Test
-    public void relativeMinus1__empty_false() throws SQLException, InterruptedException {
+    public void relativeMinus1__empty_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         assertFalse( scroller.relative( -1 ) );
     }
 
 
     @Test
-    public void relative1Current__empty_null() throws SQLException, InterruptedException {
+    public void relative1Current__empty_null() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         scroller.relative( 1 );
         assertNull( scroller.current() );
@@ -210,7 +210,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relativeMinus1Current__empty_null() throws SQLException, InterruptedException {
+    public void relativeMinus1Current__empty_null() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         scroller.relative( -1 );
         assertNull( scroller.current() );
@@ -218,7 +218,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relative1GetRow__empty_1() throws SQLException, InterruptedException {
+    public void relative1GetRow__empty_1() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         scroller.relative( 1 );
         assertEquals( 0, scroller.getRow() );
@@ -226,7 +226,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relativeMinus1GetRow__empty_0() throws SQLException, InterruptedException {
+    public void relativeMinus1GetRow__empty_0() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_EMPTY );
         scroller.relative( -1 );
         assertEquals( 0, scroller.getRow() );
@@ -234,14 +234,14 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void next__data_true() throws SQLException, InterruptedException {
+    public void next__data_true() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         assertTrue( scroller.next() );
     }
 
 
     @Test
-    public void nextGetRow__data_1() throws SQLException, InterruptedException {
+    public void nextGetRow__data_1() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         assertEquals( 1, scroller.getRow() );
@@ -249,7 +249,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void nextCurrent__data_1() throws SQLException, InterruptedException {
+    public void nextCurrent__data_1() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         assertEquals( Integer.valueOf( 1 ), scroller.current() );
@@ -257,7 +257,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void atFirst_data_1() throws SQLException, InterruptedException {
+    public void atFirst_data_1() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         assertTrue( scroller.isFirst() );
@@ -265,7 +265,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void atLast_data_1() throws SQLException, InterruptedException {
+    public void atLast_data_1() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( 4 );
         assertTrue( scroller.isLast() );
@@ -273,14 +273,14 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void previous__data_false() throws SQLException, InterruptedException {
+    public void previous__data_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         assertFalse( scroller.previous() );
     }
 
 
     @Test
-    public void previousGetRow__data_0() throws SQLException, InterruptedException {
+    public void previousGetRow__data_0() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.previous();
         assertEquals( 0, scroller.getRow() );
@@ -288,7 +288,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void previousCurrent__data_null() throws SQLException, InterruptedException {
+    public void previousCurrent__data_null() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.previous();
         assertNull( scroller.current() );
@@ -296,7 +296,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void nextOverflow__data_false() throws SQLException, InterruptedException {
+    public void nextOverflow__data_false() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -307,7 +307,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void nextOverflowCurrent__data_null() throws SQLException, InterruptedException {
+    public void nextOverflowCurrent__data_null() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -319,7 +319,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void nextOverflowGetRow__data_0() throws SQLException, InterruptedException {
+    public void nextOverflowGetRow__data_0() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -331,7 +331,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void nextCurrent__data_value() throws SQLException, InterruptedException {
+    public void nextCurrent__data_value() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         for ( int i = 0; i < 4; i++ ) {
             scroller.next();
@@ -341,14 +341,14 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void rel0Invalid__data_false() throws SQLException, InterruptedException {
+    public void rel0Invalid__data_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         assertFalse( scroller.relative( 0 ) );
     }
 
 
     @Test
-    public void rel0Valid__data_false() throws SQLException, InterruptedException {
+    public void rel0Valid__data_false() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         assertTrue( scroller.relative( 0 ) );
@@ -356,7 +356,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void rel0InvalidCurrent__data_null() throws SQLException, InterruptedException {
+    public void rel0InvalidCurrent__data_null() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.relative( 0 );
         assertNull( scroller.current() );
@@ -364,7 +364,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void rel0ValidCurrent__data_1() throws SQLException, InterruptedException {
+    public void rel0ValidCurrent__data_1() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.relative( 0 );
@@ -373,7 +373,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relIncOverflowValid__data_false() throws SQLException, InterruptedException {
+    public void relIncOverflowValid__data_false() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -382,7 +382,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relDecUnderflowValid__data_false() throws SQLException, InterruptedException {
+    public void relDecUnderflowValid__data_false() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -391,7 +391,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relIncOverflowValue__data_null() throws SQLException, InterruptedException {
+    public void relIncOverflowValue__data_null() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -401,7 +401,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relDecUnderflowValue__data_null() throws SQLException, InterruptedException {
+    public void relDecUnderflowValue__data_null() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -411,7 +411,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relIncOverflowAfterLast__data_true() throws SQLException, InterruptedException {
+    public void relIncOverflowAfterLast__data_true() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -421,7 +421,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relDecUnderflowBeforeFirst__data_true() throws SQLException, InterruptedException {
+    public void relDecUnderflowBeforeFirst__data_true() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -431,7 +431,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relIncOverflowGetRow__data_0() throws SQLException, InterruptedException {
+    public void relIncOverflowGetRow__data_0() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -441,7 +441,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relDecUnderflowGetRow__data_0() throws SQLException, InterruptedException {
+    public void relDecUnderflowGetRow__data_0() throws SQLException {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.next();
         scroller.next();
@@ -451,14 +451,14 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relIncValid__data_false() throws SQLException, InterruptedException {
+    public void relIncValid__data_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         assertTrue( scroller.relative( 3 ) );
     }
 
 
     @Test
-    public void relDecwValid__data_false() throws SQLException, InterruptedException {
+    public void relDecwValid__data_false() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( 4 );
         assertTrue( scroller.relative( -3 ) );
@@ -466,7 +466,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relIncValue__data_4() throws SQLException, InterruptedException {
+    public void relIncValue__data_4() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.relative( 4 );
         assertEquals( Integer.valueOf( 4 ), scroller.current() );
@@ -474,7 +474,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void relDecValue__data_1() throws SQLException, InterruptedException {
+    public void relDecValue__data_1() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( 4 );
         scroller.relative( -3 );
@@ -483,7 +483,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absOverflowValue__data_null() throws SQLException, InterruptedException {
+    public void absOverflowValue__data_null() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( 5 );
         assertNull( scroller.current() );
@@ -491,7 +491,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absUnderflowValue__data_true() throws SQLException, InterruptedException {
+    public void absUnderflowValue__data_true() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.relative( -5 );
         assertNull( scroller.current() );
@@ -499,7 +499,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absUnderflowBeforeFirst__data_true() throws SQLException, InterruptedException {
+    public void absUnderflowBeforeFirst__data_true() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.relative( -5 );
         assertTrue( scroller.isBeforeFirst() );
@@ -507,7 +507,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absOverflowAfterLast__data_true() throws SQLException, InterruptedException {
+    public void absOverflowAfterLast__data_true() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( 5 );
         assertTrue( scroller.isAfterLast() );
@@ -515,7 +515,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absOverflowGetRow__data_0() throws SQLException, InterruptedException {
+    public void absOverflowGetRow__data_0() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( 5 );
         assertEquals( 0, scroller.getRow() );
@@ -523,7 +523,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absUnderflowGetRow__data_0() throws SQLException, InterruptedException {
+    public void absUnderflowGetRow__data_0() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( -5 );
         assertEquals( 0, scroller.getRow() );
@@ -531,7 +531,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absReverseAccessValue__data_3() throws SQLException, InterruptedException {
+    public void absReverseAccessValue__data_3() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( -2 );
         assertEquals( Integer.valueOf( 3 ), scroller.current() );
@@ -539,7 +539,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absReverseAccessGetRow__data_3() throws SQLException, InterruptedException {
+    public void absReverseAccessGetRow__data_3() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         scroller.absolute( -2 );
         assertEquals( 3, scroller.getRow() );
@@ -547,7 +547,7 @@ public class MetaScrollerTest {
 
 
     @Test
-    public void absReverseAccessValid__data_3() throws SQLException, InterruptedException {
+    public void absReverseAccessValid__data_3() {
         MetaScroller<Integer> scroller = new MetaScroller<>( TEST_DATA_FOUR );
         assertTrue( scroller.absolute( -2 ) );
     }
