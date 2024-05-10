@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,15 @@
 
 package org.polypheny.jdbc;
 
+import java.sql.SQLException;
+import org.junit.jupiter.api.Test;
 
-public interface PolyphenyJdbcStatement extends java.sql.Statement {
+public class DriverPropertyInfoTest {
+
+    @Test
+    public void propertyInfo_defaultValues() throws SQLException {
+        String url = "jdbc:polypheny://host:20590";
+        new PolyphenyDriver().getPropertyInfo( url, null );
+    }
 
 }

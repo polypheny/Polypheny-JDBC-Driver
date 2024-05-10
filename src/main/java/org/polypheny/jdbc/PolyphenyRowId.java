@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,28 @@
 
 package org.polypheny.jdbc;
 
+import java.nio.charset.StandardCharsets;
+import java.sql.RowId;
 
-public interface PolyphenyJdbcConnection extends java.sql.Connection {
+public class PolyphenyRowId implements RowId {
+
+    String rowId;
+
+
+    public PolyphenyRowId( String rowId ) {
+        this.rowId = rowId;
+    }
+
+
+    @Override
+    public byte[] getBytes() {
+        return rowId.getBytes( StandardCharsets.UTF_8 );
+    }
+
+
+    @Override
+    public String toString() {
+        return rowId;
+    }
 
 }

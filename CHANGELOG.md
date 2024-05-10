@@ -1,3 +1,19 @@
+## 2.0
+
+### May 10, 2024
+
+CHANGES:
+
+* New version of JDBC driver utilizing the Polypheny Prism query interface and protocol.
+
+IMPROVEMENTS:
+
+* N/A
+
+BUG FIXES:
+
+* N/A
+
 ## 1.5.3
 
 ### November 21, 2021

@@ -8,15 +8,17 @@
 
 # Polypheny JDBC Driver
 
-This repository contains a standards-compliant JDBC driver for Polypheny-DB.
+This repository contains s JDBC driver for Polypheny. It utilizes the *Prism query interface* deployed with every instance of Polypheny by default. The driver adheres to the JDBC 4.2 standard, ensuring compatibility with Java applications, including those written in Scala and Kotlin, as well as tools like DataGrip.
+
+This driver is compatible with JVM version 8 or higher.
 
 ## Getting Started
 
 - The driver is published to Maven Central. Make sure that you have added `mavenCentral()` to the repositories section in your gradle build file.
-- Add `implementation group: 'org.polypheny', name: 'polypheny-jdbc-driver', version: '1.5.3'` .
-- Load the driver `org.polypheny.jdbc.Driver`, for example via
+- Add `implementation group: 'org.polypheny', name: 'polypheny-jdbc-driver', version: '2.0'` .
+- Optionally: load the driver `org.polypheny.jdbc.PolyphenyDriver`, for example via
   ```
-  Class.forName( "org.polypheny.jdbc.Driver" );
+  Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
   ```
 - Use the connection URL `jdbc:polypheny:http://localhost/` to connect to [Polypheny-DB](https://github.com/polypheny/Polypheny-DB).
 
@@ -30,8 +32,6 @@ We highly welcome your contributions to the _Polypheny JDBC Driver_. If you woul
 
 Please note that we have a [code of conduct](https://github.com/polypheny/Admin/blob/master/CODE_OF_CONDUCT.md). Please follow it in all your interactions with the project.
 
-## Credits
-This JDBC Driver is based on [Apache Avatica](https://calcite.apache.org/avatica/), a framework for building database drivers. 
 
 ## License
 The Apache 2.0 License

@@ -3,34 +3,120 @@ name: Polypheny JDBC Driver CI
 on: [ push, pull_request ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # test against latest update of each major Java version, as well as specific updates of LTS versions:
-        java: [ 8, 11 ]
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
-    name: Java ${{ matrix.java }} @ ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK
-        uses: actions/setup-java@v1
-        with:
-          java-version: ${{ matrix.java }}
-      - name: Cache Gradle packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Build with Gradle
-        run: ./gradlew build
-      - name: Cleanup Gradle Cache
-        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
-        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
-        run: |
-          rm -f ~/.gradle/caches/modules-2/modules-2.lock
-          rm -f ~/.gradle/caches/modules-2/gc.properties
+    build-polypheny:
+        timeout-minutes: 15
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: '17'
+
+            -   name: Checkout Polypheny
+                uses: actions/checkout@v4
+                with:
+                    repository: polypheny/Polypheny-DB
+                    ref: proto-without-grpc
+
+            -   name: Build Polypheny
+                run: |
+                    ./gradlew build -x test -x licensee
+
+            -   name: Build Polypheny again (just to be sure all plugins are available)
+                run: |
+                    ./gradlew build -x test -x licensee
+
+            -   name: Store Polypheny JAR
+                uses: actions/upload-artifact@v4
+                with:
+                    name: polypheny-jar
+                    path: dbms/build/libs/dbms-0.10.0-SNAPSHOT.jar
+
+    build:
+        needs: build-polypheny
+        strategy:
+            fail-fast: false
+            matrix:
+                java: [ 8, 11, 17, 21 ]
+                os: [ ubuntu-latest, macos-latest ]
+                exclude:
+                    -   os: macos-latest
+                        java: 8
+        timeout-minutes: 5
+        runs-on: ${{ matrix.os }}
+        name: Java ${{ matrix.java }} @ ${{ matrix.os }}
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: |
+                        17
+                        ${{ matrix.java }}
+            -   name: Load Polypheny JAR
+                uses: actions/download-artifact@v4
+                with:
+                    name: polypheny-jar
+
+            -   name: Build & test with Gradle
+                uses: polypheny/GitHub-Action-Run-Polypheny@dev
+                with:
+                    cmd: ./gradlew build -PdisableToolchain=true
+                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    java: ${{ env.JAVA_HOME_17_X64 || env.JAVA_HOME_17_ARM64 }}/bin/java
+
+    build-windows:
+        needs: build-polypheny
+        strategy:
+            fail-fast: false
+        timeout-minutes: 20
+        runs-on: windows-latest
+        name: Java 8 @ windows-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: |
+                        17
+                        8
+            -   name: Load Polypheny JAR
+                uses: actions/download-artifact@v4
+                with:
+                    name: polypheny-jar
+
+            -   name: Build & test with Gradle
+                uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
+                with:
+                    cmd: gradlew.bat build -PdisableToolchain=true
+                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    java: ${{ env.JAVA_HOME_17_X64 }}\bin\java
+
+    test-stores:
+        needs: build-polypheny
+        strategy:
+            fail-fast: false
+            matrix:
+                adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, neo4j ]
+        timeout-minutes: 10
+        runs-on: ubuntu-latest
+        name: Test on ${{ matrix.adapter }}
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: 17
+            -   name: Load Polypheny JAR
+                uses: actions/download-artifact@v4
+                with:
+                    name: polypheny-jar
+            -   name: Build with Gradle
+                uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
+                with:
+                    cmd: ./gradlew build -PdisableToolchain=true
+                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    default-store: ${{ matrix.adapter }}

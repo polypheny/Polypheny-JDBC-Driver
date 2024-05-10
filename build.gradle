@@ -1,98 +1,126 @@
-
 plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
-    id 'idea'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'io.freefair.lombok' version '6.5.1'
+    id 'org.jetbrains.gradle.plugin.idea-ext' version '1.1.8'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'io.freefair.lombok' version '8.6'
+    id 'com.google.protobuf' version '0.9.4'
 }
+
+group "org.polypheny"
+
+description = "A standards-compliant JDBC driver for Polypheny."
+
+def versionMajor = 2
+def versionMinor = 0
+def versionQualifier = "SNAPSHOT"
+version = versionMajor + "." + versionMinor + (versionQualifier != '' ? "-" + versionQualifier : '')
 
 
 repositories {
     mavenCentral()
     maven {
-        // DBIS Nexus
-        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-    }
-    maven {
-        url "https://clojars.org/repo/"
+        url "https://plugins.gradle.org/m2/"
     }
 }
 
-
-group "org.polypheny"
-archivesBaseName = "polypheny-jdbc-driver"
-description = "A standards-compliant JDBC driver for Polypheny-DB."
-
-def versionMajor = 1
-def versionMinor = 6
-def versionQualifier = "-SNAPSHOT"
-version = versionMajor + "." + versionMinor + versionQualifier
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+javadoc.options.encoding = "UTF-8"
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-
-java {
+// Allow to disable toolchain setting and use the java available on the system. Important for CI pipelines to test different
+// java versions.
+if (!hasProperty('disableToolchain')) {
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(8)
+        }
+    }
+} else {
+    println "Disabled toolchain"
+    // Without this, it fails for Java 21
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+java {
     withJavadocJar()
     withSourcesJar()
 }
 
+def protobufVersion = "3.23.4"
 
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-}
-
-
-def avaticaVersion = '1.17.2-POLYPHENY'
 
 dependencies {
-    ////// APACHE CALCITE AVATICA
-    implementation group: "org.polypheny.avatica", name: "avatica-core", version: avaticaVersion  // License: Apache 2.0
+    // Prism API files (protobuf files), needs to be implementation due to the prism-api-version.properties
+    implementation group: 'org.polypheny', name: 'prism', version: '1.3'
 
-    ////// APACHE COMMONS LANG
-    implementation group: "org.apache.commons", name: "commons-lang3", version: "3.12.0"
+    // Protobuf
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobufVersion
 
-    ////// LOGGING
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.3' // License: MIT
+    // Apache Commons Lang
+    implementation group: "org.apache.commons", name: "commons-lang3", version: "3.14.0"
+
+    // Logging
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.13'
 
 
     // --- Test Compile ---
-    testImplementation group: "junit", name: "junit", version: '4.13.1'
-    testImplementation group: "org.testng", name: "testng", version: "6.14.3"
-    testImplementation group: "org.polypheny.avatica", name: "avatica-server", version: avaticaVersion
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.10.2'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '4.11.0'
 }
 
+apply plugin: "java"
+apply plugin: "idea"
+apply plugin: "io.freefair.lombok"
+apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: "com.google.protobuf"
+
+// compile protos on build
+build.dependsOn(generateProto)
+delombok.dependsOn(generateProto)
+sourcesJar.dependsOn(generateProto)
+compileJava.dependsOn(generateProto)
+processResources.dependsOn(extractIncludeProto)
+
+protobuf {
+    // Configure the protoc executable
+    protoc {
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
+    }
+
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {}
+            }
+        }
+    }
+}
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java", "build/generated-sources"]
+            srcDirs = ["src/main/java", "build/generated/source/proto/main/java"]
         }
         resources {
             srcDirs = ["src/main/resources"]
         }
-    }
-    test {
-        java {
-            srcDirs = ["src/test/java"]
-        }
-        resources {
-            srcDirs = ["src/test/resources"]
+        proto {
+            srcDirs = ["build/extracted-include-protos/main"]
         }
     }
 }
 
+test {
+    useJUnitPlatform()
+    testLogging.showStandardStreams = true
+}
 
 /**
- * JARs
- */
+ * JARs*/
 jar {
     manifest {
         attributes 'Manifest-Version': '1.0'
@@ -102,7 +130,9 @@ jar {
         attributes 'Version': project.version
     }
 }
-/*task sourcesJar(type: Jar, dependsOn: classes) {
+
+/*
+task sourcesJar(type: Jar, dependsOn: classes) {
     classifier "sources"
     from sourceSets.main.allSource
 }
@@ -110,10 +140,18 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier "javadoc"
     from javadoc.destinationDir
 }*/
+
 shadowJar {
     archiveClassifier = ''
     mergeServiceFiles() // merge the META-INF/services/java.sql.Driver files
     exclude('META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'module-info.class', 'META-INF/services/com.fasterxml.jackson.core.*')
+    relocate 'google.protobuf', 'org.polypheny.jdbc.dependency.google.protobuf'
+    relocate 'org.slf4j', 'org.polypheny.jdbc.dependency.org.slf4j'
+    relocate 'org.apache.commons', 'org.polypheny.jdbc.dependency.org.apache.commons'
+    relocate 'com.google', 'org.polypheny.jdbc.dependency.com.google'
+    relocate 'javax', 'org.polypheny.jdbc.dependency.javax'
+    relocate 'org.checkerframework', 'org.polypheny.jdbc.dependency.org.checkerframework'
+    relocate 'org.polypheny.prism', 'org.polypheny.jdbc.dependency.prism' // Prevents Polypheny-DB from using this during tests
 }
 
 assemble.dependsOn shadowJar
@@ -124,6 +162,29 @@ artifacts {
     archives javadocJar // jar file containing the source files
 }
 
+// generate version properties file
+task generateVersionProperties {
+    def versionPropsFile = file('src/main/resources/polypheny-jdbc-driver-version.properties')
+    versionPropsFile.parentFile.mkdirs()
+
+    // Generate version properties file with project version
+    versionPropsFile.withWriter { writer ->
+        writer.write("version=${version}\n")
+        writer.write("major=${versionMajor}\n")
+        writer.write("minor=${versionMinor}\n")
+        writer.write("qualifier=${versionQualifier}\n")
+        writer.write("buildTimestamp=${new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")}")
+    }
+}
+
+// Ensure the generated version properties file is created before compilation
+compileJava.dependsOn generateVersionProperties
+
+
+javadoc {
+    exclude 'org/polypheny/prism/**'
+    exclude 'com/google/protobuf/**'
+}
 
 publishing {
     publications {
@@ -133,7 +194,7 @@ publishing {
             artifact source: javadocJar, classifier: 'javadoc', extension: 'jar'
             pom {
                 name = 'Polypheny JDBC Driver'
-                description = 'A standards-compliant JDBC driver for Polypheny-DB. '
+                description = 'A standards-compliant JDBC driver for Polypheny-DB.'
                 url = 'https://polypheny.org/'
                 licenses {
                     license {
@@ -177,7 +238,6 @@ publishing {
 }
 //task generatePom(group: 'publishing', dependsOn: "generatePomFileFor${project.name.capitalize()}Publication")
 
-
 signing {
     required { gradle.taskGraph.hasTask("publish") }
     def signingKey = findProperty("signingKey")
@@ -186,18 +246,32 @@ signing {
     sign publishing.publications.shadow
 }
 
-
-
 /**
- * IntelliJ
- */
+ * IntelliJ*/
 idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-
-        inheritOutputDirs = false
-        outputDir = file("${project.buildDir}/classes")
-        testOutputDir = file("${project.buildDir}/test-classes")
+    project {
+        settings {
+            copyright {
+                useDefault = "ApacheLicense"
+                profiles {
+                    ApacheLicense {
+                        notice = 'Copyright 2019-$today.year The Polypheny Project\n' +
+                            '\n' +
+                            'Licensed under the Apache License, Version 2.0 (the \"License\");\n' +
+                            'you may not use this file except in compliance with the License.\n' +
+                            'You may obtain a copy of the License at\n' +
+                            '\n' +
+                            'http://www.apache.org/licenses/LICENSE-2.0\n' +
+                            '\n' +
+                            'Unless required by applicable law or agreed to in writing, software\n' +
+                            'distributed under the License is distributed on an \"AS IS\" BASIS,\n' +
+                            'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n' +
+                            'See the License for the specific language governing permissions and\n' +
+                            'limitations under the License.'
+                        keyword = "Copyright"
+                    }
+                }
+            }
+        }
     }
 }
