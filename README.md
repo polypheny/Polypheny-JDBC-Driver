@@ -20,7 +20,7 @@ This driver is compatible with JVM version 8 or higher.
   ```
   Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
   ```
-- Use the connection URL `jdbc:polypheny:http://localhost/` to connect to [Polypheny-DB](https://github.com/polypheny/Polypheny-DB).
+- Use the connection URL `jdbc:polypheny:http://localhost/` to connect to [Polypheny](https://github.com/polypheny/Polypheny-DB).
 
 > For authentication, please use the default username `pa` with an empty password.
 
