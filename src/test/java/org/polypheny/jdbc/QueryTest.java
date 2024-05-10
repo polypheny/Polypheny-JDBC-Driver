@@ -37,10 +37,12 @@ public class QueryTest {
     private static final String MQL_LANGUAGE_NAME = "mongo";
     private static final String TEST_QUERY = "db.customers.find({});";
 
+
     @BeforeAll
     public static void setup() throws SQLException, ClassNotFoundException {
         TestHelper.insertTestData();
     }
+
 
     @Test
     public void thisOneWorks() throws SQLException {
