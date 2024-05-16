@@ -25,32 +25,21 @@ import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.Row;
 
-public class PolyRow {
+public class PolyRow extends ArrayList<TypedValue> {
 
-    private List<TypedValue> values;
     private RelationalMetadata metadata;
 
 
     public PolyRow( List<TypedValue> value, RelationalMetadata metadata ) {
-        this.values = new ArrayList<>( value );
+        super( value );
         this.metadata = metadata;
-    }
-
-
-    public int getColumnCount() {
-        return metadata.getColumnCount();
-    }
-
-
-    public TypedValue getValue( int columnIndex ) {
-        return values.get( columnIndex );
     }
 
 
     public TypedValue getValue( String columnName ) throws PrismInterfaceServiceException {
         try {
             int index = metadata.getColumnIndexFromLabel( columnName );
-            return values.get( index );
+            return get( index );
         } catch ( SQLException e ) {
             throw new PrismInterfaceServiceException(
                     PrismInterfaceErrors.VALUE_ILLEGAL,

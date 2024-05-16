@@ -16,18 +16,107 @@
 
 package org.polypheny.jdbc.multimodel;
 
-import org.polypheny.prism.Frame;
+import java.util.ArrayList;
 
-public class GraphResult extends Result { // implements iterable over some graph representation
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.properties.PropertyUtils;
+import org.polypheny.jdbc.types.PolyEdge;
+import org.polypheny.jdbc.types.PolyGraphElement;
+import org.polypheny.jdbc.types.PolyNode;
+import org.polypheny.jdbc.types.PolyPath;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.Frame.ResultCase;
+import org.polypheny.prism.GraphFrame;
+
+public class GraphResult extends Result implements Iterable<PolyGraphElement> { // implements iterable over some graph representation
 
     private final PolyStatement polyStatement;
     private boolean isFullyFetched;
+    private final List<PolyGraphElement> elements;
+
 
 
     public GraphResult( Frame frame, PolyStatement polyStatement ) {
         super( ResultType.GRAPH );
         this.polyStatement= polyStatement;
         this.isFullyFetched = frame.getIsLast();
+        this.elements = new ArrayList<>();
+        addGraphElements(frame.getGraphFrame());
     }
+
+    private void addGraphElements( GraphFrame graphFrame ) {
+        if (graphFrame.getNodesCount() > 0) {
+            graphFrame.getNodesList().forEach( n -> elements.add( new PolyNode(n) ) );
+            return;
+        }
+        if (graphFrame.getEdgesCount() > 0) {
+            graphFrame.getEdgesList().forEach( n -> elements.add( new PolyEdge(n) ) );
+            return;
+        }
+        if (graphFrame.getPathsCount() > 0) {
+            graphFrame.getPathsList().forEach( n -> elements.add( new PolyPath(n) ) );
+        }
+    }
+
+    private void fetchMore() throws PrismInterfaceServiceException {
+        int id = polyStatement.getStatementId();
+        int timeout = getPolyphenyConnection().getTimeout();
+        Frame frame = getPrismInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
+        if ( frame.getResultCase() != ResultCase.GRAPH_FRAME ) {
+            throw new PrismInterfaceServiceException(
+                    PrismInterfaceErrors.RESULT_TYPE_INVALID,
+                    "Statement returned a result of illegal type " + frame.getResultCase()
+            );
+        }
+        isFullyFetched = frame.getIsLast();
+        addGraphElements( frame.getGraphFrame() );
+    }
+
+    private PolyConnection getPolyphenyConnection() {
+        return polyStatement.getConnection();
+    }
+
+
+    private PrismInterfaceClient getPrismInterfaceClient() {
+        return getPolyphenyConnection().getPrismInterfaceClient();
+    }
+
+    @Override
+    public Iterator<PolyGraphElement> iterator() {return new GraphElementIterator();}
+
+    class GraphElementIterator implements Iterator<PolyGraphElement> {
+        int index = -1;
+
+        @Override
+        public boolean hasNext() {
+            if ( index + 1 >= elements.size() ) {
+                if ( isFullyFetched ) {
+                    return false;
+                }
+                try {
+                    fetchMore();
+                } catch ( PrismInterfaceServiceException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+            return index + 1 < elements.size();
+        }
+
+        @Override
+        public PolyGraphElement next() {
+            if ( !hasNext() ) {
+                throw new NoSuchElementException( "There are no more graph elements" );
+            }
+            return elements.get( ++index );
+        }
+    }
+
+
 
 }
