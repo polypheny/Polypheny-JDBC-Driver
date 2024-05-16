@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import lombok.Getter;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
@@ -32,6 +33,8 @@ import org.polypheny.prism.RelationalFrame;
 public class RelationalResult extends Result implements Iterable<PolyRow> {
 
     private final PolyStatement polyStatement;
+    @Getter
+    private final RelationalMetadata metadata;
     private final List<PolyRow> rows;
     private boolean isFullyFetched;
 
@@ -41,12 +44,13 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
         this.polyStatement = polyStatement;
         this.isFullyFetched = frame.getIsLast();
         this.rows = new ArrayList<>();
+        this.metadata = new RelationalMetadata( frame.getRelationalFrame().getColumnMetaList() );
         addRows( frame.getRelationalFrame() );
     }
 
 
     private void addRows( RelationalFrame relationalFrame ) {
-        relationalFrame.getRowsList().forEach( d -> rows.add( PolyRow.fromProto( d ) ) );
+        relationalFrame.getRowsList().forEach( d -> rows.add( PolyRow.fromProto( d, metadata ) ) );
     }
 
 

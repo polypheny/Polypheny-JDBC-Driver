@@ -23,6 +23,7 @@ import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.Frame.ResultCase;
 import org.polypheny.prism.Response;
 import org.polypheny.prism.StatementResponse;
 
@@ -53,6 +54,8 @@ public class PolyStatement {
                 return new RelationalResult( frame, this );
             case DOCUMENT_FRAME:
                 return new DocumentResult( frame, this );
+            case GRAPH_FRAME:
+                return new GraphResult(frame, this);
         }
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement produced unknown result type" );
     }
