@@ -16,7 +16,7 @@ jobs:
                 uses: actions/checkout@v4
                 with:
                     repository: polypheny/Polypheny-DB
-                    ref: proto-without-grpc
+                    ref: master
 
             -   name: Build Polypheny
                 run: |
