@@ -16,30 +16,29 @@
 
 package org.polypheny.jdbc.multimodel;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.Row;
 
 public class PolyRow {
 
-    List<TypedValue> values;
+    private List<TypedValue> values;
+    private RelationalMetadata metadata;
 
 
-    public PolyRow( List<TypedValue> value ) {
+    public PolyRow( List<TypedValue> value, RelationalMetadata metadata ) {
         this.values = new ArrayList<>( value );
-    }
-
-
-    public PolyRow( TypedValue... value ) {
-        this( Arrays.asList( value ) );
+        this.metadata = metadata;
     }
 
 
     public int getColumnCount() {
-        return values.size();
+        return metadata.getColumnCount();
     }
 
 
@@ -48,13 +47,22 @@ public class PolyRow {
     }
 
 
-    public static <E extends TypedValue> PolyRow of( E... values ) {
-        return new PolyRow( values );
+    public TypedValue getValue( String columnName ) throws PrismInterfaceServiceException {
+        try {
+            int index = metadata.getColumnIndexFromLabel( columnName );
+            return values.get( index );
+        } catch ( SQLException e ) {
+            throw new PrismInterfaceServiceException(
+                    PrismInterfaceErrors.VALUE_ILLEGAL,
+                    "Failed to retrieve column bsaed on the column name.",
+                    e
+            );
+        }
     }
 
 
-    public static PolyRow fromProto( Row protoRow ) {
-        return new PolyRow( protoRow.getValuesList().stream().map( TypedValue::new ).collect( Collectors.toList() ) );
+    public static PolyRow fromProto( Row protoRow, RelationalMetadata metadata ) {
+        return new PolyRow( protoRow.getValuesList().stream().map( TypedValue::new ).collect( Collectors.toList() ), metadata );
     }
 
 }
