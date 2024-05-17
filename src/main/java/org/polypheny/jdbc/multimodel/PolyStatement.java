@@ -38,7 +38,10 @@ public class PolyStatement {
     private int statementId;
 
 
-    private void resetStatement() {
+    private void resetStatement() throws PrismInterfaceServiceException {
+        if (statementId != -1) {
+            connection.getPrismInterfaceClient().closeStatement( statementId, connection.getTimeout() );
+        }
         statementId = NO_STATEMENT_ID;
     }
 
