@@ -19,12 +19,12 @@ package org.polypheny.jdbc.multimodel;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.prism.ColumnMeta;
 
 public class RelationalMetadata {
-
     private List<RelationalColumnMetadata> columnMetas;
     private Map<String, Integer> columnIndexes;
 
@@ -35,8 +35,7 @@ public class RelationalMetadata {
 
     }
 
-
-    private RelationalColumnMetadata getColumnMeta( int columnIndex ) throws PrismInterfaceServiceException {
+    public RelationalColumnMetadata getColumnMeta( int columnIndex ) throws PrismInterfaceServiceException {
         try {
             return columnMetas.get( columnIndex );
         } catch ( IndexOutOfBoundsException e ) {
