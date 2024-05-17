@@ -20,6 +20,8 @@ package org.polypheny.jdbc.types;
 import java.util.HashMap;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 @Getter
 public class PolyGraphElement extends HashMap<String, TypedValue> {
@@ -27,6 +29,13 @@ public class PolyGraphElement extends HashMap<String, TypedValue> {
     protected String id;
     protected String name;
     protected List<String> labels;
+
+    public <T> T unwrap( Class<T> aClass ) throws PrismInterfaceServiceException {
+        if ( aClass.isInstance( this ) ) {
+            return aClass.cast( this );
+        }
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
+    }
 
 
 }
