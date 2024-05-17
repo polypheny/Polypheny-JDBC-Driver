@@ -36,7 +36,7 @@ public class PolyRow extends ArrayList<TypedValue> {
     }
 
 
-    public TypedValue getValue( String columnName ) throws PrismInterfaceServiceException {
+    public TypedValue get( String columnName ) throws PrismInterfaceServiceException {
         try {
             int index = metadata.getColumnIndexFromLabel( columnName );
             return get( index );

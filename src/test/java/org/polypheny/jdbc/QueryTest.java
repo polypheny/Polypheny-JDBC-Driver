@@ -28,11 +28,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.multimodel.DocumentResult;
 import org.polypheny.jdbc.multimodel.GraphResult;
+import org.polypheny.jdbc.multimodel.PolyRow;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.RelationalResult;
 import org.polypheny.jdbc.multimodel.Result;
 import org.polypheny.jdbc.multimodel.Result.ResultType;
 import org.polypheny.jdbc.types.PolyDocument;
+import org.polypheny.jdbc.types.PolyGraphElement;
+import org.polypheny.jdbc.types.PolyNode;
 
 public class QueryTest {
 
@@ -115,18 +118,44 @@ public class QueryTest {
     }
 
     @Test
-    public void simpleCypherTest() {
+    public void simpleCypherNodesTest() {
         try ( Connection connection = TestHelper.getConnection() ) {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
-            Result result = polyStatement.execute( "gph", CYPHER_LANGUAGE_NAME, "MATCH (p:Person) RETURN p.age, p.name" );
-            RelationalResult relRes = result.unwrap( RelationalResult.class );
-            assertEquals( ResultType.RELATIONAL, result.getResultType() );
+            Result result = polyStatement.execute( "public", CYPHER_LANGUAGE_NAME, "MATCH (c:customers) WHERE c.name = \"Maria\" OR c.name = \"Daniel\" RETURN c" );
+            assertEquals( ResultType.GRAPH, result.getResultType() );
+            GraphResult graphResult = result.unwrap( GraphResult.class );
+            for ( PolyGraphElement element : graphResult ) {
+                element.get("name");
+                element.get("year_joined");
+                element.getLabels();
+                element.getId();
+            }
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
     }
 
+    @Test
+    public void simpleCypherPropertyTest() {
+        try ( Connection connection = TestHelper.getConnection() ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
+                fail( "Driver must support unwrapping to PolyphenyConnection" );
+            }
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
+            Result result = polyStatement.execute( "public", CYPHER_LANGUAGE_NAME, "MATCH (c:customers)\n"
+                    + "WHERE c.name = \"Maria\" OR c.name = \"Daniel\"\n"
+                    + "RETURN c.name, c.year_joined" );
+            assertEquals( ResultType.RELATIONAL, result.getResultType() );
+            RelationalResult relationalResult = result.unwrap( RelationalResult.class );
+            for ( PolyRow row : relationalResult ) {
+                row.get(0);
+                row.get("c.name");
+            }
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
 }
