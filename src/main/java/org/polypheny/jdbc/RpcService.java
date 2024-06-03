@@ -18,6 +18,7 @@ package org.polypheny.jdbc;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -185,6 +186,10 @@ public class RpcService {
             callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
             /* For Windows */
             if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) && disconnectSent ) {
+                return;
+            }
+            /* For Windows */
+            if ( e instanceof SocketException && e.getMessage().contains( "Connection reset" ) && disconnectSent ) {
                 return;
             }
             // This will cause the exception to be thrown when the next call is made
