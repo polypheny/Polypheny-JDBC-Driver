@@ -129,12 +129,9 @@ public class RpcService {
                 this.error = null;
                 throw e;
             }
-            if ( this.closed || this.disconnectSent ) {
-                throw new IOException( "Connection is closed" );
-            }
-            if ( req.getTypeCase() == TypeCase.DISCONNECT_REQUEST ) {
-                disconnectSent = true;
-            }
+        }
+        if ( this.closed || (req.getTypeCase() == TypeCase.DISCONNECT_REQUEST && this.disconnectSent) ) {
+            throw new IOException( "Connection is closed" );
         }
         con.sendMessage( req.toByteArray() );
     }
