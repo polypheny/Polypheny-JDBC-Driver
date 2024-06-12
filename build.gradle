@@ -13,8 +13,8 @@ group "org.polypheny"
 description = "A standards-compliant JDBC driver for Polypheny."
 
 def versionMajor = 2
-def versionMinor = 1
-def versionQualifier = ""
+def versionMinor = 2
+def versionQualifier = "SNAPSHOT"
 version = versionMajor + "." + versionMinor + (versionQualifier != '' ? "-" + versionQualifier : '')
 
 
