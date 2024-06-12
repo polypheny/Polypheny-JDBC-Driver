@@ -1,3 +1,19 @@
+## 2.1
+
+### June 12, 2024
+
+CHANGES:
+
+* Improve handling of connection resets on Windows.
+
+IMPROVEMENTS:
+
+* N/A
+
+BUG FIXES:
+
+* When a DisconnectRequest is sent, the server sends a DisconnectResponse and closes the connection. On Windows it could happen that the closing of the connection is reported via exception before the DisconnectResponse has been processed.
+
 ## 2.0
 
 ### May 10, 2024
