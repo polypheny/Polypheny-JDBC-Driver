@@ -18,7 +18,6 @@ package org.polypheny.jdbc;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.SocketException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -124,15 +123,18 @@ public class RpcService {
 
 
     private void sendMessage( Request req ) throws IOException {
-        if ( this.error != null ) {
-            synchronized ( this ) {
+        synchronized ( this ) {
+            if ( this.error != null ) {
                 IOException e = this.error;
                 this.error = null;
                 throw e;
             }
-        }
-        if ( this.closed ) {
-            throw new IOException( "Connection is closed" );
+            if ( this.closed || this.disconnectSent ) {
+                throw new IOException( "Connection is closed" );
+            }
+            if ( req.getTypeCase() == TypeCase.DISCONNECT_REQUEST ) {
+                disconnectSent = true;
+            }
         }
         con.sendMessage( req.toByteArray() );
     }
@@ -140,6 +142,20 @@ public class RpcService {
 
     private Response receiveMessage() throws IOException {
         return Response.parseFrom( con.receiveMessage() );
+    }
+
+
+    private void handleCallbackQueue( Response resp, CallbackQueue<?> cq ) {
+        if ( resp.hasErrorResponse() ) {
+            callbackQueues.remove( resp.getId() );
+            cq.onError( new PrismInterfaceServiceException( resp.getErrorResponse().getMessage() ) );
+        } else {
+            cq.onNext( resp );
+            if ( resp.getLast() ) {
+                callbackQueues.remove( resp.getId() );
+                cq.onCompleted();
+            }
+        }
     }
 
 
@@ -151,30 +167,21 @@ public class RpcService {
                     throw new RuntimeException( "Invalid message id" );
                 }
                 CompletableFuture<Response> c = callbacks.get( resp.getId() );
-                if ( c == null ) {
+                if ( c != null ) {
+                    if ( resp.getLast() ) {
+                        callbacks.remove( resp.getId() );
+                    }
+                    c.complete( resp );
+                } else {
                     CallbackQueue<?> cq = callbackQueues.get( resp.getId() );
                     if ( cq != null ) {
-                        if ( resp.hasErrorResponse() ) {
-                            callbackQueues.remove( resp.getId() );
-                            cq.onError( new PrismInterfaceServiceException( resp.getErrorResponse().getMessage() ) );
-                        } else {
-                            cq.onNext( resp );
-                            if ( resp.getLast() ) {
-                                callbackQueues.remove( resp.getId() );
-                                cq.onCompleted();
-                            }
-                        }
+                        handleCallbackQueue( resp, cq );
                     } else {
                         if ( log.isDebugEnabled() ) {
                             log.info( "No callback for response of type {}", resp.getTypeCase() );
                         }
                     }
-                    continue;
                 }
-                if ( resp.getLast() ) {
-                    callbacks.remove( resp.getId() );
-                }
-                c.complete( resp );
             }
         } catch ( EOFException | ClosedChannelException e ) {
             this.closed = true;
@@ -184,12 +191,7 @@ public class RpcService {
             this.closed = true;
             callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
             callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
-            /* For Windows */
-            if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) && disconnectSent ) {
-                return;
-            }
-            /* For Windows */
-            if ( e instanceof SocketException && e.getMessage().contains( "Connection reset" ) && disconnectSent ) {
+            if ( disconnectSent ) {
                 return;
             }
             // This will cause the exception to be thrown when the next call is made
@@ -223,9 +225,6 @@ public class RpcService {
         try {
             CompletableFuture<Response> f = new CompletableFuture<>();
             callbacks.put( req.getId(), f );
-            if ( req.getTypeCase() == TypeCase.DISCONNECT_REQUEST ) {
-                disconnectSent = true;
-            }
             sendMessage( req.build() );
             Response resp = waitForCompletion( f, timeout );
             if ( resp.hasErrorResponse() ) {
@@ -367,14 +366,22 @@ public class RpcService {
     DisconnectResponse disconnect( DisconnectRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setDisconnectRequest( msg );
+        synchronized ( this ) {
+            if ( this.disconnectSent ) {
+                throw new PrismInterfaceServiceException( "Disconnect has already been called" );
+            }
+            this.disconnectSent = true;
+        }
+        try {
+            callbackQueues.forEach( ( id, cq ) -> cq.onError( new IOException( "Connection closed by client" ) ) );
+            callbacks.forEach( ( id, c ) -> c.completeExceptionally( new IOException( "Connection closed by client" ) ) );
+        } catch ( Throwable t ) {
+            log.error( "Error during disconnect: ", t );
+        }
         try {
             return completeSynchronously( req, timeout ).getDisconnectResponse();
         } catch ( PrismInterfaceServiceException e ) {
-            /* For Windows */
-            if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) ) {
-                return DisconnectResponse.newBuilder().build();
-            }
-            throw e;
+            return DisconnectResponse.newBuilder().build();
         }
     }
 
