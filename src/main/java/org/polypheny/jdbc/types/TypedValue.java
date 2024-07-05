@@ -1238,7 +1238,6 @@ public class TypedValue implements Convertible {
                 return serializeAsProtoFile();
             case DOCUMENT:
                 return serializeAsProtoDocument();
-
         }
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Failed to serialize unknown type: " + valueCase.name() );
     }
@@ -1427,6 +1426,49 @@ public class TypedValue implements Convertible {
 
     private static PolyInterval getInterval( ProtoInterval interval ) {
         return new PolyInterval( interval.getMonths(), interval.getMilliseconds() );
+    }
+
+
+    @Override
+    public String toString() {
+        if ( isSerialized ) {
+            deserialize();
+        }
+        switch ( valueCase ) {
+            case BOOLEAN:
+                return "" + booleanValue;
+            case INTEGER:
+                return "" + integerValue;
+            case LONG:
+                return "" + bigintValue;
+            case BIG_DECIMAL:
+                return "" + bigDecimalValue;
+            case FLOAT:
+                return "" + floatValue;
+            case DOUBLE:
+                return "" + doubleValue;
+            case DATE:
+                return "" + dateValue;
+            case TIME:
+                return "" + timeValue;
+            case TIMESTAMP:
+                return "" + timestampValue;
+            case INTERVAL:
+                return "" + otherValue;
+            case STRING:
+                return varcharValue;
+            case BINARY:
+                return "BINARY";
+            case NULL:
+                return "NULL";
+            case LIST:
+                return "LIST";
+            case FILE:
+                return "FILE";
+            case DOCUMENT:
+                return "DOCUMENT";
+        }
+        return "";
     }
 
 }
