@@ -58,7 +58,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
         int id = polyStatement.getStatementId();
         int timeout = getPolyphenyConnection().getTimeout();
         Frame frame = getPrismInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
-        if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
+        if ( frame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new PrismInterfaceServiceException(
                     PrismInterfaceErrors.RESULT_TYPE_INVALID,
                     "Statement returned a result of illegal type " + frame.getResultCase()
