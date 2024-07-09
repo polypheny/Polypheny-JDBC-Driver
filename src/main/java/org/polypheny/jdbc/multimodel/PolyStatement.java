@@ -172,7 +172,7 @@ public class PolyStatement {
     }
 
 
-    List<Long> executePreparedBatch( List<List<TypedValue>> parameterBatch ) throws PrismInterfaceServiceException {
+    public List<Long> executePreparedBatch( List<List<TypedValue>> parameterBatch ) throws PrismInterfaceServiceException {
         if ( !isPrepared ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "This operation requires a statmement to be prepared first" );
         }
