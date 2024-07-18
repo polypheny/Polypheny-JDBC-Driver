@@ -16,12 +16,14 @@
 
 package org.polypheny.jdbc.types;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.prism.ProtoPath;
 
 public class PolyPath extends PolyGraphElement {
 
     public PolyPath( ProtoPath protoPath ) {
-
+        // TODO: implementation
+        throw new NotImplementedException();
     }
 
 }
