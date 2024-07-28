@@ -539,7 +539,37 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return null;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type CHAR or VARCHAR." );
+        switch ( valueCase ) {
+            case BOOLEAN:
+                return booleanValue ? "1" : "0";
+            case INTEGER:
+                return integerValue.toString();
+            case LONG:
+                return bigintValue.toString();
+            case BIG_DECIMAL:
+                return bigDecimalValue.toString();
+            case FLOAT:
+                return floatValue.toString();
+            case DOUBLE:
+                return doubleValue.toString();
+            case DATE:
+                return dateValue.toString();
+            case TIME:
+                return timeValue.toString();
+            case TIMESTAMP:
+                return timestampValue.toString();
+            case INTERVAL:
+                return ((PolyInterval) otherValue).toString();
+            case BINARY:
+                return Arrays.toString( binaryValue );
+            case NULL:
+                return null;
+            case LIST:
+            case FILE:
+            case DOCUMENT:
+                return otherValue.toString();
+        }
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value cannot be returned as a string." );
     }
 
 
