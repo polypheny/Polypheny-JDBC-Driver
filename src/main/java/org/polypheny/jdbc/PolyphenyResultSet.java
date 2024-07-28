@@ -268,6 +268,7 @@ public class PolyphenyResultSet implements ResultSet {
 
 
     @Override
+    @Deprecated //according to jdbc 4.3
     public BigDecimal getBigDecimal( int columnIndex, int scale ) throws SQLException {
         throwIfClosed();
         return accessValue( columnIndex ).asBigDecimal( scale );
@@ -310,6 +311,7 @@ public class PolyphenyResultSet implements ResultSet {
 
 
     @Override
+    @Deprecated //according to jdbc 4.3
     public InputStream getUnicodeStream( int columnIndex ) throws SQLException {
         throwIfClosed();
         return accessValue( columnIndex ).asUnicodeStream();
@@ -372,6 +374,7 @@ public class PolyphenyResultSet implements ResultSet {
 
 
     @Override
+    @Deprecated //according to jdbc 4.3
     public BigDecimal getBigDecimal( String columnLabel, int scale ) throws SQLException {
         return getBigDecimal( metadata.getColumnIndexFromLabel( columnLabel ), scale );
     }
@@ -408,6 +411,7 @@ public class PolyphenyResultSet implements ResultSet {
 
 
     @Override
+    @Deprecated //according to jdbc 4.3
     public InputStream getUnicodeStream( String columnLabel ) throws SQLException {
         return getUnicodeStream( metadata.getColumnIndexFromLabel( columnLabel ) );
     }
