@@ -29,9 +29,9 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.Properties;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ConnectionTest {
@@ -193,7 +193,7 @@ public class ConnectionTest {
 
 
     @Test
-    @Ignore
+    @Disabled
     // This test fails due to syntax definitions missing for some of the functions on the server side (operator registry).
     void testMetaDataGetFunctionsNotStrict() throws SQLException {
         try ( Connection con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590?strict=false", "pa", "" ) ) {
