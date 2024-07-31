@@ -424,6 +424,7 @@ public class RpcService {
         return completeSynchronously( req, timeout ).getPreparedStatementSignature();
     }
 
+
     public PreparedStatementSignature prepareNamedStatement( PrepareStatementRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setPrepareIndexedStatementRequest( msg );
@@ -431,12 +432,12 @@ public class RpcService {
     }
 
 
-
     StatementResult executeIndexedStatement( ExecuteIndexedStatementRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteIndexedStatementRequest( msg );
         return completeSynchronously( req, timeout ).getStatementResult();
     }
+
 
     public StatementResult executeNamedStatement( ExecuteNamedStatementRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
@@ -471,4 +472,5 @@ public class RpcService {
         req.setCloseResultRequest( msg );
         return completeSynchronously( req, timeout ).getCloseResultResponse();
     }
+
 }

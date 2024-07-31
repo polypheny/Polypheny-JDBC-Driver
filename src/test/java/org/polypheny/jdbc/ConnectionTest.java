@@ -194,7 +194,7 @@ public class ConnectionTest {
 
     @Test
     @Disabled
-    // This test fails due to syntax definitions missing for some of the functions on the server side (operator registry).
+        // This test fails due to syntax definitions missing for some of the functions on the server side (operator registry).
     void testMetaDataGetFunctionsNotStrict() throws SQLException {
         try ( Connection con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590?strict=false", "pa", "" ) ) {
             DatabaseMetaData meta = con.getMetaData();

@@ -27,6 +27,7 @@ public class PolyEdge extends PolyGraphElement {
     private final String target;
     private final EdgeDirection direction;
 
+
     public PolyEdge( ProtoEdge protoEdge ) {
         super();
         this.id = protoEdge.getId();
@@ -42,6 +43,7 @@ public class PolyEdge extends PolyGraphElement {
         this.target = protoEdge.getTarget();
         this.direction = EdgeDirection.valueOf( protoEdge.getDirection().name() );
     }
+
 
     enum EdgeDirection {
         LEFT_TO_RIGHT,

@@ -48,17 +48,17 @@ public class ProtoUtils {
     }
 
 
-    public static Map<String, ProtoValue> serializeParameterMap(Map<String, TypedValue> values) {
-        return values.entrySet().stream().collect(Collectors.toMap(
+    public static Map<String, ProtoValue> serializeParameterMap( Map<String, TypedValue> values ) {
+        return values.entrySet().stream().collect( Collectors.toMap(
                 Entry::getKey,
                 value -> {
                     try {
                         return value.getValue().serialize();
-                    } catch (Exception e) {
-                        throw new RuntimeException("Serialization failed", e);
+                    } catch ( Exception e ) {
+                        throw new RuntimeException( "Serialization failed", e );
                     }
                 }
-        ));
+        ) );
     }
 
 }

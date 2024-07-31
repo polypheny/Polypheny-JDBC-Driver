@@ -40,46 +40,47 @@ public class Demo {
     private static String namespace = "public";
     private static Connection con;
 
-    public static void main(String[] args) {
+
+    public static void main( String[] args ) {
         try {
-            con = DriverManager.getConnection("jdbc:polypheny://127.0.0.1:20590?strict=false", "pa", "");
-            if (!con.isWrapperFor(PolyConnection.class)) {
-                System.out.println("Driver must support unwrapping to PolyConnection");
+            con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590?strict=false", "pa", "" );
+            if ( !con.isWrapperFor( PolyConnection.class ) ) {
+                System.out.println( "Driver must support unwrapping to PolyConnection" );
                 return;
             }
-            Scanner scanner = new Scanner(System.in);
+            Scanner scanner = new Scanner( System.in );
 
-            while (true) {
+            while ( true ) {
                 printPrompt();
                 String input = scanner.nextLine();
 
-                if (input.startsWith("lng ")) {
-                    language = input.substring(4).trim();
-                    System.out.println("Language set to " + language);
-                } else if (input.startsWith("ns ")) {
-                    namespace = input.substring(3).trim();
-                    System.out.println("Namespace set to " + namespace);
-                } else if (input.equals("exit")) {
+                if ( input.startsWith( "lng " ) ) {
+                    language = input.substring( 4 ).trim();
+                    System.out.println( "Language set to " + language );
+                } else if ( input.startsWith( "ns " ) ) {
+                    namespace = input.substring( 3 ).trim();
+                    System.out.println( "Namespace set to " + namespace );
+                } else if ( input.equals( "exit" ) ) {
                     break;
                 } else {
-                    if (language == null || namespace == null) {
-                        System.out.println("Please set both language and namespace before executing a statement.");
+                    if ( language == null || namespace == null ) {
+                        System.out.println( "Please set both language and namespace before executing a statement." );
                         continue;
                     }
                     String statement = input.trim();
-                    executeStatement(namespace, language, statement);
+                    executeStatement( namespace, language, statement );
                 }
             }
 
             scanner.close();
-        } catch (Exception e) {
+        } catch ( Exception e ) {
             e.printStackTrace();
         } finally {
             try {
-                if (con != null && !con.isClosed()) {
+                if ( con != null && !con.isClosed() ) {
                     con.close();
                 }
-            } catch (Exception e) {
+            } catch ( Exception e ) {
                 e.printStackTrace();
             }
         }

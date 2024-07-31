@@ -30,6 +30,7 @@ public class PolyGraphElement extends HashMap<String, TypedValue> {
     protected String name;
     protected List<String> labels;
 
+
     public <T> T unwrap( Class<T> aClass ) throws PrismInterfaceServiceException {
         if ( aClass.isInstance( this ) ) {
             return aClass.cast( this );

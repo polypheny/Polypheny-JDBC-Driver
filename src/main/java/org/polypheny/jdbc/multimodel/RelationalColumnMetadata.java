@@ -21,6 +21,7 @@ import org.polypheny.prism.ColumnMeta;
 
 @Getter
 public class RelationalColumnMetadata {
+
     private final int columnIndex;
     private final boolean isNullable;
     private final int length;
@@ -30,6 +31,7 @@ public class RelationalColumnMetadata {
 
     private final String protocolTypeName;
     private final int scale;
+
 
     public RelationalColumnMetadata( ColumnMeta columnMeta ) {
         this.columnIndex = columnMeta.getColumnIndex();
@@ -41,4 +43,5 @@ public class RelationalColumnMetadata {
         this.protocolTypeName = columnMeta.getTypeMeta().getProtoValueType().name();
         this.scale = columnMeta.getScale();
     }
+
 }

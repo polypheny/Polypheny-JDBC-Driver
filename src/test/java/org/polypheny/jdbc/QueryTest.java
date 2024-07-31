@@ -35,7 +35,6 @@ import org.polypheny.jdbc.multimodel.Result;
 import org.polypheny.jdbc.multimodel.Result.ResultType;
 import org.polypheny.jdbc.types.PolyDocument;
 import org.polypheny.jdbc.types.PolyGraphElement;
-import org.polypheny.jdbc.types.PolyNode;
 
 public class QueryTest {
 
@@ -117,6 +116,7 @@ public class QueryTest {
         }
     }
 
+
     @Test
     public void simpleCypherNodesTest() {
         try ( Connection connection = TestHelper.getConnection() ) {
@@ -128,8 +128,8 @@ public class QueryTest {
             assertEquals( ResultType.GRAPH, result.getResultType() );
             GraphResult graphResult = result.unwrap( GraphResult.class );
             for ( PolyGraphElement element : graphResult ) {
-                element.get("name");
-                element.get("year_joined");
+                element.get( "name" );
+                element.get( "year_joined" );
                 element.getLabels();
                 element.getId();
             }
@@ -137,6 +137,7 @@ public class QueryTest {
             throw new RuntimeException( e );
         }
     }
+
 
     @Test
     public void simpleCypherPropertyTest() {
@@ -151,11 +152,12 @@ public class QueryTest {
             assertEquals( ResultType.RELATIONAL, result.getResultType() );
             RelationalResult relationalResult = result.unwrap( RelationalResult.class );
             for ( PolyRow row : relationalResult ) {
-                row.get(0);
-                row.get("c.name");
+                row.get( 0 );
+                row.get( "c.name" );
             }
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
     }
+
 }
