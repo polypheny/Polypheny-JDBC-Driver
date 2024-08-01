@@ -52,6 +52,7 @@ public class PrismInputStream extends InputStream {
         this.bufferStartPosition = 0;
     }
 
+
     @Override
     public int available() throws IOException {
         long available = bufferStartPosition + buffer.length - currentPosition;
@@ -61,17 +62,20 @@ public class PrismInputStream extends InputStream {
         return Math.toIntExact( available );
     }
 
+
     @Override
     public void close() throws IOException {
         // No need to communicate with the server as all streams are closed on statement closure.
         isClosed = true;
     }
 
+
     @Override
     public void mark( int readlimit ) {
         markPosition = currentPosition;
         markReadLimit = readlimit;
     }
+
 
     @Override
     public void reset() throws IOException {
@@ -86,6 +90,7 @@ public class PrismInputStream extends InputStream {
         }
     }
 
+
     @Override
     public boolean markSupported() {
         return !isForwardOnly;
@@ -95,6 +100,7 @@ public class PrismInputStream extends InputStream {
     private int getBufferReadPosition() {
         return Math.toIntExact( currentPosition - bufferStartPosition );
     }
+
 
     @Override
     public int read() throws IOException {
@@ -118,9 +124,11 @@ public class PrismInputStream extends InputStream {
         }
     }
 
+
     private boolean hasMoreData() throws IOException {
         return !isLast || available() > 0;
     }
+
 
     private void fetchNextBytes() throws IOException {
         long fetchPosition = bufferStartPosition + buffer.length;
@@ -135,6 +143,7 @@ public class PrismInputStream extends InputStream {
         this.bufferStartPosition = fetchPosition;
         this.buffer = frame.getData().toByteArray();
     }
+
 
     @Override
     public int read( byte[] b ) throws IOException {
@@ -155,12 +164,39 @@ public class PrismInputStream extends InputStream {
         return bytesCopied;
     }
 
-    public byte[] getBytes(long pos, int len) throws IOException {
+
+    private void reposition( long pos, int len ) throws IOException {
+        long oldPosition = currentPosition;
+
+        if ( pos < bufferStartPosition && isForwardOnly ) {
+            throw new IOException( "Can't access already returned section of a forward only stream." );
+        }
+
+        if ( pos < currentPosition ) {
+            if ( pos + len < markPosition ) {
+                markPosition = NO_MARK;
+            }
+            currentPosition = pos;
+            if ( !isForwardOnly ) {
+                bufferStartPosition = pos;
+                isLast = false;
+                fetchNextBytes();
+            }
+            return;
+        }
+        skip( pos - currentPosition );
+    }
+
+
+    public byte[] getBytes( long pos, int len ) throws IOException {
         byte[] bytes = new byte[len];
         int bytesCopied = 0;
-        while (bytesCopied < len && hasMoreData() ) {
+
+        reposition( pos, len );
+
+        while ( bytesCopied < len && hasMoreData() ) {
             int bufferReadPosition = getBufferReadPosition();
-            int bytesToCopy = Math.min(available(), len - bytesCopied);
+            int bytesToCopy = Math.min( available(), len - bytesCopied );
             System.arraycopy( this.buffer, bufferReadPosition, bytes, bytesCopied, bytesToCopy );
             currentPosition += bytesToCopy;
             bytesCopied += bytesToCopy;
@@ -173,9 +209,9 @@ public class PrismInputStream extends InputStream {
     @Override
     public int read( byte[] b, int off, int len ) throws IOException {
         int bytesCopied = 0;
-        while (bytesCopied < len && hasMoreData() ) {
+        while ( bytesCopied < len && hasMoreData() ) {
             int bufferReadPosition = getBufferReadPosition();
-            int bytesToCopy = Math.min(available(), len - bytesCopied);
+            int bytesToCopy = Math.min( available(), len - bytesCopied );
             System.arraycopy( this.buffer, bufferReadPosition, b, off + bytesCopied, bytesToCopy );
             currentPosition += bytesToCopy;
             bytesCopied += bytesToCopy;
@@ -184,15 +220,17 @@ public class PrismInputStream extends InputStream {
         return bytesCopied;
     }
 
+
     @Override
-    public long skip(long n) throws IOException {
+    public long skip( long n ) throws IOException {
         long bytesSkipped = 0;
-        while (bytesSkipped < n && hasMoreData() ) {
-            long skipped = Math.min(n - bytesSkipped, available());
+        while ( bytesSkipped < n && hasMoreData() ) {
+            long skipped = Math.min( n - bytesSkipped, available() );
             bytesSkipped += skipped;
             currentPosition += skipped;
             fetchIfEmpty();
         }
         return bytesSkipped;
     }
+
 }
