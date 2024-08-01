@@ -17,14 +17,18 @@
 package org.polypheny.jdbc.types;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.prism.ProtoFile;
 
 public class PolyBlob implements Blob {
 
@@ -32,7 +36,9 @@ public class PolyBlob implements Blob {
      * This array should be replaced with an objet capable of either storing a collection of bytes larger than MAX_INT
      * or some kind of streaming mechanism.
      */
-    byte[] value;
+    private byte[] binaryValue;
+    private PrismInputStream prismInputStream;
+    private boolean isStream;
     boolean isFreed;
 
 
@@ -41,9 +47,17 @@ public class PolyBlob implements Blob {
     }
 
 
-    public PolyBlob( byte[] bytes ) {
+    public PolyBlob( ProtoFile protoFile, PolyConnection connection ) {
         this.isFreed = false;
-        this.value = bytes;
+        switch (protoFile.getDataCase()) {
+            case BINARY:
+                binaryValue = protoFile.getBinary().toByteArray();
+                break;
+            case STREAM_ID:
+                isStream = true;
+                //TODO: actually set statement id
+                prismInputStream = new PrismInputStream(42, protoFile.getStreamId(), protoFile.getIsForwardOnly(), connection );
+        }
     }
 
 
@@ -63,7 +77,6 @@ public class PolyBlob implements Blob {
 
 
     private void throwIfPositionOutOfBounds( long position ) throws SQLException {
-        /* jdbc starts enumeration by one */
         throwIfIndexOutOfBounds( positionToIndex( position ) );
     }
 
@@ -72,7 +85,7 @@ public class PolyBlob implements Blob {
         if ( index < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Index out of bounds" );
         }
-        if ( index >= value.length ) {
+        if ( index >= binaryValue.length ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Index out of bounds" );
         }
     }
@@ -87,30 +100,47 @@ public class PolyBlob implements Blob {
 
     @Override
     public long length() throws SQLException {
-        return value.length;
+        if (binaryValue != null) {
+            return binaryValue.length;
+        }
+        try {
+            return prismInputStream.available();
+        } catch ( IOException e ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Failed to get BLOB length.", e );
+        }
     }
 
 
     @Override
     public byte[] getBytes( long pos, int length ) throws SQLException {
         throwIfFreed();
-        throwIfPositionOutOfBounds( pos );
-        throwIfPositionOutOfBounds( pos + length - 1 );
-        pos = positionToIndex( pos );
-        return Arrays.copyOfRange( value, longToInt( pos ), length );
+        if (binaryValue != null) {
+            throwIfPositionOutOfBounds( pos );
+            throwIfPositionOutOfBounds( pos + length - 1 );
+            pos = positionToIndex( pos );
+            return Arrays.copyOfRange( binaryValue, longToInt( pos ), length );
+        }
+        try {
+            return prismInputStream.getBytes( pos, length );
+        } catch ( IOException e ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, e.getMessage(), e );
+        }
+
     }
 
 
     @Override
     public InputStream getBinaryStream() throws SQLException {
         throwIfFreed();
-        return new ByteArrayInputStream( value );
+        if (binaryValue != null) {
+            return new ByteArrayInputStream( binaryValue );
+        }
+        return prismInputStream;
     }
 
 
     @Override
     public long position( byte[] bytes, long start ) throws SQLException {
-        /* Could efficiently be implemented using Knuth-Morris-Pratt-Algorithm */
         throw new SQLFeatureNotSupportedException( "Feature not implemented" );
     }
 
@@ -130,15 +160,18 @@ public class PolyBlob implements Blob {
     @Override
     public int setBytes( long pos, byte[] bytes, int offset, int len ) throws SQLException {
         throwIfFreed();
-        if ( value == null ) {
-            value = new byte[len];
+        if (prismInputStream != null) {
+            throw new PrismInterfaceServiceException(PrismInterfaceErrors.STREAM_ERROR, "This blob contains a datastream. Writes to datastreams are not permitted.");
         }
-        if ( positionToIndex( pos + len ) >= value.length ) {
-            value = Arrays.copyOf( value, longToInt( positionToIndex( pos + len ) ) );
+        if ( binaryValue == null ) {
+            binaryValue = new byte[len];
+        }
+        if ( positionToIndex( pos + len ) >= binaryValue.length ) {
+            binaryValue = Arrays.copyOf( binaryValue, longToInt( positionToIndex( pos + len ) ) );
         }
         for ( int bytesWritten = 0; bytesWritten < len; bytesWritten++ ) {
             int writeIndex = longToInt( positionToIndex( pos ) ) + bytesWritten;
-            value[writeIndex] = bytes[offset + bytesWritten];
+            binaryValue[writeIndex] = bytes[offset + bytesWritten];
         }
         return len;
     }
@@ -157,8 +190,13 @@ public class PolyBlob implements Blob {
         if ( len < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for len" );
         }
-        len = Math.min( len, value.length );
-        value = Arrays.copyOf( value, longToInt( len ) );
+        if ( binaryValue != null ) {
+            len = Math.min( len, binaryValue.length );
+            binaryValue = Arrays.copyOf( binaryValue, longToInt( len ) );
+            return;
+        }
+        throw new PrismInterfaceServiceException(PrismInterfaceErrors.STREAM_ERROR, "This blob already contains a datastream. Truncation of streams not allowed.");
+
     }
 
 
@@ -171,10 +209,13 @@ public class PolyBlob implements Blob {
     @Override
     public InputStream getBinaryStream( long pos, long len ) throws SQLException {
         throwIfFreed();
-        int from = longToInt( positionToIndex( pos ) );
-        int to = longToInt( positionToIndex( pos + len ) );
-        byte[] slice = Arrays.copyOfRange( value, from, to );
-        return new ByteArrayInputStream( slice );
+        if (binaryValue != null) {
+            int from = longToInt( positionToIndex( pos ) );
+            int to = longToInt( positionToIndex( pos + len ) );
+            byte[] slice = Arrays.copyOfRange( binaryValue, from, to );
+            return new ByteArrayInputStream( slice );
+        }
+        return new PrismInputStream( prismInputStream, pos + len, pos );
     }
 
 }
