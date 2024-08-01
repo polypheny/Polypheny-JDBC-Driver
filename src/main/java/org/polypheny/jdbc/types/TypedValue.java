@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
+import java.sql.Connection;
 import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
@@ -54,6 +55,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.Setter;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
@@ -85,6 +88,9 @@ public class TypedValue implements Convertible {
             ValueCase.INTERVAL
     ) );
 
+    @Setter
+    private PolyConnection connection;
+
     private ProtoValue serialized;
     @Getter
     private ProtoValue.ValueCase valueCase;
@@ -107,7 +113,8 @@ public class TypedValue implements Convertible {
     private Object otherValue;
 
 
-    public TypedValue( ProtoValue value ) {
+    public TypedValue( ProtoValue value, PolyConnection polyConnection ) {
+        this.connection = polyConnection;
         this.serialized = value;
         this.valueCase = serialized.getValueCase();
     }
@@ -127,10 +134,7 @@ public class TypedValue implements Convertible {
 
 
     public static TypedValue fromByte( byte byteValue ) {
-        TypedValue value = new TypedValue();
-        value.valueCase = ValueCase.INTEGER;
-        value.integerValue = (int) byteValue;
-        return value;
+        return fromShort( byteValue );
     }
 
 
@@ -1214,16 +1218,16 @@ public class TypedValue implements Convertible {
                     bigDecimalValue = getBigDecimal( serialized.getBigDecimal().getUnscaledValue(), serialized.getBigDecimal().getScale() );
                     break;
                 case LIST:
-                    arrayValue = getArray( serialized );
+                    arrayValue = getArray( serialized, connection );
                     break;
                 case INTERVAL:
                     otherValue = getInterval( serialized.getInterval() );
                     break;
                 case DOCUMENT:
-                    otherValue = new PolyDocument( serialized.getDocument() );
+                    otherValue = new PolyDocument( serialized.getDocument(), connection );
                     break;
                 case FILE:
-                    blobValue = new PolyBlob( serialized.getFile().getBinary().toByteArray() );
+                    blobValue = new PolyBlob( serialized.getFile(), connection );
                     break;
                 default:
                     throw new RuntimeException( "Cannot deserialize ProtoValue of case " + valueCase );
@@ -1445,10 +1449,10 @@ public class TypedValue implements Convertible {
     }
 
 
-    private static Array getArray( ProtoValue value ) throws SQLException {
+    private static Array getArray( ProtoValue value, PolyConnection polyConnection ) throws SQLException {
         String baseType = value.getValueCase().name();
         List<TypedValue> values = value.getList().getValuesList().stream()
-                .map( TypedValue::new )
+                .map( v -> new TypedValue(v, polyConnection ))
                 .collect( Collectors.toList() );
         return new PolyArray( baseType, values );
     }

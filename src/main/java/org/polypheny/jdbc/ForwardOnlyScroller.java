@@ -37,12 +37,12 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
     private int baseIndex;
 
 
-    public ForwardOnlyScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
-        this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
+    public ForwardOnlyScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, PolyConnection connection ) {
+        this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList(), connection ) );
         if ( properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows() ) {
             values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
         }
-        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
+        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), connection );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.properties = properties;
         this.baseIndex = INDEX_BEFORE_FIRST;

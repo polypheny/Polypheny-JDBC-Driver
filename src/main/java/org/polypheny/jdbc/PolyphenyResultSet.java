@@ -77,9 +77,9 @@ public class PolyphenyResultSet implements ResultSet {
         this.statement = statement;
         this.metadata = new PolyphenyResultSetMetadata( MetaUtils.buildColumnMetas( frame.getRelationalFrame().getColumnMetaList() ) );
         if ( properties.getResultSetType() == ResultSet.TYPE_FORWARD_ONLY ) {
-            this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), properties, statement.getConnection().getNetworkTimeout() );
+            this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), properties, statement.getPolyConnection() );
         } else {
-            this.resultScroller = new BidirectionalScroller( frame, getClient(), statement.getStatementId(), properties, statement.getConnection().getNetworkTimeout() );
+            this.resultScroller = new BidirectionalScroller( frame, getClient(), statement.getStatementId(), properties, statement.getPolyConnection() );
         }
         this.bidirectionScrollerClass = BidirectionalScroller.class;
         this.properties = properties;

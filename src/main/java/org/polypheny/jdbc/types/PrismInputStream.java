@@ -18,6 +18,8 @@ package org.polypheny.jdbc.types;
 
 import java.io.IOException;
 import java.io.InputStream;
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.prism.StreamFrame;
@@ -25,11 +27,15 @@ import org.polypheny.prism.StreamFrame;
 public class PrismInputStream extends InputStream {
 
     private static final long NO_MARK = -1;
+    private static final long NO_LIMIT = -1;
     private static final int BUFFER_SIZE = 1000;
 
     private final PolyConnection connection;
     private final int statementId;
     private final long streamId;
+    private final long limit;
+
+    @Getter
     private final boolean isForwardOnly;
 
     private long currentPosition = 0;
@@ -50,12 +56,27 @@ public class PrismInputStream extends InputStream {
         this.isForwardOnly = isForwardOnly;
         this.buffer = new byte[BUFFER_SIZE];
         this.bufferStartPosition = 0;
+        this.limit = NO_LIMIT;
+    }
+
+    public PrismInputStream(PrismInputStream other, long limit, long startPosition) {
+        this.currentPosition = startPosition;
+        this.connection = other.connection;
+        this.statementId = other.statementId;
+        this.streamId = other.streamId;
+        this.isForwardOnly = other.isForwardOnly;
+        this.buffer = new byte[BUFFER_SIZE];
+        this.bufferStartPosition = other.bufferStartPosition;
+        this.limit = limit;
     }
 
 
     @Override
     public int available() throws IOException {
         long available = bufferStartPosition + buffer.length - currentPosition;
+        if ( limit != NO_LIMIT && limit < bufferStartPosition + buffer.length ) {
+            available = limit - currentPosition;
+        }
         if ( available > Integer.MAX_VALUE ) {
             return Integer.MAX_VALUE;
         }
@@ -166,8 +187,6 @@ public class PrismInputStream extends InputStream {
 
 
     private void reposition( long pos, int len ) throws IOException {
-        long oldPosition = currentPosition;
-
         if ( pos < bufferStartPosition && isForwardOnly ) {
             throw new IOException( "Can't access already returned section of a forward only stream." );
         }

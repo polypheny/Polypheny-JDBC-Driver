@@ -29,6 +29,7 @@ import org.polypheny.prism.Row;
 public class ResultFetcher implements Runnable {
 
     private PrismInterfaceClient client;
+    private PolyConnection connection;
     private int statementId;
     @Setter
     @Getter
@@ -42,8 +43,9 @@ public class ResultFetcher implements Runnable {
     private List<List<TypedValue>> fetchedValues;
 
 
-    public ResultFetcher( PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, long totalFetched, int fetchTimeout ) {
-        this.fetchTimeout = fetchTimeout;
+    public ResultFetcher( PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, long totalFetched, PolyConnection connection ) {
+        this.fetchTimeout = connection.getTimeout();
+        this.connection = connection;
         this.client = client;
         this.statementId = statementId;
         this.properties = properties;
@@ -72,7 +74,7 @@ public class ResultFetcher implements Runnable {
             }
             rows = rows.subList( 0, (int) rowEndIndex );
         }
-        fetchedValues = TypedValueUtils.buildRows( rows );
+        fetchedValues = TypedValueUtils.buildRows( rows, connection );
         totalFetched = totalFetched + rows.size();
         isLast = nextFrame.getIsLast();
     }

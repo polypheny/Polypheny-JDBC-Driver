@@ -16,13 +16,14 @@
 
 package org.polypheny.jdbc.types;
 
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class PolyNode extends PolyGraphElement {
 
 
-    public PolyNode( ProtoNode protoNode ) {
+    public PolyNode( ProtoNode protoNode, PolyConnection polyConnection ) {
         super();
         this.id = protoNode.getId();
         this.name = protoNode.getName();
@@ -31,7 +32,7 @@ public class PolyNode extends PolyGraphElement {
                 .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
                 .forEach( p -> put(
                         p.getKey().getString().getString(),
-                        new TypedValue( p.getValue() )
+                        new TypedValue( p.getValue(), polyConnection )
                 ) );
     }
 

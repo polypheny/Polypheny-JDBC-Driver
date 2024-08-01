@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoEntry;
@@ -33,13 +34,13 @@ public class PolyDocument extends HashMap<String, TypedValue> {
     }
 
 
-    public PolyDocument( ProtoDocument document ) {
+    public PolyDocument( ProtoDocument document, PolyConnection polyConnection ) {
         super();
         document.getEntriesList().stream()
                 .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
                 .forEach( e -> put(
                         e.getKey().getString().getString(),
-                        new TypedValue( e.getValue() )
+                        new TypedValue( e.getValue(), polyConnection )
                 ) );
     }
 

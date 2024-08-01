@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.TypedValue;
@@ -50,8 +51,8 @@ public class PolyRow extends ArrayList<TypedValue> {
     }
 
 
-    public static PolyRow fromProto( Row protoRow, RelationalMetadata metadata ) {
-        return new PolyRow( protoRow.getValuesList().stream().map( TypedValue::new ).collect( Collectors.toList() ), metadata );
+    public static PolyRow fromProto( Row protoRow, RelationalMetadata metadata, PolyConnection polyConnection ) {
+        return new PolyRow( protoRow.getValuesList().stream().map( v -> new TypedValue( v, polyConnection ) ).collect( Collectors.toList() ), metadata );
     }
 
 }

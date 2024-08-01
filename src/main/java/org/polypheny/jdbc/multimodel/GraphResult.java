@@ -17,7 +17,6 @@
 package org.polypheny.jdbc.multimodel;
 
 import java.util.ArrayList;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -41,28 +40,29 @@ public class GraphResult extends Result implements Iterable<PolyGraphElement> { 
     private final List<PolyGraphElement> elements;
 
 
-
     public GraphResult( Frame frame, PolyStatement polyStatement ) {
         super( ResultType.GRAPH );
-        this.polyStatement= polyStatement;
+        this.polyStatement = polyStatement;
         this.isFullyFetched = frame.getIsLast();
         this.elements = new ArrayList<>();
-        addGraphElements(frame.getGraphFrame());
+        addGraphElements( frame.getGraphFrame() );
     }
 
+
     private void addGraphElements( GraphFrame graphFrame ) {
-        if (graphFrame.getNodesCount() > 0) {
-            graphFrame.getNodesList().forEach( n -> elements.add( new PolyNode(n) ) );
+        if ( graphFrame.getNodesCount() > 0 ) {
+            graphFrame.getNodesList().forEach( n -> elements.add( new PolyNode( n, polyStatement.getConnection() ) ) );
             return;
         }
-        if (graphFrame.getEdgesCount() > 0) {
-            graphFrame.getEdgesList().forEach( n -> elements.add( new PolyEdge(n) ) );
+        if ( graphFrame.getEdgesCount() > 0 ) {
+            graphFrame.getEdgesList().forEach( n -> elements.add( new PolyEdge( n, polyStatement.getConnection() ) ) );
             return;
         }
-        if (graphFrame.getPathsCount() > 0) {
-            graphFrame.getPathsList().forEach( n -> elements.add( new PolyPath(n) ) );
+        if ( graphFrame.getPathsCount() > 0 ) {
+            graphFrame.getPathsList().forEach( n -> elements.add( new PolyPath( n, polyStatement.getConnection() ) ) );
         }
     }
+
 
     private void fetchMore() throws PrismInterfaceServiceException {
         int id = polyStatement.getStatementId();
@@ -78,6 +78,7 @@ public class GraphResult extends Result implements Iterable<PolyGraphElement> { 
         addGraphElements( frame.getGraphFrame() );
     }
 
+
     private PolyConnection getPolyphenyConnection() {
         return polyStatement.getConnection();
     }
@@ -87,11 +88,17 @@ public class GraphResult extends Result implements Iterable<PolyGraphElement> { 
         return getPolyphenyConnection().getPrismInterfaceClient();
     }
 
+
     @Override
-    public Iterator<PolyGraphElement> iterator() {return new GraphElementIterator();}
+    public Iterator<PolyGraphElement> iterator() {
+        return new GraphElementIterator();
+    }
+
 
     class GraphElementIterator implements Iterator<PolyGraphElement> {
+
         int index = -1;
+
 
         @Override
         public boolean hasNext() {
@@ -108,6 +115,7 @@ public class GraphResult extends Result implements Iterable<PolyGraphElement> { 
             return index + 1 < elements.size();
         }
 
+
         @Override
         public PolyGraphElement next() {
             if ( !hasNext() ) {
@@ -115,8 +123,8 @@ public class GraphResult extends Result implements Iterable<PolyGraphElement> { 
             }
             return elements.get( ++index );
         }
-    }
 
+    }
 
 
 }

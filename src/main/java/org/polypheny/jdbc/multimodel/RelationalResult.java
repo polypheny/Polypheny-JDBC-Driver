@@ -50,7 +50,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
 
 
     private void addRows( RelationalFrame relationalFrame ) {
-        relationalFrame.getRowsList().forEach( d -> rows.add( PolyRow.fromProto( d, metadata ) ) );
+        relationalFrame.getRowsList().forEach( d -> rows.add( PolyRow.fromProto( d, metadata, polyStatement.getConnection() ) ) );
     }
 
 

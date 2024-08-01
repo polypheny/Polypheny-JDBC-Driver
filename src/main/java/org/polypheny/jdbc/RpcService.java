@@ -81,6 +81,8 @@ import org.polypheny.prism.SqlTimeDateFunctionsRequest;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
+import org.polypheny.prism.StreamFetchRequest;
+import org.polypheny.prism.StreamFrame;
 import org.polypheny.prism.TableTypesRequest;
 import org.polypheny.prism.TableTypesResponse;
 import org.polypheny.prism.TypesRequest;
@@ -451,6 +453,12 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setFetchRequest( msg );
         return completeSynchronously( req, timeout ).getFrame();
+    }
+
+    StreamFrame fetchStream(StreamFetchRequest msg, int timeout ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setStreamFetchRequest( msg );
+        return completeSynchronously( req, timeout ).getStreamFrame();
     }
 
 

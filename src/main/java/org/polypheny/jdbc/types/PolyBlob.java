@@ -60,6 +60,10 @@ public class PolyBlob implements Blob {
         }
     }
 
+    public PolyBlob( byte[] binaryValue) {
+        this.binaryValue = binaryValue;
+    }
+
 
     private long positionToIndex( long position ) {
         return position - 1;

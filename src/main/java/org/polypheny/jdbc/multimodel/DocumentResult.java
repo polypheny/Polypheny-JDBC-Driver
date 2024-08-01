@@ -47,7 +47,7 @@ public class DocumentResult extends Result implements Iterable<PolyDocument> {
 
 
     private void addDocuments( DocumentFrame documentFrame ) {
-        documentFrame.getDocumentsList().forEach( d -> documents.add( new PolyDocument( d ) ) );
+        documentFrame.getDocumentsList().forEach( d -> documents.add( new PolyDocument( d, polyStatement.getConnection() ) ) );
     }
 
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
@@ -35,12 +36,12 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
     int currentIndex;
 
 
-    public BidirectionalScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
-        this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
+    public BidirectionalScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, PolyConnection connection ) {
+        this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList(), connection ) );
         if ( properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows() ) {
             values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
         }
-        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
+        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), connection );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.currentIndex = INDEX_BEFORE_FIRST;
         this.properties = properties;

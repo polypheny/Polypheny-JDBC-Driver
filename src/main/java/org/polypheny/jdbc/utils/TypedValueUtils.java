@@ -46,6 +46,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.types.PolyDocument;
 import org.polypheny.jdbc.types.PolyInterval;
 import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
@@ -162,16 +163,16 @@ public class TypedValueUtils {
     }
 
 
-    public static List<List<TypedValue>> buildRows( List<Row> rows ) {
+    public static List<List<TypedValue>> buildRows( List<Row> rows, PolyConnection connection ) {
         return rows.stream()
-                .map( TypedValueUtils::buildRow )
+                .map( r -> TypedValueUtils.buildRow(r, connection) )
                 .collect( Collectors.toList() );
     }
 
 
-    public static List<TypedValue> buildRow( Row row ) {
+    public static List<TypedValue> buildRow( Row row, PolyConnection connection ) {
         return row.getValuesList().stream()
-                .map( TypedValue::new )
+                .map( v -> new TypedValue( v, connection ) )
                 .collect( Collectors.toList() );
     }
 
