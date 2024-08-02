@@ -38,7 +38,6 @@ public class PolyBlob implements Blob {
      */
     private byte[] binaryValue;
     private PrismInputStream prismInputStream;
-    private boolean isStream;
     boolean isFreed;
 
 
@@ -54,9 +53,8 @@ public class PolyBlob implements Blob {
                 binaryValue = protoFile.getBinary().toByteArray();
                 break;
             case STREAM_ID:
-                isStream = true;
                 //TODO: actually set statement id
-                prismInputStream = new PrismInputStream(42, protoFile.getStreamId(), protoFile.getIsForwardOnly(), connection );
+                prismInputStream = new PrismInputStream(protoFile.getStatementId(), protoFile.getStreamId(), protoFile.getIsForwardOnly(), connection );
         }
     }
 
