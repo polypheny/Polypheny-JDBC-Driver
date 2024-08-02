@@ -45,15 +45,19 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
-import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class TypedValueTest {
+
+    @Mock
+    PolyConnection polyConnection;
 
 
     @Test
@@ -691,7 +695,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.BOOLEAN, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asBoolean() );
     }
 
@@ -704,7 +708,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.INTEGER, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asInt() );
     }
 
@@ -717,7 +721,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.LONG, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asLong() );
     }
 
@@ -730,7 +734,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertArrayEquals( value, typedValue2.asBytes() );
     }
 
@@ -743,7 +747,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
 
-        assertArrayEquals( value, (byte[]) new TypedValue( protoValue ).asObject() );
+        assertArrayEquals( value, (byte[]) new TypedValue( protoValue, polyConnection ).asObject() );
     }
 
 
@@ -755,7 +759,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.DATE, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asDate() );
     }
 
@@ -768,7 +772,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.DOUBLE, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asDouble() );
     }
 
@@ -781,7 +785,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.FLOAT, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asFloat() );
     }
 
@@ -793,7 +797,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.NULL, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertNull( typedValue2.asObject() );
     }
 
@@ -806,7 +810,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.STRING, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asString() );
     }
 
@@ -819,7 +823,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.TIME, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         long millis = typedValue2.asTime().getTime();
         millis -= DriverProperties.getDEFAULT_TIMEZONE().getOffset( millis );
         assertEquals( 234975L, millis );
@@ -834,7 +838,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.TIMESTAMP, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         long millis = typedValue2.asTimestamp().getTime();
         millis -= DriverProperties.getDEFAULT_TIMEZONE().getOffset( millis );
         assertEquals( 47285720L, millis );
@@ -849,7 +853,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.BIG_DECIMAL, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asBigDecimal() );
     }
 
@@ -867,7 +871,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.LIST, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertArrayEquals( (Object[]) value.getArray(), (Object[]) typedValue2.asArray().getArray() );
     }
 
@@ -880,7 +884,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.INTERVAL, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value, typedValue2.asInterval() );
     }
 
@@ -893,7 +897,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.INTERVAL, protoValue.getValueCase() );
 
-        assertEquals( value, new TypedValue( protoValue ).asObject() );
+        assertEquals( value, new TypedValue( protoValue, polyConnection ).asObject() );
     }
 
 
@@ -909,7 +913,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.DOCUMENT, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value.get( "firstValue" ).asBoolean(), typedValue2.asDocument().get( "firstValue" ).asBoolean() );
         assertEquals( value.get( "secondValue" ).asDouble(), typedValue2.asDocument().get( "secondValue" ).asDouble() );
         assertEquals( value.get( "thirdValue" ).asInterval(), typedValue2.asDocument().get( "thirdValue" ).asInterval() );
@@ -926,7 +930,7 @@ public class TypedValueTest {
         TypedValue typedValue1 = TypedValue.fromDocument( value );
         ProtoValue protoValue = typedValue1.serialize();
 
-        PolyDocument document = (PolyDocument) new TypedValue( protoValue ).asObject();
+        PolyDocument document = (PolyDocument) new TypedValue( protoValue, polyConnection ).asObject();
         assertEquals( value.get( "firstValue" ).asBoolean(), document.get( "firstValue" ).asBoolean() );
         assertEquals( value.get( "secondValue" ).asDouble(), document.get( "secondValue" ).asDouble() );
         assertEquals( value.get( "thirdValue" ).asInterval(), document.get( "thirdValue" ).asInterval() );
@@ -941,7 +945,7 @@ public class TypedValueTest {
 
         assertEquals( ValueCase.FILE, protoValue.getValueCase() );
 
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertArrayEquals( value.getBytes( 1, 5 ), typedValue2.asBlob().getBytes( 1, 5 ) );
     }
 
@@ -951,98 +955,111 @@ public class TypedValueTest {
         String value = "12345678";
         TypedValue typedValue1 = TypedValue.fromString( value );
         ProtoValue protoValue = typedValue1.serialize();
-        TypedValue typedValue2 = new TypedValue( protoValue );
+        TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value.length(), typedValue2.getLength() );
     }
 
+
     @Test
     void testFromBoolean() throws SQLException {
-        TypedValue value = TypedValue.fromBoolean(true);
-        assertEquals("1", value.asString());
+        TypedValue value = TypedValue.fromBoolean( true );
+        assertEquals( "1", value.asString() );
     }
+
 
     @Test
     void testFromByte() throws SQLException {
         byte byteValue = 10;
-        TypedValue value = TypedValue.fromByte(byteValue);
-        assertEquals("10", value.asString());
+        TypedValue value = TypedValue.fromByte( byteValue );
+        assertEquals( "10", value.asString() );
     }
+
 
     @Test
     void testFromShort() throws SQLException {
         short shortValue = 20;
-        TypedValue value = TypedValue.fromShort(shortValue);
-        assertEquals("20", value.asString());
+        TypedValue value = TypedValue.fromShort( shortValue );
+        assertEquals( "20", value.asString() );
     }
+
 
     @Test
     void testFromInteger() throws SQLException {
         int intValue = 30;
-        TypedValue value = TypedValue.fromInteger(intValue);
-        assertEquals("30", value.asString());
+        TypedValue value = TypedValue.fromInteger( intValue );
+        assertEquals( "30", value.asString() );
     }
+
 
     @Test
     void testFromLong() throws SQLException {
         long longValue = 40L;
-        TypedValue value = TypedValue.fromLong(longValue);
-        assertEquals("40", value.asString());
+        TypedValue value = TypedValue.fromLong( longValue );
+        assertEquals( "40", value.asString() );
     }
+
 
     @Test
     void testFromFloat() throws SQLException {
         float floatValue = 50.5f;
-        TypedValue value = TypedValue.fromFloat(floatValue);
-        assertEquals("50.5", value.asString());
+        TypedValue value = TypedValue.fromFloat( floatValue );
+        assertEquals( "50.5", value.asString() );
     }
+
 
     @Test
     void testFromDouble() throws SQLException {
         double doubleValue = 60.6;
-        TypedValue value = TypedValue.fromDouble(doubleValue);
-        assertEquals("60.6", value.asString());
+        TypedValue value = TypedValue.fromDouble( doubleValue );
+        assertEquals( "60.6", value.asString() );
     }
+
 
     @Test
     void testFromBigDecimal() throws SQLException {
-        BigDecimal bigDecimalValue = new BigDecimal("70.7");
-        TypedValue value = TypedValue.fromBigDecimal(bigDecimalValue);
-        assertEquals("70.7", value.asString());
+        BigDecimal bigDecimalValue = new BigDecimal( "70.7" );
+        TypedValue value = TypedValue.fromBigDecimal( bigDecimalValue );
+        assertEquals( "70.7", value.asString() );
     }
+
 
     @Test
     void testFromString() throws SQLException {
         String stringValue = "test";
-        TypedValue value = TypedValue.fromString(stringValue);
-        assertEquals("test", value.asString());
+        TypedValue value = TypedValue.fromString( stringValue );
+        assertEquals( "test", value.asString() );
     }
+
 
     @Test
     void testFromDate() throws SQLException {
-        Date dateValue = new Date(2024, 7, 28);
-        TypedValue value = TypedValue.fromDate(dateValue);
-        assertEquals(dateValue.toString(), value.asString());
+        Date dateValue = new Date( 2024, 7, 28 );
+        TypedValue value = TypedValue.fromDate( dateValue );
+        assertEquals( dateValue.toString(), value.asString() );
     }
+
 
     @Test
     void testFromTime() throws SQLException {
-        Time timeValue = new Time(System.currentTimeMillis());
-        TypedValue value = TypedValue.fromTime(timeValue);
-        assertEquals(timeValue.toString(), value.asString());
+        Time timeValue = new Time( System.currentTimeMillis() );
+        TypedValue value = TypedValue.fromTime( timeValue );
+        assertEquals( timeValue.toString(), value.asString() );
     }
+
 
     @Test
     void testFromTimestamp() throws SQLException {
-        Timestamp timestampValue = new Timestamp(System.currentTimeMillis());
-        TypedValue value = TypedValue.fromTimestamp(timestampValue);
-        assertEquals(timestampValue.toString(), value.asString());
+        Timestamp timestampValue = new Timestamp( System.currentTimeMillis() );
+        TypedValue value = TypedValue.fromTimestamp( timestampValue );
+        assertEquals( timestampValue.toString(), value.asString() );
     }
 
 
     @Test
     void testFromInterval() throws SQLException {
-        PolyInterval interval = new PolyInterval(1, 0);
-        TypedValue value = TypedValue.fromInterval(interval);
-        assertEquals(interval.toString(), value.asString());
+        PolyInterval interval = new PolyInterval( 1, 0 );
+        TypedValue value = TypedValue.fromInterval( interval );
+        assertEquals( interval.toString(), value.asString() );
     }
+
 }
