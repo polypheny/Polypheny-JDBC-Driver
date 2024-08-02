@@ -23,12 +23,13 @@ import lombok.Setter;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.prism.StreamFrame;
+import org.polypheny.prism.StreamFrame.DataCase;
 
 public class PrismInputStream extends InputStream {
 
     private static final long NO_MARK = -1;
     private static final long NO_LIMIT = -1;
-    private static final int BUFFER_SIZE = 1000;
+    private static final int BUFFER_SIZE = 100001;
 
     private final PolyConnection connection;
     private final int statementId;
@@ -162,7 +163,10 @@ public class PrismInputStream extends InputStream {
         }
         this.isLast = frame.getIsLast();
         this.bufferStartPosition = fetchPosition;
-        this.buffer = frame.getData().toByteArray();
+        if (frame.getDataCase() != DataCase.BINARY) {
+            throw new RuntimeException("Stream type must be binary.");
+        }
+        this.buffer = frame.getBinary().toByteArray();
     }
 
 

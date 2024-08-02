@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +72,10 @@ import org.polypheny.prism.SqlTimeDateFunctionsRequest;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
+import org.polypheny.prism.StreamAcknowledgement;
 import org.polypheny.prism.StreamFetchRequest;
 import org.polypheny.prism.StreamFrame;
+import org.polypheny.prism.StreamSendRequest;
 import org.polypheny.prism.TableType;
 import org.polypheny.prism.TableTypesRequest;
 import org.polypheny.prism.Type;
@@ -290,14 +293,41 @@ public class PrismInterfaceClient {
         return rpc.fetchResult( fetchRequest, timeout );
     }
 
-    public StreamFrame fetchStream(int statementId, long streamId, long position, int length, int timeout ) throws PrismInterfaceServiceException {
+
+    public StreamFrame fetchStream( int statementId, long streamId, long position, int length, int timeout ) throws PrismInterfaceServiceException {
         StreamFetchRequest streamFetchRequest = StreamFetchRequest.newBuilder()
                 .setStatementId( statementId )
                 .setStreamId( streamId )
                 .setPosition( position )
                 .setLength( length )
                 .build();
-        return rpc.fetchStream(streamFetchRequest, timeout);
+        return rpc.fetchStream( streamFetchRequest, timeout );
+    }
+
+
+    public StreamAcknowledgement streamBinary( byte[] bytes, boolean is_last, int timeout ) throws PrismInterfaceServiceException {
+        StreamFrame frame = StreamFrame.newBuilder()
+                .setBinary( ByteString.copyFrom( bytes ) )
+                .setIsLast( is_last )
+                .build();
+        StreamSendRequest streamSendRequest = StreamSendRequest.newBuilder()
+                .setFrame( frame )
+                .build();
+        return rpc.stream( streamSendRequest, timeout );
+
+    }
+
+
+    public StreamAcknowledgement streamBinary( byte[] bytes, boolean is_last, int timeout, long streamId ) throws PrismInterfaceServiceException {
+        StreamFrame frame = StreamFrame.newBuilder()
+                .setBinary( ByteString.copyFrom( bytes ) )
+                .setIsLast( is_last )
+                .build();
+        StreamSendRequest streamSendRequest = StreamSendRequest.newBuilder()
+                .setFrame( frame )
+                .setStreamId( streamId )
+                .build();
+        return rpc.stream( streamSendRequest, timeout );
     }
 
 

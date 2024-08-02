@@ -33,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
-import java.sql.Connection;
 import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
@@ -57,6 +56,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
@@ -82,6 +82,9 @@ import org.polypheny.prism.ProtoValue.ValueCase;
 public class TypedValue implements Convertible {
 
     private static final long MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+    private static final int STREAMING_THRESHOLD = 100000000;
+    private static final int STREAMING_TIMEOUT = 100000;
 
     private static final Set<ValueCase> customTypes = new HashSet<>( Arrays.asList(
             ValueCase.DOCUMENT,
@@ -1238,7 +1241,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    public ProtoValue serialize() throws SQLException {
+    public ProtoValue serialize( PrismInterfaceClient client ) throws SQLException {
         switch ( valueCase ) {
             case BOOLEAN:
                 return serializeAsProtoBoolean();
@@ -1263,13 +1266,13 @@ public class TypedValue implements Convertible {
             case STRING:
                 return serializeAsProtoString();
             case BINARY:
-                return serializeAsProtoBinary();
+                return serializeAsProtoBinary( client );
             case NULL:
                 return serializeAsProtoNull();
             case LIST:
-                return serializeAsProtoList();
+                return serializeAsProtoList( client );
             case FILE:
-                return serializeAsProtoFile();
+                return serializeAsProtoFile( client );
             case DOCUMENT:
                 return serializeAsProtoDocument();
         }
@@ -1277,17 +1280,33 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoFile() throws SQLException {
-        try {
-            ProtoFile protoFile = ProtoFile.newBuilder()
-                    .setBinary( ByteString.copyFrom( collectByteStream( blobValue.getBinaryStream() ) ) )
-                    .build();
-            return ProtoValue.newBuilder()
-                    .setFile( protoFile )
-                    .build();
-        } catch ( IOException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Failed to read bytes from blob." );
+    private ProtoValue serializeAsProtoFile( PrismInterfaceClient client ) throws SQLException {
+        ProtoFile protoFile;
+        if ( blobValue.length() < STREAMING_THRESHOLD ) {
+            try {
+                protoFile = ProtoFile.newBuilder()
+                        .setBinary( ByteString.copyFrom( collectByteStream( blobValue.getBinaryStream() ) ) )
+                        .build();
+                return ProtoValue.newBuilder()
+                        .setFile( protoFile )
+                        .build();
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
         }
+        long streamId;
+        try {
+            streamId = streamBinary( blobValue, client );
+        } catch ( PrismInterfaceServiceException e ) {
+            throw new RuntimeException( e );
+        }
+        protoFile = ProtoFile.newBuilder()
+                .setStreamId( streamId )
+                .setIsForwardOnly( true )
+                .build();
+        return ProtoValue.newBuilder()
+                .setFile( protoFile )
+                .build();
     }
 
 
@@ -1310,10 +1329,10 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoList() throws SQLException {
+    private ProtoValue serializeAsProtoList( PrismInterfaceClient client ) throws SQLException {
         List<ProtoValue> elements = new ArrayList<>();
         for ( Object object : (Object[]) arrayValue.getArray() ) {
-            elements.add( TypedValue.fromObject( object ).serialize() );
+            elements.add( TypedValue.fromObject( object ).serialize( client ) );
         }
         ProtoList protoList = ProtoList.newBuilder()
                 .addAllValues( elements )
@@ -1406,13 +1425,84 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoBinary() {
-        ProtoBinary protoBinary = ProtoBinary.newBuilder()
-                .setBinary( ByteString.copyFrom( binaryValue ) )
+    private ProtoValue serializeAsProtoBinary( PrismInterfaceClient client ) {
+        ProtoBinary protoBinary;
+        if ( binaryValue.length < STREAMING_THRESHOLD ) {
+            protoBinary = ProtoBinary.newBuilder()
+                    .setBinary( ByteString.copyFrom( binaryValue ) )
+                    .build();
+            return ProtoValue.newBuilder()
+                    .setBinary( protoBinary )
+                    .build();
+        }
+        long streamId;
+        try {
+            streamId = streamBinary( binaryValue, client );
+        } catch ( PrismInterfaceServiceException e ) {
+            throw new RuntimeException( e );
+        }
+        protoBinary = ProtoBinary.newBuilder()
+                .setStreamId( streamId )
+                .setIsForwardOnly( true )
                 .build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
                 .build();
+    }
+
+
+    private long streamBinary( byte[] data, PrismInterfaceClient client ) throws PrismInterfaceServiceException {
+        int size = data.length;
+        int offset = 0;
+        long streamId = -1;
+
+        while ( offset < size ) {
+            int frameSize = Math.min( STREAMING_THRESHOLD, size - offset );
+            byte[] frameData = new byte[frameSize];
+            System.arraycopy( data, offset, frameData, 0, frameSize );
+            boolean isLast = (offset + frameSize) >= size;
+            if ( streamId == -1 ) {
+                streamId = client.streamBinary( frameData, isLast, STREAMING_TIMEOUT ).getStreamId();
+                continue;
+            }
+            client.streamBinary( frameData, isLast, STREAMING_TIMEOUT, streamId );
+        }
+        return streamId;
+    }
+
+
+    private long streamBinary( Blob data, PrismInterfaceClient client ) throws PrismInterfaceServiceException {
+        long size;
+        long offset = 0;
+        long streamId = -1;
+
+        try ( InputStream inputStream = data.getBinaryStream() ) {
+            size = data.length();
+            byte[] buffer = new byte[STREAMING_THRESHOLD];
+
+            while ( offset < size ) {
+                int bytesRead = inputStream.read( buffer, 0, STREAMING_THRESHOLD );
+                if ( bytesRead == -1 ) {
+                    break; // End of stream reached
+                }
+
+                boolean isLast = (offset + bytesRead) >= size;
+                byte[] frameData = new byte[bytesRead];
+                System.arraycopy( buffer, 0, frameData, 0, bytesRead );
+
+                if ( streamId == -1 ) {
+                    streamId = client.streamBinary( frameData, isLast, STREAMING_TIMEOUT ).getStreamId();
+                } else {
+                    client.streamBinary( frameData, isLast, STREAMING_TIMEOUT, streamId );
+                }
+
+                offset += bytesRead;
+            }
+        } catch ( SQLException | IOException e ) {
+            throw new PrismInterfaceServiceException( "Error streaming binary data", e );
+        }
+
+        return streamId;
     }
 
 
@@ -1452,7 +1542,7 @@ public class TypedValue implements Convertible {
     private static Array getArray( ProtoValue value, PolyConnection polyConnection ) throws SQLException {
         String baseType = value.getValueCase().name();
         List<TypedValue> values = value.getList().getValuesList().stream()
-                .map( v -> new TypedValue(v, polyConnection ))
+                .map( v -> new TypedValue( v, polyConnection ) )
                 .collect( Collectors.toList() );
         return new PolyArray( baseType, values );
     }
@@ -1461,4 +1551,5 @@ public class TypedValue implements Convertible {
     private static PolyInterval getInterval( ProtoInterval interval ) {
         return new PolyInterval( interval.getMonths(), interval.getMilliseconds() );
     }
+
 }
