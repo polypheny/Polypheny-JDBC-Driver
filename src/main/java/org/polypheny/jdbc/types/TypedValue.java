@@ -1483,9 +1483,8 @@ public class TypedValue implements Convertible {
             while ( offset < size ) {
                 int bytesRead = inputStream.read( buffer, 0, STREAMING_THRESHOLD );
                 if ( bytesRead == -1 ) {
-                    break; // End of stream reached
+                    break;
                 }
-
                 boolean isLast = (offset + bytesRead) >= size;
                 byte[] frameData = new byte[bytesRead];
                 System.arraycopy( buffer, 0, frameData, 0, bytesRead );

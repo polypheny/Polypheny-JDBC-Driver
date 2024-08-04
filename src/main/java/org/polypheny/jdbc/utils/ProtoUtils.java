@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoValue;
@@ -37,10 +38,10 @@ public class ProtoUtils {
     }
 
 
-    public static List<ProtoValue> serializeParameterList( List<TypedValue> values ) {
+    public static List<ProtoValue> serializeParameterList( List<TypedValue> values, PrismInterfaceClient client ) {
         return values.stream().map( v -> {
             try {
-                return v.serialize();
+                return v.serialize(client);
             } catch ( SQLException e ) {
                 throw new RuntimeException( "Should not be thrown. Encountered an unknown type during serialization." );
             }
@@ -48,12 +49,12 @@ public class ProtoUtils {
     }
 
 
-    public static Map<String, ProtoValue> serializeParameterMap(Map<String, TypedValue> values) {
+    public static Map<String, ProtoValue> serializeParameterMap(Map<String, TypedValue> values, PrismInterfaceClient client) {
         return values.entrySet().stream().collect(Collectors.toMap(
                 Entry::getKey,
                 value -> {
                     try {
-                        return value.getValue().serialize();
+                        return value.getValue().serialize(client);
                     } catch (Exception e) {
                         throw new RuntimeException("Serialization failed", e);
                     }
