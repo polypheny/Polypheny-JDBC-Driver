@@ -16,23 +16,33 @@
 
 package org.polypheny.jdbc.streaming;
 
-import lombok.Getter;
 import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.multimodel.PolyStatement;
 
 public abstract class PrismOutputStream extends Thread {
 
     private static final long NO_STREAM_ID = -1;
     protected static final int STREAMING_TIMEOUT = 100000;
 
+    protected int statementId = PolyStatement.NO_STATEMENT_ID;
     protected long streamId = NO_STREAM_ID;
+
+
+    protected void setStatementId( int statementId ) {
+        if ( statementId != PolyStatement.NO_STATEMENT_ID ) {
+            throw new IllegalStateException( "Statement id can only be set once." );
+        }
+    }
 
 
     protected void setStreamId( long streamId ) {
         if ( streamId != NO_STREAM_ID ) {
-            throw new IllegalStateException();
+            throw new IllegalStateException( "Stream id can only be set once." );
         }
         this.streamId = streamId;
     }
 
-    public abstract void buildAndRun(long statementId, PrismInterfaceClient prismInterfaceClient );
+
+    public abstract void buildAndRun( int statementId, long streamId, PrismInterfaceClient prismInterfaceClient );
+
 }

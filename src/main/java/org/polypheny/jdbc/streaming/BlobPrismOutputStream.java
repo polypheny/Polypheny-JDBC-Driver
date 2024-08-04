@@ -30,12 +30,14 @@ public class BlobPrismOutputStream extends PrismOutputStream {
     private PrismInterfaceClient client;
 
 
+
     public BlobPrismOutputStream( Blob blob ) {
         this.blob = blob;
     }
 
 
-    public void buildAndRun(long streamId, PrismInterfaceClient prismInterfaceClient ) {
+    public void buildAndRun(int statementId, long streamId, PrismInterfaceClient prismInterfaceClient ) {
+        setStatementId( statementId );
         setStreamId( streamId );
         this.client = prismInterfaceClient;
     }

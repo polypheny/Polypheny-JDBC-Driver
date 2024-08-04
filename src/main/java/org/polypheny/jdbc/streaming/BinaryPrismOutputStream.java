@@ -31,7 +31,8 @@ public class BinaryPrismOutputStream extends PrismOutputStream {
         this.data = data;
     }
 
-    public void buildAndRun(long streamId, PrismInterfaceClient prismInterfaceClient ) {
+    public void buildAndRun(int statementId, long streamId, PrismInterfaceClient prismInterfaceClient ) {
+        setStreamId( statementId );
         setStreamId( streamId );
         this.client = prismInterfaceClient;
     }

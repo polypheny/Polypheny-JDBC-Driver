@@ -24,7 +24,7 @@ import org.polypheny.jdbc.multimodel.PolyStatement;
 public class StreamingIndex {
 
     private final HashSet<PrismOutputStream> streams;
-    private long statementId = PolyStatement.NO_STATEMENT_ID;
+    private int statementId = PolyStatement.NO_STATEMENT_ID;
     private final AtomicLong streamIdGenerator = new AtomicLong();
     private final PrismInterfaceClient prismInterfaceClient;
 
@@ -38,12 +38,12 @@ public class StreamingIndex {
     public long register( PrismOutputStream stream ) {
         long streamId = streamIdGenerator.getAndIncrement();
         streams.add( stream );
-        stream.buildAndRun( streamId, prismInterfaceClient );
+        stream.buildAndRun(statementId, streamId, prismInterfaceClient );
         return streamId;
     }
 
 
-    public void update( long statementId ) {
+    public void update( int statementId ) {
         this.statementId = statementId;
     }
 
