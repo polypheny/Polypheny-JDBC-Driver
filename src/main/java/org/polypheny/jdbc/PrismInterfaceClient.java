@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
+import org.polypheny.jdbc.streaming.StreamingIndex;
 import org.polypheny.jdbc.transport.PlainTransport;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.types.TypedValue;
@@ -210,9 +211,9 @@ public class PrismInterfaceClient {
     }
 
 
-    public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
+    public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, StreamingIndex streamingIndex, int timeout ) throws PrismInterfaceServiceException {
         IndexedParameters parameters = IndexedParameters.newBuilder()
-                .addAllParameters( ProtoUtils.serializeParameterList( values ) )
+                .addAllParameters( ProtoUtils.serializeParameterList( values, streamingIndex ) )
                 .build();
         ExecuteIndexedStatementRequest request = ExecuteIndexedStatementRequest.newBuilder()
                 .setStatementId( statementId )
@@ -224,9 +225,9 @@ public class PrismInterfaceClient {
     }
 
 
-    public StatementResult executeNamedStatement( int statementId, Map<String, TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
+    public StatementResult executeNamedStatement( int statementId, Map<String, TypedValue> values, int fetchSize, StreamingIndex streamingIndex, int timeout ) throws PrismInterfaceServiceException {
         NamedParameters parameters = NamedParameters.newBuilder()
-                .putAllParameters( ProtoUtils.serializeParameterMap( values ) )
+                .putAllParameters( ProtoUtils.serializeParameterMap( values, streamingIndex ) )
                 .build();
         ExecuteNamedStatementRequest request = ExecuteNamedStatementRequest.newBuilder()
                 .setStatementId( statementId )
@@ -238,9 +239,9 @@ public class PrismInterfaceClient {
     }
 
 
-    public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws PrismInterfaceServiceException {
+    public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, StreamingIndex streamingIndex, int timeout ) throws PrismInterfaceServiceException {
         List<IndexedParameters> parameters = parameterBatch.stream()
-                .map( ProtoUtils::serializeParameterList )
+                .map( l -> ProtoUtils.serializeParameterList( l, streamingIndex ) )
                 .map( p -> IndexedParameters.newBuilder().addAllParameters( p ).build() )
                 .collect( Collectors.toList() );
         ExecuteIndexedStatementBatchRequest request = ExecuteIndexedStatementBatchRequest.newBuilder()
@@ -305,20 +306,7 @@ public class PrismInterfaceClient {
     }
 
 
-    public StreamAcknowledgement streamBinary( byte[] bytes, boolean is_last, int timeout ) throws PrismInterfaceServiceException {
-        StreamFrame frame = StreamFrame.newBuilder()
-                .setBinary( ByteString.copyFrom( bytes ) )
-                .setIsLast( is_last )
-                .build();
-        StreamSendRequest streamSendRequest = StreamSendRequest.newBuilder()
-                .setFrame( frame )
-                .build();
-        return rpc.stream( streamSendRequest, timeout );
-
-    }
-
-
-    public StreamAcknowledgement streamBinary( byte[] bytes, boolean is_last, int timeout, long streamId ) throws PrismInterfaceServiceException {
+    public StreamAcknowledgement streamBinary( byte[] bytes, boolean is_last, long streamId, int timeout ) throws PrismInterfaceServiceException {
         StreamFrame frame = StreamFrame.newBuilder()
                 .setBinary( ByteString.copyFrom( bytes ) )
                 .setIsLast( is_last )

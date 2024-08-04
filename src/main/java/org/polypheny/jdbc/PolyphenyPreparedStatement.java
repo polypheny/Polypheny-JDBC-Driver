@@ -41,6 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.jdbc.meta.PolyphenyParameterMetaData;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
+import org.polypheny.jdbc.streaming.StreamingIndex;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.PreparedStatementSignature;
@@ -52,11 +53,13 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private TypedValue[] parameters;
     private List<List<TypedValue>> parameterBatch = new LinkedList<>();
     private final PolyphenyParameterMetaData parameterMetaData;
+    private final StreamingIndex streamingIndex = new StreamingIndex(getClient());
 
 
     public PolyphenyPreparedStatement( PolyConnection connection, PolyphenyStatementProperties properties, PreparedStatementSignature statementSignature ) throws SQLException {
         super( connection, properties );
         this.statementId = statementSignature.getStatementId();
+        streamingIndex.update( statementSignature.getStatementId() );
         this.parameterMetaData = new PolyphenyParameterMetaData( statementSignature );
         this.parameters = createParameterList( statementSignature.getParameterMetasCount() );
     }
@@ -158,6 +161,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
                     statementId,
                     Arrays.asList( parameters ),
                     properties.getFetchSize(),
+                    streamingIndex,
                     getTimeout()
             );
             if ( !result.hasFrame() ) {
@@ -183,6 +187,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
                     statementId,
                     Arrays.asList( parameters ),
                     properties.getFetchSize(),
+                    streamingIndex,
                     getTimeout()
             );
             if ( result.hasFrame() ) {
@@ -391,6 +396,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
                     statementId,
                     Arrays.asList( parameters ),
                     properties.getFetchSize(),
+                    streamingIndex,
                     getTimeout()
             );
             if ( !result.hasFrame() ) {
@@ -440,7 +446,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
         try {
-            StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
+            StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, streamingIndex, getTimeout() );
             return status.getScalarsList();
         } finally {
             // jdbc: batch and individual parameters are always cleared even in the execution fails.

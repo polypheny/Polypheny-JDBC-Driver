@@ -51,6 +51,7 @@ import org.mockito.Mockito;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.streaming.StreamingIndex;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.ProtoValue.ValueCase;
 
@@ -58,6 +59,8 @@ public class TypedValueTest {
 
     @Mock
     PolyConnection polyConnection;
+    @Mock
+    StreamingIndex streamingIndex;
 
 
     @Test
@@ -691,7 +694,7 @@ public class TypedValueTest {
     void booleanTest() throws SQLException {
         boolean value = true;
         TypedValue typedValue1 = TypedValue.fromBoolean( true );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.BOOLEAN, protoValue.getValueCase() );
 
@@ -704,7 +707,7 @@ public class TypedValueTest {
     void integerTest() throws SQLException {
         int value = 1234;
         TypedValue typedValue1 = TypedValue.fromInteger( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.INTEGER, protoValue.getValueCase() );
 
@@ -717,7 +720,7 @@ public class TypedValueTest {
     void longTest() throws SQLException {
         long value = 1234L;
         TypedValue typedValue1 = TypedValue.fromLong( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.LONG, protoValue.getValueCase() );
 
@@ -730,7 +733,7 @@ public class TypedValueTest {
     void binaryTest() throws SQLException {
         byte[] value = new byte[]{ 1, 2, 3, 4 };
         TypedValue typedValue1 = TypedValue.fromBytes( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
 
@@ -743,7 +746,7 @@ public class TypedValueTest {
     void binaryTestAsObject() throws SQLException {
         byte[] value = new byte[]{ 1, 2, 3, 4 };
         TypedValue typedValue1 = TypedValue.fromBytes( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.BINARY, protoValue.getValueCase() );
 
@@ -755,7 +758,7 @@ public class TypedValueTest {
     void dateTest() throws SQLException {
         Date value = new Date( 49852800000L );
         TypedValue typedValue1 = TypedValue.fromDate( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.DATE, protoValue.getValueCase() );
 
@@ -768,7 +771,7 @@ public class TypedValueTest {
     void doubleTest() throws SQLException {
         double value = 1.234;
         TypedValue typedValue1 = TypedValue.fromDouble( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.DOUBLE, protoValue.getValueCase() );
 
@@ -781,7 +784,7 @@ public class TypedValueTest {
     void floatTest() throws SQLException {
         float value = 1.234f;
         TypedValue typedValue1 = TypedValue.fromFloat( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.FLOAT, protoValue.getValueCase() );
 
@@ -793,7 +796,7 @@ public class TypedValueTest {
     @Test
     void nullTest() throws SQLException {
         TypedValue typedValue1 = TypedValue.fromNull();
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.NULL, protoValue.getValueCase() );
 
@@ -806,7 +809,7 @@ public class TypedValueTest {
     void stringTest() throws SQLException {
         String value = "a string";
         TypedValue typedValue1 = TypedValue.fromString( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.STRING, protoValue.getValueCase() );
 
@@ -819,7 +822,7 @@ public class TypedValueTest {
     void timeTest() throws SQLException {
         Time value = new Time( 234975L );
         TypedValue typedValue1 = TypedValue.fromTime( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.TIME, protoValue.getValueCase() );
 
@@ -834,7 +837,7 @@ public class TypedValueTest {
     void timestampTest() throws SQLException {
         Timestamp value = new Timestamp( 47285720L );
         TypedValue typedValue1 = TypedValue.fromTimestamp( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.TIMESTAMP, protoValue.getValueCase() );
 
@@ -849,7 +852,7 @@ public class TypedValueTest {
     void bigDecimalTest() throws SQLException {
         BigDecimal value = new BigDecimal( "3457980.32453" );
         TypedValue typedValue1 = TypedValue.fromBigDecimal( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.BIG_DECIMAL, protoValue.getValueCase() );
 
@@ -867,7 +870,7 @@ public class TypedValueTest {
         Array value = new PolyArray( "INTEGER", values );
 
         TypedValue typedValue1 = TypedValue.fromArray( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.LIST, protoValue.getValueCase() );
 
@@ -880,7 +883,7 @@ public class TypedValueTest {
     void intervalTest() throws SQLException {
         PolyInterval value = new PolyInterval( 32, 0 );
         TypedValue typedValue1 = TypedValue.fromInterval( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.INTERVAL, protoValue.getValueCase() );
 
@@ -893,7 +896,7 @@ public class TypedValueTest {
     void intervalTestAsObject() throws SQLException {
         PolyInterval value = new PolyInterval( 32, 0 );
         TypedValue typedValue1 = TypedValue.fromInterval( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex);
 
         assertEquals( ValueCase.INTERVAL, protoValue.getValueCase() );
 
@@ -909,7 +912,7 @@ public class TypedValueTest {
         value.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, 0 ) ) );
 
         TypedValue typedValue1 = TypedValue.fromDocument( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.DOCUMENT, protoValue.getValueCase() );
 
@@ -928,7 +931,7 @@ public class TypedValueTest {
         value.put( "thirdValue", TypedValue.fromInterval( new PolyInterval( 69, 0 ) ) );
 
         TypedValue typedValue1 = TypedValue.fromDocument( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         PolyDocument document = (PolyDocument) new TypedValue( protoValue, polyConnection ).asObject();
         assertEquals( value.get( "firstValue" ).asBoolean(), document.get( "firstValue" ).asBoolean() );
@@ -941,7 +944,7 @@ public class TypedValueTest {
     void fileTest() throws SQLException {
         Blob value = new PolyBlob( new byte[]{ 1, 2, 3, 4, 5 } );
         TypedValue typedValue1 = TypedValue.fromBlob( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
 
         assertEquals( ValueCase.FILE, protoValue.getValueCase() );
 
@@ -954,7 +957,7 @@ public class TypedValueTest {
     void getLengthTest() throws SQLException {
         String value = "12345678";
         TypedValue typedValue1 = TypedValue.fromString( value );
-        ProtoValue protoValue = typedValue1.serialize();
+        ProtoValue protoValue = typedValue1.serialize( streamingIndex );
         TypedValue typedValue2 = new TypedValue( protoValue, polyConnection );
         assertEquals( value.length(), typedValue2.getLength() );
     }

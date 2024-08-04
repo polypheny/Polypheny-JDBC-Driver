@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.streaming.StreamingIndex;
 import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoEntry;
@@ -45,12 +46,12 @@ public class PolyDocument extends HashMap<String, TypedValue> {
     }
 
 
-    public ProtoDocument serialize() {
+    public ProtoDocument serialize( StreamingIndex streamingIndex ) {
         List<ProtoEntry> protoEntries = entrySet().stream().map( entry -> {
             ProtoValue protoKey = ProtoUtils.serializeAsProtoString( entry.getKey() );
             ProtoValue protoValue;
             try {
-                protoValue = entry.getValue().serialize();
+                protoValue = entry.getValue().serialize( streamingIndex );
             } catch ( SQLException e ) {
                 throw new RuntimeException( "Should not be thrown. Unknown value encountered." );
             }

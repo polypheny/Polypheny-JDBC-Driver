@@ -60,6 +60,9 @@ import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
+import org.polypheny.jdbc.streaming.BinaryPrismOutputStream;
+import org.polypheny.jdbc.streaming.BlobPrismOutputStream;
+import org.polypheny.jdbc.streaming.StreamingIndex;
 import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 import org.polypheny.prism.ProtoBigDecimal;
@@ -83,8 +86,8 @@ public class TypedValue implements Convertible {
 
     private static final long MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
-    private static final int STREAMING_THRESHOLD = 100000000;
-    private static final int STREAMING_TIMEOUT = 100000;
+    public static final int STREAMING_THRESHOLD = 100000000;
+
 
     private static final Set<ValueCase> customTypes = new HashSet<>( Arrays.asList(
             ValueCase.DOCUMENT,
@@ -1241,7 +1244,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    public ProtoValue serialize( PrismInterfaceClient client ) throws SQLException {
+    public ProtoValue serialize( StreamingIndex streamingIndex ) throws SQLException {
         switch ( valueCase ) {
             case BOOLEAN:
                 return serializeAsProtoBoolean();
@@ -1266,21 +1269,21 @@ public class TypedValue implements Convertible {
             case STRING:
                 return serializeAsProtoString();
             case BINARY:
-                return serializeAsProtoBinary( client );
+                return serializeAsProtoBinary( streamingIndex );
             case NULL:
                 return serializeAsProtoNull();
             case LIST:
-                return serializeAsProtoList( client );
+                return serializeAsProtoList( streamingIndex );
             case FILE:
-                return serializeAsProtoFile( client );
+                return serializeAsProtoFile( streamingIndex );
             case DOCUMENT:
-                return serializeAsProtoDocument();
+                return serializeAsProtoDocument(streamingIndex);
         }
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Failed to serialize unknown type: " + valueCase.name() );
     }
 
 
-    private ProtoValue serializeAsProtoFile( PrismInterfaceClient client ) throws SQLException {
+    private ProtoValue serializeAsProtoFile( StreamingIndex streamingIndex ) throws SQLException {
         ProtoFile protoFile;
         if ( blobValue.length() < STREAMING_THRESHOLD ) {
             try {
@@ -1294,12 +1297,7 @@ public class TypedValue implements Convertible {
                 throw new RuntimeException( e );
             }
         }
-        long streamId;
-        try {
-            streamId = streamBinary( blobValue, client );
-        } catch ( PrismInterfaceServiceException e ) {
-            throw new RuntimeException( e );
-        }
+        long streamId = streamingIndex.register( new BlobPrismOutputStream( blobValue ) );
         protoFile = ProtoFile.newBuilder()
                 .setStreamId( streamId )
                 .setIsForwardOnly( true )
@@ -1310,9 +1308,9 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoDocument() {
+    private ProtoValue serializeAsProtoDocument(StreamingIndex streamingIndex) {
         return ProtoValue.newBuilder()
-                .setDocument( ((PolyDocument) otherValue).serialize() )
+                .setDocument( ((PolyDocument) otherValue).serialize(streamingIndex) )
                 .build();
     }
 
@@ -1329,10 +1327,10 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoList( PrismInterfaceClient client ) throws SQLException {
+    private ProtoValue serializeAsProtoList( StreamingIndex streamingIndex) throws SQLException {
         List<ProtoValue> elements = new ArrayList<>();
         for ( Object object : (Object[]) arrayValue.getArray() ) {
-            elements.add( TypedValue.fromObject( object ).serialize( client ) );
+            elements.add( TypedValue.fromObject( object ).serialize( streamingIndex ) );
         }
         ProtoList protoList = ProtoList.newBuilder()
                 .addAllValues( elements )
@@ -1425,7 +1423,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoBinary( PrismInterfaceClient client ) {
+    private ProtoValue serializeAsProtoBinary( StreamingIndex streamingIndex) {
         ProtoBinary protoBinary;
         if ( binaryValue.length < STREAMING_THRESHOLD ) {
             protoBinary = ProtoBinary.newBuilder()
@@ -1435,12 +1433,7 @@ public class TypedValue implements Convertible {
                     .setBinary( protoBinary )
                     .build();
         }
-        long streamId;
-        try {
-            streamId = streamBinary( binaryValue, client );
-        } catch ( PrismInterfaceServiceException e ) {
-            throw new RuntimeException( e );
-        }
+        long streamId = streamingIndex.register( new BinaryPrismOutputStream( binaryValue ) );
         protoBinary = ProtoBinary.newBuilder()
                 .setStreamId( streamId )
                 .setIsForwardOnly( true )
@@ -1448,60 +1441,6 @@ public class TypedValue implements Convertible {
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
                 .build();
-    }
-
-
-    private long streamBinary( byte[] data, PrismInterfaceClient client ) throws PrismInterfaceServiceException {
-        int size = data.length;
-        int offset = 0;
-        long streamId = -1;
-
-        while ( offset < size ) {
-            int frameSize = Math.min( STREAMING_THRESHOLD, size - offset );
-            byte[] frameData = new byte[frameSize];
-            System.arraycopy( data, offset, frameData, 0, frameSize );
-            boolean isLast = (offset + frameSize) >= size;
-            if ( streamId == -1 ) {
-                streamId = client.streamBinary( frameData, isLast, STREAMING_TIMEOUT ).getStreamId();
-                continue;
-            }
-            client.streamBinary( frameData, isLast, STREAMING_TIMEOUT, streamId );
-        }
-        return streamId;
-    }
-
-
-    private long streamBinary( Blob data, PrismInterfaceClient client ) throws PrismInterfaceServiceException {
-        long size;
-        long offset = 0;
-        long streamId = -1;
-
-        try ( InputStream inputStream = data.getBinaryStream() ) {
-            size = data.length();
-            byte[] buffer = new byte[STREAMING_THRESHOLD];
-
-            while ( offset < size ) {
-                int bytesRead = inputStream.read( buffer, 0, STREAMING_THRESHOLD );
-                if ( bytesRead == -1 ) {
-                    break;
-                }
-                boolean isLast = (offset + bytesRead) >= size;
-                byte[] frameData = new byte[bytesRead];
-                System.arraycopy( buffer, 0, frameData, 0, bytesRead );
-
-                if ( streamId == -1 ) {
-                    streamId = client.streamBinary( frameData, isLast, STREAMING_TIMEOUT ).getStreamId();
-                } else {
-                    client.streamBinary( frameData, isLast, STREAMING_TIMEOUT, streamId );
-                }
-
-                offset += bytesRead;
-            }
-        } catch ( SQLException | IOException e ) {
-            throw new PrismInterfaceServiceException( "Error streaming binary data", e );
-        }
-
-        return streamId;
     }
 
 

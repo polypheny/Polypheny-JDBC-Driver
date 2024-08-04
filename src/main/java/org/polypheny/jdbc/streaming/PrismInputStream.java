@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc.types;
+package org.polypheny.jdbc.streaming;
 
 import java.io.IOException;
 import java.io.InputStream;
 import lombok.Getter;
-import lombok.Setter;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.prism.StreamFrame;

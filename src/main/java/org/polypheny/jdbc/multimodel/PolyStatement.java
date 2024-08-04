@@ -24,6 +24,7 @@ import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.PropertyUtils;
+import org.polypheny.jdbc.streaming.StreamingIndex;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.prism.Frame;
@@ -35,7 +36,7 @@ import org.polypheny.prism.StatementResult;
 
 public class PolyStatement {
 
-    private static final int NO_STATEMENT_ID = -1;
+    public static final int NO_STATEMENT_ID = -1;
 
     @Getter
     private PolyConnection connection;
@@ -43,6 +44,13 @@ public class PolyStatement {
     private int statementId;
     @Getter
     private boolean isPrepared;
+    private StreamingIndex streamingIndex;
+
+
+    public PolyStatement( PolyConnection polyConnection ) {
+        this.connection = polyConnection;
+        this.streamingIndex = new StreamingIndex(getPrismInterfaceClient());
+    }
 
 
     private void resetStatement() throws PrismInterfaceServiceException {
@@ -51,6 +59,7 @@ public class PolyStatement {
         }
         statementId = NO_STATEMENT_ID;
         isPrepared = false;
+        streamingIndex.update( NO_STATEMENT_ID );
     }
 
 
@@ -72,11 +81,6 @@ public class PolyStatement {
     }
 
 
-    public PolyStatement( PolyConnection polyConnection ) {
-        this.connection = polyConnection;
-    }
-
-
     public Result execute( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
         resetStatement();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
@@ -92,6 +96,7 @@ public class PolyStatement {
             StatementResponse response = callback.takeNext();
             if ( statementId == NO_STATEMENT_ID ) {
                 statementId = response.getStatementId();
+                streamingIndex.update( statementId );
             }
             if ( !response.hasResult() ) {
                 continue;
@@ -151,7 +156,7 @@ public class PolyStatement {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "This operation requires a statmement to be prepared first" );
         }
         int timeout = connection.getTimeout();
-        StatementResult result = getPrismInterfaceClient().executeIndexedStatement( statementId, parameters, PropertyUtils.getDEFAULT_FETCH_SIZE(), timeout );
+        StatementResult result = getPrismInterfaceClient().executeIndexedStatement( statementId, parameters, PropertyUtils.getDEFAULT_FETCH_SIZE(), streamingIndex, timeout );
         if ( !result.hasFrame() ) {
             return new ScalarResult( result.getScalar() );
         }
@@ -164,7 +169,7 @@ public class PolyStatement {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "This operation requires a statmement to be prepared first" );
         }
         int timeout = connection.getTimeout();
-        StatementResult result = getPrismInterfaceClient().executeNamedStatement( statementId, parameters, PropertyUtils.getDEFAULT_FETCH_SIZE(), timeout );
+        StatementResult result = getPrismInterfaceClient().executeNamedStatement( statementId, parameters, PropertyUtils.getDEFAULT_FETCH_SIZE(), streamingIndex, timeout );
         if ( !result.hasFrame() ) {
             return new ScalarResult( result.getScalar() );
         }
@@ -177,7 +182,7 @@ public class PolyStatement {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "This operation requires a statmement to be prepared first" );
         }
         int timeout = connection.getTimeout();
-        StatementBatchResponse response = getPrismInterfaceClient().executeIndexedStatementBatch( statementId, parameterBatch, timeout );
+        StatementBatchResponse response = getPrismInterfaceClient().executeIndexedStatementBatch( statementId, parameterBatch, streamingIndex, timeout );
         return response.getScalarsList();
     }
 
