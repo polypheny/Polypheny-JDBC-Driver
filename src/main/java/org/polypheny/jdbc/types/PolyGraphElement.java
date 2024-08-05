@@ -29,6 +29,13 @@ public class PolyGraphElement extends HashMap<String, TypedValue> {
     protected String id;
     protected String name;
     protected List<String> labels;
+    protected ElementType elementType;
+
+
+    public PolyGraphElement( ElementType elementType ) {
+        this.elementType = elementType;
+    }
+
 
     public <T> T unwrap( Class<T> aClass ) throws PrismInterfaceServiceException {
         if ( aClass.isInstance( this ) ) {
