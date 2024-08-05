@@ -38,8 +38,8 @@ public class PolyEdge extends PolyGraphElement {
                 Entry::getKey, // keys are always strings
                 e -> new TypedValue( e.getValue(), polyConnection )
         ) ) );
-        this.left = protoEdge.getSource();
-        this.right = protoEdge.getTarget();
+        this.left = protoEdge.getLeft();
+        this.right = protoEdge.getRight();
         this.direction = EdgeDirection.valueOf( protoEdge.getDirection().name() );
     }
 

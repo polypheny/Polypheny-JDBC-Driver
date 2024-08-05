@@ -39,7 +39,6 @@ public class PolyDocument extends HashMap<String, TypedValue> {
                 ) ) );
     }
 
-
     public ProtoDocument serialize( StreamingIndex streamingIndex ) {
         return ProtoDocument.newBuilder().putAllEntries( entrySet().stream().collect( Collectors.toMap(
                 Entry::getKey, // keys are always strings
