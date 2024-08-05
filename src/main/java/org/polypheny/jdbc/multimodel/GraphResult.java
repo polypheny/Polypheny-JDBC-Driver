@@ -28,7 +28,6 @@ import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.types.PolyEdge;
 import org.polypheny.jdbc.types.PolyGraphElement;
 import org.polypheny.jdbc.types.PolyNode;
-import org.polypheny.jdbc.types.PolyPath;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.Frame.ResultCase;
 import org.polypheny.prism.GraphFrame;
@@ -50,17 +49,17 @@ public class GraphResult extends Result implements Iterable<PolyGraphElement> { 
 
 
     private void addGraphElements( GraphFrame graphFrame ) {
-        if ( graphFrame.getNodesCount() > 0 ) {
-            graphFrame.getNodesList().forEach( n -> elements.add( new PolyNode( n, polyStatement.getConnection() ) ) );
-            return;
-        }
-        if ( graphFrame.getEdgesCount() > 0 ) {
-            graphFrame.getEdgesList().forEach( n -> elements.add( new PolyEdge( n, polyStatement.getConnection() ) ) );
-            return;
-        }
-        if ( graphFrame.getPathsCount() > 0 ) {
-            graphFrame.getPathsList().forEach( n -> elements.add( new PolyPath( n, polyStatement.getConnection() ) ) );
-        }
+        graphFrame.getElementList().forEach( e -> {
+                    switch ( e.getElementCase() ) {
+                        case NODE:
+                            elements.add( new PolyNode( e.getNode(), polyStatement.getConnection() ) );
+                            break;
+                        case EDGE:
+                            elements.add( new PolyEdge( e.getEdge(), polyStatement.getConnection() ) );
+                            break;
+                    }
+                }
+        );
     }
 
 
