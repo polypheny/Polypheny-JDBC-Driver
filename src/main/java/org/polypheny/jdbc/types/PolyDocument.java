@@ -37,31 +37,25 @@ public class PolyDocument extends HashMap<String, TypedValue> {
 
     public PolyDocument( ProtoDocument document, PolyConnection polyConnection ) {
         super();
-        document.getEntriesList().stream()
-                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
-                .forEach( e -> put(
-                        e.getKey().getString().getString(),
-                        new TypedValue( e.getValue(), polyConnection )
-                ) );
+        putAll( document.getEntriesMap().entrySet().stream().collect(
+                Collectors.toMap(
+                        Entry::getKey, // keys are always strings
+                        e -> new TypedValue( e.getValue(), polyConnection )
+                ) ) );
     }
 
 
     public ProtoDocument serialize( StreamingIndex streamingIndex ) {
-        List<ProtoEntry> protoEntries = entrySet().stream().map( entry -> {
-            ProtoValue protoKey = ProtoUtils.serializeAsProtoString( entry.getKey() );
-            ProtoValue protoValue;
-            try {
-                protoValue = entry.getValue().serialize( streamingIndex );
-            } catch ( SQLException e ) {
-                throw new RuntimeException( "Should not be thrown. Unknown value encountered." );
-            }
-            return ProtoEntry.newBuilder()
-                    .setKey( protoKey )
-                    .setValue( protoValue )
-                    .build();
-        } ).collect( Collectors.toList() );
-
-        return ProtoDocument.newBuilder().addAllEntries( protoEntries ).build();
+        return ProtoDocument.newBuilder().putAllEntries( entrySet().stream().collect(Collectors.toMap(
+                Entry::getKey, // keys are always strings
+                e -> {
+                    try {
+                        return e.getValue().serialize( streamingIndex );
+                    } catch ( SQLException ex ) {
+                        throw new RuntimeException( ex );
+                    }
+                }
+        )) ).build();
     }
 
 }
