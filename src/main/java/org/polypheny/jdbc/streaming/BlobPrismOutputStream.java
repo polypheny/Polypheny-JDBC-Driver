@@ -33,6 +33,7 @@ public class BlobPrismOutputStream extends PrismOutputStream {
 
     public BlobPrismOutputStream( Blob blob ) {
         this.blob = blob;
+        setName( "BinaryPrismOutputStream" );
     }
 
 
@@ -40,6 +41,7 @@ public class BlobPrismOutputStream extends PrismOutputStream {
         setStatementId( statementId );
         setStreamId( streamId );
         this.client = prismInterfaceClient;
+        start();
     }
 
 
@@ -63,7 +65,7 @@ public class BlobPrismOutputStream extends PrismOutputStream {
                 boolean isLast = (offset + bytesRead) >= size;
                 byte[] frameData = new byte[bytesRead];
                 System.arraycopy( buffer, 0, frameData, 0, bytesRead );
-                StreamAcknowledgement ack = client.streamBinary( frameData, isLast, streamId, STREAMING_TIMEOUT );
+                StreamAcknowledgement ack = client.streamBinary( frameData, isLast, statementId, streamId, STREAMING_TIMEOUT );
                 if ( ack.getCloseStream() ) {
                     return;
                 }

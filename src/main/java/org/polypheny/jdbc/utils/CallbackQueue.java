@@ -47,6 +47,7 @@ public class CallbackQueue<T> {
         while ( !bIsCompleted ) {
             isCompleted.await();
         }
+        queueLock.unlock(); // was missing?
     }
 
 

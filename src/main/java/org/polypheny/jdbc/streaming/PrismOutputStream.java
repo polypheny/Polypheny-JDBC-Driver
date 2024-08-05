@@ -22,21 +22,22 @@ import org.polypheny.jdbc.multimodel.PolyStatement;
 public abstract class PrismOutputStream extends Thread {
 
     private static final long NO_STREAM_ID = -1;
-    protected static final int STREAMING_TIMEOUT = 100000;
+    protected static final int STREAMING_TIMEOUT = 0;
 
     protected int statementId = PolyStatement.NO_STATEMENT_ID;
     protected long streamId = NO_STREAM_ID;
 
 
     protected void setStatementId( int statementId ) {
-        if ( statementId != PolyStatement.NO_STATEMENT_ID ) {
+        if ( this.statementId != PolyStatement.NO_STATEMENT_ID ) {
             throw new IllegalStateException( "Statement id can only be set once." );
         }
+        this.statementId = statementId;
     }
 
 
     protected void setStreamId( long streamId ) {
-        if ( streamId != NO_STREAM_ID ) {
+        if ( this.streamId != NO_STREAM_ID ) {
             throw new IllegalStateException( "Stream id can only be set once." );
         }
         this.streamId = streamId;

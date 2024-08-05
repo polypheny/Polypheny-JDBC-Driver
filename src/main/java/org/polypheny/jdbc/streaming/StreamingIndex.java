@@ -36,8 +36,8 @@ public class StreamingIndex {
 
 
     public long register( PrismOutputStream stream ) {
-        long streamId = streamIdGenerator.getAndIncrement();
         streams.add( stream );
+        long streamId = streamIdGenerator.getAndIncrement();
         stream.buildAndRun(statementId, streamId, prismInterfaceClient );
         return streamId;
     }

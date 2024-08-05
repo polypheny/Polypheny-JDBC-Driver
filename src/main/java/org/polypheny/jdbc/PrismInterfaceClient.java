@@ -220,7 +220,6 @@ public class PrismInterfaceClient {
                 .setParameters( parameters )
                 .setFetchSize( fetchSize )
                 .build();
-
         return rpc.executeIndexedStatement( request, timeout );
     }
 
@@ -306,13 +305,14 @@ public class PrismInterfaceClient {
     }
 
 
-    public StreamAcknowledgement streamBinary( byte[] bytes, boolean is_last, long streamId, int timeout ) throws PrismInterfaceServiceException {
+    public StreamAcknowledgement streamBinary( byte[] bytes, boolean is_last, int statementId, long streamId, int timeout ) throws PrismInterfaceServiceException {
         StreamFrame frame = StreamFrame.newBuilder()
                 .setBinary( ByteString.copyFrom( bytes ) )
                 .setIsLast( is_last )
                 .build();
         StreamSendRequest streamSendRequest = StreamSendRequest.newBuilder()
                 .setFrame( frame )
+                .setStatementId( statementId )
                 .setStreamId( streamId )
                 .build();
         return rpc.stream( streamSendRequest, timeout );

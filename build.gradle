@@ -120,7 +120,7 @@ test {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
     minHeapSize = "128m"
-    maxHeapSize = "1G" // One of the tests involves 300MB of binary data to test streaming.
+    maxHeapSize = "10G" // One of the tests involves 300MB of binary data to test streaming.
     jvmArgs '-XX:MaxPermSize=256m'
 }
 

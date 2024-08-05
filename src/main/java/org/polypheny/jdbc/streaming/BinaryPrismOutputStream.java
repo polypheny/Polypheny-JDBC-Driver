@@ -17,7 +17,6 @@
 package org.polypheny.jdbc.streaming;
 
 import org.polypheny.jdbc.PrismInterfaceClient;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.StreamAcknowledgement;
 
@@ -27,15 +26,19 @@ public class BinaryPrismOutputStream extends PrismOutputStream {
     private PrismInterfaceClient client;
 
 
-    public BinaryPrismOutputStream( byte[] data) {
+    public BinaryPrismOutputStream( byte[] data ) {
         this.data = data;
+        setName( "BinaryPrismOutputStream" );
     }
 
-    public void buildAndRun(int statementId, long streamId, PrismInterfaceClient prismInterfaceClient ) {
-        setStreamId( statementId );
+
+    public void buildAndRun( int statementId, long streamId, PrismInterfaceClient prismInterfaceClient ) {
+        setStatementId( statementId );
         setStreamId( streamId );
         this.client = prismInterfaceClient;
+        start();
     }
+
 
     @Override
     public void run() {
@@ -51,11 +54,11 @@ public class BinaryPrismOutputStream extends PrismOutputStream {
             System.arraycopy( data, offset, frameData, 0, frameSize );
             boolean isLast = (offset + frameSize) >= size;
             try {
-                StreamAcknowledgement ack = client.streamBinary( frameData, isLast, streamId, STREAMING_TIMEOUT );
+                StreamAcknowledgement ack = client.streamBinary( frameData, isLast, statementId, streamId, STREAMING_TIMEOUT );
                 if ( ack.getCloseStream() ) {
                     return;
                 }
-            } catch ( PrismInterfaceServiceException e ) {
+            } catch ( Exception e ) {
                 throw new RuntimeException( "Error streaming binary data", e );
             }
             offset += frameSize;
