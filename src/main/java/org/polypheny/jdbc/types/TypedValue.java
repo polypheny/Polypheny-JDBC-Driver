@@ -64,6 +64,7 @@ import org.polypheny.jdbc.streaming.BlobPrismOutputStream;
 import org.polypheny.jdbc.streaming.BinaryPrismInputStream;
 import org.polypheny.jdbc.streaming.StreamingIndex;
 import org.polypheny.jdbc.streaming.StringPrismInputStream;
+import org.polypheny.jdbc.streaming.StringPrismOutputStream;
 import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 import org.polypheny.prism.ProtoBigDecimal;
@@ -1295,7 +1296,7 @@ public class TypedValue implements Convertible {
             case INTERVAL:
                 return serializeAsInterval();
             case STRING:
-                return serializeAsProtoString();
+                return serializeAsProtoString(streamingIndex);
             case BINARY:
                 return serializeAsProtoBinary( streamingIndex );
             case NULL:
@@ -1422,8 +1423,30 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoString() {
-        return ProtoUtils.serializeAsProtoString( varcharValue );
+    private ProtoValue serializeAsProtoString(StreamingIndex streamingIndex) {
+        //return ProtoUtils.serializeAsProtoString( varcharValue );
+
+
+
+
+        ProtoString protoString;
+        if ( varcharValue.length() * 2 < STREAMING_THRESHOLD ) {
+            protoString = ProtoString.newBuilder()
+                    .setString( varcharValue )
+                    .build();
+            return ProtoValue.newBuilder()
+                    .setString( protoString )
+                    .build();
+        }
+
+        long streamId = streamingIndex.register( new StringPrismOutputStream( varcharValue ) );
+        protoString = ProtoString.newBuilder()
+                .setStreamId( streamId )
+                .setIsForwardOnly( true )
+                .build();
+        return ProtoValue.newBuilder()
+                .setString( protoString )
+                .build();
     }
 
 

@@ -318,6 +318,19 @@ public class PrismInterfaceClient {
         return rpc.stream( streamSendRequest, timeout );
     }
 
+    public StreamAcknowledgement streamString( String substring, boolean is_last, int statementId, long streamId, int timeout ) throws PrismInterfaceServiceException {
+        StreamFrame frame = StreamFrame.newBuilder()
+                .setString( substring )
+                .setIsLast( is_last )
+                .build();
+        StreamSendRequest streamSendRequest = StreamSendRequest.newBuilder()
+                .setFrame( frame )
+                .setStatementId( statementId )
+                .setStreamId( streamId )
+                .build();
+        return rpc.stream( streamSendRequest, timeout );
+    }
+
 
     private String getServerApiVersionString( ConnectionResponse response ) {
         return response.getMajorApiVersion() + "." + response.getMinorApiVersion();
