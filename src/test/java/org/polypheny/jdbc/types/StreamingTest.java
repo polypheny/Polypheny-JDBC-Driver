@@ -18,13 +18,11 @@ package org.polypheny.jdbc.types;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -40,24 +38,23 @@ import org.polypheny.jdbc.multimodel.ScalarResult;
 
 public class StreamingTest {
 
-    private static final String DROP_IF_STATEMENT = "DROP TABLE IF EXISTS file_table";
-    private static final String CREATE_STATEMENT = "CREATE TABLE file_table (id INT PRIMARY KEY, data FILE)";
-    private static final String INSERT_STATEMENT = "INSERT INTO file_table (id, data) VALUES (?, ?)";
-    private static final String QUERY = "SELECT data FROM file_table WHERE id = 1";
-
+    private static final String FILE_DROP_IF_STATEMENT = "DROP TABLE IF EXISTS file_table";
+    private static final String FILE_CREATE_STATEMENT = "CREATE TABLE file_table (id INT PRIMARY KEY, data FILE)";
+    private static final String FILE_INSERT_STATEMENT = "INSERT INTO file_table (id, data) VALUES (?, ?)";
+    private static final String FILE_QUERY = "SELECT data FROM file_table WHERE id = 1";
 
     @Test
-    public void simpleFileStreamingTest() throws InterruptedException {
+    public void simpleFileStreamingTest() {
         try ( Connection connection = TestHelper.getConnection() ) {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
 
-            polyStatement.execute( "public", "sql", DROP_IF_STATEMENT );
-            polyStatement.execute( "public", "sql", CREATE_STATEMENT );
+            polyStatement.execute( "public", "sql", FILE_DROP_IF_STATEMENT );
+            polyStatement.execute( "public", "sql", FILE_CREATE_STATEMENT );
 
-            polyStatement.prepare( "public", "sql", INSERT_STATEMENT );
+            polyStatement.prepare( "public", "sql", FILE_INSERT_STATEMENT );
             byte[] expected = createTestData();
 
             List<TypedValue> parameters = new ArrayList<>( 2 );
@@ -66,7 +63,38 @@ public class StreamingTest {
             Result result = polyStatement.executePrepared( parameters );
             result.unwrap( ScalarResult.class );
 
-            RelationalResult result2 = polyStatement.execute( "public", "sql", QUERY ).unwrap( RelationalResult.class );
+            RelationalResult result2 = polyStatement.execute( "public", "sql", FILE_QUERY ).unwrap( RelationalResult.class );
+            InputStream bis = result2.iterator().next().get( "data" ).asBlob().getBinaryStream();
+            byte[] received = collectStream( bis );
+
+            Assertions.assertArrayEquals( expected, received );
+        } catch ( SQLException | IOException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @Test
+    public void simpleFileStreamingTest2() {
+        try ( Connection connection = TestHelper.getConnection() ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
+                fail( "Driver must support unwrapping to PolyphenyConnection" );
+            }
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
+
+            polyStatement.execute( "public", "sql", FILE_DROP_IF_STATEMENT );
+            polyStatement.execute( "public", "sql", FILE_CREATE_STATEMENT );
+
+            polyStatement.prepare( "public", "sql", FILE_INSERT_STATEMENT );
+            byte[] expected = createTestData();
+
+            List<TypedValue> parameters = new ArrayList<>( 2 );
+            parameters.add( TypedValue.fromInteger( 1 ) );
+            parameters.add( TypedValue.fromBlob(new ByteArrayInputStream( expected )));
+            Result result = polyStatement.executePrepared( parameters );
+            result.unwrap( ScalarResult.class );
+
+            RelationalResult result2 = polyStatement.execute( "public", "sql", FILE_QUERY ).unwrap( RelationalResult.class );
             InputStream bis = result2.iterator().next().get( "data" ).asBlob().getBinaryStream();
             byte[] received = collectStream( bis );
 
