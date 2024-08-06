@@ -22,10 +22,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,12 @@ public class StreamingTest {
     private static final String FILE_CREATE_STATEMENT = "CREATE TABLE file_table (id INT PRIMARY KEY, data FILE)";
     private static final String FILE_INSERT_STATEMENT = "INSERT INTO file_table (id, data) VALUES (?, ?)";
     private static final String FILE_QUERY = "SELECT data FROM file_table WHERE id = 1";
+
+    private static final String STRING_DROP_IF_STATEMENT = "DROP TABLE IF EXISTS string_table";
+    private static final String STRING_CREATE_STATEMENT = "CREATE TABLE string_table (id INT PRIMARY KEY, data VARCHAR)";
+    private static final String STRING_INSERT_STATEMENT = "INSERT INTO string_table (id, data) VALUES (?, ?)";
+    private static final String STRING_QUERY = "SELECT data FROM string_table WHERE id = 1";
+
 
     @Test
     public void simpleFileStreamingTest() {
@@ -104,6 +112,35 @@ public class StreamingTest {
         }
     }
 
+    @Test
+    public void simpleStringStreamingTest() {
+        try (Connection connection = TestHelper.getConnection()) {
+            if (!connection.isWrapperFor(PolyConnection.class)) {
+                fail("Driver must support unwrapping to PolyphenyConnection");
+            }
+            PolyStatement polyStatement = connection.unwrap(PolyConnection.class).createPolyStatement();
+
+            polyStatement.execute("public", "sql", STRING_DROP_IF_STATEMENT);
+            polyStatement.execute("public", "sql", STRING_CREATE_STATEMENT);
+
+            polyStatement.prepare("public", "sql", STRING_INSERT_STATEMENT);
+            String expected = createTestStringData();
+
+            List<TypedValue> parameters = new ArrayList<>(2);
+            parameters.add(TypedValue.fromInteger(1));
+            parameters.add(TypedValue.fromString(expected));
+            Result result = polyStatement.executePrepared(parameters);
+            result.unwrap(ScalarResult.class);
+
+            RelationalResult result2 = polyStatement.execute("public", "sql", STRING_QUERY).unwrap(RelationalResult.class);
+            String received = result2.iterator().next().get("data").asString();
+
+            Assertions.assertEquals(expected, received);
+        } catch ( SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     private byte[] collectStream( InputStream inputStream ) throws IOException {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -130,4 +167,10 @@ public class StreamingTest {
         return data;
     }
 
+
+    private String createTestStringData() {
+        char[] data = new char[300 * 1024 * 1024];
+        Arrays.fill(data, 'A');
+        return new String(data);
+    }
 }
