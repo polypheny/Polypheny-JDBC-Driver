@@ -56,13 +56,14 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.properties.DriverProperties;
 import org.polypheny.jdbc.streaming.BinaryPrismOutputStream;
 import org.polypheny.jdbc.streaming.BlobPrismOutputStream;
+import org.polypheny.jdbc.streaming.BinaryPrismInputStream;
 import org.polypheny.jdbc.streaming.StreamingIndex;
+import org.polypheny.jdbc.streaming.StringPrismInputStream;
 import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 import org.polypheny.prism.ProtoBigDecimal;
@@ -77,6 +78,7 @@ import org.polypheny.prism.ProtoInterval;
 import org.polypheny.prism.ProtoList;
 import org.polypheny.prism.ProtoLong;
 import org.polypheny.prism.ProtoNull;
+import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoTime;
 import org.polypheny.prism.ProtoTimestamp;
 import org.polypheny.prism.ProtoValue;
@@ -1198,7 +1200,7 @@ public class TypedValue implements Convertible {
                     bigintValue = serialized.getLong().getLong();
                     break;
                 case BINARY:
-                    binaryValue = serialized.getBinary().getBinary().toByteArray();
+                    binaryValue = deserializeToBinary( serialized.getBinary() );
                     break;
                 case DATE:
                     dateValue = new Date( serialized.getDate().getDate() * MILLISECONDS_PER_DAY );
@@ -1212,7 +1214,7 @@ public class TypedValue implements Convertible {
                 case NULL:
                     break;
                 case STRING:
-                    varcharValue = serialized.getString().getString();
+                    varcharValue = deserializeToString( serialized.getString() );
                     break;
                 case TIME:
                     timeValue = new Time( serialized.getTime().getTime() );
@@ -1239,6 +1241,32 @@ public class TypedValue implements Convertible {
                     throw new RuntimeException( "Cannot deserialize ProtoValue of case " + valueCase );
             }
         } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    private byte[] deserializeToBinary( ProtoBinary protoBinary ) {
+        if ( protoBinary.hasBinary() ) {
+            return protoBinary.getBinary().toByteArray();
+        }
+        InputStream stream = new BinaryPrismInputStream( protoBinary.getStatementId(), protoBinary.getStreamId(), protoBinary.getIsForwardOnly(), connection );
+        try {
+            return collectByteStream( stream );
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    private String deserializeToString( ProtoString protoString ) {
+        if ( protoString.hasString() ) {
+            return protoString.getString();
+        }
+        Reader stream = new StringPrismInputStream(protoString.getStatementId(), protoString.getStreamId(), protoString.getIsForwardOnly(), connection);
+        try {
+            return collectCharacterStream( stream );
+        } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
     }
@@ -1277,7 +1305,7 @@ public class TypedValue implements Convertible {
             case FILE:
                 return serializeAsProtoFile( streamingIndex );
             case DOCUMENT:
-                return serializeAsProtoDocument(streamingIndex);
+                return serializeAsProtoDocument( streamingIndex );
         }
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Failed to serialize unknown type: " + valueCase.name() );
     }
@@ -1308,9 +1336,9 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoDocument(StreamingIndex streamingIndex) {
+    private ProtoValue serializeAsProtoDocument( StreamingIndex streamingIndex ) {
         return ProtoValue.newBuilder()
-                .setDocument( ((PolyDocument) otherValue).serialize(streamingIndex) )
+                .setDocument( ((PolyDocument) otherValue).serialize( streamingIndex ) )
                 .build();
     }
 
@@ -1327,7 +1355,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoList( StreamingIndex streamingIndex) throws SQLException {
+    private ProtoValue serializeAsProtoList( StreamingIndex streamingIndex ) throws SQLException {
         List<ProtoValue> elements = new ArrayList<>();
         for ( Object object : (Object[]) arrayValue.getArray() ) {
             elements.add( TypedValue.fromObject( object ).serialize( streamingIndex ) );
@@ -1423,7 +1451,7 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoBinary( StreamingIndex streamingIndex) {
+    private ProtoValue serializeAsProtoBinary( StreamingIndex streamingIndex ) {
         ProtoBinary protoBinary;
         if ( binaryValue.length < STREAMING_THRESHOLD ) {
             protoBinary = ProtoBinary.newBuilder()

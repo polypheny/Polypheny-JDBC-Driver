@@ -24,7 +24,7 @@ import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.prism.StreamFrame;
 import org.polypheny.prism.StreamFrame.DataCase;
 
-public class PrismInputStream extends InputStream {
+public class BinaryPrismInputStream extends InputStream {
 
     private static final long NO_MARK = -1;
     private static final long NO_LIMIT = -1;
@@ -49,7 +49,7 @@ public class PrismInputStream extends InputStream {
     private boolean isClosed = false;
 
 
-    public PrismInputStream( int statementId, long streamId, boolean isForwardOnly, PolyConnection connection ) {
+    public BinaryPrismInputStream( int statementId, long streamId, boolean isForwardOnly, PolyConnection connection ) {
         this.connection = connection;
         this.statementId = statementId;
         this.streamId = streamId;
@@ -60,7 +60,7 @@ public class PrismInputStream extends InputStream {
     }
 
 
-    public PrismInputStream( PrismInputStream other, long limit, long startPosition ) {
+    public BinaryPrismInputStream( BinaryPrismInputStream other, long limit, long startPosition ) {
         this.currentPosition = startPosition;
         this.connection = other.connection;
         this.statementId = other.statementId;
