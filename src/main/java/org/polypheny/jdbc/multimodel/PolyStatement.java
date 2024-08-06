@@ -123,6 +123,7 @@ public class PolyStatement {
             StatementBatchResponse response = callback.takeNext();
             if ( statementId == NO_STATEMENT_ID ) {
                 statementId = response.getBatchId();
+                streamingIndex.update( statementId );
             }
             if ( response.getScalarsCount() == 0 ) {
                 continue;
@@ -138,12 +139,14 @@ public class PolyStatement {
         if ( statement.contains( "?" ) ) {
             PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement( namespaceName, languageName, statement, timeout );
             statementId = signature.getStatementId();
+            streamingIndex.update( statementId );
             isPrepared = true;
             return;
         }
         if ( statement.contains( ":" ) ) {
             org.polypheny.prism.PreparedStatementSignature signature = connection.getPrismInterfaceClient().prepareNamedStatement( namespaceName, languageName, statement, timeout );
             statementId = signature.getStatementId();
+            streamingIndex.update( statementId );
             isPrepared = true;
             return;
         }

@@ -53,7 +53,6 @@ public class PolyBlob implements Blob {
                 binaryValue = protoFile.getBinary().toByteArray();
                 break;
             case STREAM_ID:
-                //TODO: actually set statement id
                 prismInputStream = new PrismInputStream(protoFile.getStatementId(), protoFile.getStreamId(), protoFile.getIsForwardOnly(), connection );
         }
     }

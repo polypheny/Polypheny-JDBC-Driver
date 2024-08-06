@@ -28,7 +28,7 @@ public class PrismInputStream extends InputStream {
 
     private static final long NO_MARK = -1;
     private static final long NO_LIMIT = -1;
-    private static final int BUFFER_SIZE = 100001;
+    private static final int BUFFER_SIZE = 10000;
 
     private final PolyConnection connection;
     private final int statementId;
@@ -54,18 +54,19 @@ public class PrismInputStream extends InputStream {
         this.statementId = statementId;
         this.streamId = streamId;
         this.isForwardOnly = isForwardOnly;
-        this.buffer = new byte[BUFFER_SIZE];
+        this.buffer = new byte[0];
         this.bufferStartPosition = 0;
         this.limit = NO_LIMIT;
     }
 
-    public PrismInputStream(PrismInputStream other, long limit, long startPosition) {
+
+    public PrismInputStream( PrismInputStream other, long limit, long startPosition ) {
         this.currentPosition = startPosition;
         this.connection = other.connection;
         this.statementId = other.statementId;
         this.streamId = other.streamId;
         this.isForwardOnly = other.isForwardOnly;
-        this.buffer = new byte[BUFFER_SIZE];
+        this.buffer = other.buffer.clone();
         this.bufferStartPosition = other.bufferStartPosition;
         this.limit = limit;
     }
@@ -125,9 +126,8 @@ public class PrismInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        try {
-            fetchIfEmpty();
-        } catch ( IOException e ) {
+        fetchIfEmpty();
+        if ( !hasMoreData() ) {
             return -1;
         }
         int bufferReadPosition = getBufferReadPosition();
@@ -138,9 +138,6 @@ public class PrismInputStream extends InputStream {
 
     private void fetchIfEmpty() throws IOException {
         if ( available() <= 0 ) {
-            if ( isLast ) {
-                throw new IOException( "No more data." );
-            }
             fetchNextBytes();
         }
     }
@@ -162,8 +159,8 @@ public class PrismInputStream extends InputStream {
         }
         this.isLast = frame.getIsLast();
         this.bufferStartPosition = fetchPosition;
-        if (frame.getDataCase() != DataCase.BINARY) {
-            throw new RuntimeException("Stream type must be binary.");
+        if ( frame.getDataCase() != DataCase.BINARY ) {
+            throw new RuntimeException( "Stream type must be binary." );
         }
         this.buffer = frame.getBinary().toByteArray();
     }
@@ -171,10 +168,9 @@ public class PrismInputStream extends InputStream {
 
     @Override
     public int read( byte[] b ) throws IOException {
-        try {
-            fetchIfEmpty();
-        } catch ( IOException e ) {
-            return -1;
+        fetchIfEmpty();
+        if ( !hasMoreData() ) {
+            return 1;
         }
         int bytesCopied = 0;
         while ( bytesCopied < b.length && hasMoreData() ) {
@@ -230,6 +226,10 @@ public class PrismInputStream extends InputStream {
 
     @Override
     public int read( byte[] b, int off, int len ) throws IOException {
+        fetchIfEmpty();
+        if (!hasMoreData() ) {
+            return -1;
+        }
         int bytesCopied = 0;
         while ( bytesCopied < len && hasMoreData() ) {
             int bufferReadPosition = getBufferReadPosition();

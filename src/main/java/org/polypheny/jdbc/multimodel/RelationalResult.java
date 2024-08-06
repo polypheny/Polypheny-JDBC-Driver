@@ -109,7 +109,7 @@ public class RelationalResult extends Result implements Iterable<PolyRow> {
         @Override
         public PolyRow next() {
             if ( !hasNext() ) {
-                throw new NoSuchElementException( "There are no more documents" );
+                throw new NoSuchElementException( "There are no more rows" );
             }
             return rows.get( ++index );
         }
