@@ -122,8 +122,8 @@ public class PrismInterfaceClient {
         requestBuilder
                 .setMajorApiVersion( VersionUtil.MAJOR_API_VERSION )
                 .setMinorApiVersion( VersionUtil.MINOR_API_VERSION )
-                //.setClientUuid( clientUUID )
-                .setConnectionProperties( buildConnectionProperties( connectionProperties ) );
+                .setConnectionProperties( buildConnectionProperties( connectionProperties ) )
+                .addAllFeatures( VersionUtil.supportedFeatures );
         ConnectionResponse connectionResponse = rpc.connect( requestBuilder.build(), timeout );
         if ( !connectionResponse.getIsCompatible() ) {
             throw new PrismInterfaceServiceException( "client version " + getClientApiVersionString()

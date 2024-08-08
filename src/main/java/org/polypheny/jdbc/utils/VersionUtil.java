@@ -19,6 +19,9 @@ package org.polypheny.jdbc.utils;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class VersionUtil {
+
+    public static List<String> supportedFeatures;
 
     private static final String VERSION_FILE = "polypheny-jdbc-driver-version.properties";
     private static final String API_VERSION_PROPERTIES = "prism-api-version.properties";
@@ -72,6 +77,10 @@ public class VersionUtil {
         } catch ( IOException e ) {
             throw new RuntimeException( "Error loading API version properties", e );
         }
+
+        supportedFeatures = new ArrayList<>();
+        supportedFeatures.add("client_streaming");
+        supportedFeatures.add("server_streaming");
     }
 
 }
