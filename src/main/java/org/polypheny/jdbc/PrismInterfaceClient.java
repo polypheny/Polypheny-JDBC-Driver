@@ -18,6 +18,7 @@ package org.polypheny.jdbc;
 
 import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +38,6 @@ import org.polypheny.prism.CloseResultRequest;
 import org.polypheny.prism.CloseStatementRequest;
 import org.polypheny.prism.CommitRequest;
 import org.polypheny.prism.ConnectionCheckRequest;
-import org.polypheny.prism.ConnectionProperties;
 import org.polypheny.prism.ConnectionPropertiesUpdateRequest;
 import org.polypheny.prism.ConnectionRequest;
 import org.polypheny.prism.ConnectionResponse;
@@ -122,7 +122,7 @@ public class PrismInterfaceClient {
         requestBuilder
                 .setMajorApiVersion( VersionUtil.MAJOR_API_VERSION )
                 .setMinorApiVersion( VersionUtil.MINOR_API_VERSION )
-                .setConnectionProperties( buildConnectionProperties( connectionProperties ) )
+                .putAllProperties( buildConnectionProperties( connectionProperties ) )
                 .addAllFeatures( VersionUtil.supportedFeatures );
         ConnectionResponse connectionResponse = rpc.connect( requestBuilder.build(), timeout );
         if ( !connectionResponse.getIsCompatible() ) {
@@ -133,12 +133,15 @@ public class PrismInterfaceClient {
     }
 
 
-    private ConnectionProperties buildConnectionProperties( PolyphenyConnectionProperties properties ) {
-        ConnectionProperties.Builder propertiesBuilder = ConnectionProperties.newBuilder();
-        Optional.ofNullable( properties.getNamespaceName() ).ifPresent( propertiesBuilder::setNamespaceName );
-        return propertiesBuilder
-                .setIsAutoCommit( properties.isAutoCommit() )
-                .build();
+    private Map<String, String> buildConnectionProperties( PolyphenyConnectionProperties properties ) {
+        Map<String, String> propertiesMap = new HashMap<>();
+        if (properties.getNamespaceName() != null) {
+            propertiesMap.put( VersionUtil.DEFAULT_NAMESPACE_PROPERTY_KEY, properties.getNamespaceName() );
+        }
+        if (properties.isAutoCommit()) {
+            propertiesMap.put(VersionUtil.AUTOCOMMIT_PROPERTY_KEY, Boolean.toString( properties.isAutoCommit() ) );
+        }
+        return propertiesMap;
     }
 
 
@@ -318,6 +321,7 @@ public class PrismInterfaceClient {
         return rpc.stream( streamSendRequest, timeout );
     }
 
+
     public StreamAcknowledgement streamString( String substring, boolean is_last, int statementId, long streamId, int timeout ) throws PrismInterfaceServiceException {
         StreamFrame frame = StreamFrame.newBuilder()
                 .setString( substring )
@@ -386,7 +390,7 @@ public class PrismInterfaceClient {
 
     public void setConnectionProperties( PolyphenyConnectionProperties connectionProperties, int timeout ) throws PrismInterfaceServiceException {
         ConnectionPropertiesUpdateRequest request = ConnectionPropertiesUpdateRequest.newBuilder()
-                .setConnectionProperties( buildConnectionProperties( connectionProperties ) )
+                .putAllProperties( buildConnectionProperties( connectionProperties ) )
                 .build();
         rpc.updateConnectionProperties( request, timeout );
     }

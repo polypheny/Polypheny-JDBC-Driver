@@ -46,6 +46,12 @@ public class VersionUtil {
     public static final int MINOR_API_VERSION;
     public static final String API_VERSION_STRING;
 
+    public static final String AUTOCOMMIT_PROPERTY_KEY = "autocommit";
+    public static final String STREAM_ALL_PROPERTY_KEY = "stream_all";
+    public static final String DEFAULT_NAMESPACE_PROPERTY_KEY = "namespace";
+    public static final String PREFERRED_MESSAGE_SIZE_PROPERTY_KEY = "preferred_message_size";
+    public static final String FETCH_SIZE_PROPERTY_KEY = "fetch_size";
+
 
     static {
         Properties properties = new Properties();
