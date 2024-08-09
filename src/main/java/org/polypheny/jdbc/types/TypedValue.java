@@ -1424,11 +1424,6 @@ public class TypedValue implements Convertible {
 
 
     private ProtoValue serializeAsProtoString(StreamingIndex streamingIndex) {
-        //return ProtoUtils.serializeAsProtoString( varcharValue );
-
-
-
-
         ProtoString protoString;
         if ( varcharValue.length() * 2 < STREAMING_THRESHOLD ) {
             protoString = ProtoString.newBuilder()
