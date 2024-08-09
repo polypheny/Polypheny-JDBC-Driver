@@ -34,14 +34,14 @@ public class PolyDocument extends HashMap<String, TypedValue> {
         super();
         putAll( document.getEntriesMap().entrySet().stream().collect(
                 Collectors.toMap(
-                        Entry::getKey, // keys are always strings
+                        Entry::getKey,
                         e -> new TypedValue( e.getValue(), polyConnection )
                 ) ) );
     }
 
     public ProtoDocument serialize( StreamingIndex streamingIndex ) {
         return ProtoDocument.newBuilder().putAllEntries( entrySet().stream().collect( Collectors.toMap(
-                Entry::getKey, // keys are always strings
+                Entry::getKey,
                 e -> {
                     try {
                         return e.getValue().serialize( streamingIndex );

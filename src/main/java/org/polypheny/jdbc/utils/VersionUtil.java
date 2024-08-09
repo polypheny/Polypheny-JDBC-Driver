@@ -20,7 +20,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +47,7 @@ public class VersionUtil {
 
     public static final String AUTOCOMMIT_PROPERTY_KEY = "autocommit";
     public static final String STREAM_ALL_PROPERTY_KEY = "stream_all";
-    public static final String DEFAULT_NAMESPACE_PROPERTY_KEY = "namespace";
+    public static final String NAMESPACE_PROPERTY_KEY = "namespace";
     public static final String PREFERRED_MESSAGE_SIZE_PROPERTY_KEY = "preferred_message_size";
     public static final String FETCH_SIZE_PROPERTY_KEY = "fetch_size";
 

@@ -136,7 +136,7 @@ public class PrismInterfaceClient {
     private Map<String, String> buildConnectionProperties( PolyphenyConnectionProperties properties ) {
         Map<String, String> propertiesMap = new HashMap<>();
         if (properties.getNamespaceName() != null) {
-            propertiesMap.put( VersionUtil.DEFAULT_NAMESPACE_PROPERTY_KEY, properties.getNamespaceName() );
+            propertiesMap.put( VersionUtil.NAMESPACE_PROPERTY_KEY, properties.getNamespaceName() );
         }
         if (properties.isAutoCommit()) {
             propertiesMap.put(VersionUtil.AUTOCOMMIT_PROPERTY_KEY, Boolean.toString( properties.isAutoCommit() ) );
