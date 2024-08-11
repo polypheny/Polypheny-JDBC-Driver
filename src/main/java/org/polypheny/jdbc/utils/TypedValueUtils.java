@@ -114,7 +114,7 @@ public class TypedValueUtils {
 
 
     public static Date getDateInCalendar( Date date, Calendar calendar ) {
-        return new Date( getTimeLongInCalendar( date.getTime(), calendar ) );
+        return new Date( getTimeLongInCalendar(date.getTime() , calendar ) );
     }
 
 
@@ -373,19 +373,15 @@ public class TypedValueUtils {
             return buildTypedValueFromCalendar( (Calendar) value, targetSqlType );
         }
         if ( value instanceof java.util.Date ) {
-            // requires conversion
             return buildTypedValueFromDate( (java.util.Date) value, targetSqlType );
         }
         if ( value instanceof LocalDate ) {
-            // requires conversion
             return buildTypedValueFromLocalDate( (LocalDate) value, targetSqlType );
         }
         if ( value instanceof LocalTime ) {
-            // requires conversion
             return buildTypedValueFromLocalTime( (LocalTime) value, targetSqlType );
         }
         if ( value instanceof LocalDateTime ) {
-            //requires conversion
             return buildTypedValueFromLocalDateTime( (LocalDateTime) value, targetSqlType );
         }
         if ( value instanceof OffsetTime ) {

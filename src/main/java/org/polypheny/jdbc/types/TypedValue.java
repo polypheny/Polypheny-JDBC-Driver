@@ -229,6 +229,9 @@ public class TypedValue implements Convertible {
 
 
     public static TypedValue fromDate( Date dateValue, Calendar calendar ) {
+        if (dateValue == null) {
+            return fromNull();
+        }
         return fromDate( TypedValueUtils.getDateInCalendar( dateValue, calendar ) );
     }
 
