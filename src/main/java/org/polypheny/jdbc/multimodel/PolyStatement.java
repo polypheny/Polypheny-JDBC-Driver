@@ -49,7 +49,7 @@ public class PolyStatement {
 
     public PolyStatement( PolyConnection polyConnection ) {
         this.connection = polyConnection;
-        this.streamingIndex = new StreamingIndex(getPrismInterfaceClient());
+        this.streamingIndex = new StreamingIndex( getPrismInterfaceClient() );
     }
 
 
@@ -134,23 +134,23 @@ public class PolyStatement {
     }
 
 
-    public void prepare( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
+    public void prepareIndexed( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
         int timeout = connection.getTimeout();
-        if ( statement.contains( "?" ) ) {
-            PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement( namespaceName, languageName, statement, timeout );
-            statementId = signature.getStatementId();
-            streamingIndex.update( statementId );
-            isPrepared = true;
-            return;
-        }
-        if ( statement.contains( ":" ) ) {
-            org.polypheny.prism.PreparedStatementSignature signature = connection.getPrismInterfaceClient().prepareNamedStatement( namespaceName, languageName, statement, timeout );
-            statementId = signature.getStatementId();
-            streamingIndex.update( statementId );
-            isPrepared = true;
-            return;
-        }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Statement must be either of the indexed or named parameterized kind." );
+
+        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement( namespaceName, languageName, statement, timeout );
+        statementId = signature.getStatementId();
+        streamingIndex.update( statementId );
+        isPrepared = true;
+    }
+
+
+    public void prepareNamed( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
+        int timeout = connection.getTimeout();
+
+        org.polypheny.prism.PreparedStatementSignature signature = connection.getPrismInterfaceClient().prepareNamedStatement( namespaceName, languageName, statement, timeout );
+        statementId = signature.getStatementId();
+        streamingIndex.update( statementId );
+        isPrepared = true;
     }
 
 
