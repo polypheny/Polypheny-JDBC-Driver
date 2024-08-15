@@ -216,6 +216,9 @@ public class TypedValue implements Convertible {
 
 
     public static TypedValue fromDate( Date dateValue, Calendar calendar ) {
+        if ( dateValue == null ) {
+            return fromNull();
+        }
         return fromDate( TypedValueUtils.getDateInCalendar( dateValue, calendar ) );
     }
 
@@ -1462,44 +1465,11 @@ public class TypedValue implements Convertible {
 
     @Override
     public String toString() {
-        if ( isSerialized ) {
-            deserialize();
+        try {
+            return asString();
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
         }
-        switch ( valueCase ) {
-            case BOOLEAN:
-                return "" + booleanValue;
-            case INTEGER:
-                return "" + integerValue;
-            case LONG:
-                return "" + bigintValue;
-            case BIG_DECIMAL:
-                return "" + bigDecimalValue;
-            case FLOAT:
-                return "" + floatValue;
-            case DOUBLE:
-                return "" + doubleValue;
-            case DATE:
-                return "" + dateValue;
-            case TIME:
-                return "" + timeValue;
-            case TIMESTAMP:
-                return "" + timestampValue;
-            case INTERVAL:
-                return "" + otherValue;
-            case STRING:
-                return varcharValue;
-            case BINARY:
-                return "BINARY";
-            case NULL:
-                return "NULL";
-            case LIST:
-                return "LIST";
-            case FILE:
-                return "FILE";
-            case DOCUMENT:
-                return "DOCUMENT";
-        }
-        return "";
     }
 
 }
