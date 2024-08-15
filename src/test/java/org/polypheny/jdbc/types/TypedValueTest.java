@@ -441,7 +441,8 @@ public class TypedValueTest {
         Calendar calendar = Calendar.getInstance();
         calendar.set( 2022, Calendar.JANUARY, 1 );
 
-        assertThrows( NullPointerException.class, () -> TypedValue.fromDate( null, calendar ) );
+        TypedValue value = TypedValue.fromDate( null, calendar );
+        assertTrue( value.isNull() );
     }
 
 
