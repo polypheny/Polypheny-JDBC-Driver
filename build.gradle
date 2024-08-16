@@ -14,7 +14,7 @@ description = "A standards-compliant JDBC driver for Polypheny."
 
 def versionMajor = 2
 def versionMinor = 2
-def versionQualifier = "SNAPSHOT"
+def versionQualifier = ""
 version = versionMajor + "." + versionMinor + (versionQualifier != '' ? "-" + versionQualifier : '')
 
 

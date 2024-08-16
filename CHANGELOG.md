@@ -1,3 +1,20 @@
+## 2.2
+
+### August 16, 2024
+
+CHANGES:
+
+* Improved toString method to align with the standard-compliant asString implementation.
+* Updated fromDate method to accept null as input when using a custom calendar, representing a missing value.
+
+IMPROVEMENTS:
+
+* N/A
+
+BUG FIXES:
+
+* N/A
+
 ## 2.1
 
 ### June 12, 2024
