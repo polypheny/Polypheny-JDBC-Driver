@@ -158,6 +158,9 @@ public class TypedValueUtils {
 
 
     private static long getTimeLongInCalendar( long value, Calendar calendar ) {
+        if ( calendar == null ) {
+            return value - Calendar.getInstance().getTimeZone().getOffset( value );
+        }
         return value - calendar.getTimeZone().getOffset( value );
     }
 
