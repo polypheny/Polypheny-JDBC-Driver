@@ -1052,6 +1052,9 @@ public class TypedValue implements Convertible {
 
     @Override
     public Timestamp asTimestamp( Calendar calendar ) throws SQLException {
+        if ( isNull() ) {
+            return null;
+        }
         return TypedValueUtils.getTimestampInCalendar( asTimestamp(), calendar );
     }
 
