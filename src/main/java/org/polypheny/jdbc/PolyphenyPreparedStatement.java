@@ -35,6 +35,7 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
@@ -440,6 +441,9 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
         try {
+            if ( parameterBatch.isEmpty() ) {
+                return new ArrayList<>();
+            }
             StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
             return status.getScalarsList();
         } finally {
