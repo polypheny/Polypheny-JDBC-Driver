@@ -680,6 +680,9 @@ public class TypedValue implements Convertible {
         if ( integerValue != null ) {
             return integerValue;
         }
+        if ( bigDecimalValue != null ) {
+            return bigDecimalValue.longValue();
+        }
         if ( isNull() ) {
             return 0;
         }
