@@ -665,7 +665,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return 0;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TINYINT, SMALLINT, INTEGER or BIGINT." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TINYINT, SMALLINT, INTEGER, BIGINT or DECIMAL." );
     }
 
 
@@ -686,7 +686,7 @@ public class TypedValue implements Convertible {
         if ( isNull() ) {
             return 0;
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TINYINT, SMALLINT, INTEGER or BIGINT." );
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type TINYINT, SMALLINT, INTEGER, BIGINT or DECIMAL." );
     }
 
 
