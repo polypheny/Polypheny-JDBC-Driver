@@ -26,13 +26,13 @@ import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
-    private List<PolyphenyColumnMeta> columnMetas;
-    private Map<String, Integer> columnIndexes;
+    private final List<PolyphenyColumnMeta> columnMetas;
+    private final Map<String, Integer> columnIndexes;
 
 
     public PolyphenyResultSetMetadata( List<PolyphenyColumnMeta> columnMetas ) {
         this.columnMetas = columnMetas;
-        this.columnIndexes = this.columnMetas.stream().collect( Collectors.toMap( PolyphenyColumnMeta::getColumnLabel, c -> c.getOrdinal() + 1, ( m, n ) -> n ) );
+        this.columnIndexes = this.columnMetas.stream().collect( Collectors.toMap( c -> c.getColumnName().toLowerCase(), c -> c.getOrdinal() + 1, ( m, n ) -> n ) );
 
     }
 
@@ -47,7 +47,7 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
 
     public int getColumnIndexFromLabel( String columnLabel ) throws SQLException {
-        Integer columnIndex = columnIndexes.get( columnLabel );
+        Integer columnIndex = columnIndexes.get( columnLabel.toLowerCase() );
         if ( columnIndex == null ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.COLUMN_NOT_EXISTS, "Invalid column label: " + columnLabel );
         }
