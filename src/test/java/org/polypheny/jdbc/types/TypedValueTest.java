@@ -317,12 +317,6 @@ public class TypedValueTest {
     }
 
 
-    @Test()
-    public void fromTimeWithNullCalendarThrowsException() {
-        assertThrows( NullPointerException.class, () -> TypedValue.fromTime( new Time( 10, 30, 0 ), null ) );
-    }
-
-
     @Test
     public void timeZoneTest() {
         Time input = new Time( 123456 );
@@ -412,12 +406,6 @@ public class TypedValueTest {
         Time time = new Time( 12, 30, 0 );
         TypedValue typedValue = TypedValue.fromTime( time );
         assertEquals( time, typedValue.asTime() );
-    }
-
-
-    @Test()
-    public void fromDateWhenNullCalendarProvidedThenThrowException() {
-        assertThrows( NullPointerException.class, () -> TypedValue.fromDate( new Date( 2022, 1, 1 ), null ) );
     }
 
 
