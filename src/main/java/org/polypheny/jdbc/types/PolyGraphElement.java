@@ -22,9 +22,10 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.prism.GraphElement;
 
 @Getter
-public class PolyGraphElement extends HashMap<String, TypedValue> {
+public abstract class PolyGraphElement extends HashMap<String, TypedValue> {
 
     protected String id;
     protected String name;
@@ -38,5 +39,16 @@ public class PolyGraphElement extends HashMap<String, TypedValue> {
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.WRAPPER_INCORRECT_TYPE, "Not a wrapper for " + aClass );
     }
 
+
+    public static PolyGraphElement of( GraphElement element ) {
+        switch ( element.getElementCase() ) {
+            case NODE:
+                return new PolyNode( element.getNode() );
+            case EDGE:
+                return new PolyEdge( element.getEdge() );
+            default:
+                throw new RuntimeException( "Unknown graph element of type " + element.getElementCase() );
+        }
+    }
 
 }

@@ -27,12 +27,7 @@ public class PolyNode extends PolyGraphElement {
         this.id = protoNode.getId();
         this.name = protoNode.getName();
         this.labels = protoNode.getLabelsList();
-        protoNode.getPropertiesList().stream()
-                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
-                .forEach( p -> put(
-                        p.getKey().getString().getString(),
-                        new TypedValue( p.getValue() )
-                ) );
+        protoNode.getPropertiesMap().forEach( ( k, v ) -> put( k, new TypedValue( v ) ) );
     }
 
 }

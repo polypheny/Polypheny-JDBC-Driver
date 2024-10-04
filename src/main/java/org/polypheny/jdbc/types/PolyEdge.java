@@ -18,13 +18,12 @@ package org.polypheny.jdbc.types;
 
 import lombok.Getter;
 import org.polypheny.prism.ProtoEdge;
-import org.polypheny.prism.ProtoValue.ValueCase;
 
 @Getter
 public class PolyEdge extends PolyGraphElement {
 
-    private final String source;
-    private final String target;
+    private final String left;
+    private final String right;
     private final EdgeDirection direction;
 
 
@@ -33,14 +32,9 @@ public class PolyEdge extends PolyGraphElement {
         this.id = protoEdge.getId();
         this.name = protoEdge.getName();
         this.labels = protoEdge.getLabelsList();
-        protoEdge.getPropertiesList().stream()
-                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
-                .forEach( p -> put(
-                        p.getKey().getString().getString(),
-                        new TypedValue( p.getValue() )
-                ) );
-        this.source = protoEdge.getSource();
-        this.target = protoEdge.getTarget();
+        protoEdge.getPropertiesMap().forEach( ( k, v ) -> put( k, new TypedValue( v ) ) );
+        this.left = protoEdge.getSource();
+        this.right = protoEdge.getTarget();
         this.direction = EdgeDirection.valueOf( protoEdge.getDirection().name() );
     }
 
