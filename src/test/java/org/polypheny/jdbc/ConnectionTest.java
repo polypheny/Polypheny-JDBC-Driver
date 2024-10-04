@@ -31,6 +31,7 @@ import java.sql.Statement;
 import java.util.Properties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ConnectionTest {
@@ -106,28 +107,106 @@ public class ConnectionTest {
 
 
     @Test
-    void testMetaData() throws SQLException {
+    void testMetaDataGetURL() throws SQLException {
         DatabaseMetaData meta = con.getMetaData();
         meta.getURL();
+    }
+
+
+    @Test
+    void testMetaDataGetDatabaseProductName() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getDatabaseProductName();
+    }
+
+
+    @Test
+    void testMetaDataGetCatalogs() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getCatalogs();
+    }
+
+
+    @Test
+    void testMetaDataGetTableTypes() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getTableTypes();
+    }
+
+
+    @Test
+    void testMetaDataGetTypeInfo() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getTypeInfo();
+    }
+
+
+    @Test
+    void testMetaDataGetColumns() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getColumns( "public", ".*", ".*", ".*" );
+    }
+
+
+    @Test
+    void testMetaDataGetStringFunctions() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getStringFunctions();
+    }
+
+
+    @Test
+    void testMetaDataGetSystemFunctions() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getSystemFunctions();
+    }
+
+
+    @Test
+    void testMetaDataGetTimeDateFunctions() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getTimeDateFunctions();
+    }
+
+
+    @Test
+    void testMetaDataGetNumericFunctions() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getNumericFunctions();
+    }
+
+
+    @Test
+    void testMetaDataGetSQLKeywords() throws SQLException {
+        DatabaseMetaData meta = con.getMetaData();
         meta.getSQLKeywords();
     }
 
 
     @Test
-    void testMetaDataNotStrict() throws SQLException {
+    void testMetaDataGetProceduresNotStrict() throws SQLException {
         try ( Connection con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590?strict=false", "pa", "" ) ) {
             DatabaseMetaData meta = con.getMetaData();
             meta.getProcedures( "public", ".*", ".*" );
+        }
+    }
+
+
+    @Test
+    @Disabled
+        // This test fails due to syntax definitions missing for some of the functions on the server side (operator registry).
+    void testMetaDataGetFunctionsNotStrict() throws SQLException {
+        try ( Connection con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590?strict=false", "pa", "" ) ) {
+            DatabaseMetaData meta = con.getMetaData();
             meta.getFunctions( "public", ".*", ".*" );
+        }
+    }
+
+
+    @Test
+    void testMetaDataGetSchemasNotStrict() throws SQLException {
+        try ( Connection con = DriverManager.getConnection( "jdbc:polypheny://127.0.0.1:20590?strict=false", "pa", "" ) ) {
+            DatabaseMetaData meta = con.getMetaData();
             meta.getSchemas( "public", ".*" );
         }
     }

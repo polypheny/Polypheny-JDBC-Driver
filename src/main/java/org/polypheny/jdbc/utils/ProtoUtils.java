@@ -18,6 +18,8 @@ package org.polypheny.jdbc.utils;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.ProtoString;
@@ -43,6 +45,20 @@ public class ProtoUtils {
                 throw new RuntimeException( "Should not be thrown. Encountered an unknown type during serialization." );
             }
         } ).collect( Collectors.toList() );
+    }
+
+
+    public static Map<String, ProtoValue> serializeParameterMap( Map<String, TypedValue> values ) {
+        return values.entrySet().stream().collect( Collectors.toMap(
+                Entry::getKey,
+                value -> {
+                    try {
+                        return value.getValue().serialize();
+                    } catch ( Exception e ) {
+                        throw new RuntimeException( "Serialization failed", e );
+                    }
+                }
+        ) );
     }
 
 }

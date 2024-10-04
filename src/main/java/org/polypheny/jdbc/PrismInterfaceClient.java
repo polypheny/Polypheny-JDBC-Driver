@@ -47,6 +47,7 @@ import org.polypheny.prism.EntitiesRequest;
 import org.polypheny.prism.Entity;
 import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
 import org.polypheny.prism.ExecuteIndexedStatementRequest;
+import org.polypheny.prism.ExecuteNamedStatementRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.FetchRequest;
@@ -54,6 +55,7 @@ import org.polypheny.prism.Frame;
 import org.polypheny.prism.Function;
 import org.polypheny.prism.FunctionsRequest;
 import org.polypheny.prism.IndexedParameters;
+import org.polypheny.prism.NamedParameters;
 import org.polypheny.prism.Namespace;
 import org.polypheny.prism.NamespacesRequest;
 import org.polypheny.prism.PrepareStatementRequest;
@@ -145,15 +147,26 @@ public class PrismInterfaceClient {
 
 
     public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
+        ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName );
+        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+    }
+
+
+    public void executeUnparameterizedStatementBatch( List<String> statements, String namespaceName, String languageName, CallbackQueue<StatementBatchResponse> updateCallback, int timeout ) throws PrismInterfaceServiceException {
+        List<ExecuteUnparameterizedStatementRequest> requests = statements.stream().map( s -> buildExecuteUnparameterizedStatementRequest( s, namespaceName, languageName ) ).collect( Collectors.toList() );
+        executeUnparameterizedStatementBatch( requests, updateCallback, timeout );
+    }
+
+
+    public ExecuteUnparameterizedStatementRequest buildExecuteUnparameterizedStatementRequest( String statement, String namespaceName, String languageName ) {
         ExecuteUnparameterizedStatementRequest.Builder requestBuilder = ExecuteUnparameterizedStatementRequest.newBuilder();
         if ( namespaceName != null ) {
             requestBuilder.setNamespaceName( namespaceName );
         }
-        ExecuteUnparameterizedStatementRequest request = requestBuilder
+        return requestBuilder
                 .setLanguageName( languageName )
                 .setStatement( statement )
                 .build();
-        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
     }
 
 
@@ -179,6 +192,19 @@ public class PrismInterfaceClient {
     }
 
 
+    public PreparedStatementSignature prepareNamedStatement( String namespaceName, String languageName, String statement, int timeout ) throws PrismInterfaceServiceException {
+        PrepareStatementRequest.Builder requestBuilder = PrepareStatementRequest.newBuilder();
+        if ( namespaceName != null ) {
+            requestBuilder.setNamespaceName( namespaceName );
+        }
+        PrepareStatementRequest request = requestBuilder
+                .setStatement( statement )
+                .setLanguageName( languageName )
+                .build();
+        return rpc.prepareNamedStatement( request, timeout );
+    }
+
+
     public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
         IndexedParameters parameters = IndexedParameters.newBuilder()
                 .addAllParameters( ProtoUtils.serializeParameterList( values ) )
@@ -190,6 +216,20 @@ public class PrismInterfaceClient {
                 .build();
 
         return rpc.executeIndexedStatement( request, timeout );
+    }
+
+
+    public StatementResult executeNamedStatement( int statementId, Map<String, TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
+        NamedParameters parameters = NamedParameters.newBuilder()
+                .putAllParameters( ProtoUtils.serializeParameterMap( values ) )
+                .build();
+        ExecuteNamedStatementRequest request = ExecuteNamedStatementRequest.newBuilder()
+                .setStatementId( statementId )
+                .setParameters( parameters )
+                .setFetchSize( fetchSize )
+                .build();
+
+        return rpc.executeNamedStatement( request, timeout );
     }
 
 
