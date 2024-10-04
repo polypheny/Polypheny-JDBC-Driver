@@ -942,10 +942,7 @@ public class TypedValueTest {
         TypedValue typedValue2 = new TypedValue( protoValue );
         assertEquals( value.length(), typedValue2.getLength() );
     }
-    
 
-<<<<<<< Conflict 1 of 1
-+++++++ Contents of side #1
 
     @Test
     void testFromBoolean() throws SQLException {
@@ -1049,106 +1046,5 @@ public class TypedValueTest {
         assertEquals( interval.toString(), value.asString() );
     }
 
-    @Test
-    void testFromBoolean() throws SQLException {
-        TypedValue value = TypedValue.fromBoolean( true );
-        assertEquals( "1", value.asString() );
-    }
-
-
-    @Test
-    void testFromByte() throws SQLException {
-        byte byteValue = 10;
-        TypedValue value = TypedValue.fromByte( byteValue );
-        assertEquals( "10", value.asString() );
-    }
-
-
-    @Test
-    void testFromShort() throws SQLException {
-        short shortValue = 20;
-        TypedValue value = TypedValue.fromShort( shortValue );
-        assertEquals( "20", value.asString() );
-    }
-
-
-    @Test
-    void testFromInteger() throws SQLException {
-        int intValue = 30;
-        TypedValue value = TypedValue.fromInteger( intValue );
-        assertEquals( "30", value.asString() );
-    }
-
-
-    @Test
-    void testFromLong() throws SQLException {
-        long longValue = 40L;
-        TypedValue value = TypedValue.fromLong( longValue );
-        assertEquals( "40", value.asString() );
-    }
-
-
-    @Test
-    void testFromFloat() throws SQLException {
-        float floatValue = 50.5f;
-        TypedValue value = TypedValue.fromFloat( floatValue );
-        assertEquals( "50.5", value.asString() );
-    }
-
-
-    @Test
-    void testFromDouble() throws SQLException {
-        double doubleValue = 60.6;
-        TypedValue value = TypedValue.fromDouble( doubleValue );
-        assertEquals( "60.6", value.asString() );
-    }
-
-
-    @Test
-    void testFromBigDecimal() throws SQLException {
-        BigDecimal bigDecimalValue = new BigDecimal( "70.7" );
-        TypedValue value = TypedValue.fromBigDecimal( bigDecimalValue );
-        assertEquals( "70.7", value.asString() );
-    }
-
-
-    @Test
-    void testFromString() throws SQLException {
-        String stringValue = "test";
-        TypedValue value = TypedValue.fromString( stringValue );
-        assertEquals( "test", value.asString() );
-    }
-
-
-    @Test
-    void testFromDate() throws SQLException {
-        Date dateValue = new Date( 2024, 7, 28 );
-        TypedValue value = TypedValue.fromDate( dateValue );
-        assertEquals( dateValue.toString(), value.asString() );
-    }
-
-
-    @Test
-    void testFromTime() throws SQLException {
-        Time timeValue = new Time( System.currentTimeMillis() );
-        TypedValue value = TypedValue.fromTime( timeValue );
-        assertEquals( timeValue.toString(), value.asString() );
-    }
-
-
-    @Test
-    void testFromTimestamp() throws SQLException {
-        Timestamp timestampValue = new Timestamp( System.currentTimeMillis() );
-        TypedValue value = TypedValue.fromTimestamp( timestampValue );
-        assertEquals( timestampValue.toString(), value.asString() );
-    }
-
-
-    @Test
-    void testFromInterval() throws SQLException {
-        PolyInterval interval = new PolyInterval( 1, 0 );
-        TypedValue value = TypedValue.fromInterval( interval );
-        assertEquals( interval.toString(), value.asString() );
-    }
 
 }

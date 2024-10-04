@@ -190,7 +190,7 @@ public class RpcService {
                 return;
             }
             /* For Windows */
-            if ( e instanceof SocketException && e.getMessage().contains( "Connection reset" ) && disconnectSent ) {
+            if ( e instanceof SocketException && e.getMessage().contains( "Connection reset" ) && hasSentDisconnect ) {
                 return;
             }
             // This will cause the exception to be thrown when the next call is made
