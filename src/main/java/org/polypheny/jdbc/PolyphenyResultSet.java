@@ -199,7 +199,9 @@ public class PolyphenyResultSet implements ResultSet {
         if ( isClosed ) {
             return;
         }
-        statement.notifyResultClosure();
+        if ( statement != null ) {
+            statement.notifyResultClosure();
+        }
         isClosed = true;
     }
 
