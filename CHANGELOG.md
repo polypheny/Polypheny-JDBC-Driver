@@ -1,3 +1,25 @@
+## 2.3
+
+### December 28, 2024
+
+CHANGES:
+
+* Add null check for closing result sets
+* Improve exception messages
+* Handle null in asTimestamp
+* Support converting BigDecimal to Long
+* Treat column names as case-insensitive
+* Return an empty List if parameterBatch is empty
+* Use default timezone if calendar is null
+
+IMPROVEMENTS:
+
+* N/A
+
+BUG FIXES:
+
+* N/A
+
 ## 2.2
 
 ### August 16, 2024
