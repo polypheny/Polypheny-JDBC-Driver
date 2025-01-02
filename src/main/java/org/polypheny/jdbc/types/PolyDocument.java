@@ -33,11 +33,6 @@ public class PolyDocument extends HashMap<String, TypedValue> {
     }
 
 
-    public PolyDocument( HashMap<String, TypedValue> entries ) {
-        super( entries );
-    }
-
-
     public PolyDocument( ProtoDocument document ) {
         super();
         document.getEntriesList().stream()

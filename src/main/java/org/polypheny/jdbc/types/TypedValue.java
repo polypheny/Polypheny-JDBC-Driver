@@ -1277,7 +1277,6 @@ public class TypedValue implements Convertible {
                 return serializeAsProtoFile();
             case DOCUMENT:
                 return serializeAsProtoDocument();
-
         }
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Failed to serialize unknown type: " + valueCase.name() );
     }
@@ -1466,16 +1465,6 @@ public class TypedValue implements Convertible {
 
     private static PolyInterval getInterval( ProtoInterval interval ) {
         return new PolyInterval( interval.getMonths(), interval.getMilliseconds() );
-    }
-
-
-    @Override
-    public String toString() {
-        try {
-            return asString();
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        }
     }
 
 }

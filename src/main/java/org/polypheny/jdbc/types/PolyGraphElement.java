@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.jdbc.multimodel;
+package org.polypheny.jdbc.types;
 
+
+import java.util.HashMap;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.prism.GraphElement;
 
 @Getter
-public abstract class Result {
+public abstract class PolyGraphElement extends HashMap<String, TypedValue> {
 
-    private final ResultType resultType;
-
-
-    public Result( ResultType resultType ) {
-        this.resultType = resultType;
-    }
+    protected String id;
+    protected String name;
+    protected List<String> labels;
 
 
     public <T> T unwrap( Class<T> aClass ) throws PrismInterfaceServiceException {
@@ -39,11 +40,15 @@ public abstract class Result {
     }
 
 
-    public enum ResultType {
-        RELATIONAL,
-        DOCUMENT,
-        GRAPH,
-        SCALAR
+    public static PolyGraphElement of( GraphElement element ) {
+        switch ( element.getElementCase() ) {
+            case NODE:
+                return new PolyNode( element.getNode() );
+            case EDGE:
+                return new PolyEdge( element.getEdge() );
+            default:
+                throw new RuntimeException( "Unknown graph element of type " + element.getElementCase() );
+        }
     }
 
 }
