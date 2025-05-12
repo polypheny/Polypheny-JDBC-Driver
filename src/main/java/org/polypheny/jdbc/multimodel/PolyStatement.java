@@ -28,7 +28,6 @@ import org.polypheny.prism.StatementResponse;
 
 public class PolyStatement {
 
-    private static final long SCALAR_NOT_SET = -1;
     private static final int NO_STATEMENT_ID = -1;
 
     @Getter
