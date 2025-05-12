@@ -31,7 +31,7 @@ public class PolyStatement {
     private static final int NO_STATEMENT_ID = -1;
 
     @Getter
-    private PolyConnection connection;
+    private final PolyConnection connection;
     @Getter
     private int statementId;
 
