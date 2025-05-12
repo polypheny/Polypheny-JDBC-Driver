@@ -27,7 +27,9 @@ import java.sql.Statement;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.multimodel.DocumentResult;
+import org.polypheny.jdbc.multimodel.PolyRow;
 import org.polypheny.jdbc.multimodel.PolyStatement;
+import org.polypheny.jdbc.multimodel.RelationalResult;
 import org.polypheny.jdbc.multimodel.Result;
 import org.polypheny.jdbc.multimodel.Result.ResultType;
 import org.polypheny.jdbc.types.PolyDocument;
@@ -67,6 +69,29 @@ public class QueryTest {
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
             Result result = polyStatement.execute( "public", "sql", "SELECT * FROM customers" );
             assertEquals( ResultType.RELATIONAL, result.getResultType() );
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @Test
+    public void largeRelationalTest() {
+        try ( Connection connection = TestHelper.getConnection() ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
+                fail( "Driver must support unwrapping to PolyphenyConnection" );
+            }
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
+            polyStatement.execute( "public", "sql", "DROP TABLE IF EXISTS ids" );
+            polyStatement.execute( "public", "sql", "CREATE TABLE ids(id INTEGER PRIMARY KEY)" );
+            for ( int i = 0; i < 10000; i++ ) {
+                polyStatement.execute( "public", "sql", "INSERT INTO ids(id) VALUES(" + i + ")" );
+            }
+            Result result = polyStatement.execute( "public", "sql", "SELECT * FROM ids" );
+            assertEquals( ResultType.RELATIONAL, result.getResultType() );
+            RelationalResult r = result.unwrap( RelationalResult.class );
+            for ( PolyRow polyRow : r ) {
+            }
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
