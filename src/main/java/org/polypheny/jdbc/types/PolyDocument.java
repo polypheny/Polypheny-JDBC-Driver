@@ -18,13 +18,9 @@ package org.polypheny.jdbc.types;
 
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.prism.ProtoDocument;
-import org.polypheny.prism.ProtoEntry;
 import org.polypheny.prism.ProtoValue;
-import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class PolyDocument extends HashMap<String, TypedValue> {
 
@@ -40,31 +36,26 @@ public class PolyDocument extends HashMap<String, TypedValue> {
 
     public PolyDocument( ProtoDocument document ) {
         super();
-        document.getEntriesList().stream()
-                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
-                .forEach( e -> put(
-                        e.getKey().getString().getString(),
-                        new TypedValue( e.getValue() )
+        document.getEntriesMap()
+                .forEach( ( k, v ) -> put(
+                        k,
+                        new TypedValue( v )
                 ) );
     }
 
 
-    public ProtoDocument serialize() {
-        List<ProtoEntry> protoEntries = entrySet().stream().map( entry -> {
-            ProtoValue protoKey = ProtoUtils.serializeAsProtoString( entry.getKey() );
-            ProtoValue protoValue;
-            try {
-                protoValue = entry.getValue().serialize();
-            } catch ( SQLException e ) {
-                throw new RuntimeException( "Should not be thrown. Unknown value encountered." );
-            }
-            return ProtoEntry.newBuilder()
-                    .setKey( protoKey )
-                    .setValue( protoValue )
-                    .build();
-        } ).collect( Collectors.toList() );
+    private ProtoValue serializeValue( TypedValue value ) {
+        try {
+            return value.serialize();
+        } catch ( SQLException e ) {
+            throw new RuntimeException( "Cannot serialize value: ", e );
+        }
+    }
 
-        return ProtoDocument.newBuilder().addAllEntries( protoEntries ).build();
+
+    public ProtoDocument serialize() {
+        return ProtoDocument.newBuilder().putAllEntries( entrySet().stream().collect(
+                Collectors.toMap( Entry::getKey, e -> serializeValue( e.getValue() ) ) ) ).build();
     }
 
 }
