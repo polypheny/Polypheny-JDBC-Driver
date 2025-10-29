@@ -30,7 +30,7 @@ jobs:
                 uses: actions/upload-artifact@v4
                 with:
                     name: polypheny-jar
-                    path: dbms/build/libs/dbms-0.10.0-SNAPSHOT.jar
+                    path: dbms/build/libs/dbms-0.10.1-SNAPSHOT.jar
 
     build:
         needs: build-polypheny
@@ -63,7 +63,7 @@ jobs:
                 uses: polypheny/GitHub-Action-Run-Polypheny@dev
                 with:
                     cmd: ./gradlew build -PdisableToolchain=true
-                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    jar: dbms-0.10.1-SNAPSHOT.jar
                     java: ${{ env.JAVA_HOME_17_X64 || env.JAVA_HOME_17_ARM64 }}/bin/java
 
     build-windows:
@@ -91,7 +91,7 @@ jobs:
                 uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
                 with:
                     cmd: gradlew.bat build -PdisableToolchain=true
-                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    jar: dbms-0.10.1-SNAPSHOT.jar
                     java: ${{ env.JAVA_HOME_17_X64 }}\bin\java
 
     test-stores:
@@ -118,5 +118,5 @@ jobs:
                 uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
                 with:
                     cmd: ./gradlew build -PdisableToolchain=true
-                    jar: dbms-0.10.0-SNAPSHOT.jar
+                    jar: dbms-0.10.1-SNAPSHOT.jar
                     default-store: ${{ matrix.adapter }}
