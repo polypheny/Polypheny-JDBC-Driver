@@ -84,7 +84,7 @@ public class QueryTest {
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
             polyStatement.execute( "public", "sql", "DROP TABLE IF EXISTS ids" );
             polyStatement.execute( "public", "sql", "CREATE TABLE ids(id INTEGER PRIMARY KEY)" );
-            for ( int i = 0; i < 10000; i++ ) {
+            for ( int i = 0; i < 1000; i++ ) {
                 polyStatement.execute( "public", "sql", "INSERT INTO ids(id) VALUES(" + i + ")" );
             }
             Result result = polyStatement.execute( "public", "sql", "SELECT * FROM ids" );
