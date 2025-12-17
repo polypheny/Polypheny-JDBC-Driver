@@ -1,3 +1,23 @@
+## 3.0
+
+### December 17, 2025
+
+CHANGES:
+
+* Use version 2.1 of PRISM
+* Update dependencies
+* Additional checks for result set type
+* Improve closing of statements
+
+IMPROVEMENTS:
+
+* N/A
+
+BUG FIXES:
+
+* N/A
+
+
 ## 2.3
 
 ### December 28, 2024
