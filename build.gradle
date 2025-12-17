@@ -218,14 +218,13 @@ publishing {
     repositories {
         maven {
             name = 'ossrh-staging-api'
-            val stagingUrl =
-                "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
+            val stagingUrl =  "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
             val snapshotsUrl =
                 "https://central.sonatype.com/repository/maven-snapshots/"
             url = uri(if (version.toString().endsWith("-SNAPSHOT")) snapshotsUrl else stagingUrl)
             credentials {
-                username = System.getenv("OSSRH_USER"]
-                password = System.getenv("OSSRH_PASS"]
+                username = System.getenv("OSSRH_USER")
+                password = System.getenv("OSSRH_PASS")
             }
         }
         maven {
@@ -289,8 +288,8 @@ tasks.register("publishToMavenCentral") {
     description = "Publishes all Maven publications produced by this project to Maven Central."
     dependsOn("publish")
     doLast {
-        val username = System.getenv("OSSRH_USER"]
-        val password = System.getenv("OSSRH_PASS"]
+        val username = System.getenv("OSSRH_USER")
+        val password = System.getenv("OSSRH_PASS")
         val namespace = "org.polypheny"
         val token = Base64.getEncoder().encodeToString("$username:$password".encodeToByteArray())
         val client = HttpClient.newHttpClient()
