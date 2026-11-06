@@ -23,6 +23,35 @@ repositories {
     maven {
         url "https://plugins.gradle.org/m2/"
     }
+    ivy {
+        url 'https://github.com/polypheny/Polypheny-Prism-API/archive'
+        patternLayout { artifact '[revision].[ext]' }
+        metadataSources { artifact() }
+        content { includeModule('org.polypheny', 'prism-source') }
+    }
+}
+
+configurations {
+    prismProtocolSource
+}
+
+// Overlay only namespace metadata until the companion protocol change is released.
+// Keep the other Prism 2.1 messages and its version negotiation properties intact.
+def prismApiRevision = 'ac57da2459071234c4cacc6836e3f4ca6f13f101'
+def protocolSources = layout.buildDirectory.dir('prism-protocol')
+
+tasks.register('preparePrismProtocol', Sync) {
+    dependsOn tasks.named('extractIncludeProto')
+    from('build/extracted-include-protos/main') {
+        include 'org/polypheny/prism/*.proto'
+        exclude 'org/polypheny/prism/namespace_meta_responses.proto'
+    }
+    from({ zipTree(configurations.prismProtocolSource.singleFile) }) {
+        include '*/org/polypheny/prism/namespace_meta_responses.proto'
+        eachFile { path = path.substring(path.indexOf('/') + 1) }
+        includeEmptyDirs = false
+    }
+    into protocolSources
 }
 
 compileJava.options.encoding = "UTF-8"
@@ -56,6 +85,7 @@ def protobufVersion = '4.28.2'
 dependencies {
     // Prism API files (protobuf files), needs to be implementation due to the prism-api-version.properties
     implementation group: 'org.polypheny', name: 'prism', version: '2.1'
+    prismProtocolSource "org.polypheny:prism-source:${prismApiRevision}@zip"
 
     // Protobuf
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobufVersion
@@ -84,6 +114,7 @@ delombok.dependsOn(generateProto)
 sourcesJar.dependsOn(generateProto)
 compileJava.dependsOn(generateProto)
 processResources.dependsOn(extractIncludeProto)
+processResources.dependsOn(preparePrismProtocol)
 
 protobuf {
     // Configure the protoc executable
@@ -93,6 +124,7 @@ protobuf {
 
     generateProtoTasks {
         all().each { task ->
+            task.dependsOn tasks.named('preparePrismProtocol')
             task.builtins {
                 java {}
             }
@@ -109,7 +141,7 @@ sourceSets {
             srcDirs = ["src/main/resources"]
         }
         proto {
-            srcDirs = ["build/extracted-include-protos/main"]
+            srcDirs = [protocolSources.get().asFile]
         }
     }
 }
@@ -218,10 +250,10 @@ publishing {
     repositories {
         maven {
             name = 'ossrh-staging-api'
-            val stagingUrl =  "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
-            val snapshotsUrl =
+            def stagingUrl =  "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
+            def snapshotsUrl =
                 "https://central.sonatype.com/repository/maven-snapshots/"
-            url = uri(if (version.toString().endsWith("-SNAPSHOT")) snapshotsUrl else stagingUrl)
+            url = uri(version.toString().endsWith("-SNAPSHOT") ? snapshotsUrl : stagingUrl)
             credentials {
                 username = System.getenv("OSSRH_USER")
                 password = System.getenv("OSSRH_PASS")
@@ -278,9 +310,6 @@ idea {
 }
 
 
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.util.Base64
 
 tasks.register("publishToMavenCentral") {
@@ -288,21 +317,22 @@ tasks.register("publishToMavenCentral") {
     description = "Publishes all Maven publications produced by this project to Maven Central."
     dependsOn("publish")
     doLast {
-        val username = System.getenv("OSSRH_USER")
-        val password = System.getenv("OSSRH_PASS")
-        val namespace = "org.polypheny"
-        val token = Base64.getEncoder().encodeToString("$username:$password".encodeToByteArray())
-        val client = HttpClient.newHttpClient()
-        val request = HttpRequest.newBuilder()
-            .uri(uri("https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/$namespace"))
-            .header("Authorization", "Bearer $token")
-            .POST(HttpRequest.BodyPublishers.noBody())
-            .build()
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        if (response.statusCode() < 400) {
-            logger.info(response.body())
-        } else {
-            logger.error(response.body())
+        def username = System.getenv("OSSRH_USER")
+        def password = System.getenv("OSSRH_PASS")
+        def namespace = "org.polypheny"
+        def token = Base64.getEncoder().encodeToString("$username:$password".getBytes('UTF-8'))
+        // Use the Java 8 HTTP API because the driver build also runs on Java 8.
+        def connection = new URL("https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/$namespace").openConnection()
+        try {
+            connection.requestMethod = 'POST'
+            connection.setRequestProperty('Authorization', "Bearer $token")
+            if (connection.responseCode < 400) {
+                logger.info(connection.inputStream.getText('UTF-8'))
+            } else {
+                logger.error(connection.errorStream?.getText('UTF-8'))
+            }
+        } finally {
+            connection.disconnect()
         }
     }
 }

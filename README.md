@@ -24,6 +24,38 @@ This driver is compatible with JVM version 8 or higher.
 
 > For authentication, please use the default username `pa` with an empty password.
 
+## Document collection metadata
+
+Document metadata is available through the existing Prism client exposed by `PolyConnection`:
+
+```java
+try (java.sql.Connection connection = java.sql.DriverManager.getConnection(
+        "jdbc:polypheny://localhost:20590", "pa", "")) {
+    org.polypheny.jdbc.PolyConnection polyConnection =
+            connection.unwrap(org.polypheny.jdbc.PolyConnection.class);
+    polyConnection.getPrismInterfaceClient()
+            .searchEntities("patients_symptoms", "sym%", connection.getNetworkTimeout())
+            .stream().filter(entity -> entity.hasDocument())
+            .forEach(entity -> {
+                System.out.println(entity.getDocument().getCollectionName());
+                entity.getDocument().getFieldsList().forEach(field ->
+                        System.out.println(field.getFieldPath() + ": " + field.getTypeName()));
+            });
+}
+```
+
+The document message includes the namespace and collection names, known fields with type and optionality,
+an optional JSON sample (`hasSampleDocumentJson()`), and document indexes with field path, method and uniqueness.
+Field paths separate nested keys with `.` and escape literal dots and backslashes inside keys with `\`.
+Inferred fields describe the server's sample rather than an enforced schema; unavailable samples and indexes
+remain absent or empty. A unique index flag applies to single-field indexes and their indexed documents.
+The standard JDBC table and column metadata methods continue to describe relational entities.
+
+The 3.x driver retains Prism 2.1 version negotiation and requires a compatible Prism 2.x server.
+The server must implement the document metadata extension to populate these fields. Older compatible
+servers can still return the original empty `Document` message. During development, the build overlays only
+the namespace metadata definitions from the pinned companion API commit while retaining all other Prism 2.1 messages.
+
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).
 
