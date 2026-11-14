@@ -51,10 +51,9 @@ Inferred fields describe the server's sample rather than an enforced schema; una
 remain absent or empty. A unique index flag applies to single-field indexes and their indexed documents.
 The standard JDBC table and column metadata methods continue to describe relational entities.
 
-The 3.x driver retains Prism 2.1 version negotiation and requires a compatible Prism 2.x server.
-The server must implement the document metadata extension to populate these fields. Older compatible
-servers can still return the original empty `Document` message. During development, the build overlays only
-the namespace metadata definitions from the pinned companion API commit while retaining all other Prism 2.1 messages.
+The driver uses the published Prism 2.2 schemas and requires a compatible Prism 2.x server.
+The server must implement document metadata to populate these fields. Older compatible
+servers can still return the original empty `Document` message.
 
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).
