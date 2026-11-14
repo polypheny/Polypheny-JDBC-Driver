@@ -1,26 +1,114 @@
-name: Publish package to the Maven Central Repository and GitHub Packages
+name: Publish JDBC driver
+
 on:
-    release:
-        types:
-            - published
+  pull_request:
+    paths:
+      - '.github/workflows/publish.yml'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'src/**'
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
 jobs:
-    publish:
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            packages: write
-        steps:
-            -   uses: actions/checkout@v4
-            -   name: Set up Java
-                uses: actions/setup-java@v4
-                with:
-                    java-version: '17'
-                    distribution: 'temurin'
-            -   name: Publish package
-                run: ./gradlew publish
-                env:
-                    MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-                    MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    ORG_GRADLE_PROJECT_signingKey: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
-                    ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
+  build:
+    name: Verify signed JDBC package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            17
+
+      - name: Build and verify the signed Maven package locally
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(./gradlew -q printVersion)"
+          if [[ -n "$RELEASE_TAG" && "$RELEASE_TAG" != "v$version" ]]; then
+            echo "Expected release tag v$version, got $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          export GNUPGHOME
+          GNUPGHOME="$(mktemp -d)"
+          trap 'gpgconf --kill all; rm -rf "$GNUPGHOME"' EXIT
+          signing_identity='JDBC package verification <jdbc-build@example.invalid>'
+          gpg --batch --pinentry-mode loopback --passphrase '' \
+            --quick-generate-key "$signing_identity" rsa2048 sign 1d
+          export ORG_GRADLE_PROJECT_signingKey
+          ORG_GRADLE_PROJECT_signingKey="$(gpg --armor --export-secret-keys "$signing_identity")"
+          export ORG_GRADLE_PROJECT_signingPassword=''
+
+          repository="$RUNNER_TEMP/jdbc-maven"
+          ./gradlew "-PreleaseTestRepository=$repository" publishShadowPublicationToReleaseTestRepository
+          cd "$repository/org/polypheny/polypheny-jdbc-driver/$version"
+          artifact="polypheny-jdbc-driver-$version"
+          for suffix in .pom .jar -sources.jar -javadoc.jar; do
+            file="$artifact$suffix"
+            gpg --batch --verify "$file.asc" "$file"
+            printf '%s  %s\n' "$(cat "$file.sha1")" "$file" | sha1sum --check
+            printf '%s  %s\n' "$(cat "$file.md5")" "$file" | md5sum --check
+          done
+
+          python3 - "$artifact.jar" "$version" <<'PY'
+          import sys
+          from zipfile import ZipFile
+
+          jar_path, version = sys.argv[1:]
+          with ZipFile(jar_path) as jar:
+              assert jar.read("META-INF/services/java.sql.Driver").strip() == b"org.polypheny.jdbc.PolyphenyDriver"
+              assert f"version={version}" in jar.read("polypheny-jdbc-driver-version.properties").decode().splitlines()
+              assert any(line.startswith(b"version=") for line in jar.read("prism-api-version.properties").splitlines())
+              assert jar.read("org/polypheny/jdbc/PolyphenyDriver.class")[6:8] == b"\x00\x34"
+              jar.getinfo("org/polypheny/jdbc/dependency/prism/Document.class")
+          PY
+
+  publish:
+    name: Publish JDBC packages and attach the release JAR
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            17
+
+      - name: Resolve release artifact path
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: echo "JDBC_ARTIFACT=build/libs/polypheny-jdbc-driver-${RELEASE_TAG#v}.jar" >> "$GITHUB_ENV"
+
+      - name: Publish to Maven Central and GitHub Packages
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
+        run: |
+          : "${CENTRAL_USERNAME:?Set the CENTRAL_USERNAME secret}"
+          : "${CENTRAL_TOKEN:?Set the CENTRAL_TOKEN secret}"
+          ./gradlew publishToMavenCentral publishShadowPublicationToGitHubPackagesRepository
+
+      - name: Attach the shaded JAR to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.JDBC_ARTIFACT }}
+          fail_on_unmatched_files: true
