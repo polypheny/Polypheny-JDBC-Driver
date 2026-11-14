@@ -76,12 +76,12 @@ import org.polypheny.prism.TypesRequest;
 
 public class PrismInterfaceClient {
 
-    private final Transport con;
     private final RpcService rpc;
 
 
     public PrismInterfaceClient( String host, int port, Map<String, String> parameters ) throws PrismInterfaceServiceException {
         try {
+            Transport con;
             String transport = parameters.getOrDefault( "transport", "plain" );
             if ( transport.equals( "plain" ) ) {
                 con = new PlainTransport( host, port );
@@ -92,6 +92,11 @@ public class PrismInterfaceClient {
         } catch ( IOException e ) {
             throw new PrismInterfaceServiceException( e );
         }
+    }
+
+
+    PrismInterfaceClient( RpcService rpc ) {
+        this.rpc = rpc;
     }
 
 
