@@ -24,37 +24,6 @@ This driver is compatible with JVM version 8 or higher.
 
 > For authentication, please use the default username `pa` with an empty password.
 
-## Document collection metadata
-
-Document metadata is available through the existing Prism client exposed by `PolyConnection`:
-
-```java
-try (java.sql.Connection connection = java.sql.DriverManager.getConnection(
-        "jdbc:polypheny://localhost:20590", "pa", "")) {
-    org.polypheny.jdbc.PolyConnection polyConnection =
-            connection.unwrap(org.polypheny.jdbc.PolyConnection.class);
-    polyConnection.getPrismInterfaceClient()
-            .searchEntities("patients_symptoms", "sym%", connection.getNetworkTimeout())
-            .stream().filter(entity -> entity.hasDocument())
-            .forEach(entity -> {
-                System.out.println(entity.getDocument().getCollectionName());
-                entity.getDocument().getFieldsList().forEach(field ->
-                        System.out.println(field.getFieldPath() + ": " + field.getTypeName()));
-            });
-}
-```
-
-The document message includes the namespace and collection names, known fields with type and optionality,
-an optional JSON sample (`hasSampleDocumentJson()`), and document indexes with field path, method and uniqueness.
-Field paths separate nested keys with `.` and escape literal dots and backslashes inside keys with `\`.
-Inferred fields describe the server's sample rather than an enforced schema; unavailable samples and indexes
-remain absent or empty. A unique index flag applies to single-field indexes and their indexed documents.
-The standard JDBC table and column metadata methods continue to describe relational entities.
-
-The driver uses the published Prism 2.2 schemas and requires a compatible Prism 2.x server.
-The server must implement document metadata to populate these fields. Older compatible
-servers can still return the original empty `Document` message.
-
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).
 
