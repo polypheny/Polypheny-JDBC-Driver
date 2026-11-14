@@ -136,9 +136,9 @@ class DocumentMetadataTest {
 
 
     @Test
-    void keepsPrism21NegotiationAndStableDocumentFieldNumbers() {
+    void usesPrism22NegotiationAndStableDocumentFieldNumbers() {
         assertEquals( 2, VersionUtil.MAJOR_API_VERSION );
-        assertEquals( 1, VersionUtil.MINOR_API_VERSION );
+        assertEquals( 2, VersionUtil.MINOR_API_VERSION );
         assertEquals( 1, Document.NAMESPACE_NAME_FIELD_NUMBER );
         assertEquals( 2, Document.COLLECTION_NAME_FIELD_NUMBER );
         assertEquals( 3, Document.FIELDS_FIELD_NUMBER );

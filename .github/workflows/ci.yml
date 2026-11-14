@@ -16,7 +16,7 @@ jobs:
                 uses: actions/checkout@v4
                 with:
                     repository: polypheny/Polypheny-DB
-                    # Prism 2.1 server used by the 3.x driver integration tests.
+                    # Exercise compatibility with an older Prism 2.x server.
                     ref: 5fc744f2596641ddd2eacecf0053f90481238e4d
 
             -   name: Build Polypheny
