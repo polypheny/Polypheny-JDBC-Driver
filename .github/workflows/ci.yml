@@ -5,7 +5,7 @@ on: [ push, pull_request ]
 jobs:
     build-polypheny:
         timeout-minutes: 15
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-latest
         steps:
             -   uses: actions/setup-java@v4
                 with:
@@ -45,13 +45,13 @@ jobs:
             fail-fast: false
             matrix:
                 java: [ 8, 11, 17, 21 ]
-                os: [ ubuntu-24.04, macos-latest ]
+                os: [ ubuntu-latest, macos-latest ]
                 exclude:
                     -   os: macos-latest
                         java: 8
         timeout-minutes: 5
         runs-on: ${{ matrix.os }}
-        name: Java ${{ matrix.java }} @ ${{ matrix.os == 'ubuntu-24.04' && 'ubuntu-latest' || matrix.os }}
+        name: Java ${{ matrix.java }} @ ${{ matrix.os }}
         steps:
             -   uses: actions/checkout@v4
             -   name: Set up JDK
@@ -108,7 +108,7 @@ jobs:
             matrix:
                 adapter: [ mongodb, hsqldb, monetdb, postgresql, file, neo4j ]
         timeout-minutes: 10
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-latest
         name: Test on ${{ matrix.adapter }}
         steps:
             -   uses: actions/checkout@v4
