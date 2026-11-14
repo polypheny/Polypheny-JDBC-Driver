@@ -1,3 +1,9 @@
+## 3.1
+
+* Use the released Prism API 2.2.
+* Return document collection metadata from `PrismInterfaceClient.searchEntities()` when the server provides it.
+
+
 ## 3.0
 
 ### December 17, 2025

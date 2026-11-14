@@ -13,7 +13,7 @@ group "org.polypheny"
 description = "A standards-compliant JDBC driver for Polypheny."
 
 def versionMajor = 3
-def versionMinor = 0
+def versionMinor = 1
 def versionQualifier = ""
 version = versionMajor + "." + versionMinor + (versionQualifier != '' ? "-" + versionQualifier : '')
 
@@ -108,6 +108,7 @@ sourceSets {
         }
         resources {
             srcDirs = ["src/main/resources"]
+            exclude 'polypheny-jdbc-driver-version.properties'
         }
     }
 }
@@ -120,6 +121,7 @@ test {
 /**
  * JARs*/
 jar {
+    archiveClassifier = 'plain'
     manifest {
         attributes 'Manifest-Version': '1.0'
         attributes 'Copyright': 'The Polypheny Project'
@@ -160,23 +162,28 @@ artifacts {
     archives javadocJar // jar file containing the source files
 }
 
-// generate version properties file
-task generateVersionProperties {
-    def versionPropsFile = file('src/main/resources/polypheny-jdbc-driver-version.properties')
-    versionPropsFile.parentFile.mkdirs()
+def versionProps = layout.buildDirectory.file('generated/jdbc-version/polypheny-jdbc-driver-version.properties')
+tasks.register('generateVersionProperties') {
+    inputs.property('version', project.version.toString())
+    outputs.file(versionProps)
 
-    // Generate version properties file with project version
-    versionPropsFile.withWriter { writer ->
-        writer.write("version=${version}\n")
-        writer.write("major=${versionMajor}\n")
-        writer.write("minor=${versionMinor}\n")
-        writer.write("qualifier=${versionQualifier}\n")
-        writer.write("buildTimestamp=${new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")}")
+    doLast {
+        def versionPropsFile = versionProps.get().asFile
+        versionPropsFile.parentFile.mkdirs()
+        versionPropsFile.withWriter('UTF-8') { writer ->
+            writer.write("version=${version}\n")
+            writer.write("major=${versionMajor}\n")
+            writer.write("minor=${versionMinor}\n")
+            writer.write("qualifier=${versionQualifier}\n")
+            writer.write("buildTimestamp=${new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")}\n")
+        }
     }
 }
 
-// Ensure the generated version properties file is created before compilation
-compileJava.dependsOn generateVersionProperties
+processResources {
+    dependsOn tasks.named('generateVersionProperties')
+    from versionProps
+}
 
 
 javadoc {
@@ -201,6 +208,8 @@ publishing {
                     }
                 }
                 scm {
+                    connection = 'scm:git:https://github.com/polypheny/Polypheny-JDBC-Driver.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/polypheny/Polypheny-JDBC-Driver.git'
                     url = 'https://github.com/polypheny/Polypheny-JDBC-Driver'
                 }
                 developers {
@@ -215,14 +224,14 @@ publishing {
     }
     repositories {
         maven {
-            name = 'ossrh-staging-api'
+            name = 'CentralStaging'
             def stagingUrl =  "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
             def snapshotsUrl =
                 "https://central.sonatype.com/repository/maven-snapshots/"
             url = uri(version.toString().endsWith("-SNAPSHOT") ? snapshotsUrl : stagingUrl)
             credentials {
-                username = System.getenv("OSSRH_USER")
-                password = System.getenv("OSSRH_PASS")
+                username = System.getenv('CENTRAL_USERNAME')
+                password = System.getenv('CENTRAL_TOKEN')
             }
         }
         maven {
@@ -233,12 +242,21 @@ publishing {
                 password = System.getenv("GITHUB_TOKEN")
             }
         }
+        if (providers.gradleProperty('releaseTestRepository').isPresent()) {
+            maven {
+                name = 'ReleaseTest'
+                url = file(providers.gradleProperty('releaseTestRepository').get()).toURI()
+            }
+        }
     }
 }
 //task generatePom(group: 'publishing', dependsOn: "generatePomFileFor${project.name.capitalize()}Publication")
 
 signing {
-    required { gradle.taskGraph.hasTask("publish") }
+    required {
+        gradle.taskGraph.hasTask('publish') ||
+                gradle.taskGraph.allTasks.any { it.name.startsWith('publishShadowPublicationTo') && it.name.endsWith('Repository') }
+    }
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
     useInMemoryPgpKeys(signingKey, signingPassword)
@@ -276,27 +294,33 @@ idea {
 }
 
 
-import java.util.Base64
+tasks.register('printVersion') {
+    doLast {
+        println project.version
+    }
+}
 
 tasks.register("publishToMavenCentral") {
     group = "publishing"
-    description = "Publishes all Maven publications produced by this project to Maven Central."
-    dependsOn("publish")
+    description = "Uploads the signed JDBC driver to the Central Publisher Portal."
+    dependsOn("publishShadowPublicationToCentralStagingRepository")
     doLast {
-        def username = System.getenv("OSSRH_USER")
-        def password = System.getenv("OSSRH_PASS")
+        def username = System.getenv("CENTRAL_USERNAME")
+        def password = System.getenv("CENTRAL_TOKEN")
         def namespace = "org.polypheny"
         def token = Base64.getEncoder().encodeToString("$username:$password".getBytes('UTF-8'))
         // Use the Java 8 HTTP API because the driver build also runs on Java 8.
-        def connection = new URL("https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/$namespace").openConnection()
+        def connection = new URL("https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/$namespace?publishing_type=automatic").openConnection()
         try {
+            connection.connectTimeout = 15000
+            connection.readTimeout = 120000
             connection.requestMethod = 'POST'
             connection.setRequestProperty('Authorization', "Bearer $token")
-            if (connection.responseCode < 400) {
-                logger.info(connection.inputStream.getText('UTF-8'))
-            } else {
-                logger.error(connection.errorStream?.getText('UTF-8'))
+            def status = connection.responseCode
+            if (status < 200 || status >= 300) {
+                throw new GradleException("Central Publisher Portal transfer failed (HTTP ${status}): ${connection.errorStream?.getText('UTF-8')}")
             }
+            logger.lifecycle("Transferred the JDBC driver to the Central Publisher Portal (HTTP ${status}).")
         } finally {
             connection.disconnect()
         }
