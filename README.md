@@ -24,36 +24,6 @@ This driver is compatible with JVM version 8 or higher.
 
 > For authentication, please use the default username `pa` with an empty password.
 
-## Cypher and graph results
-
-The graph support in this branch requires a Polypheny server with Prism graph
-support. Use the driver's multi-model API to run Cypher and pass the name of an
-existing graph namespace to `PolyStatement.execute`.
-
-```java
-try (PolyStatement statement = connection.unwrap(PolyConnection.class).createPolyStatement()) {
-    GraphResult graph = statement.execute("social", "cypher", "MATCH (n:Person) RETURN n")
-            .unwrap(GraphResult.class);
-    for (PolyGraphElement element : graph) {
-        System.out.println(element.getId());
-    }
-
-    RelationalResult rows = statement.execute("social", "cypher",
-            "MATCH (n:Person) RETURN n AS person, n.name AS name").unwrap(RelationalResult.class);
-    for (PolyRow row : rows) {
-        PolyNode person = row.get("person").asNode();
-        System.out.println(person.getId() + " " + row.get("name").asString());
-    }
-}
-```
-
-Queries that return only graph elements use `GraphResult`, an iterable stream of
-nodes and edges. A path in that stream appears in traversal order as alternating
-nodes and edges. Result pages are fetched during iteration and retained for
-repeat iteration. Mixed projections require Prism 2.3 and preserve the row and
-column structure. Read graph values as `PolyNode`, `PolyEdge`, `PolyPath` or
-`PolyGraph`.
-
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).
 
