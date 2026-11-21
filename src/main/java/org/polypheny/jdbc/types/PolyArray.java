@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.PolyphenyResultSet;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.prism.ProtoPolyType;
@@ -33,29 +35,31 @@ public class PolyArray implements Array {
 
     private final String protoBaseTypeName;
     private final Object[] elements;
+    private final List<TypedValue> wireValues;
 
 
     public PolyArray( String protoBaseTypeName, Object[] elements ) {
         this.protoBaseTypeName = protoBaseTypeName;
-        Object[] shiftedElements = new Object[elements.length];
-        int endIdx = elements.length;
-        System.arraycopy( elements, 0, shiftedElements, 0, endIdx );
-        this.elements = shiftedElements;
+        this.elements = elements.clone();
+        this.wireValues = null;
     }
 
 
     public PolyArray( String protoBaseTypeName, List<TypedValue> values ) throws SQLException {
         this.protoBaseTypeName = protoBaseTypeName;
-        List<Object> objects = new ArrayList<>();
-        for ( TypedValue v : values ) {
-            objects.add( v.asObject() );
+        this.wireValues = new ArrayList<>( values );
+        this.elements = new Object[wireValues.size()];
+        for ( int i = 0; i < elements.length; i++ ) {
+            elements[i] = wireValues.get( i ).asObject();
         }
-        this.elements = objects.toArray( new Object[0] );
     }
 
 
-    private int longToInt( long value ) {
-        return Math.toIntExact( value );
+    private int getSliceOffset( long index, int count ) throws SQLException {
+        if ( index < 1 || index > (long) elements.length + 1 || count < 0 || count > elements.length - (index - 1) ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Array slice is outside the array." );
+        }
+        return (int) (index - 1);
     }
 
 
@@ -73,7 +77,7 @@ public class PolyArray implements Array {
 
     @Override
     public Object getArray() {
-        return elements;
+        return elements.clone();
     }
 
 
@@ -84,8 +88,9 @@ public class PolyArray implements Array {
 
 
     @Override
-    public Object getArray( long index, int count ) {
-        return Arrays.copyOfRange( elements, longToInt( index - 1 ), count );
+    public Object getArray( long index, int count ) throws SQLException {
+        int offset = getSliceOffset( index, count );
+        return Arrays.copyOfRange( elements, offset, offset + count );
     }
 
 
@@ -97,7 +102,7 @@ public class PolyArray implements Array {
 
     @Override
     public ResultSet getResultSet() throws SQLException {
-        return getResultSet( 0, elements.length );
+        return getResultSet( 1, elements.length );
     }
 
 
@@ -109,16 +114,17 @@ public class PolyArray implements Array {
 
     @Override
     public ResultSet getResultSet( long index, int count ) throws SQLException {
+        int offset = getSliceOffset( index, count );
         int jdbcBaseType = getBaseType();
-        List<PolyphenyColumnMeta> columnMetas = new ArrayList<>();
-        columnMetas.add( PolyphenyColumnMeta.fromSpecification( 0, "INDEX", "ARRAY", Types.INTEGER ) );
-        columnMetas.add( PolyphenyColumnMeta.fromSpecification( 1, "VALUE", "ARRAY", jdbcBaseType ) );
-        List<List<TypedValue>> rows = new ArrayList<>();
-        for ( int i = 1; i < elements.length; i++ ) {
-            List<TypedValue> currentRow = new ArrayList<>();
-            currentRow.add( TypedValue.fromInteger( i ) );
-            currentRow.add( TypedValue.fromObject( elements[i], jdbcBaseType ) );
-            rows.add( currentRow );
+        List<PolyphenyColumnMeta> columnMetas = Arrays.asList(
+                PolyphenyColumnMeta.fromSpecification( 0, "INDEX", "ARRAY", Types.INTEGER ),
+                PolyphenyColumnMeta.fromSpecification( 1, "VALUE", "ARRAY", jdbcBaseType ) );
+        List<List<TypedValue>> rows = new ArrayList<>( count );
+        for ( int i = offset; i < offset + count; i++ ) {
+            TypedValue value = wireValues == null
+                    ? TypedValue.fromObject( elements[i], jdbcBaseType )
+                    : wireValues.get( i );
+            rows.add( Arrays.asList( TypedValue.fromInteger( i + 1 ), value ) );
         }
         return new PolyphenyResultSet( columnMetas, rows );
     }

@@ -118,6 +118,37 @@ class GraphQueryTest {
 
 
     @Test
+    void preservesEdgeEndpointsInMixedRows() throws SQLException {
+        try ( Connection connection = TestHelper.getConnection();
+                PolyStatement statement = connection.unwrap( PolyConnection.class ).createPolyStatement() ) {
+            RelationalResult result = statement.execute( NAMESPACE, CYPHER,
+                    "MATCH (a:Person {name: 'Alice'})-[r:KNOWS]->(b:Person) "
+                            + "RETURN a AS source, r AS relationship, b AS target, b.name AS name" ).unwrap( RelationalResult.class );
+            assertEquals( "EDGE", result.getMetadata().getColumnMeta( 1 ).getProtocolTypeName() );
+            Iterator<PolyRow> rows = result.iterator();
+            PolyRow row = rows.next();
+            assertEquals( "Bob", row.get( "name" ).asString() );
+            assertEdge( row.get( "source" ).asNode(), row.get( "relationship" ).asEdge(), row.get( "target" ).asNode(), 2020 );
+            assertFalse( rows.hasNext() );
+        }
+    }
+
+
+    @Test
+    void keepsGraphColumnMetadataForEmptyMixedResults() throws SQLException {
+        try ( Connection connection = TestHelper.getConnection();
+                PolyStatement statement = connection.unwrap( PolyConnection.class ).createPolyStatement() ) {
+            RelationalResult result = statement.execute( NAMESPACE, CYPHER,
+                    "MATCH (n:Person {name: 'Missing'}) RETURN n AS person, n.name AS name" ).unwrap( RelationalResult.class );
+            assertEquals( 2, result.getMetadata().getColumnCount() );
+            assertEquals( 0, result.getMetadata().getColumnIndexFromLabel( "person" ) );
+            assertEquals( "NODE", result.getMetadata().getColumnMeta( 0 ).getProtocolTypeName() );
+            assertFalse( result.iterator().hasNext() );
+        }
+    }
+
+
+    @Test
     void readsAnOrderedPathFromBothResultFormats() throws SQLException {
         try ( Connection connection = TestHelper.getConnection();
                 PolyStatement statement = connection.unwrap( PolyConnection.class ).createPolyStatement() ) {

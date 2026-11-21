@@ -17,11 +17,11 @@
 package org.polypheny.jdbc.utils;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.TypedValue;
@@ -40,14 +40,16 @@ public class ProtoUtils {
     }
 
 
-    public static List<ProtoValue> serializeParameterList( List<TypedValue> values ) {
-        return values.stream().map( v -> {
+    public static List<ProtoValue> serializeParameterList( List<TypedValue> values ) throws PrismInterfaceServiceException {
+        List<ProtoValue> parameters = new ArrayList<>( values.size() );
+        for ( TypedValue value : values ) {
             try {
-                return v.serialize();
+                parameters.add( value.serialize() );
             } catch ( SQLException e ) {
-                throw new RuntimeException( "Should not be thrown. Encountered an unknown type during serialization." );
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Could not serialize parameter " + (parameters.size() + 1) + ".", e );
             }
-        } ).collect( Collectors.toList() );
+        }
+        return parameters;
     }
 
 

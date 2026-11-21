@@ -151,6 +151,11 @@ public class PrismInterfaceClient {
     }
 
 
+    void abort() {
+        rpc.abort();
+    }
+
+
     public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
         ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName );
         rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
@@ -215,12 +220,9 @@ public class PrismInterfaceClient {
 
 
     public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
-        IndexedParameters parameters = IndexedParameters.newBuilder()
-                .addAllParameters( ProtoUtils.serializeParameterList( values ) )
-                .build();
         ExecuteIndexedStatementRequest request = ExecuteIndexedStatementRequest.newBuilder()
                 .setStatementId( statementId )
-                .setParameters( parameters )
+                .setParameters( buildIndexedParameters( values ) )
                 .setFetchSize( fetchSize )
                 .build();
 
@@ -243,16 +245,20 @@ public class PrismInterfaceClient {
 
 
     public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws PrismInterfaceServiceException {
-        List<IndexedParameters> parameters = parameterBatch.stream()
-                .map( ProtoUtils::serializeParameterList )
-                .map( p -> IndexedParameters.newBuilder().addAllParameters( p ).build() )
-                .collect( Collectors.toList() );
-        ExecuteIndexedStatementBatchRequest request = ExecuteIndexedStatementBatchRequest.newBuilder()
-                .setStatementId( statementId )
-                .addAllParameters( parameters )
-                .build();
+        ExecuteIndexedStatementBatchRequest.Builder request = ExecuteIndexedStatementBatchRequest.newBuilder()
+                .setStatementId( statementId );
+        for ( List<TypedValue> values : parameterBatch ) {
+            request.addParameters( buildIndexedParameters( values ) );
+        }
 
-        return rpc.executeIndexedStatementBatch( request, timeout );
+        return rpc.executeIndexedStatementBatch( request.build(), timeout );
+    }
+
+
+    private static IndexedParameters buildIndexedParameters( List<TypedValue> values ) throws PrismInterfaceServiceException {
+        return IndexedParameters.newBuilder()
+                .addAllParameters( ProtoUtils.serializeParameterList( values ) )
+                .build();
     }
 
 

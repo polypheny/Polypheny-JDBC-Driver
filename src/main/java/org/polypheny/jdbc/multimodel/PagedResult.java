@@ -32,8 +32,10 @@ abstract class PagedResult<T> extends Result implements Iterable<T> {
     private final int fetchSize;
     private final ResultCase frameType;
     private final Function<Frame, List<T>> readFrame;
+    // Retain fetched pages so that subsequent iterators can read the same result.
     private final List<T> elements;
     private boolean last;
+    private IllegalStateException fetchFailure;
 
 
     PagedResult( ResultType resultType, Frame firstFrame, PolyStatement statement, Function<Frame, List<T>> readFrame ) {
@@ -50,12 +52,17 @@ abstract class PagedResult<T> extends Result implements Iterable<T> {
 
     private synchronized boolean hasElement( int index ) {
         while ( index >= elements.size() && !last ) {
+            if ( fetchFailure != null ) {
+                throw fetchFailure;
+            }
             try {
                 Frame frame = statement.fetchFrame( execution, fetchSize, frameType );
                 elements.addAll( readFrame.apply( frame ) );
                 last = frame.getIsLast();
-            } catch ( PrismInterfaceServiceException e ) {
-                throw new IllegalStateException( "Could not fetch the next result page.", e );
+            } catch ( PrismInterfaceServiceException | RuntimeException e ) {
+                // The server may have advanced its cursor even when we could not read the page.
+                fetchFailure = new IllegalStateException( "Could not fetch the next result page.", e );
+                throw fetchFailure;
             }
         }
         return index < elements.size();

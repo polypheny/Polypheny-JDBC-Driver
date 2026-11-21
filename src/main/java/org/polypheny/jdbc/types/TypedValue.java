@@ -1155,6 +1155,8 @@ public class TypedValue implements Convertible {
         switch ( valueCase ) {
             case NULL:
                 return null;
+            case LIST:
+            case DOCUMENT:
             case NODE:
             case EDGE:
             case PATH:
@@ -1254,12 +1256,14 @@ public class TypedValue implements Convertible {
                     break;
                 case LIST:
                     arrayValue = getArray( serialized );
+                    isSerialized = false;
                     break;
                 case INTERVAL:
                     otherValue = getInterval( serialized.getInterval() );
                     break;
                 case DOCUMENT:
                     otherValue = new PolyDocument( serialized.getDocument() );
+                    isSerialized = false;
                     break;
                 case FILE:
                     blobValue = new PolyBlob( serialized.getFile().getBinary().toByteArray() );
@@ -1290,6 +1294,9 @@ public class TypedValue implements Convertible {
 
 
     public ProtoValue serialize() throws SQLException {
+        if ( isSerialized && valueCase != ValueCase.VALUE_NOT_SET ) {
+            deserialize();
+        }
         switch ( valueCase ) {
             case BOOLEAN:
                 return serializeAsProtoBoolean();
@@ -1347,9 +1354,9 @@ public class TypedValue implements Convertible {
     }
 
 
-    private ProtoValue serializeAsProtoDocument() {
+    private ProtoValue serializeAsProtoDocument() throws SQLException {
         return ProtoValue.newBuilder()
-                .setDocument( ((PolyDocument) otherValue).serialize() )
+                .setDocument( ((PolyDocument) otherValue).serializeValues() )
                 .build();
     }
 

@@ -291,7 +291,7 @@ public class TypedValueUtils {
         if ( value instanceof PolyDocument ) {
             return TypedValue.fromDocument( (PolyDocument) value );
         }
-        return buildTypedValueFromObject( value, Types.JAVA_OBJECT );
+        throw new SQLFeatureNotSupportedException( "Unsupported parameter type: " + value.getClass().getName() );
     }
 
 

@@ -18,9 +18,7 @@ package org.polypheny.jdbc.types;
 
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 import org.polypheny.prism.ProtoDocument;
-import org.polypheny.prism.ProtoValue;
 
 public class PolyDocument extends HashMap<String, TypedValue> {
 
@@ -44,18 +42,21 @@ public class PolyDocument extends HashMap<String, TypedValue> {
     }
 
 
-    private ProtoValue serializeValue( TypedValue value ) {
-        try {
-            return value.serialize();
-        } catch ( SQLException e ) {
-            throw new RuntimeException( "Cannot serialize value: ", e );
+    ProtoDocument serializeValues() throws SQLException {
+        ProtoDocument.Builder document = ProtoDocument.newBuilder();
+        for ( Entry<String, TypedValue> entry : entrySet() ) {
+            document.putEntries( entry.getKey(), entry.getValue().serialize() );
         }
+        return document.build();
     }
 
 
     public ProtoDocument serialize() {
-        return ProtoDocument.newBuilder().putAllEntries( entrySet().stream().collect(
-                Collectors.toMap( Entry::getKey, e -> serializeValue( e.getValue() ) ) ) ).build();
+        try {
+            return serializeValues();
+        } catch ( SQLException e ) {
+            throw new IllegalArgumentException( "Cannot serialize document value.", e );
+        }
     }
 
 }

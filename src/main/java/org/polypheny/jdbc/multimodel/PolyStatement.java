@@ -16,9 +16,11 @@
 
 package org.polypheny.jdbc.multimodel;
 
+import java.nio.channels.ClosedByInterruptException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import lombok.Getter;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
@@ -80,7 +82,12 @@ public class PolyStatement implements AutoCloseable {
 
     private void resetStatement() throws PrismInterfaceServiceException {
         if ( statementId != NO_STATEMENT_ID && !connection.isClosed() ) {
-            getPrismInterfaceClient().closeStatement( statementId, connection.getTimeout() );
+            try {
+                getPrismInterfaceClient().closeStatement( statementId, connection.getTimeout() );
+            } catch ( PrismInterfaceServiceException e ) {
+                abortIfRequestIncomplete( e );
+                throw e;
+            }
         }
         statementId = NO_STATEMENT_ID;
         parameterKind = null;
@@ -111,7 +118,7 @@ public class PolyStatement implements AutoCloseable {
         if ( resultExecution != execution ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "The statement has been re-executed since this result was opened." );
         }
-        Frame frame = getPrismInterfaceClient().fetchResult( statementId, resultFetchSize, connection.getTimeout() );
+        Frame frame = request( () -> getPrismInterfaceClient().fetchResult( statementId, resultFetchSize, connection.getTimeout() ) );
         if ( frame.getResultCase() != expectedType ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID,
                     "Expected " + expectedType + ", but the statement returned " + frame.getResultCase() + "." );
@@ -143,20 +150,26 @@ public class PolyStatement implements AutoCloseable {
     public synchronized Result execute( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
         checkOpen();
         resetStatement();
-        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
-        getPrismInterfaceClient().executeUnparameterizedStatement( namespaceName, languageName, statement, fetchSize, callback, connection.getTimeout() );
-        while ( true ) {
-            StatementResponse response = callback.takeNext();
-            statementId = response.getStatementId();
-            if ( response.hasResult() ) {
-                try {
-                    callback.awaitSuccessfulCompletion();
-                } catch ( InterruptedException e ) {
-                    Thread.currentThread().interrupt();
-                    throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of the statement failed.", e );
+        int timeout = connection.getTimeout();
+        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse, timeout );
+        try {
+            getPrismInterfaceClient().executeUnparameterizedStatement( namespaceName, languageName, statement, fetchSize, callback, timeout );
+            while ( true ) {
+                StatementResponse response = callback.takeNext();
+                statementId = response.getStatementId();
+                if ( response.hasResult() ) {
+                    try {
+                        callback.awaitSuccessfulCompletion();
+                    } catch ( InterruptedException e ) {
+                        Thread.currentThread().interrupt();
+                        throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of the statement failed.", e );
+                    }
+                    return readResult( response.getResult() );
                 }
-                return readResult( response.getResult() );
             }
+        } catch ( PrismInterfaceServiceException e ) {
+            abortIfRequestIncomplete( e );
+            throw e;
         }
     }
 
@@ -167,15 +180,25 @@ public class PolyStatement implements AutoCloseable {
         if ( statements.isEmpty() ) {
             return Collections.emptyList();
         }
-        CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse );
-        getPrismInterfaceClient().executeUnparameterizedStatementBatch( statements, namespaceName, languageName, callback, connection.getTimeout() );
-        while ( true ) {
-            StatementBatchResponse response = callback.takeNext();
-            statementId = response.getBatchId();
-            if ( response.getScalarsCount() > 0 ) {
-                callback.awaitSuccessfulCompletion();
-                return response.getScalarsList();
+        int timeout = connection.getTimeout();
+        CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse, timeout );
+        try {
+            getPrismInterfaceClient().executeUnparameterizedStatementBatch( statements, namespaceName, languageName, callback, timeout );
+            while ( true ) {
+                StatementBatchResponse response = callback.takeNext();
+                statementId = response.getBatchId();
+                if ( response.getScalarsCount() > 0 ) {
+                    callback.awaitSuccessfulCompletion();
+                    return response.getScalarsList();
+                }
             }
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            connection.abortAfterIncompleteRequest();
+            throw e;
+        } catch ( PrismInterfaceServiceException e ) {
+            abortIfRequestIncomplete( e );
+            throw e;
         }
     }
 
@@ -191,7 +214,7 @@ public class PolyStatement implements AutoCloseable {
     public synchronized void prepareIndexed( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
         checkOpen();
         resetStatement();
-        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement( namespaceName, languageName, statement, connection.getTimeout() );
+        PreparedStatementSignature signature = request( () -> getPrismInterfaceClient().prepareIndexedStatement( namespaceName, languageName, statement, connection.getTimeout() ) );
         statementId = signature.getStatementId();
         parameterKind = ParameterKind.INDEXED;
     }
@@ -200,7 +223,7 @@ public class PolyStatement implements AutoCloseable {
     public synchronized void prepareNamed( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
         checkOpen();
         resetStatement();
-        PreparedStatementSignature signature = getPrismInterfaceClient().prepareNamedStatement( namespaceName, languageName, statement, connection.getTimeout() );
+        PreparedStatementSignature signature = request( () -> getPrismInterfaceClient().prepareNamedStatement( namespaceName, languageName, statement, connection.getTimeout() ) );
         statementId = signature.getStatementId();
         parameterKind = ParameterKind.NAMED;
     }
@@ -208,13 +231,13 @@ public class PolyStatement implements AutoCloseable {
 
     public synchronized Result executePrepared( List<TypedValue> parameters ) throws PrismInterfaceServiceException {
         beginPreparedExecution( ParameterKind.INDEXED );
-        return readResult( getPrismInterfaceClient().executeIndexedStatement( statementId, parameters, fetchSize, connection.getTimeout() ) );
+        return readResult( request( () -> getPrismInterfaceClient().executeIndexedStatement( statementId, parameters, fetchSize, connection.getTimeout() ) ) );
     }
 
 
     public synchronized Result executePrepared( Map<String, TypedValue> parameters ) throws PrismInterfaceServiceException {
         beginPreparedExecution( ParameterKind.NAMED );
-        return readResult( getPrismInterfaceClient().executeNamedStatement( statementId, parameters, fetchSize, connection.getTimeout() ) );
+        return readResult( request( () -> getPrismInterfaceClient().executeNamedStatement( statementId, parameters, fetchSize, connection.getTimeout() ) ) );
     }
 
 
@@ -223,7 +246,7 @@ public class PolyStatement implements AutoCloseable {
         if ( parameterBatch.isEmpty() ) {
             return Collections.emptyList();
         }
-        return getPrismInterfaceClient().executeIndexedStatementBatch( statementId, parameterBatch, connection.getTimeout() ).getScalarsList();
+        return request( () -> getPrismInterfaceClient().executeIndexedStatementBatch( statementId, parameterBatch, connection.getTimeout() ) ).getScalarsList();
     }
 
 
@@ -233,10 +256,41 @@ public class PolyStatement implements AutoCloseable {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Prepare a statement with " + kind.description + " parameters first." );
         }
         if ( hasOpenResult ) {
-            getPrismInterfaceClient().closeResult( statementId, connection.getTimeout() );
+            try {
+                getPrismInterfaceClient().closeResult( statementId, connection.getTimeout() );
+            } catch ( PrismInterfaceServiceException e ) {
+                abortIfRequestIncomplete( e );
+                throw e;
+            }
             hasOpenResult = false;
         }
         execution++;
+    }
+
+
+    private <T> T request( PrismRequest<T> request ) throws PrismInterfaceServiceException {
+        try {
+            return request.execute();
+        } catch ( PrismInterfaceServiceException e ) {
+            abortIfRequestIncomplete( e );
+            throw e;
+        }
+    }
+
+
+    private void abortIfRequestIncomplete( PrismInterfaceServiceException error ) {
+        Throwable cause = error.getCause();
+        if ( cause instanceof TimeoutException || cause instanceof InterruptedException || cause instanceof ClosedByInterruptException ) {
+            connection.abortAfterIncompleteRequest();
+        }
+    }
+
+
+    @FunctionalInterface
+    private interface PrismRequest<T> {
+
+        T execute() throws PrismInterfaceServiceException;
+
     }
 
 

@@ -16,6 +16,8 @@
 
 package org.polypheny.jdbc.types;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,18 +28,26 @@ import org.polypheny.prism.GraphElement;
 import org.polypheny.prism.ProtoValue;
 
 @Getter
-public abstract class PolyGraphElement extends HashMap<String, TypedValue> {
+public abstract class PolyGraphElement {
 
     private final String id;
     private final String name;
     private final List<String> labels;
+    private final Map<String, TypedValue> properties;
 
 
     protected PolyGraphElement( String id, String name, List<String> labels, Map<String, ProtoValue> properties ) {
         this.id = id;
         this.name = name;
-        this.labels = labels;
-        properties.forEach( ( key, value ) -> put( key, new TypedValue( value ) ) );
+        this.labels = Collections.unmodifiableList( new ArrayList<>( labels ) );
+        Map<String, TypedValue> values = new HashMap<>();
+        properties.forEach( ( key, value ) -> values.put( key, new TypedValue( value ) ) );
+        this.properties = Collections.unmodifiableMap( values );
+    }
+
+
+    public TypedValue get( String property ) {
+        return properties.get( property );
     }
 
 

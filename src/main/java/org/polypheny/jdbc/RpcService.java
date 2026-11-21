@@ -93,7 +93,7 @@ public class RpcService {
     private final AtomicLong idCounter = new AtomicLong( 1 );
     private final Transport con;
     private final Thread service;
-    private boolean closed = false;
+    private volatile boolean closed = false;
     private boolean disconnectSent = false;
     private IOException error = null;
     private final Map<Long, CompletableFuture<Response>> callbacks = new ConcurrentHashMap<>();
@@ -108,13 +108,18 @@ public class RpcService {
 
 
     void close() {
-        closed = true;
-        con.close();
+        abort();
         try {
             service.join();
         } catch ( InterruptedException e ) {
             log.warn( "Could not join response handler", e );
         }
+    }
+
+
+    void abort() {
+        closed = true;
+        con.close();
     }
 
 
@@ -203,6 +208,9 @@ public class RpcService {
             callbackQueues.forEach( ( id, cq ) -> cq.onError( t ) );
             log.error( "Unhandled exception", t );
             throw t;
+        } finally {
+            callbacks.clear();
+            callbackQueues.clear();
         }
     }
 
@@ -214,7 +222,10 @@ public class RpcService {
             } else {
                 return f.get( timeout, TimeUnit.MILLISECONDS );
             }
-        } catch ( ExecutionException | InterruptedException | TimeoutException e ) {
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw new PrismInterfaceServiceException( e );
+        } catch ( ExecutionException | TimeoutException e ) {
             throw new PrismInterfaceServiceException( e );
         }
     }
@@ -235,6 +246,8 @@ public class RpcService {
             return resp;
         } catch ( IOException e ) {
             throw new PrismInterfaceServiceException( e );
+        } finally {
+            callbacks.remove( req.getId() );
         }
     }
 
@@ -401,6 +414,7 @@ public class RpcService {
             callbackQueues.put( req.getId(), callback );
             sendMessage( req.build() );
         } catch ( IOException e ) {
+            callbackQueues.remove( req.getId() );
             throw new PrismInterfaceServiceException( e );
         }
     }
@@ -413,6 +427,7 @@ public class RpcService {
             callbackQueues.put( req.getId(), callback );
             sendMessage( req.build() );
         } catch ( IOException e ) {
+            callbackQueues.remove( req.getId() );
             throw new PrismInterfaceServiceException( e );
         }
     }

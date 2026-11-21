@@ -17,21 +17,29 @@
 package org.polypheny.jdbc.types;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Array;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.types.PolyEdge.EdgeDirection;
+import org.polypheny.jdbc.utils.ProtoUtils;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoGraph;
 import org.polypheny.prism.ProtoList;
 import org.polypheny.prism.ProtoNode;
+import org.polypheny.prism.ProtoNull;
 import org.polypheny.prism.ProtoPath;
 import org.polypheny.prism.ProtoValue;
 
@@ -80,7 +88,8 @@ class GraphValueTest {
                         .addValues( ProtoValue.newBuilder().setGraph( graph ) )
                         .addValues( ProtoValue.newBuilder().setNode( node ) ) ).build() ) ).build();
 
-        Array list = new TypedValue( value ).asDocument().get( "values" ).asArray();
+        PolyDocument document = new TypedValue( value ).asObject( PolyDocument.class );
+        Array list = document.get( "values" ).asObject( Array.class );
         assertEquals( Types.JAVA_OBJECT, list.getBaseType() );
         Object[] values = (Object[]) list.getArray();
         PolyGraph decoded = assertInstanceOf( PolyGraph.class, values[0] );
@@ -90,6 +99,70 @@ class GraphValueTest {
         assertEquals( "person", person.getName() );
         assertEquals( Arrays.asList( "Person" ), person.getLabels() );
         assertEquals( "Alice", person.get( "name" ).asString() );
+        assertEquals( "Alice", person.getProperties().get( "name" ).asString() );
+    }
+
+
+    @Test
+    void graphElementsWithTheSamePropertiesStayDistinct() {
+        PolyNode first = new PolyNode( ProtoNode.newBuilder().setId( "first" ).build() );
+        PolyNode second = new PolyNode( ProtoNode.newBuilder().setId( "second" ).build() );
+        PolyEdge edge = new PolyEdge( ProtoEdge.newBuilder().setId( "edge" ).build() );
+        assertEquals( 3, new HashSet<>( Arrays.asList( first, second, edge ) ).size() );
+        assertTrue( first.getProperties().isEmpty() );
+    }
+
+
+    @Test
+    void readsGraphListSlicesAndRows() throws SQLException {
+        ProtoValue node = ProtoValue.newBuilder().setNode( ProtoNode.newBuilder().setId( "node" ) ).build();
+        ProtoValue edge = ProtoValue.newBuilder().setEdge( ProtoEdge.newBuilder().setId( "edge" ) ).build();
+        Array list = new TypedValue( ProtoValue.newBuilder().setList( ProtoList.newBuilder()
+                .addValues( node )
+                .addValues( ProtoValue.newBuilder().setNull( ProtoNull.getDefaultInstance() ) )
+                .addValues( edge )
+                .addValues( TypedValue.fromInteger( 7 ).serialize() ) ).build() ).asArray();
+
+        Object[] slice = (Object[]) list.getArray( 2, 2 );
+        assertEquals( 2, slice.length );
+        assertNull( slice[0] );
+        assertEquals( "edge", assertInstanceOf( PolyEdge.class, slice[1] ).getId() );
+        assertThrows( SQLException.class, () -> list.getArray( 0, 1 ) );
+        assertThrows( SQLException.class, () -> list.getResultSet( 4, 2 ) );
+        try ( ResultSet rows = list.getResultSet() ) {
+            assertTrue( rows.next() );
+            assertEquals( 1, rows.getInt( "INDEX" ) );
+            assertEquals( "node", rows.getObject( "VALUE", PolyNode.class ).getId() );
+        }
+        try ( ResultSet rows = list.getResultSet( 2, 3 ) ) {
+            assertTrue( rows.next() );
+            assertEquals( 2, rows.getInt( "INDEX" ) );
+            assertNull( rows.getObject( "VALUE" ) );
+            assertTrue( rows.wasNull() );
+            assertTrue( rows.next() );
+            assertEquals( 3, rows.getInt( "INDEX" ) );
+            assertEquals( "edge", assertInstanceOf( PolyEdge.class, rows.getObject( "VALUE" ) ).getId() );
+            assertTrue( rows.next() );
+            assertEquals( 7, rows.getInt( "VALUE" ) );
+            assertFalse( rows.next() );
+        }
+    }
+
+
+    @Test
+    void rejectsGraphParametersWithCheckedErrorsEvenInsideListsAndDocuments() throws SQLException {
+        ProtoNode node = ProtoNode.newBuilder().setId( "node" ).build();
+        PolyNode wrapped = new PolyNode( node );
+        assertThrows( SQLException.class, () -> TypedValue.fromObject( wrapped ) );
+        assertThrows( SQLException.class, () -> TypedValue.fromObject( wrapped, Types.JAVA_OBJECT ) );
+        ProtoValue list = ProtoValue.newBuilder().setList( ProtoList.newBuilder()
+                .addValues( ProtoValue.newBuilder().setNode( node ) ) ).build();
+        TypedValue document = new TypedValue( ProtoValue.newBuilder().setDocument( ProtoDocument.newBuilder()
+                .putEntries( "list", list ) ).build() );
+
+        assertThrows( SQLException.class, document::serialize );
+        assertThrows( SQLException.class, () -> ProtoUtils.serializeParameterList( Collections.singletonList( document ) ) );
+        assertThrows( SQLException.class, () -> ProtoUtils.serializeParameterMap( Collections.singletonMap( "document", document ) ) );
     }
 
 }

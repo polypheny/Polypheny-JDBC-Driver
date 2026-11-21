@@ -18,6 +18,8 @@ package org.polypheny.jdbc.utils;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -34,11 +36,20 @@ public class CallbackQueue<T> {
     private boolean bIsCompleted = false;
     private final Queue<T> messageQueue = new LinkedList<>();
     private final Function<Response, T> extractResponse;
+    private final int timeoutMillis;
+    private final long deadline;
     private PrismInterfaceServiceException propagatedException;
 
 
     public CallbackQueue( Function<Response, T> extractResponse ) {
+        this( extractResponse, 0 );
+    }
+
+
+    public CallbackQueue( Function<Response, T> extractResponse, int timeoutMillis ) {
         this.extractResponse = extractResponse;
+        this.timeoutMillis = timeoutMillis;
+        this.deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
     }
 
 
@@ -59,7 +70,9 @@ public class CallbackQueue<T> {
         queueLock.lock();
         try {
             while ( !bIsCompleted && propagatedException == null ) {
-                isCompleted.await();
+                if ( !awaitSignal( isCompleted ) ) {
+                    return timeoutFailure();
+                }
             }
             return propagatedException;
         } finally {
@@ -72,7 +85,9 @@ public class CallbackQueue<T> {
         queueLock.lock();
         try {
             while ( messageQueue.isEmpty() && propagatedException == null && !bIsCompleted ) {
-                hasNext.await();
+                if ( !awaitSignal( hasNext ) ) {
+                    throw timeoutFailure();
+                }
             }
             if ( !messageQueue.isEmpty() ) {
                 return messageQueue.remove();
@@ -87,6 +102,25 @@ public class CallbackQueue<T> {
         } finally {
             queueLock.unlock();
         }
+    }
+
+
+    private boolean awaitSignal( Condition condition ) throws InterruptedException {
+        if ( timeoutMillis == 0 ) {
+            condition.await();
+            return true;
+        }
+        long remaining = deadline - System.nanoTime();
+        if ( remaining <= 0 ) {
+            return false;
+        }
+        condition.awaitNanos( remaining );
+        return true;
+    }
+
+
+    private PrismInterfaceServiceException timeoutFailure() {
+        return new PrismInterfaceServiceException( new TimeoutException( "No complete Prism response within " + timeoutMillis + " ms." ) );
     }
 
 

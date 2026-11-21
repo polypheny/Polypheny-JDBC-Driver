@@ -18,6 +18,7 @@ package org.polypheny.jdbc.multimodel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.PolyGraphElement;
 import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.prism.Frame;
@@ -89,6 +91,26 @@ class GraphResultPagingTest {
         assertThrows( IllegalStateException.class, first::hasNext );
         verify( client ).closeStatement( 1, TIMEOUT );
         verify( client, never() ).fetchResult( 2, FETCH_SIZE, TIMEOUT );
+    }
+
+
+    @Test
+    void aFailedPageCannotBeSkippedByRetryingTheIterator() throws Exception {
+        stubResult( "MATCH (n) RETURN n", 1, graphFrame( false, "first" ) );
+        PrismInterfaceServiceException invalidPage = new PrismInterfaceServiceException( "The next result page failed." );
+        when( client.fetchResult( 1, FETCH_SIZE, TIMEOUT ) ).thenThrow( invalidPage ).thenReturn( graphFrame( true, "later" ) );
+        GraphResult result = statement.execute( "graph", "cypher", "MATCH (n) RETURN n" ).unwrap( GraphResult.class );
+
+        Iterator<PolyGraphElement> first = result.iterator();
+        assertEquals( "first", first.next().getId() );
+        IllegalStateException failure = assertThrows( IllegalStateException.class, first::hasNext );
+        assertSame( invalidPage, failure.getCause() );
+        assertSame( failure, assertThrows( IllegalStateException.class, first::next ) );
+
+        Iterator<PolyGraphElement> second = result.iterator();
+        assertEquals( "first", second.next().getId() );
+        assertSame( failure, assertThrows( IllegalStateException.class, second::hasNext ) );
+        verify( client ).fetchResult( 1, FETCH_SIZE, TIMEOUT );
     }
 
 
