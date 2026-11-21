@@ -16,101 +16,16 @@
 
 package org.polypheny.jdbc.multimodel;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.PrismInterfaceClient;
-import org.polypheny.jdbc.PrismInterfaceErrors;
-import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.properties.PropertyUtils;
+import java.util.stream.Collectors;
 import org.polypheny.jdbc.types.PolyDocument;
-import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
-import org.polypheny.prism.Frame.ResultCase;
 
-public class DocumentResult extends Result implements Iterable<PolyDocument> {
-
-    private final PolyStatement polyStatement;
-    private final List<PolyDocument> documents;
-    private boolean isFullyFetched;
-
+public class DocumentResult extends PagedResult<PolyDocument> {
 
     public DocumentResult( Frame frame, PolyStatement polyStatement ) {
-        super( ResultType.DOCUMENT );
-        this.polyStatement = polyStatement;
-        this.isFullyFetched = frame.getIsLast();
-        this.documents = new ArrayList<>();
-        addDocuments( frame.getDocumentFrame() );
-    }
-
-
-    private void addDocuments( DocumentFrame documentFrame ) {
-        documentFrame.getDocumentsList().forEach( d -> documents.add( new PolyDocument( d ) ) );
-    }
-
-
-    private void fetchMore() throws PrismInterfaceServiceException {
-        int id = polyStatement.getStatementId();
-        int timeout = getPolyphenyConnection().getTimeout();
-        Frame frame = getPrismInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
-        if ( frame.getResultCase() != ResultCase.DOCUMENT_FRAME ) {
-            throw new PrismInterfaceServiceException(
-                    PrismInterfaceErrors.RESULT_TYPE_INVALID,
-                    "Statement returned a result of illegal type " + frame.getResultCase()
-            );
-        }
-        isFullyFetched = frame.getIsLast();
-        addDocuments( frame.getDocumentFrame() );
-    }
-
-
-    private PolyConnection getPolyphenyConnection() {
-        return polyStatement.getConnection();
-    }
-
-
-    private PrismInterfaceClient getPrismInterfaceClient() {
-        return getPolyphenyConnection().getPrismInterfaceClient();
-    }
-
-
-    @Override
-    public Iterator<PolyDocument> iterator() {
-        return new DocumentIterator();
-    }
-
-
-    class DocumentIterator implements Iterator<PolyDocument> {
-
-        int index = -1;
-
-
-        @Override
-        public boolean hasNext() {
-            if ( index + 1 >= documents.size() ) {
-                if ( isFullyFetched ) {
-                    return false;
-                }
-                try {
-                    fetchMore();
-                } catch ( PrismInterfaceServiceException e ) {
-                    throw new RuntimeException( e );
-                }
-            }
-            return index + 1 < documents.size();
-        }
-
-
-        @Override
-        public PolyDocument next() {
-            if ( !hasNext() ) {
-                throw new NoSuchElementException( "There are no more documents" );
-            }
-            return documents.get( ++index );
-        }
-
+        super( ResultType.DOCUMENT, frame, polyStatement, page -> page.getDocumentFrame().getDocumentsList().stream()
+                .map( PolyDocument::new )
+                .collect( Collectors.toList() ) );
     }
 
 }

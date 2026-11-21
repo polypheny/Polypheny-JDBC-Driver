@@ -47,6 +47,7 @@ import org.polypheny.prism.EntitiesRequest;
 import org.polypheny.prism.Entity;
 import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
 import org.polypheny.prism.ExecuteIndexedStatementRequest;
+import org.polypheny.prism.ExecuteNamedStatementRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.FetchRequest;
@@ -54,6 +55,7 @@ import org.polypheny.prism.Frame;
 import org.polypheny.prism.Function;
 import org.polypheny.prism.FunctionsRequest;
 import org.polypheny.prism.IndexedParameters;
+import org.polypheny.prism.NamedParameters;
 import org.polypheny.prism.Namespace;
 import org.polypheny.prism.NamespacesRequest;
 import org.polypheny.prism.PrepareStatementRequest;
@@ -149,16 +151,41 @@ public class PrismInterfaceClient {
     }
 
 
+    void abort() {
+        rpc.abort();
+    }
+
+
     public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
+        ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName );
+        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+    }
+
+
+    public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, int fetchSize, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
+        ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName )
+                .toBuilder()
+                .setFetchSize( fetchSize )
+                .build();
+        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+    }
+
+
+    public void executeUnparameterizedStatementBatch( List<String> statements, String namespaceName, String languageName, CallbackQueue<StatementBatchResponse> updateCallback, int timeout ) throws PrismInterfaceServiceException {
+        List<ExecuteUnparameterizedStatementRequest> requests = statements.stream().map( s -> buildExecuteUnparameterizedStatementRequest( s, namespaceName, languageName ) ).collect( Collectors.toList() );
+        executeUnparameterizedStatementBatch( requests, updateCallback, timeout );
+    }
+
+
+    public ExecuteUnparameterizedStatementRequest buildExecuteUnparameterizedStatementRequest( String statement, String namespaceName, String languageName ) {
         ExecuteUnparameterizedStatementRequest.Builder requestBuilder = ExecuteUnparameterizedStatementRequest.newBuilder();
         if ( namespaceName != null ) {
             requestBuilder.setNamespaceName( namespaceName );
         }
-        ExecuteUnparameterizedStatementRequest request = requestBuilder
+        return requestBuilder
                 .setLanguageName( languageName )
                 .setStatement( statement )
                 .build();
-        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
     }
 
 
@@ -171,26 +198,31 @@ public class PrismInterfaceClient {
 
 
     public PreparedStatementSignature prepareIndexedStatement( String namespaceName, String languageName, String statement, int timeout ) throws PrismInterfaceServiceException {
+        return rpc.prepareIndexedStatement( buildPrepareStatementRequest( namespaceName, languageName, statement ), timeout );
+    }
+
+
+    public PreparedStatementSignature prepareNamedStatement( String namespaceName, String languageName, String statement, int timeout ) throws PrismInterfaceServiceException {
+        return rpc.prepareNamedStatement( buildPrepareStatementRequest( namespaceName, languageName, statement ), timeout );
+    }
+
+
+    private PrepareStatementRequest buildPrepareStatementRequest( String namespaceName, String languageName, String statement ) {
         PrepareStatementRequest.Builder requestBuilder = PrepareStatementRequest.newBuilder();
         if ( namespaceName != null ) {
             requestBuilder.setNamespaceName( namespaceName );
         }
-        PrepareStatementRequest request = requestBuilder
+        return requestBuilder
                 .setStatement( statement )
                 .setLanguageName( languageName )
                 .build();
-
-        return rpc.prepareIndexedStatement( request, timeout );
     }
 
 
     public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
-        IndexedParameters parameters = IndexedParameters.newBuilder()
-                .addAllParameters( ProtoUtils.serializeParameterList( values ) )
-                .build();
         ExecuteIndexedStatementRequest request = ExecuteIndexedStatementRequest.newBuilder()
                 .setStatementId( statementId )
-                .setParameters( parameters )
+                .setParameters( buildIndexedParameters( values ) )
                 .setFetchSize( fetchSize )
                 .build();
 
@@ -198,17 +230,35 @@ public class PrismInterfaceClient {
     }
 
 
-    public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws PrismInterfaceServiceException {
-        List<IndexedParameters> parameters = parameterBatch.stream()
-                .map( ProtoUtils::serializeParameterList )
-                .map( p -> IndexedParameters.newBuilder().addAllParameters( p ).build() )
-                .collect( Collectors.toList() );
-        ExecuteIndexedStatementBatchRequest request = ExecuteIndexedStatementBatchRequest.newBuilder()
+    public StatementResult executeNamedStatement( int statementId, Map<String, TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
+        NamedParameters parameters = NamedParameters.newBuilder()
+                .putAllParameters( ProtoUtils.serializeParameterMap( values ) )
+                .build();
+        ExecuteNamedStatementRequest request = ExecuteNamedStatementRequest.newBuilder()
                 .setStatementId( statementId )
-                .addAllParameters( parameters )
+                .setParameters( parameters )
+                .setFetchSize( fetchSize )
                 .build();
 
-        return rpc.executeIndexedStatementBatch( request, timeout );
+        return rpc.executeNamedStatement( request, timeout );
+    }
+
+
+    public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws PrismInterfaceServiceException {
+        ExecuteIndexedStatementBatchRequest.Builder request = ExecuteIndexedStatementBatchRequest.newBuilder()
+                .setStatementId( statementId );
+        for ( List<TypedValue> values : parameterBatch ) {
+            request.addParameters( buildIndexedParameters( values ) );
+        }
+
+        return rpc.executeIndexedStatementBatch( request.build(), timeout );
+    }
+
+
+    private static IndexedParameters buildIndexedParameters( List<TypedValue> values ) throws PrismInterfaceServiceException {
+        return IndexedParameters.newBuilder()
+                .addAllParameters( ProtoUtils.serializeParameterList( values ) )
+                .build();
     }
 
 

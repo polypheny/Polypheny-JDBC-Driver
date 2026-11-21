@@ -20,21 +20,30 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.Row;
 
 public class PolyRow {
 
-    List<TypedValue> values;
+    private final List<TypedValue> values;
+    private final RelationalMetadata metadata;
 
 
     public PolyRow( List<TypedValue> value ) {
-        this.values = new ArrayList<>( value );
+        this( value, null );
     }
 
 
     public PolyRow( TypedValue... value ) {
         this( Arrays.asList( value ) );
+    }
+
+
+    public PolyRow( List<TypedValue> value, RelationalMetadata metadata ) {
+        this.values = new ArrayList<>( value );
+        this.metadata = metadata;
     }
 
 
@@ -48,13 +57,32 @@ public class PolyRow {
     }
 
 
+    public TypedValue get( int columnIndex ) {
+        return getValue( columnIndex );
+    }
+
+
+    public TypedValue get( String columnLabel ) throws PrismInterfaceServiceException {
+        if ( metadata == null ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.COLUMN_NOT_EXISTS, "This row has no column labels." );
+        }
+        return getValue( metadata.getColumnIndexFromLabel( columnLabel ) );
+    }
+
+
+    @SafeVarargs
     public static <E extends TypedValue> PolyRow of( E... values ) {
         return new PolyRow( values );
     }
 
 
     public static PolyRow fromProto( Row protoRow ) {
-        return new PolyRow( protoRow.getValuesList().stream().map( TypedValue::new ).collect( Collectors.toList() ) );
+        return fromProto( protoRow, null );
+    }
+
+
+    public static PolyRow fromProto( Row protoRow, RelationalMetadata metadata ) {
+        return new PolyRow( protoRow.getValuesList().stream().map( TypedValue::new ).collect( Collectors.toList() ), metadata );
     }
 
 }

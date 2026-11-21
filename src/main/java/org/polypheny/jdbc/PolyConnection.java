@@ -55,7 +55,7 @@ public class PolyConnection implements Connection {
     private PolyphenyConnectionProperties properties;
 
     private PolyphenyDatabaseMetadata databaseMetaData;
-    private boolean isClosed;
+    private volatile boolean isClosed;
 
     private boolean hasRunningTransaction;
 
@@ -217,6 +217,15 @@ public class PolyConnection implements Connection {
     @Override
     public boolean isClosed() {
         return isClosed;
+    }
+
+
+    /**
+     * Closes the transport after an interrupted or timed-out request with unknown outcome.
+     */
+    public void abortAfterIncompleteRequest() {
+        isClosed = true;
+        getPrismInterfaceClient().abort();
     }
 
 

@@ -1,3 +1,10 @@
+## 3.2
+
+* Use Prism API 2.3.
+* Support Cypher graph frames and typed nodes, edges, paths, and graphs in relational results.
+* Preserve typed graph values in JDBC arrays and handle paging failures and request timeouts in multimodel statements.
+
+
 ## 3.1
 
 * Use the released Prism API 2.2.

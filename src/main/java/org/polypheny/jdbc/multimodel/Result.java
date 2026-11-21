@@ -42,7 +42,8 @@ public abstract class Result {
     public enum ResultType {
         RELATIONAL,
         DOCUMENT,
-        SCALAR
+        SCALAR,
+        GRAPH
     }
 
 }

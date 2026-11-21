@@ -150,7 +150,7 @@ public class PolyphenyStatement implements Statement {
                 continue;
             }
             try {
-                callback.awaitCompletion();
+                callback.awaitSuccessfulCompletion();
             } catch ( InterruptedException e ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
@@ -182,7 +182,7 @@ public class PolyphenyStatement implements Statement {
                 continue;
             }
             try {
-                callback.awaitCompletion();
+                callback.awaitSuccessfulCompletion();
             } catch ( InterruptedException e ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
@@ -302,7 +302,7 @@ public class PolyphenyStatement implements Statement {
                 continue;
             }
             try {
-                callback.awaitCompletion();
+                callback.awaitSuccessfulCompletion();
             } catch ( InterruptedException e ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
             }
@@ -444,7 +444,7 @@ public class PolyphenyStatement implements Statement {
                     continue;
                 }
                 try {
-                    callback.awaitCompletion();
+                    callback.awaitSuccessfulCompletion();
                 } catch ( InterruptedException e ) {
                     throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
                 }
