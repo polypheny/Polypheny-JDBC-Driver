@@ -43,57 +43,87 @@ public class CallbackQueue<T> {
 
 
     public void awaitCompletion() throws InterruptedException {
+        awaitCompletionFailure();
+    }
+
+
+    public void awaitSuccessfulCompletion() throws InterruptedException, PrismInterfaceServiceException {
+        PrismInterfaceServiceException failure = awaitCompletionFailure();
+        if ( failure != null ) {
+            throw failure;
+        }
+    }
+
+
+    private PrismInterfaceServiceException awaitCompletionFailure() throws InterruptedException {
         queueLock.lock();
-        while ( !bIsCompleted ) {
-            isCompleted.await();
+        try {
+            while ( !bIsCompleted && propagatedException == null ) {
+                isCompleted.await();
+            }
+            return propagatedException;
+        } finally {
+            queueLock.unlock();
         }
     }
 
 
     public T takeNext() throws PrismInterfaceServiceException {
         queueLock.lock();
-        while ( messageQueue.isEmpty() ) {
-            try {
+        try {
+            while ( messageQueue.isEmpty() && propagatedException == null && !bIsCompleted ) {
                 hasNext.await();
-            } catch ( InterruptedException e ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e );
             }
-            throwReceivedException();
-        }
-        T message = messageQueue.remove();
-        queueLock.unlock();
-        return message;
-    }
-
-
-    private void throwReceivedException() throws PrismInterfaceServiceException {
-        if ( propagatedException != null ) {
-            throw propagatedException;
+            if ( !messageQueue.isEmpty() ) {
+                return messageQueue.remove();
+            }
+            if ( propagatedException != null ) {
+                throw propagatedException;
+            }
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Prism response ended before the expected result." );
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting next response failed.", e );
+        } finally {
+            queueLock.unlock();
         }
     }
 
 
     public void onNext( Response message ) {
         queueLock.lock();
-        messageQueue.add( extractResponse.apply( message ) );
-        hasNext.signal();
-        queueLock.unlock();
+        try {
+            messageQueue.add( extractResponse.apply( message ) );
+            hasNext.signal();
+        } finally {
+            queueLock.unlock();
+        }
     }
 
 
     public void onError( Throwable propagatedException ) {
         queueLock.lock();
-        this.propagatedException = new PrismInterfaceServiceException( propagatedException );
-        hasNext.signal();
-        queueLock.unlock();
+        try {
+            this.propagatedException = propagatedException instanceof PrismInterfaceServiceException
+                    ? (PrismInterfaceServiceException) propagatedException
+                    : new PrismInterfaceServiceException( propagatedException );
+            hasNext.signalAll();
+            isCompleted.signalAll();
+        } finally {
+            queueLock.unlock();
+        }
     }
 
 
     public void onCompleted() {
         queueLock.lock();
-        bIsCompleted = true;
-        isCompleted.signal();
-        queueLock.unlock();
+        try {
+            bIsCompleted = true;
+            hasNext.signalAll();
+            isCompleted.signalAll();
+        } finally {
+            queueLock.unlock();
+        }
     }
 
 }

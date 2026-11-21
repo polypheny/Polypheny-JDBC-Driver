@@ -17,17 +17,12 @@
 package org.polypheny.jdbc.types;
 
 import org.polypheny.prism.ProtoNode;
-import org.polypheny.prism.ProtoValue.ValueCase;
 
 public class PolyNode extends PolyGraphElement {
 
 
     public PolyNode( ProtoNode protoNode ) {
-        super();
-        this.id = protoNode.getId();
-        this.name = protoNode.getName();
-        this.labels = protoNode.getLabelsList();
-        protoNode.getPropertiesMap().forEach( ( k, v ) -> put( k, new TypedValue( v ) ) );
+        super( protoNode.getId(), protoNode.getName(), protoNode.getLabelsList(), protoNode.getPropertiesMap() );
     }
 
 }

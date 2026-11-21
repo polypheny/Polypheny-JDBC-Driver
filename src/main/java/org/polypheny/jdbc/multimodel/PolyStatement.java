@@ -16,8 +16,9 @@
 
 package org.polypheny.jdbc.multimodel;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceClient;
@@ -33,24 +34,65 @@ import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
 
-public class PolyStatement {
+public class PolyStatement implements AutoCloseable {
 
     private static final int NO_STATEMENT_ID = -1;
 
     @Getter
-    private PolyConnection connection;
+    private final PolyConnection connection;
     @Getter
-    private int statementId;
+    private int statementId = NO_STATEMENT_ID;
     @Getter
-    private boolean isPrepared;
+    private int fetchSize = PropertyUtils.getDEFAULT_FETCH_SIZE();
+    private ParameterKind parameterKind;
+    private long execution;
+    private boolean hasOpenResult;
+    private boolean closed;
+
+
+    public PolyStatement( PolyConnection polyConnection ) {
+        this.connection = polyConnection;
+    }
+
+
+    public synchronized void setFetchSize( int fetchSize ) throws PrismInterfaceServiceException {
+        checkOpen();
+        if ( fetchSize < 0 ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Fetch size must be nonnegative." );
+        }
+        this.fetchSize = fetchSize == 0 ? PropertyUtils.getDEFAULT_FETCH_SIZE() : fetchSize;
+    }
+
+
+    public synchronized boolean isPrepared() {
+        return parameterKind != null;
+    }
+
+
+    @Override
+    public synchronized void close() throws PrismInterfaceServiceException {
+        if ( !closed ) {
+            resetStatement();
+            closed = true;
+        }
+    }
 
 
     private void resetStatement() throws PrismInterfaceServiceException {
-        if ( statementId != -1 ) {
-            connection.getPrismInterfaceClient().closeStatement( statementId, connection.getTimeout() );
+        if ( statementId != NO_STATEMENT_ID && !connection.isClosed() ) {
+            getPrismInterfaceClient().closeStatement( statementId, connection.getTimeout() );
         }
         statementId = NO_STATEMENT_ID;
-        isPrepared = false;
+        parameterKind = null;
+        hasOpenResult = false;
+        execution++;
+    }
+
+
+    private void checkOpen() throws PrismInterfaceServiceException {
+        if ( closed || connection.isClosed() ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "The statement or its connection is closed." );
+        }
     }
 
 
@@ -59,7 +101,32 @@ public class PolyStatement {
     }
 
 
-    private Result getResultFromFrame( Frame frame ) throws PrismInterfaceServiceException {
+    synchronized long getExecution() {
+        return execution;
+    }
+
+
+    synchronized Frame fetchFrame( long resultExecution, int resultFetchSize, Frame.ResultCase expectedType ) throws PrismInterfaceServiceException {
+        checkOpen();
+        if ( resultExecution != execution ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "The statement has been re-executed since this result was opened." );
+        }
+        Frame frame = getPrismInterfaceClient().fetchResult( statementId, resultFetchSize, connection.getTimeout() );
+        if ( frame.getResultCase() != expectedType ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID,
+                    "Expected " + expectedType + ", but the statement returned " + frame.getResultCase() + "." );
+        }
+        hasOpenResult = !frame.getIsLast();
+        return frame;
+    }
+
+
+    private Result readResult( StatementResult result ) throws PrismInterfaceServiceException {
+        if ( !result.hasFrame() ) {
+            return new ScalarResult( result.getScalar() );
+        }
+        Frame frame = result.getFrame();
+        hasOpenResult = !frame.getIsLast();
         switch ( frame.getResultCase() ) {
             case RELATIONAL_FRAME:
                 return new RelationalResult( frame, this );
@@ -67,118 +134,122 @@ public class PolyStatement {
                 return new DocumentResult( frame, this );
             case GRAPH_FRAME:
                 return new GraphResult( frame, this );
+            default:
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement produced an unknown result type." );
         }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement produced unknown result type" );
     }
 
 
-    public PolyStatement( PolyConnection polyConnection ) {
-        this.connection = polyConnection;
-    }
-
-
-    public Result execute( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
+    public synchronized Result execute( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
+        checkOpen();
         resetStatement();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
-        int timeout = connection.getTimeout();
-        getPrismInterfaceClient().executeUnparameterizedStatement(
-                namespaceName,
-                languageName,
-                statement,
-                callback,
-                timeout
-        );
+        getPrismInterfaceClient().executeUnparameterizedStatement( namespaceName, languageName, statement, fetchSize, callback, connection.getTimeout() );
         while ( true ) {
             StatementResponse response = callback.takeNext();
-            if ( statementId == NO_STATEMENT_ID ) {
-                statementId = response.getStatementId();
+            statementId = response.getStatementId();
+            if ( response.hasResult() ) {
+                try {
+                    callback.awaitSuccessfulCompletion();
+                } catch ( InterruptedException e ) {
+                    Thread.currentThread().interrupt();
+                    throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of the statement failed.", e );
+                }
+                return readResult( response.getResult() );
             }
-            if ( !response.hasResult() ) {
-                continue;
-            }
-            try {
-                callback.awaitCompletion();
-            } catch ( InterruptedException e ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
-            }
-            if ( !response.getResult().hasFrame() ) {
-                return new ScalarResult( response.getResult().getScalar() );
-            }
-            return getResultFromFrame( response.getResult().getFrame() );
         }
     }
 
 
-    public List<Long> execute( String namespaceName, String languageName, List<String> statements ) throws PrismInterfaceServiceException, InterruptedException {
+    public synchronized List<Long> execute( String namespaceName, String languageName, List<String> statements ) throws PrismInterfaceServiceException, InterruptedException {
+        checkOpen();
         resetStatement();
+        if ( statements.isEmpty() ) {
+            return Collections.emptyList();
+        }
         CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse );
-        int timeout = connection.getTimeout();
-        getPrismInterfaceClient().executeUnparameterizedStatementBatch( statements, namespaceName, languageName, callback, timeout );
+        getPrismInterfaceClient().executeUnparameterizedStatementBatch( statements, namespaceName, languageName, callback, connection.getTimeout() );
         while ( true ) {
             StatementBatchResponse response = callback.takeNext();
-            if ( statementId == NO_STATEMENT_ID ) {
-                statementId = response.getBatchId();
+            statementId = response.getBatchId();
+            if ( response.getScalarsCount() > 0 ) {
+                callback.awaitSuccessfulCompletion();
+                return response.getScalarsList();
             }
-            if ( response.getScalarsCount() == 0 ) {
-                continue;
-            }
-            callback.awaitCompletion();
-            return response.getScalarsList();
         }
     }
 
 
+    /**
+     * Prepares a statement with indexed parameters. Use {@link #prepareNamed} for named parameters.
+     */
     public void prepare( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
-        int timeout = connection.getTimeout();
-        if ( statement.contains( "?" ) ) {
-            PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement( namespaceName, languageName, statement, timeout );
-            statementId = signature.getStatementId();
-            isPrepared = true;
-            return;
-        }
-        if ( statement.contains( ":" ) ) {
-            org.polypheny.prism.PreparedStatementSignature signature = connection.getPrismInterfaceClient().prepareNamedStatement( namespaceName, languageName, statement, timeout );
-            statementId = signature.getStatementId();
-            isPrepared = true;
-            return;
-        }
-        throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Statement must be either of the indexed or named parameterized kind." );
+        prepareIndexed( namespaceName, languageName, statement );
     }
 
 
-    public Result executePrepared( List<TypedValue> parameters ) throws PrismInterfaceServiceException {
-        if ( !isPrepared ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "This operation requires a statmement to be prepared first" );
-        }
-        int timeout = connection.getTimeout();
-        StatementResult result = getPrismInterfaceClient().executeIndexedStatement( statementId, parameters, PropertyUtils.getDEFAULT_FETCH_SIZE(), timeout );
-        if ( !result.hasFrame() ) {
-            return new ScalarResult( result.getScalar() );
-        }
-        return getResultFromFrame( result.getFrame() );
+    public synchronized void prepareIndexed( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
+        checkOpen();
+        resetStatement();
+        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement( namespaceName, languageName, statement, connection.getTimeout() );
+        statementId = signature.getStatementId();
+        parameterKind = ParameterKind.INDEXED;
     }
 
 
-    public Result executePrepared( HashMap<String, TypedValue> parameters ) throws PrismInterfaceServiceException {
-        if ( !isPrepared ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "This operation requires a statmement to be prepared first" );
-        }
-        int timeout = connection.getTimeout();
-        StatementResult result = getPrismInterfaceClient().executeNamedStatement( statementId, parameters, PropertyUtils.getDEFAULT_FETCH_SIZE(), timeout );
-        if ( !result.hasFrame() ) {
-            return new ScalarResult( result.getScalar() );
-        }
-        return getResultFromFrame( result.getFrame() );
+    public synchronized void prepareNamed( String namespaceName, String languageName, String statement ) throws PrismInterfaceServiceException {
+        checkOpen();
+        resetStatement();
+        PreparedStatementSignature signature = getPrismInterfaceClient().prepareNamedStatement( namespaceName, languageName, statement, connection.getTimeout() );
+        statementId = signature.getStatementId();
+        parameterKind = ParameterKind.NAMED;
     }
 
 
-    public List<Long> executePreparedBatch( List<List<TypedValue>> parameterBatch ) throws PrismInterfaceServiceException {
-        if ( !isPrepared ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "This operation requires a statmement to be prepared first" );
+    public synchronized Result executePrepared( List<TypedValue> parameters ) throws PrismInterfaceServiceException {
+        beginPreparedExecution( ParameterKind.INDEXED );
+        return readResult( getPrismInterfaceClient().executeIndexedStatement( statementId, parameters, fetchSize, connection.getTimeout() ) );
+    }
+
+
+    public synchronized Result executePrepared( Map<String, TypedValue> parameters ) throws PrismInterfaceServiceException {
+        beginPreparedExecution( ParameterKind.NAMED );
+        return readResult( getPrismInterfaceClient().executeNamedStatement( statementId, parameters, fetchSize, connection.getTimeout() ) );
+    }
+
+
+    public synchronized List<Long> executePreparedBatch( List<List<TypedValue>> parameterBatch ) throws PrismInterfaceServiceException {
+        beginPreparedExecution( ParameterKind.INDEXED );
+        if ( parameterBatch.isEmpty() ) {
+            return Collections.emptyList();
         }
-        int timeout = connection.getTimeout();
-        StatementBatchResponse response = getPrismInterfaceClient().executeIndexedStatementBatch( statementId, parameterBatch, timeout );
-        return response.getScalarsList();
+        return getPrismInterfaceClient().executeIndexedStatementBatch( statementId, parameterBatch, connection.getTimeout() ).getScalarsList();
+    }
+
+
+    private void beginPreparedExecution( ParameterKind kind ) throws PrismInterfaceServiceException {
+        checkOpen();
+        if ( parameterKind != kind ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Prepare a statement with " + kind.description + " parameters first." );
+        }
+        if ( hasOpenResult ) {
+            getPrismInterfaceClient().closeResult( statementId, connection.getTimeout() );
+            hasOpenResult = false;
+        }
+        execution++;
+    }
+
+
+    private enum ParameterKind {
+        INDEXED( "indexed" ),
+        NAMED( "named" );
+
+        private final String description;
+
+
+        ParameterKind( String description ) {
+            this.description = description;
+        }
     }
 
 }

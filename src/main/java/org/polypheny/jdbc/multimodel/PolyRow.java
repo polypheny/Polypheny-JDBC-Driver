@@ -16,8 +16,8 @@
 
 package org.polypheny.jdbc.multimodel;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.PrismInterfaceErrors;
@@ -25,28 +25,59 @@ import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.Row;
 
-public class PolyRow extends ArrayList<TypedValue> {
+public class PolyRow {
 
-    private RelationalMetadata metadata;
+    private final List<TypedValue> values;
+    private final RelationalMetadata metadata;
+
+
+    public PolyRow( List<TypedValue> value ) {
+        this( value, null );
+    }
+
+
+    public PolyRow( TypedValue... value ) {
+        this( Arrays.asList( value ) );
+    }
 
 
     public PolyRow( List<TypedValue> value, RelationalMetadata metadata ) {
-        super( value );
+        this.values = new ArrayList<>( value );
         this.metadata = metadata;
     }
 
 
-    public TypedValue get( String columnName ) throws PrismInterfaceServiceException {
-        try {
-            int index = metadata.getColumnIndexFromLabel( columnName );
-            return get( index );
-        } catch ( SQLException e ) {
-            throw new PrismInterfaceServiceException(
-                    PrismInterfaceErrors.VALUE_ILLEGAL,
-                    "Failed to retrieve column bsaed on the column name.",
-                    e
-            );
+    public int getColumnCount() {
+        return values.size();
+    }
+
+
+    public TypedValue getValue( int columnIndex ) {
+        return values.get( columnIndex );
+    }
+
+
+    public TypedValue get( int columnIndex ) {
+        return getValue( columnIndex );
+    }
+
+
+    public TypedValue get( String columnLabel ) throws PrismInterfaceServiceException {
+        if ( metadata == null ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.COLUMN_NOT_EXISTS, "This row has no column labels." );
         }
+        return getValue( metadata.getColumnIndexFromLabel( columnLabel ) );
+    }
+
+
+    @SafeVarargs
+    public static <E extends TypedValue> PolyRow of( E... values ) {
+        return new PolyRow( values );
+    }
+
+
+    public static PolyRow fromProto( Row protoRow ) {
+        return fromProto( protoRow, null );
     }
 
 

@@ -17,10 +17,13 @@
 package org.polypheny.jdbc.utils;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.polypheny.jdbc.PrismInterfaceErrors;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoValue;
@@ -48,17 +51,17 @@ public class ProtoUtils {
     }
 
 
-    public static Map<String, ProtoValue> serializeParameterMap( Map<String, TypedValue> values ) {
-        return values.entrySet().stream().collect( Collectors.toMap(
-                Entry::getKey,
-                value -> {
-                    try {
-                        return value.getValue().serialize();
-                    } catch ( Exception e ) {
-                        throw new RuntimeException( "Serialization failed", e );
-                    }
-                }
-        ) );
+    public static Map<String, ProtoValue> serializeParameterMap( Map<String, TypedValue> values ) throws PrismInterfaceServiceException {
+        Map<String, ProtoValue> parameters = new HashMap<>();
+        for ( Entry<String, TypedValue> entry : values.entrySet() ) {
+            try {
+                TypedValue value = entry.getValue() == null ? TypedValue.fromNull() : entry.getValue();
+                parameters.put( entry.getKey(), value.serialize() );
+            } catch ( SQLException e ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Could not serialize parameter " + entry.getKey() + ".", e );
+            }
+        }
+        return parameters;
     }
 
 }

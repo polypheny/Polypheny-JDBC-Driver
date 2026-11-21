@@ -20,6 +20,10 @@ import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.jdbc.types.PolyEdge;
+import org.polypheny.jdbc.types.PolyGraph;
+import org.polypheny.jdbc.types.PolyNode;
+import org.polypheny.jdbc.types.PolyPath;
 import org.polypheny.jdbc.types.ProtoToJdbcTypeMap;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.ProtoPolyType;
@@ -91,20 +95,36 @@ public class PolyphenyColumnMeta {
         this.readOnly = false;
         this.writable = false;
         this.definitelyWritable = false;
-        this.columnClassName = "";
-        if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoPolyType.USER_DEFINED_TYPE ) {
+        ProtoPolyType type = protoColumnMeta.getTypeMeta().getProtoValueType();
+        this.columnClassName = getColumnClassName( type );
+        if ( type == ProtoPolyType.USER_DEFINED_TYPE ) {
             //TODO: This is required once user defined types are introduced. Depending on their implementation this might even become obsolete.
             throw new NotImplementedException( "Struct types not implemented yet" );
         }
-        if ( protoColumnMeta.getTypeMeta().getProtoValueType() == ProtoPolyType.ARRAY ) {
-            ProtoPolyType type = protoColumnMeta.getTypeMeta().getArrayMeta().getElementType().getProtoValueType();
+        if ( type == ProtoPolyType.ARRAY ) {
+            ProtoPolyType elementType = protoColumnMeta.getTypeMeta().getArrayMeta().getElementType().getProtoValueType();
             this.sqlType = JDBCType.ARRAY.getVendorTypeNumber();
-            this.polyphenyFieldTypeName = type.name();
+            this.polyphenyFieldTypeName = elementType.name();
             return;
         }
-        ProtoPolyType type = protoColumnMeta.getTypeMeta().getProtoValueType();
         this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( type );
         this.polyphenyFieldTypeName = type.name();
+    }
+
+
+    private static String getColumnClassName( ProtoPolyType type ) {
+        switch ( type ) {
+            case NODE:
+                return PolyNode.class.getName();
+            case EDGE:
+                return PolyEdge.class.getName();
+            case PATH:
+                return PolyPath.class.getName();
+            case GRAPH:
+                return PolyGraph.class.getName();
+            default:
+                return "";
+        }
     }
 
 

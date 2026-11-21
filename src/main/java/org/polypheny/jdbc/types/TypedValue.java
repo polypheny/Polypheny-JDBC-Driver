@@ -71,6 +71,7 @@ import org.polypheny.prism.ProtoInterval;
 import org.polypheny.prism.ProtoList;
 import org.polypheny.prism.ProtoLong;
 import org.polypheny.prism.ProtoNull;
+import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.ProtoTime;
 import org.polypheny.prism.ProtoTimestamp;
 import org.polypheny.prism.ProtoValue;
@@ -820,7 +821,7 @@ public class TypedValue implements Convertible {
         if ( isSerialized ) {
             deserialize();
         }
-        if ( otherValue != null ) {
+        if ( otherValue instanceof PolyDocument ) {
             return (PolyDocument) otherValue;
         }
         if ( isNull() ) {
@@ -835,13 +836,47 @@ public class TypedValue implements Convertible {
         if ( isSerialized ) {
             deserialize();
         }
-        if ( otherValue != null ) {
+        if ( otherValue instanceof PolyInterval ) {
             return (PolyInterval) otherValue;
         }
         if ( isNull() ) {
             return null;
         }
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type INTERVAL." );
+    }
+
+
+    public PolyNode asNode() throws SQLException {
+        return asGraphValue( ValueCase.NODE, PolyNode.class );
+    }
+
+
+    public PolyEdge asEdge() throws SQLException {
+        return asGraphValue( ValueCase.EDGE, PolyEdge.class );
+    }
+
+
+    public PolyPath asPath() throws SQLException {
+        return asGraphValue( ValueCase.PATH, PolyPath.class );
+    }
+
+
+    public PolyGraph asGraph() throws SQLException {
+        return asGraphValue( ValueCase.GRAPH, PolyGraph.class );
+    }
+
+
+    private <T> T asGraphValue( ValueCase expected, Class<T> type ) throws SQLException {
+        if ( isNull() ) {
+            return null;
+        }
+        if ( valueCase != expected ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type " + expected + "." );
+        }
+        if ( otherValue == null ) {
+            deserialize();
+        }
+        return type.cast( otherValue );
     }
 
 
@@ -880,6 +915,14 @@ public class TypedValue implements Convertible {
                 return asDocument();
             case FILE:
                 return asBlob();
+            case NODE:
+                return asNode();
+            case EDGE:
+                return asEdge();
+            case PATH:
+                return asPath();
+            case GRAPH:
+                return asGraph();
             default:
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value has unknown type and thus can not be returned." );
         }
@@ -889,40 +932,14 @@ public class TypedValue implements Convertible {
     @Override
     public Object asObject( Calendar calendar ) throws SQLException {
         switch ( valueCase ) {
-            case BOOLEAN:
-                return asBoolean();
-            case INTEGER:
-                return asInt();
-            case LONG:
-                return asLong();
-            case BIG_DECIMAL:
-                return asBigDecimal();
-            case FLOAT:
-                return asFloat();
-            case DOUBLE:
-                return asDouble();
             case DATE:
                 return asDate( calendar );
             case TIME:
                 return asTime( calendar );
             case TIMESTAMP:
                 return asTimestamp( calendar );
-            case INTERVAL:
-                return asInterval();
-            case STRING:
-                return asString();
-            case BINARY:
-                return asBytes();
-            case NULL:
-                return null;
-            case LIST:
-                return asArray();
-            case DOCUMENT:
-                return asDocument();
-            case FILE:
-                return asBlob();
             default:
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value has unknown type and thus can not be returned." );
+                return asObject();
         }
     }
 
@@ -1135,6 +1152,19 @@ public class TypedValue implements Convertible {
 
     @Override
     public <T> T asObject( Class<T> aClass ) throws SQLException {
+        switch ( valueCase ) {
+            case NULL:
+                return null;
+            case NODE:
+            case EDGE:
+            case PATH:
+            case GRAPH:
+                Object value = asObject();
+                if ( aClass != null && aClass.isInstance( value ) ) {
+                    return aClass.cast( value );
+                }
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Cannot convert " + valueCase + " to " + aClass + "." );
+        }
         if ( isSerialized ) {
             deserialize();
         }
@@ -1234,6 +1264,22 @@ public class TypedValue implements Convertible {
                 case FILE:
                     blobValue = new PolyBlob( serialized.getFile().getBinary().toByteArray() );
                     break;
+                case NODE:
+                    otherValue = new PolyNode( serialized.getNode() );
+                    isSerialized = false;
+                    break;
+                case EDGE:
+                    otherValue = new PolyEdge( serialized.getEdge() );
+                    isSerialized = false;
+                    break;
+                case PATH:
+                    otherValue = new PolyPath( serialized.getPath() );
+                    isSerialized = false;
+                    break;
+                case GRAPH:
+                    otherValue = new PolyGraph( serialized.getGraph() );
+                    isSerialized = false;
+                    break;
                 default:
                     throw new RuntimeException( "Cannot deserialize ProtoValue of case " + valueCase );
             }
@@ -1277,6 +1323,11 @@ public class TypedValue implements Convertible {
                 return serializeAsProtoFile();
             case DOCUMENT:
                 return serializeAsProtoDocument();
+            case NODE:
+            case EDGE:
+            case PATH:
+            case GRAPH:
+                throw new SQLFeatureNotSupportedException( "Graph values are not supported as statement parameters." );
         }
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Failed to serialize unknown type: " + valueCase.name() );
     }
@@ -1455,16 +1506,26 @@ public class TypedValue implements Convertible {
 
 
     private static Array getArray( ProtoValue value ) throws SQLException {
-        String baseType = value.getValueCase().name();
+        // ProtoList carries values without a declared element type.
         List<TypedValue> values = value.getList().getValuesList().stream()
                 .map( TypedValue::new )
                 .collect( Collectors.toList() );
-        return new PolyArray( baseType, values );
+        return new PolyArray( ProtoPolyType.ANY.name(), values );
     }
 
 
     private static PolyInterval getInterval( ProtoInterval interval ) {
         return new PolyInterval( interval.getMonths(), interval.getMilliseconds() );
+    }
+
+
+    @Override
+    public String toString() {
+        try {
+            return asString();
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 }

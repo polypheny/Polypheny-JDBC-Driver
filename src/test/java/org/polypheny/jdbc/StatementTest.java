@@ -253,4 +253,10 @@ public class StatementTest {
         }
     }
 
+
+    @Test
+    void testCloseMetadataResultSet() throws SQLException {
+        con.getMetaData().getColumns( null, null, "t", null ).close();
+    }
+
 }

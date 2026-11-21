@@ -1046,5 +1046,4 @@ public class TypedValueTest {
         assertEquals( interval.toString(), value.asString() );
     }
 
-
 }

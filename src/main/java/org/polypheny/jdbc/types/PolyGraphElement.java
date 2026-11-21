@@ -16,20 +16,29 @@
 
 package org.polypheny.jdbc.types;
 
-
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.prism.GraphElement;
+import org.polypheny.prism.ProtoValue;
 
 @Getter
 public abstract class PolyGraphElement extends HashMap<String, TypedValue> {
 
-    protected String id;
-    protected String name;
-    protected List<String> labels;
+    private final String id;
+    private final String name;
+    private final List<String> labels;
+
+
+    protected PolyGraphElement( String id, String name, List<String> labels, Map<String, ProtoValue> properties ) {
+        this.id = id;
+        this.name = name;
+        this.labels = labels;
+        properties.forEach( ( key, value ) -> put( key, new TypedValue( value ) ) );
+    }
 
 
     public <T> T unwrap( Class<T> aClass ) throws PrismInterfaceServiceException {
@@ -47,7 +56,7 @@ public abstract class PolyGraphElement extends HashMap<String, TypedValue> {
             case EDGE:
                 return new PolyEdge( element.getEdge() );
             default:
-                throw new RuntimeException( "Unknown graph element of type " + element.getElementCase() );
+                throw new IllegalArgumentException( "Unknown graph element of type " + element.getElementCase() );
         }
     }
 

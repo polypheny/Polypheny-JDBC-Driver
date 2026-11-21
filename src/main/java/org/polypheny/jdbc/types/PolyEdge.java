@@ -28,21 +28,19 @@ public class PolyEdge extends PolyGraphElement {
 
 
     public PolyEdge( ProtoEdge protoEdge ) {
-        super();
-        this.id = protoEdge.getId();
-        this.name = protoEdge.getName();
-        this.labels = protoEdge.getLabelsList();
-        protoEdge.getPropertiesMap().forEach( ( k, v ) -> put( k, new TypedValue( v ) ) );
-        this.left = protoEdge.getSource();
-        this.right = protoEdge.getTarget();
+        super( protoEdge.getId(), protoEdge.getName(), protoEdge.getLabelsList(), protoEdge.getPropertiesMap() );
+        this.left = protoEdge.getLeft();
+        this.right = protoEdge.getRight();
         this.direction = EdgeDirection.valueOf( protoEdge.getDirection().name() );
     }
 
 
-    enum EdgeDirection {
+    public enum EdgeDirection {
+        UNSPECIFIED,
         LEFT_TO_RIGHT,
         RIGHT_TO_LEFT,
-        NONE
+        NONE,
+        UNRECOGNIZED
     }
 
 }

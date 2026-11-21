@@ -25,14 +25,13 @@ import org.polypheny.prism.ColumnMeta;
 
 public class RelationalMetadata {
 
-    private List<RelationalColumnMetadata> columnMetas;
-    private Map<String, Integer> columnIndexes;
+    private final List<RelationalColumnMetadata> columnMetas;
+    private final Map<String, Integer> columnIndexes;
 
 
     public RelationalMetadata( List<ColumnMeta> columnMetadata ) {
         this.columnMetas = columnMetadata.stream().map( RelationalColumnMetadata::new ).collect( Collectors.toList() );
-        this.columnIndexes = this.columnMetas.stream().collect( Collectors.toMap( RelationalColumnMetadata::getColumnLabel, RelationalColumnMetadata::getColumnIndex, ( m, n ) -> n ) );
-
+        this.columnIndexes = this.columnMetas.stream().collect( Collectors.toMap( RelationalColumnMetadata::getColumnLabel, RelationalColumnMetadata::getColumnIndex, ( first, duplicate ) -> first ) );
     }
 
 

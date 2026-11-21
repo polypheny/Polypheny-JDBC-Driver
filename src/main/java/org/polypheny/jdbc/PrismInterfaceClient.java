@@ -78,12 +78,12 @@ import org.polypheny.prism.TypesRequest;
 
 public class PrismInterfaceClient {
 
-    private final Transport con;
     private final RpcService rpc;
 
 
     public PrismInterfaceClient( String host, int port, Map<String, String> parameters ) throws PrismInterfaceServiceException {
         try {
+            Transport con;
             String transport = parameters.getOrDefault( "transport", "plain" );
             if ( transport.equals( "plain" ) ) {
                 con = new PlainTransport( host, port );
@@ -94,6 +94,11 @@ public class PrismInterfaceClient {
         } catch ( IOException e ) {
             throw new PrismInterfaceServiceException( e );
         }
+    }
+
+
+    PrismInterfaceClient( RpcService rpc ) {
+        this.rpc = rpc;
     }
 
 
@@ -152,6 +157,15 @@ public class PrismInterfaceClient {
     }
 
 
+    public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, int fetchSize, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
+        ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName )
+                .toBuilder()
+                .setFetchSize( fetchSize )
+                .build();
+        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+    }
+
+
     public void executeUnparameterizedStatementBatch( List<String> statements, String namespaceName, String languageName, CallbackQueue<StatementBatchResponse> updateCallback, int timeout ) throws PrismInterfaceServiceException {
         List<ExecuteUnparameterizedStatementRequest> requests = statements.stream().map( s -> buildExecuteUnparameterizedStatementRequest( s, namespaceName, languageName ) ).collect( Collectors.toList() );
         executeUnparameterizedStatementBatch( requests, updateCallback, timeout );
@@ -179,29 +193,24 @@ public class PrismInterfaceClient {
 
 
     public PreparedStatementSignature prepareIndexedStatement( String namespaceName, String languageName, String statement, int timeout ) throws PrismInterfaceServiceException {
-        PrepareStatementRequest.Builder requestBuilder = PrepareStatementRequest.newBuilder();
-        if ( namespaceName != null ) {
-            requestBuilder.setNamespaceName( namespaceName );
-        }
-        PrepareStatementRequest request = requestBuilder
-                .setStatement( statement )
-                .setLanguageName( languageName )
-                .build();
-
-        return rpc.prepareIndexedStatement( request, timeout );
+        return rpc.prepareIndexedStatement( buildPrepareStatementRequest( namespaceName, languageName, statement ), timeout );
     }
 
 
     public PreparedStatementSignature prepareNamedStatement( String namespaceName, String languageName, String statement, int timeout ) throws PrismInterfaceServiceException {
+        return rpc.prepareNamedStatement( buildPrepareStatementRequest( namespaceName, languageName, statement ), timeout );
+    }
+
+
+    private PrepareStatementRequest buildPrepareStatementRequest( String namespaceName, String languageName, String statement ) {
         PrepareStatementRequest.Builder requestBuilder = PrepareStatementRequest.newBuilder();
         if ( namespaceName != null ) {
             requestBuilder.setNamespaceName( namespaceName );
         }
-        PrepareStatementRequest request = requestBuilder
+        return requestBuilder
                 .setStatement( statement )
                 .setLanguageName( languageName )
                 .build();
-        return rpc.prepareNamedStatement( request, timeout );
     }
 
 

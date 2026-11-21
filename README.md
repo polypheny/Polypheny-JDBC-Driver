@@ -15,7 +15,7 @@ This driver is compatible with JVM version 8 or higher.
 ## Getting Started
 
 - The driver is published to Maven Central. Make sure that you have added `mavenCentral()` to the repositories section in your gradle build file.
-- Add `implementation group: 'org.polypheny', name: 'polypheny-jdbc-driver', version: '2.2'` .
+- Add `implementation group: 'org.polypheny', name: 'polypheny-jdbc-driver', version: '3.0'` .
 - Optionally: load the driver `org.polypheny.jdbc.PolyphenyDriver`, for example via
   ```
   Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
@@ -23,6 +23,34 @@ This driver is compatible with JVM version 8 or higher.
 - Use the connection URL `jdbc:polypheny:http://localhost/` to connect to [Polypheny](https://github.com/polypheny/Polypheny-DB).
 
 > For authentication, please use the default username `pa` with an empty password.
+
+## Cypher and graph results
+
+Use the driver's multi-model API to run Cypher. Pass the name of an existing
+namespace to `PolyStatement.execute`:
+
+```java
+try (PolyStatement statement = connection.unwrap(PolyConnection.class).createPolyStatement()) {
+    GraphResult graph = statement.execute("social", "cypher", "MATCH (n:Person) RETURN n")
+            .unwrap(GraphResult.class);
+    for (PolyGraphElement element : graph) {
+        System.out.println(element.getId());
+    }
+
+    RelationalResult rows = statement.execute("social", "cypher",
+            "MATCH (n:Person) RETURN n AS person, n.name AS name").unwrap(RelationalResult.class);
+    for (PolyRow row : rows) {
+        PolyNode person = row.get("person").asNode();
+        System.out.println(person.getId() + " " + row.get("name").asString());
+    }
+}
+```
+
+Queries that return only graph elements use `GraphResult`, an iterable stream of
+nodes and edges. A path in that stream appears in traversal order as alternating
+nodes and edges. With a Prism 2.3 server, mixed projections preserve the row and
+column structure, with node, edge, path and graph values available as
+`PolyNode`, `PolyEdge`, `PolyPath` and `PolyGraph`.
 
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).

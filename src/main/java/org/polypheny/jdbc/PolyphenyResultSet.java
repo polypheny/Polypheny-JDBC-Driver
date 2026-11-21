@@ -53,7 +53,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     private boolean isMeta = false;
 
-    private PolyphenyStatement statement;
+    private final PolyphenyStatement statement;
 
     private PolyphenyResultSetMetadata metadata;
     private Scrollable<List<TypedValue>> resultScroller;
@@ -199,7 +199,9 @@ public class PolyphenyResultSet implements ResultSet {
         if ( isClosed ) {
             return;
         }
-        statement.notifyResultClosure();
+        if ( statement != null ) {
+            statement.notifyResultClosure();
+        }
         isClosed = true;
     }
 

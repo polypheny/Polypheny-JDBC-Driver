@@ -1,3 +1,52 @@
+## 3.1
+
+* Use the released Prism API 2.3.
+* Return document collection metadata from `PrismInterfaceClient.searchEntities()` when the server provides it.
+* Stream Cypher graph results and expose typed node, edge, path and graph values in relational results.
+
+
+## 3.0
+
+### December 17, 2025
+
+CHANGES:
+
+* Use version 2.1 of PRISM
+* Update dependencies
+* Additional checks for result set type
+* Improve closing of statements
+
+IMPROVEMENTS:
+
+* N/A
+
+BUG FIXES:
+
+* N/A
+
+
+## 2.3
+
+### December 28, 2024
+
+CHANGES:
+
+* Add null check for closing result sets
+* Improve exception messages
+* Handle null in asTimestamp
+* Support converting BigDecimal to Long
+* Treat column names as case-insensitive
+* Return an empty List if parameterBatch is empty
+* Use default timezone if calendar is null
+
+IMPROVEMENTS:
+
+* N/A
+
+BUG FIXES:
+
+* N/A
+
 ## 2.2
 
 ### August 16, 2024

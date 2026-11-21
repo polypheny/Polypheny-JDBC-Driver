@@ -91,25 +91,25 @@ import org.polypheny.prism.TypesResponse;
 public class RpcService {
 
     private final AtomicLong idCounter = new AtomicLong( 1 );
-    private final Transport connection;
+    private final Transport con;
     private final Thread service;
-    private boolean isClosed = false;
-    private boolean hasSentDisconnect = false;
+    private boolean closed = false;
+    private boolean disconnectSent = false;
     private IOException error = null;
     private final Map<Long, CompletableFuture<Response>> callbacks = new ConcurrentHashMap<>();
     private final Map<Long, CallbackQueue<?>> callbackQueues = new ConcurrentHashMap<>();
 
 
-    RpcService( Transport connection ) {
-        this.connection = connection;
+    RpcService( Transport con ) {
+        this.con = con;
         this.service = new Thread( this::readResponses, "PrismInterfaceResponseHandler" );
         this.service.start();
     }
 
 
     void close() {
-        isClosed = true;
-        connection.close();
+        closed = true;
+        con.close();
         try {
             service.join();
         } catch ( InterruptedException e ) {
@@ -132,15 +132,15 @@ public class RpcService {
                 throw e;
             }
         }
-        if ( this.isClosed ) {
+        if ( this.closed ) {
             throw new IOException( "Connection is closed" );
         }
-        connection.sendMessage( req.toByteArray() );
+        con.sendMessage( req.toByteArray() );
     }
 
 
     private Response receiveMessage() throws IOException {
-        return Response.parseFrom( connection.receiveMessage() );
+        return Response.parseFrom( con.receiveMessage() );
     }
 
 
@@ -178,19 +178,19 @@ public class RpcService {
                 c.complete( resp );
             }
         } catch ( EOFException | ClosedChannelException e ) {
-            this.isClosed = true;
+            this.closed = true;
             callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
             callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
         } catch ( IOException e ) { // Communicate this to ProtoInterfaceClient
-            this.isClosed = true;
+            this.closed = true;
             callbacks.forEach( ( id, c ) -> c.completeExceptionally( e ) );
             callbackQueues.forEach( ( id, cq ) -> cq.onError( e ) );
             /* For Windows */
-            if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) && hasSentDisconnect ) {
+            if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) && disconnectSent ) {
                 return;
             }
             /* For Windows */
-            if ( e instanceof SocketException && e.getMessage().contains( "Connection reset" ) && hasSentDisconnect ) {
+            if ( e instanceof SocketException && e.getMessage().contains( "Connection reset" ) && disconnectSent ) {
                 return;
             }
             // This will cause the exception to be thrown when the next call is made
@@ -198,7 +198,7 @@ public class RpcService {
             this.error = e;
             throw new RuntimeException( e );
         } catch ( Throwable t ) {
-            this.isClosed = true;
+            this.closed = true;
             callbacks.forEach( ( id, c ) -> c.completeExceptionally( t ) );
             callbackQueues.forEach( ( id, cq ) -> cq.onError( t ) );
             log.error( "Unhandled exception", t );
@@ -225,7 +225,7 @@ public class RpcService {
             CompletableFuture<Response> f = new CompletableFuture<>();
             callbacks.put( req.getId(), f );
             if ( req.getTypeCase() == TypeCase.DISCONNECT_REQUEST ) {
-                hasSentDisconnect = true;
+                disconnectSent = true;
             }
             sendMessage( req.build() );
             Response resp = waitForCompletion( f, timeout );
@@ -427,7 +427,7 @@ public class RpcService {
 
     public PreparedStatementSignature prepareNamedStatement( PrepareStatementRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
-        req.setPrepareIndexedStatementRequest( msg );
+        req.setPrepareNamedStatementRequest( msg );
         return completeSynchronously( req, timeout ).getPreparedStatementSignature();
     }
 

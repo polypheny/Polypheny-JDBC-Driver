@@ -16,104 +16,27 @@
 
 package org.polypheny.jdbc.multimodel;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.PrismInterfaceClient;
-import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
-import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.prism.Frame;
-import org.polypheny.prism.Frame.ResultCase;
-import org.polypheny.prism.RelationalFrame;
 
-public class RelationalResult extends Result implements Iterable<PolyRow> {
+public class RelationalResult extends PagedResult<PolyRow> {
 
-    private final PolyStatement polyStatement;
     @Getter
     private final RelationalMetadata metadata;
-    private final List<PolyRow> rows;
-    private boolean isFullyFetched;
 
 
     public RelationalResult( Frame frame, PolyStatement polyStatement ) throws PrismInterfaceServiceException {
-        super( ResultType.RELATIONAL );
-        this.polyStatement = polyStatement;
-        this.isFullyFetched = frame.getIsLast();
-        this.rows = new ArrayList<>();
-        this.metadata = new RelationalMetadata( frame.getRelationalFrame().getColumnMetaList() );
-        addRows( frame.getRelationalFrame() );
+        this( frame, polyStatement, new RelationalMetadata( frame.getRelationalFrame().getColumnMetaList() ) );
     }
 
 
-    private void addRows( RelationalFrame relationalFrame ) {
-        relationalFrame.getRowsList().forEach( d -> rows.add( PolyRow.fromProto( d, metadata ) ) );
-    }
-
-
-    private void fetchMore() throws PrismInterfaceServiceException {
-        int id = polyStatement.getStatementId();
-        int timeout = getPolyphenyConnection().getTimeout();
-        Frame frame = getPrismInterfaceClient().fetchResult( id, timeout, PropertyUtils.getDEFAULT_FETCH_SIZE() );
-        if ( frame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
-            throw new PrismInterfaceServiceException(
-                    PrismInterfaceErrors.RESULT_TYPE_INVALID,
-                    "Statement returned a result of illegal type " + frame.getResultCase()
-            );
-        }
-        isFullyFetched = frame.getIsLast();
-        addRows( frame.getRelationalFrame() );
-    }
-
-
-    private PolyConnection getPolyphenyConnection() {
-        return polyStatement.getConnection();
-    }
-
-
-    private PrismInterfaceClient getPrismInterfaceClient() {
-        return getPolyphenyConnection().getPrismInterfaceClient();
-    }
-
-
-    @Override
-    public Iterator<PolyRow> iterator() {
-        return new RelationalResult.RowIterator();
-    }
-
-
-    class RowIterator implements Iterator<PolyRow> {
-
-        int index = -1;
-
-
-        @Override
-        public boolean hasNext() {
-            if ( index + 1 >= rows.size() ) {
-                if ( isFullyFetched ) {
-                    return false;
-                }
-                try {
-                    fetchMore();
-                } catch ( PrismInterfaceServiceException e ) {
-                    throw new RuntimeException( e );
-                }
-            }
-            return index + 1 < rows.size();
-        }
-
-
-        @Override
-        public PolyRow next() {
-            if ( !hasNext() ) {
-                throw new NoSuchElementException( "There are no more documents" );
-            }
-            return rows.get( ++index );
-        }
-
+    private RelationalResult( Frame frame, PolyStatement polyStatement, RelationalMetadata metadata ) {
+        super( ResultType.RELATIONAL, frame, polyStatement, page -> page.getRelationalFrame().getRowsList().stream()
+                .map( row -> PolyRow.fromProto( row, metadata ) )
+                .collect( Collectors.toList() ) );
+        this.metadata = metadata;
     }
 
 }
