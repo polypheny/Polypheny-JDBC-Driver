@@ -53,6 +53,8 @@ import org.polypheny.prism.DisconnectRequest;
 import org.polypheny.prism.DisconnectResponse;
 import org.polypheny.prism.EntitiesRequest;
 import org.polypheny.prism.EntitiesResponse;
+import org.polypheny.prism.ErrorDetails;
+import org.polypheny.prism.ErrorResponse;
 import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
 import org.polypheny.prism.ExecuteIndexedStatementRequest;
 import org.polypheny.prism.ExecuteNamedStatementRequest;
@@ -162,7 +164,7 @@ public class RpcService {
                     if ( cq != null ) {
                         if ( resp.hasErrorResponse() ) {
                             callbackQueues.remove( resp.getId() );
-                            cq.onError( new PrismInterfaceServiceException( resp.getErrorResponse().getMessage() ) );
+                            cq.onError( decodeServerError( resp.getErrorResponse() ) );
                         } else {
                             cq.onNext( resp );
                             if ( resp.getLast() ) {
@@ -241,7 +243,7 @@ public class RpcService {
             sendMessage( req.build() );
             Response resp = waitForCompletion( f, timeout );
             if ( resp.hasErrorResponse() ) {
-                throw new PrismInterfaceServiceException( resp.getErrorResponse().getMessage() );
+                throw decodeServerError( resp.getErrorResponse() );
             }
             return resp;
         } catch ( IOException e ) {
@@ -249,6 +251,15 @@ public class RpcService {
         } finally {
             callbacks.remove( req.getId() );
         }
+    }
+
+
+    private static PrismInterfaceServiceException decodeServerError( ErrorResponse response ) {
+        ErrorDetails details = response.getDetails();
+        return new PrismInterfaceServiceException(
+                response.getMessage(),
+                details.hasState() ? details.getState() : PrismInterfaceErrors.UNSPECIFIED.state,
+                details.hasErrorCode() ? details.getErrorCode() : PrismInterfaceErrors.UNSPECIFIED.errorCode );
     }
 
 
@@ -385,7 +396,7 @@ public class RpcService {
             return completeSynchronously( req, timeout ).getDisconnectResponse();
         } catch ( PrismInterfaceServiceException e ) {
             /* For Windows */
-            if ( e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) ) {
+            if ( e.getCause() != null && e.getMessage() != null && e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) ) {
                 return DisconnectResponse.newBuilder().build();
             }
             throw e;

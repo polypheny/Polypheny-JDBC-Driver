@@ -40,6 +40,7 @@ import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.jdbc.ResultFetcher.FetchFailure;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.MetaUtils;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
@@ -167,6 +168,8 @@ public class PolyphenyResultSet implements ResultSet {
     public void fetchAll() throws SQLException {
         try {
             resultScroller.fetchAllAndSync();
+        } catch ( FetchFailure e ) {
+            throw e.getCause();
         } catch ( InterruptedException e ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, e.getMessage(), e );
         }
@@ -552,6 +555,8 @@ public class PolyphenyResultSet implements ResultSet {
         discardRowUpdates();
         try {
             return getBidirectionalScrollerOrThrow().last();
+        } catch ( FetchFailure e ) {
+            throw e.getCause();
         } catch ( InterruptedException e ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more rows from server failed.", e );
         }

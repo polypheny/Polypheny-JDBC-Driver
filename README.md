@@ -24,6 +24,10 @@ This driver is compatible with JVM version 8 or higher.
 
 > For authentication, please use the default username `pa` with an empty password.
 
+## Server errors
+
+Starting with driver 3.3, JDBC operations expose the SQLSTATE and vendor error code supplied by a Prism 2.4 server via `SQLException.getSQLState()` and `getErrorCode()`. Each missing field falls back independently to `UNSPECIFIED` or `-1`, including for legacy server responses. An explicitly supplied error code of `0` is preserved. `PrismInterfaceServiceException` remains the driver exception for server errors, with the original server message available through `getMessage()`.
+
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).
 

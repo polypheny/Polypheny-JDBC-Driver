@@ -18,6 +18,8 @@ package org.polypheny.jdbc;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.jdbc.ResultFetcher.FetchFailure;
+import org.polypheny.jdbc.ResultFetcher.FetchThread;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
@@ -31,7 +33,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
     private List<TypedValue> currentRow;
     private ResultFetcher resultFetcher;
     private PolyphenyResultSetProperties properties;
-    private Thread fetcherThread;
+    private FetchThread fetcherThread;
     int currentIndex;
 
 
@@ -52,14 +54,12 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
     }
 
 
-    private boolean fetchUpTo( int rowIndex ) throws InterruptedException {
+    private boolean fetchUpTo( int rowIndex ) throws InterruptedException, PrismInterfaceServiceException {
         while ( values.size() < rowIndex ) {
-            if ( resultFetcher.isLast() ) {
+            if ( fetcherThread == null && resultFetcher.isLast() ) {
                 return false;
             }
-            fetcherThread = new Thread( resultFetcher );
-            fetcherThread.start();
-            fetcherThread.join();
+            fetchNextPage();
         }
         return true;
     }
@@ -67,17 +67,27 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
 
     @Override
     public void fetchAllAndSync() throws InterruptedException {
-        fetchAll();
-        syncFetch();
+        try {
+            fetchAll();
+        } catch ( PrismInterfaceServiceException e ) {
+            throw new FetchFailure( e );
+        }
     }
 
 
-    private void fetchAll() throws InterruptedException {
-        while ( !resultFetcher.isLast() ) {
-            fetcherThread = new Thread( resultFetcher );
-            fetcherThread.start();
-            fetcherThread.join();
+    private void fetchAll() throws InterruptedException, PrismInterfaceServiceException {
+        while ( fetcherThread != null || !resultFetcher.isLast() ) {
+            fetchNextPage();
         }
+    }
+
+
+    private void fetchNextPage() throws InterruptedException, PrismInterfaceServiceException {
+        if ( fetcherThread == null ) {
+            fetcherThread = resultFetcher.startFetch();
+        }
+        values.addAll( fetcherThread.awaitPage() );
+        fetcherThread = null;
     }
 
 
@@ -207,16 +217,10 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
 
     @Override
     public boolean last() throws InterruptedException {
-        currentRow = null;
-        if ( resultFetcher.isLast() ) {
-            currentIndex = values.size() - 1;
-            currentRow = values.get( currentIndex );
-            return true;
-        }
-        fetchAll();
+        fetchAllAndSync();
         currentIndex = values.size() - 1;
-        currentRow = values.get( currentIndex );
-        return true;
+        currentRow = values.isEmpty() ? null : values.get( currentIndex );
+        return currentRow != null;
     }
 
 
@@ -224,12 +228,13 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
     public boolean next() throws PrismInterfaceServiceException {
         try {
             considerPrefetch();
-            syncFetch();
-            currentIndex++;
-            currentRow = values.get( currentIndex );
-            if ( currentRow == null ) {
+            if ( !fetchUpTo( currentIndex + 2 ) ) {
+                currentIndex = values.size();
+                currentRow = null;
                 return false;
             }
+            currentIndex++;
+            currentRow = values.get( currentIndex );
             return true;
         } catch ( InterruptedException e ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more rows from server failed.", e );
@@ -242,28 +247,9 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
         if ( values.size() > prefetch_count ) {
             return;
         }
-        if ( resultFetcher.isLast() ) {
-            return;
+        if ( fetcherThread == null && !resultFetcher.isLast() ) {
+            fetcherThread = resultFetcher.startFetch();
         }
-        if ( fetcherThread != null ) {
-            return;
-        }
-        fetcherThread = new Thread( resultFetcher );
-        fetcherThread.start();
-    }
-
-
-    private void syncFetch() throws InterruptedException {
-        if ( fetcherThread == null ) {
-            return;
-        }
-        // currently not at last element thus we don't have to wait on next frame
-        if ( !(currentIndex == values.size() - 1) ) {
-            return;
-        }
-        fetcherThread.join();
-        fetcherThread = null;
-        values.addAll( resultFetcher.getFetchedValues() );
     }
 
 

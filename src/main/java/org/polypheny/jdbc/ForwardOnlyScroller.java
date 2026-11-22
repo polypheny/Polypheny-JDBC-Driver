@@ -19,6 +19,8 @@ package org.polypheny.jdbc;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.polypheny.jdbc.ResultFetcher.FetchFailure;
+import org.polypheny.jdbc.ResultFetcher.FetchThread;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
@@ -32,7 +34,7 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
     private LinkedList<List<TypedValue>> values;
     private List<TypedValue> currentRow;
     private ResultFetcher resultFetcher;
-    private Thread fetcherThread;
+    private FetchThread fetcherThread;
     private PolyphenyResultSetProperties properties;
     private int baseIndex;
 
@@ -56,16 +58,15 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
 
     @Override
     public void fetchAllAndSync() throws InterruptedException {
-        if ( resultFetcher.isLast() ) {
-            return;
-        }
-        if ( fetcherThread != null ) {
-            return;
-        }
-        while ( !resultFetcher.isLast() ) {
-            fetcherThread = new Thread( resultFetcher );
-            fetcherThread.start();
-            syncFetch();
+        try {
+            while ( fetcherThread != null || !resultFetcher.isLast() ) {
+                if ( fetcherThread == null ) {
+                    fetcherThread = resultFetcher.startFetch();
+                }
+                syncFetch();
+            }
+        } catch ( PrismInterfaceServiceException e ) {
+            throw new FetchFailure( e );
         }
     }
 
@@ -92,18 +93,13 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
         if ( values.size() > prefetch_count ) {
             return;
         }
-        if ( resultFetcher.isLast() ) {
-            return;
+        if ( fetcherThread == null && !resultFetcher.isLast() ) {
+            fetcherThread = resultFetcher.startFetch();
         }
-        if ( fetcherThread != null ) {
-            return;
-        }
-        fetcherThread = new Thread( resultFetcher );
-        fetcherThread.start();
     }
 
 
-    private void syncFetchIfEmpty() throws InterruptedException {
+    private void syncFetchIfEmpty() throws InterruptedException, PrismInterfaceServiceException {
         if ( !values.isEmpty() ) {
             return;
         }
@@ -111,13 +107,12 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
     }
 
 
-    private void syncFetch() throws InterruptedException {
+    private void syncFetch() throws InterruptedException, PrismInterfaceServiceException {
         if ( fetcherThread == null ) {
             return;
         }
-        fetcherThread.join();
+        values.addAll( fetcherThread.awaitPage() );
         fetcherThread = null;
-        values.addAll( resultFetcher.getFetchedValues() );
     }
 
 
