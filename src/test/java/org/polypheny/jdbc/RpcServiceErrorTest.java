@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.ProtocolException;
 import java.sql.Connection;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
@@ -126,6 +127,7 @@ class RpcServiceErrorTest {
                 Arguments.of( null, "UNSPECIFIED", -1 ),
                 Arguments.of( ErrorDetails.getDefaultInstance(), "UNSPECIFIED", -1 ),
                 Arguments.of( ErrorDetails.newBuilder().setState( "XX000" ).build(), "XX000", -1 ),
+                Arguments.of( ErrorDetails.newBuilder().setState( "Z9A01" ).setErrorCode( -123 ).build(), "Z9A01", -123 ),
                 Arguments.of( ErrorDetails.newBuilder().setErrorCode( 17 ).build(), "UNSPECIFIED", 17 ),
                 Arguments.of( ErrorDetails.newBuilder().setState( "42P01" ).setErrorCode( 0 ).setMessage( "Nested details message" ).build(), "42P01", 0 )
         );
@@ -150,6 +152,50 @@ class RpcServiceErrorTest {
             PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class,
                     () -> statement.execute( "INSERT INTO example VALUES (1)" ) );
             assertServerError( failure, "23505", 0 );
+        }
+    }
+
+
+    @ParameterizedTest(name = "{0} with SQLSTATE [{1}]")
+    @MethodSource("invalidStates")
+    void ignoresInvalidSqlStateAndPreservesExplicitZero( TypeCase request, String invalidState ) throws SQLException {
+        ErrorDetails details = ErrorDetails.newBuilder().setState( invalidState ).setErrorCode( 0 )
+                .setMessage( "Nested details message" ).build();
+
+        PrismInterfaceServiceException failure = failJdbcOperation( request, errorResponse( details ) );
+        assertServerError( failure, "UNSPECIFIED", 0 );
+    }
+
+
+    private static Stream<Arguments> invalidStates() {
+        return Stream.of( "", "23", "42p01", "42-01", "42P01 " )
+                .flatMap( state -> Stream.of(
+                        Arguments.of( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, state ),
+                        Arguments.of( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST, state ) ) );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void treatsNonFinalErrorResponseAsProtocolFailure( boolean callback ) throws SQLException {
+        ErrorDetails details = ErrorDetails.newBuilder().setState( "23505" ).setErrorCode( 0 ).build();
+        TypeCase request = callback ? TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST : TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST;
+
+        PrismInterfaceServiceException failure = failJdbcOperation( request, errorResponse( details ).setLast( false ) );
+        assertUnspecified( failure );
+        assertEquals( LEGACY_MESSAGE, failure.getMessage() );
+        assertInstanceOf( ProtocolException.class, failure.getCause() );
+    }
+
+
+    private PrismInterfaceServiceException failJdbcOperation( TypeCase request, Response.Builder response ) throws SQLException {
+        replyTo( request, response );
+        Connection connection = createConnection();
+        if ( request == TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST ) {
+            return assertThrows( PrismInterfaceServiceException.class, () -> connection.prepareStatement( "SELECT 1" ) );
+        }
+        try ( Statement statement = connection.createStatement() ) {
+            return assertThrows( PrismInterfaceServiceException.class, () -> statement.execute( "SELECT 1" ) );
         }
     }
 

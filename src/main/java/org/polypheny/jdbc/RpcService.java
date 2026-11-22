@@ -18,6 +18,7 @@ package org.polypheny.jdbc;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.ProtocolException;
 import java.net.SocketException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Map;
@@ -27,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.utils.CallbackQueue;
@@ -91,6 +93,8 @@ import org.polypheny.prism.TypesResponse;
 
 @Slf4j
 public class RpcService {
+
+    private static final Pattern SQLSTATE = Pattern.compile( "[0-9A-Z]{5}" );
 
     private final AtomicLong idCounter = new AtomicLong( 1 );
     private final Transport con;
@@ -164,7 +168,7 @@ public class RpcService {
                     if ( cq != null ) {
                         if ( resp.hasErrorResponse() ) {
                             callbackQueues.remove( resp.getId() );
-                            cq.onError( decodeServerError( resp.getErrorResponse() ) );
+                            cq.onError( decodeErrorResponse( resp ) );
                         } else {
                             cq.onNext( resp );
                             if ( resp.getLast() ) {
@@ -243,7 +247,7 @@ public class RpcService {
             sendMessage( req.build() );
             Response resp = waitForCompletion( f, timeout );
             if ( resp.hasErrorResponse() ) {
-                throw decodeServerError( resp.getErrorResponse() );
+                throw decodeErrorResponse( resp );
             }
             return resp;
         } catch ( IOException e ) {
@@ -254,11 +258,17 @@ public class RpcService {
     }
 
 
-    private static PrismInterfaceServiceException decodeServerError( ErrorResponse response ) {
-        ErrorDetails details = response.getDetails();
+    private static PrismInterfaceServiceException decodeErrorResponse( Response response ) {
+        ErrorResponse error = response.getErrorResponse();
+        if ( !response.getLast() ) {
+            return new PrismInterfaceServiceException( PrismInterfaceErrors.UNSPECIFIED, error.getMessage(),
+                    new ProtocolException( "Prism error response must be final." ) );
+        }
+        ErrorDetails details = error.getDetails();
+        String state = details.getState();
         return new PrismInterfaceServiceException(
-                response.getMessage(),
-                details.hasState() ? details.getState() : PrismInterfaceErrors.UNSPECIFIED.state,
+                error.getMessage(),
+                SQLSTATE.matcher( state ).matches() ? state : PrismInterfaceErrors.UNSPECIFIED.state,
                 details.hasErrorCode() ? details.getErrorCode() : PrismInterfaceErrors.UNSPECIFIED.errorCode );
     }
 
@@ -396,7 +406,8 @@ public class RpcService {
             return completeSynchronously( req, timeout ).getDisconnectResponse();
         } catch ( PrismInterfaceServiceException e ) {
             /* For Windows */
-            if ( e.getCause() != null && e.getMessage() != null && e.getMessage().contains( "An existing connection was forcibly closed by the remote host" ) ) {
+            String causeMessage = e.getCause() == null ? null : e.getCause().getMessage();
+            if ( causeMessage != null && causeMessage.contains( "An existing connection was forcibly closed by the remote host" ) ) {
                 return DisconnectResponse.newBuilder().build();
             }
             throw e;

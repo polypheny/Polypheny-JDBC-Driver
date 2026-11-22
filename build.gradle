@@ -118,6 +118,9 @@ test {
         if (project.hasProperty('skipGraphIntegration')) {
             excludeTags 'graph'
         }
+        if (!project.hasProperty('prism24Integration')) {
+            excludeTags 'prism24'
+        }
     }
     testLogging.showStandardStreams = true
 }
