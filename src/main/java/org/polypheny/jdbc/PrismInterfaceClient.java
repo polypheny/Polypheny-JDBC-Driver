@@ -52,6 +52,7 @@ import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.FetchRequest;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.Function;
 import org.polypheny.prism.FunctionsRequest;
 import org.polypheny.prism.IndexedParameters;
@@ -79,6 +80,7 @@ import org.polypheny.prism.TypesRequest;
 public class PrismInterfaceClient {
 
     private final RpcService rpc;
+    private boolean supportsGeneratedKeys;
 
 
     public PrismInterfaceClient( String host, int port, Map<String, String> parameters ) throws PrismInterfaceServiceException {
@@ -128,7 +130,13 @@ public class PrismInterfaceClient {
             throw new PrismInterfaceServiceException( "client version " + getClientApiVersionString()
                     + " not compatible with server version " + getServerApiVersionString( connectionResponse ) + "." );
         }
+        supportsGeneratedKeys = connectionResponse.getSupportsGeneratedKeys();
         return connectionResponse;
+    }
+
+
+    public boolean supportsGeneratedKeys() {
+        return supportsGeneratedKeys;
     }
 
 
@@ -159,6 +167,17 @@ public class PrismInterfaceClient {
     public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
         ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName );
         rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+    }
+
+
+    public void executeUnparameterizedStatement(
+            String namespaceName, String languageName, String statement, GeneratedKeysRequest keys,
+            CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
+        ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName )
+                .toBuilder()
+                .setGeneratedKeys( keys )
+                .build();
+        rpc.executeUnparameterizedStatement( request, callback );
     }
 
 
@@ -199,6 +218,16 @@ public class PrismInterfaceClient {
 
     public PreparedStatementSignature prepareIndexedStatement( String namespaceName, String languageName, String statement, int timeout ) throws PrismInterfaceServiceException {
         return rpc.prepareIndexedStatement( buildPrepareStatementRequest( namespaceName, languageName, statement ), timeout );
+    }
+
+
+    public PreparedStatementSignature prepareIndexedStatement(
+            String namespaceName, String languageName, String statement, GeneratedKeysRequest keys, int timeout ) throws PrismInterfaceServiceException {
+        PrepareStatementRequest request = buildPrepareStatementRequest( namespaceName, languageName, statement )
+                .toBuilder()
+                .setGeneratedKeys( keys )
+                .build();
+        return rpc.prepareIndexedStatement( request, timeout );
     }
 
 

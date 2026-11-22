@@ -19,6 +19,12 @@ version = versionMajor + "." + versionMinor + (versionQualifier != '' ? "-" + ve
 
 
 repositories {
+    // Paired source builds can supply Prism from an explicitly selected local repository.
+    if (System.getProperty('maven.repo.local') != null) {
+        mavenLocal {
+            content { includeModule('org.polypheny', 'prism') }
+        }
+    }
     mavenCentral()
     maven {
         url "https://plugins.gradle.org/m2/"
@@ -51,7 +57,7 @@ java {
 }
 
 def protobufVersion = '4.28.2'
-def prismApi = 'org.polypheny:prism:2.4'
+def prismApi = 'org.polypheny:prism:2.5'
 
 
 dependencies {

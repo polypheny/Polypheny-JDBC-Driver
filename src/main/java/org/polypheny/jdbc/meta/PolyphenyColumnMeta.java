@@ -77,7 +77,7 @@ public class PolyphenyColumnMeta {
     //column = field
     public PolyphenyColumnMeta( ColumnMeta protoColumnMeta ) {
         this.ordinal = protoColumnMeta.getColumnIndex();
-        this.autoIncrement = false;
+        this.autoIncrement = protoColumnMeta.getIsAutoIncrement();
         this.caseSensitive = true;
         this.searchable = false;
         this.currency = false;

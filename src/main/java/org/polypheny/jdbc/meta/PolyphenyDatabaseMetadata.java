@@ -1185,7 +1185,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public boolean supportsGetGeneratedKeys() throws SQLException {
-        return false;
+        return prismInterfaceClient.supportsGeneratedKeys();
     }
 
 

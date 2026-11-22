@@ -63,14 +63,6 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     }
 
 
-    private void prepareForReExecution() throws SQLException {
-        if ( currentResult != null ) {
-            currentResult.close();
-        }
-        currentUpdateCount = NO_UPDATE_COUNT;
-    }
-
-
     private TypedValue[] createParameterList( int parameterCount ) {
         return new TypedValue[parameterCount];
     }
@@ -84,6 +76,12 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
     @Override
     public int executeUpdate( String statement ) throws SQLException {
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Method should not be called on a prepared statement." );
+    }
+
+
+    @Override
+    public long executeLargeUpdate( String statement ) throws SQLException {
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Method should not be called on a prepared statement." );
     }
 
@@ -154,7 +152,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public ResultSet executeQuery() throws SQLException {
         try {
             throwIfClosed();
-            prepareForReExecution();
+            clearExecutionResults();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
                     Arrays.asList( parameters ),
@@ -164,6 +162,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             if ( !result.hasFrame() ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
             }
+            captureGeneratedKeys( result );
             Frame frame = result.getFrame();
             throwIfNotRelational( frame );
             currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
@@ -179,7 +178,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public long executeLargeUpdate() throws SQLException {
         try {
             throwIfClosed();
-            prepareForReExecution();
+            clearExecutionResults();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
                     Arrays.asList( parameters ),
@@ -189,6 +188,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             if ( result.hasFrame() ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
             }
+            captureGeneratedKeys( result );
             currentUpdateCount = result.getScalar();
             return currentUpdateCount;
         } finally {
@@ -387,13 +387,14 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public boolean execute() throws SQLException {
         try {
             throwIfClosed();
-            prepareForReExecution();
+            clearExecutionResults();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
                     Arrays.asList( parameters ),
                     properties.getFetchSize(),
                     getTimeout()
             );
+            captureGeneratedKeys( result );
             if ( !result.hasFrame() ) {
                 currentUpdateCount = result.getScalar();
                 return false;
@@ -413,6 +414,13 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void addBatch() throws SQLException {
         throwIfClosed();
         parameterBatch.add( Arrays.asList( parameters.clone() ) );
+    }
+
+
+    @Override
+    public void clearBatch() throws SQLException {
+        throwIfClosed();
+        clearParameterBatch();
     }
 
 
@@ -441,10 +449,12 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
         try {
+            clearExecutionResults();
             if ( parameterBatch.isEmpty() ) {
                 return new ArrayList<>();
             }
             StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
+            captureGeneratedKeys( status );
             return status.getScalarsList();
         } finally {
             // jdbc: batch and individual parameters are always cleared even in the execution fails.

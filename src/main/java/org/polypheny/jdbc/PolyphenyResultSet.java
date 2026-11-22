@@ -47,12 +47,15 @@ import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.meta.PolyphenyResultSetMetadata;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.jdbc.utils.TypedValueUtils;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.Frame.ResultCase;
+import org.polypheny.prism.RelationalFrame;
 
 public class PolyphenyResultSet implements ResultSet {
 
     private boolean isMeta = false;
+    private boolean generatedKeys;
 
     private final PolyphenyStatement statement;
 
@@ -87,6 +90,17 @@ public class PolyphenyResultSet implements ResultSet {
         this.lastRead = null;
         this.isClosed = false;
         this.isInInsertMode = false;
+    }
+
+
+    PolyphenyResultSet( PolyphenyStatement statement, RelationalFrame keys, PolyphenyResultSetProperties properties ) {
+        this.statement = statement;
+        this.metadata = new PolyphenyResultSetMetadata( MetaUtils.buildColumnMetas( keys.getColumnMetaList() ) );
+        this.resultScroller = new MetaScroller<>( TypedValueUtils.buildRows( keys.getRowsList() ) );
+        this.properties = properties;
+        this.properties.setResultSetType( ResultSet.TYPE_FORWARD_ONLY );
+        this.properties.setResultSetConcurrency( ResultSet.CONCUR_READ_ONLY );
+        this.generatedKeys = true;
     }
 
 
@@ -200,6 +214,11 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public void close() throws SQLException {
         if ( isClosed ) {
+            return;
+        }
+        if ( generatedKeys ) {
+            isClosed = true;
+            statement.notifyGeneratedKeysClosure( this );
             return;
         }
         if ( statement != null ) {

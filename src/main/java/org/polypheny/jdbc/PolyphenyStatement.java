@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,9 +33,11 @@ import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.Frame.ResultCase;
+import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.Response;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
+import org.polypheny.prism.StatementResult;
 
 public class PolyphenyStatement implements Statement {
 
@@ -46,6 +49,9 @@ public class PolyphenyStatement implements Statement {
     protected int statementId;
 
     private boolean isClosed;
+    private boolean clearingResults;
+    private Frame generatedKeysFrame;
+    private PolyphenyResultSet generatedKeysResult;
     protected PolyphenyStatementProperties properties;
 
     // Value used to represent that no value is set for the update count according to JDBC.
@@ -63,6 +69,7 @@ public class PolyphenyStatement implements Statement {
         this.properties.setPolyphenyStatement( this );
         this.statementId = NO_STATEMENT_ID;
         this.currentResult = null;
+        this.currentUpdateCount = NO_UPDATE_COUNT;
     }
 
 
@@ -82,10 +89,7 @@ public class PolyphenyStatement implements Statement {
 
 
     private void prepareForReExecution() throws SQLException {
-        if ( currentResult != null ) {
-            currentResult.close();
-        }
-        currentUpdateCount = NO_UPDATE_COUNT;
+        clearExecutionResults();
         if ( statementId != NO_STATEMENT_ID ) {
             getClient().closeStatement( statementId, getTimeout() );
             statementId = NO_STATEMENT_ID;
@@ -93,11 +97,53 @@ public class PolyphenyStatement implements Statement {
     }
 
 
+    protected final void clearExecutionResults() throws SQLException {
+        clearingResults = true;
+        try {
+            if ( generatedKeysResult != null ) {
+                generatedKeysResult.close();
+            }
+            generatedKeysResult = null;
+            generatedKeysFrame = null;
+            if ( currentResult != null ) {
+                currentResult.close();
+            }
+            currentUpdateCount = NO_UPDATE_COUNT;
+        } finally {
+            clearingResults = false;
+        }
+    }
+
+
     public void notifyResultClosure() throws SQLException {
-        this.currentResult = null;
+        currentResult = null;
         getClient().closeResult( statementId, getTimeout() );
-        if ( isCloseOnCompletion() ) {
+        boolean hasOpenKeys = generatedKeysFrame != null && (generatedKeysResult == null || !generatedKeysResult.isClosed());
+        if ( !clearingResults && !hasOpenKeys && isCloseOnCompletion() ) {
             close();
+        }
+    }
+
+
+    void notifyGeneratedKeysClosure( PolyphenyResultSet result ) throws SQLException {
+        if ( !clearingResults && result == generatedKeysResult && generatedKeysFrame != null && currentResult == null && isCloseOnCompletion() ) {
+            close();
+        }
+    }
+
+
+    protected void captureGeneratedKeys( StatementResult result ) throws SQLException {
+        if ( result.hasGeneratedKeys() ) {
+            Frame frame = result.getGeneratedKeys();
+            GeneratedKeys.requireComplete( frame );
+            generatedKeysFrame = frame;
+        }
+    }
+
+
+    protected void captureGeneratedKeys( StatementBatchResponse result ) throws SQLException {
+        if ( result.getGeneratedKeysCount() > 0 ) {
+            generatedKeysFrame = GeneratedKeys.combine( result.getGeneratedKeysList() );
         }
     }
 
@@ -135,62 +181,75 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
-        throwIfClosed();
-        clearBatch();
-        prepareForReExecution();
-        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
-        String namespaceName = getConnection().getSchema();
-        getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
-        while ( true ) {
-            StatementResponse response = callback.takeNext();
-            if ( !hasStatementId() ) {
-                statementId = response.getStatementId();
-            }
-            if ( !response.hasResult() ) {
-                continue;
-            }
-            try {
-                callback.awaitSuccessfulCompletion();
-            } catch ( InterruptedException e ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
-            }
-            if ( !response.getResult().hasFrame() ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
-            }
-            Frame frame = response.getResult().getFrame();
-            throwIfNotRelational( frame );
-            currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
-            return currentResult;
+        StatementResult result = executeUnparameterized( statement, null );
+        if ( !result.hasFrame() ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
         }
+        Frame frame = result.getFrame();
+        throwIfNotRelational( frame );
+        currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+        return currentResult;
     }
 
 
     @Override
     public int executeUpdate( String statement ) throws SQLException {
+        return longToInt( executeLargeUpdate( statement ) );
+    }
+
+
+    @Override
+    public long executeLargeUpdate( String statement ) throws SQLException {
+        return executeUpdateWithKeys( statement, null );
+    }
+
+
+    private long executeUpdateWithKeys( String sql, GeneratedKeysRequest keys ) throws SQLException {
+        StatementResult result = executeUnparameterized( sql, keys );
+        if ( result.hasFrame() ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
+        }
+        captureGeneratedKeys( result );
+        currentUpdateCount = result.getScalar();
+        return currentUpdateCount;
+    }
+
+
+    private StatementResult executeUnparameterized( String statement, GeneratedKeysRequest keys ) throws SQLException {
         throwIfClosed();
+        PrismInterfaceClient client = getClient();
+        if ( keys != null ) {
+            GeneratedKeys.requireSupported( client );
+        }
         clearBatch();
         prepareForReExecution();
         CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
         String namespaceName = getConnection().getSchema();
-        getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
+        String language = PropertyUtils.getSQL_LANGUAGE_NAME();
+        if ( keys == null ) {
+            client.executeUnparameterizedStatement( namespaceName, language, statement, callback, getTimeout() );
+        } else {
+            client.executeUnparameterizedStatement( namespaceName, language, statement, keys, callback, getTimeout() );
+        }
         while ( true ) {
             StatementResponse response = callback.takeNext();
             if ( !hasStatementId() ) {
                 statementId = response.getStatementId();
             }
-            if ( !response.hasResult() ) {
-                continue;
+            if ( response.hasResult() ) {
+                awaitCompletion( callback );
+                return response.getResult();
             }
-            try {
-                callback.awaitSuccessfulCompletion();
-            } catch ( InterruptedException e ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
-            }
-            if ( response.getResult().hasFrame() ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
-            }
-            currentUpdateCount = response.getResult().getScalar();
-            return longToInt( currentUpdateCount );
+        }
+    }
+
+
+    private void awaitCompletion( CallbackQueue<?> callback ) throws SQLException {
+        try {
+            callback.awaitSuccessfulCompletion();
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
         }
     }
 
@@ -287,34 +346,21 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean execute( String statement ) throws SQLException {
-        throwIfClosed();
-        clearBatch();
-        prepareForReExecution();
-        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
-        String namespaceName = getConnection().getSchema();
-        getClient().executeUnparameterizedStatement( namespaceName, PropertyUtils.getSQL_LANGUAGE_NAME(), statement, callback, getTimeout() );
-        while ( true ) {
-            StatementResponse response = callback.takeNext();
-            if ( !hasStatementId() ) {
-                statementId = response.getStatementId();
-            }
-            if ( !response.hasResult() ) {
-                continue;
-            }
-            try {
-                callback.awaitSuccessfulCompletion();
-            } catch ( InterruptedException e ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
-            }
-            if ( !response.getResult().hasFrame() ) {
-                currentUpdateCount = longToInt( response.getResult().getScalar() );
-                return false;
-            }
-            Frame frame = response.getResult().getFrame();
-            throwIfNotRelational( frame );
-            currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
-            return true;
+        return executeWithKeys( statement, null );
+    }
+
+
+    private boolean executeWithKeys( String statement, GeneratedKeysRequest keys ) throws SQLException {
+        StatementResult result = executeUnparameterized( statement, keys );
+        captureGeneratedKeys( result );
+        if ( !result.hasFrame() ) {
+            currentUpdateCount = result.getScalar();
+            return false;
         }
+        Frame frame = result.getFrame();
+        throwIfNotRelational( frame );
+        currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+        return true;
     }
 
 
@@ -341,8 +387,10 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean getMoreResults() throws SQLException {
         throwIfClosed();
-        prepareForReExecution();
-        // statements can not return multiple result sets
+        if ( currentResult != null ) {
+            currentResult.close();
+        }
+        currentUpdateCount = NO_UPDATE_COUNT;
         return false;
     }
 
@@ -431,6 +479,9 @@ public class PolyphenyStatement implements Statement {
         try {
             throwIfClosed();
             prepareForReExecution();
+            if ( statementBatch.isEmpty() ) {
+                return Collections.emptyList();
+            }
             CallbackQueue<StatementBatchResponse> callback = new CallbackQueue<>( Response::getStatementBatchResponse );
             List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
             clearBatch();
@@ -443,11 +494,8 @@ public class PolyphenyStatement implements Statement {
                 if ( status.getScalarsCount() == 0 ) {
                     continue;
                 }
-                try {
-                    callback.awaitSuccessfulCompletion();
-                } catch ( InterruptedException e ) {
-                    throw new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Awaiting completion of api call failed.", e );
-                }
+                awaitCompletion( callback );
+                captureGeneratedKeys( status );
                 return status.getScalarsList();
             }
         } finally {
@@ -458,6 +506,7 @@ public class PolyphenyStatement implements Statement {
 
     List<ExecuteUnparameterizedStatementRequest> buildBatchRequest() throws SQLException {
         String namespaceName = getConnection().getSchema();
+        boolean requestKeys = getClient().supportsGeneratedKeys();
         return statementBatch.stream()
                 .map(
                         s -> {
@@ -467,6 +516,9 @@ public class PolyphenyStatement implements Statement {
                                     .setLanguageName( PropertyUtils.getSQL_LANGUAGE_NAME() );
                             if ( namespaceName != null ) {
                                 builder.setNamespaceName( namespaceName );
+                            }
+                            if ( requestKeys ) {
+                                builder.setGeneratedKeys( GeneratedKeys.ALL );
                             }
                             return builder.build();
                         }
@@ -490,22 +542,25 @@ public class PolyphenyStatement implements Statement {
         if ( i != CLOSE_CURRENT_RESULT ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal value for closing behaviour: " + i );
         }
-        throwIfClosed();
-        prepareForReExecution();
-        // statements can not return multiple result sets
-        return false;
+        return getMoreResults();
     }
 
 
     @Override
     public ResultSet getGeneratedKeys() throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        throwIfClosed();
+        GeneratedKeys.requireSupported( getClient() );
+        if ( generatedKeysResult == null ) {
+            Frame keys = generatedKeysFrame == null ? GeneratedKeys.EMPTY : generatedKeysFrame;
+            generatedKeysResult = new PolyphenyResultSet( this, GeneratedKeys.requireComplete( keys ), properties.toResultSetProperties() );
+        }
+        return generatedKeysResult;
     }
 
 
     @Override
     public long executeLargeUpdate( String sql, int autogeneratedKeys ) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        return executeUpdateWithKeys( sql, GeneratedKeys.requested( autogeneratedKeys ) );
     }
 
 
@@ -517,7 +572,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public long executeLargeUpdate( String sql, int[] columnIndexes ) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        return executeUpdateWithKeys( sql, GeneratedKeys.requested( columnIndexes ) );
     }
 
 
@@ -529,7 +584,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public long executeLargeUpdate( String sql, String[] columnNames ) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        return executeUpdateWithKeys( sql, GeneratedKeys.requested( columnNames ) );
     }
 
 
@@ -540,20 +595,20 @@ public class PolyphenyStatement implements Statement {
 
 
     @Override
-    public boolean execute( String s, int i ) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+    public boolean execute( String sql, int autogeneratedKeys ) throws SQLException {
+        return executeWithKeys( sql, GeneratedKeys.requested( autogeneratedKeys ) );
     }
 
 
     @Override
-    public boolean execute( String s, int[] ints ) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+    public boolean execute( String sql, int[] columnIndexes ) throws SQLException {
+        return executeWithKeys( sql, GeneratedKeys.requested( columnIndexes ) );
     }
 
 
     @Override
-    public boolean execute( String s, String[] strings ) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+    public boolean execute( String sql, String[] columnNames ) throws SQLException {
+        return executeWithKeys( sql, GeneratedKeys.requested( columnNames ) );
     }
 
 
