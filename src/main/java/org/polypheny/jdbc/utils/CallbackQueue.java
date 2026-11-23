@@ -58,6 +58,11 @@ public class CallbackQueue<T> {
     }
 
 
+    public long getDeadlineNanos() {
+        return deadline;
+    }
+
+
     public void awaitCompletion() throws InterruptedException {
         awaitCompletionFailure();
     }

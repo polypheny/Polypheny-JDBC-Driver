@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ProtocolException;
+import java.nio.channels.ClosedByInterruptException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -41,8 +42,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -58,6 +62,7 @@ import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.prism.BatchGeneratedKeys;
+import org.polypheny.prism.CloseResultResponse;
 import org.polypheny.prism.CloseStatementResponse;
 import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
 import org.polypheny.prism.ErrorDetails;
@@ -309,6 +314,48 @@ class RpcServiceErrorTest {
 
 
     @ParameterizedTest
+    @CsvSource({ "false, false", "true, false", "false, true", "true, true" })
+    void interruptedBatchClosesTheConnectionAndPreservesTheInterrupt( boolean prepared, boolean whileSending ) throws Exception {
+        try ( Connection connection = createConnection(); Statement statement = createBatchStatement( connection, prepared ) ) {
+            CountDownLatch sent = new CountDownLatch( 1 );
+            requestHandler = request -> {
+                assertEquals( prepared ? TypeCase.EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST : TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST,
+                        request.getTypeCase() );
+                sent.countDown();
+                if ( whileSending ) {
+                    Thread.currentThread().interrupt();
+                    throw new ClosedByInterruptException();
+                }
+            };
+            addBatchEntry( statement );
+            FutureTask<SQLException> execution = new FutureTask<>( () -> {
+                SQLException failure = assertThrows( SQLException.class, statement::executeBatch );
+                assertTrue( Thread.currentThread().isInterrupted() );
+                return failure;
+            } );
+            Thread worker = new Thread( execution, "interrupted-batch-test" );
+            worker.setDaemon( true );
+            worker.start();
+            try {
+                assertTrue( sent.await( 1, TimeUnit.SECONDS ) );
+                if ( !whileSending ) {
+                    worker.interrupt();
+                }
+                SQLException failure = execution.get( 1, TimeUnit.SECONDS );
+                Class<? extends Exception> expectedCause = whileSending ? ClosedByInterruptException.class : InterruptedException.class;
+                assertInstanceOf( expectedCause, failure.getCause() );
+                assertTrue( connection.isClosed() );
+                assertTrue( statement.isClosed() );
+                assertFalse( connection.isValid( 0 ) );
+                assertEquals( 1, transportCloses );
+            } finally {
+                worker.interrupt();
+            }
+        }
+    }
+
+
+    @ParameterizedTest
     @ValueSource(booleans = { false, true })
     void reportsUnknownPerCommandCountsForPreparedBatchAggregate( boolean large ) throws Exception {
         try ( Statement statement = createBatchStatement( true ) ) {
@@ -429,7 +476,7 @@ class RpcServiceErrorTest {
                 PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeBatch );
                 assertServerError( failure, "40001", 7 );
             } finally {
-                replyTo( cleanup );
+                replyTo( cleanup, Response.newBuilder().setLast( true ).setCloseResultResponse( CloseResultResponse.getDefaultInstance() ) );
             }
             assertArrayEquals( new int[0], statement.executeBatch() );
         }

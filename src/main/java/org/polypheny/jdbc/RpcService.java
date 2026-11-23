@@ -25,8 +25,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntConsumer;
 import java.util.regex.Pattern;
@@ -97,8 +100,10 @@ import org.polypheny.prism.TypesResponse;
 public class RpcService {
 
     private static final Pattern SQLSTATE = Pattern.compile( "[0-9A-Z]{5}" );
+    private static final ScheduledThreadPoolExecutor WRITE_DEADLINES = createWriteDeadlineExecutor();
 
     private final AtomicLong idCounter = new AtomicLong( 1 );
+    private final AtomicBoolean transportClosed = new AtomicBoolean();
     private final Transport con;
     private final Thread service;
     private volatile boolean closed = false;
@@ -106,6 +111,19 @@ public class RpcService {
     private IOException error = null;
     private final Map<Long, CompletableFuture<Response>> callbacks = new ConcurrentHashMap<>();
     private final Map<Long, CallbackQueue<?>> callbackQueues = new ConcurrentHashMap<>();
+
+
+    private static ScheduledThreadPoolExecutor createWriteDeadlineExecutor() {
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor( 1, task -> {
+            Thread thread = new Thread( task, "PrismRequestWriteDeadline" );
+            thread.setDaemon( true );
+            return thread;
+        } );
+        executor.setRemoveOnCancelPolicy( true );
+        executor.setKeepAliveTime( 30, TimeUnit.SECONDS );
+        executor.allowCoreThreadTimeOut( true );
+        return executor;
+    }
 
 
     RpcService( Transport con ) {
@@ -127,7 +145,9 @@ public class RpcService {
 
     void abort() {
         closed = true;
-        con.close();
+        if ( transportClosed.compareAndSet( false, true ) ) {
+            con.close();
+        }
     }
 
 
@@ -149,6 +169,51 @@ public class RpcService {
             throw new IOException( "Connection is closed" );
         }
         con.sendMessage( req.toByteArray() );
+    }
+
+
+    private void sendMessageBeforeDeadline( Request request, long deadline, long timeoutMillis ) throws IOException, TimeoutException {
+        if ( timeoutMillis <= 0 ) {
+            sendMessage( request );
+            return;
+        }
+        long remaining = deadline - System.nanoTime();
+        if ( remaining <= 0 ) {
+            throw writeTimeout( timeoutMillis );
+        }
+
+        AtomicBoolean pending = new AtomicBoolean( true );
+        ScheduledFuture<?> watchdog = WRITE_DEADLINES.schedule( () -> {
+            if ( pending.compareAndSet( true, false ) ) {
+                abort();
+            }
+        }, remaining, TimeUnit.NANOSECONDS );
+        IOException failure = null;
+        boolean finishedBeforeWatchdog;
+        try {
+            sendMessage( request );
+        } catch ( IOException e ) {
+            failure = e;
+        } finally {
+            finishedBeforeWatchdog = pending.compareAndSet( true, false );
+            watchdog.cancel( false );
+        }
+
+        if ( !finishedBeforeWatchdog || (failure == null && deadline - System.nanoTime() <= 0) ) {
+            TimeoutException timeout = writeTimeout( timeoutMillis );
+            if ( failure != null ) {
+                timeout.addSuppressed( failure );
+            }
+            throw timeout;
+        }
+        if ( failure != null ) {
+            throw failure;
+        }
+    }
+
+
+    private static TimeoutException writeTimeout( long timeoutMillis ) {
+        return new TimeoutException( "Prism request send did not complete within " + timeoutMillis + " ms." );
     }
 
 
@@ -223,12 +288,12 @@ public class RpcService {
     }
 
 
-    private Response waitForCompletion( CompletableFuture<Response> f, int timeout ) throws PrismInterfaceServiceException {
+    private Response waitForCompletion( CompletableFuture<Response> f, long timeoutNanos ) throws PrismInterfaceServiceException {
         try {
-            if ( timeout == 0 ) {
+            if ( timeoutNanos == 0 ) {
                 return f.get();
             } else {
-                return f.get( timeout, TimeUnit.MILLISECONDS );
+                return f.get( timeoutNanos, TimeUnit.NANOSECONDS );
             }
         } catch ( InterruptedException e ) {
             Thread.currentThread().interrupt();
@@ -246,13 +311,20 @@ public class RpcService {
             if ( req.getTypeCase() == TypeCase.DISCONNECT_REQUEST ) {
                 disconnectSent = true;
             }
-            sendMessage( req.build() );
-            Response resp = waitForCompletion( f, timeout );
+            long timeoutNanos = TimeUnit.MILLISECONDS.toNanos( timeout );
+            if ( timeout > 0 && (req.getTypeCase() == TypeCase.CLOSE_STATEMENT_REQUEST || req.getTypeCase() == TypeCase.CLOSE_RESULT_REQUEST) ) {
+                long deadline = System.nanoTime() + timeoutNanos;
+                sendMessageBeforeDeadline( req.build(), deadline, timeout );
+                timeoutNanos = Math.max( 1, deadline - System.nanoTime() );
+            } else {
+                sendMessage( req.build() );
+            }
+            Response resp = waitForCompletion( f, timeoutNanos );
             if ( resp.hasErrorResponse() ) {
                 throw decodeErrorResponse( resp );
             }
             return resp;
-        } catch ( IOException e ) {
+        } catch ( IOException | TimeoutException e ) {
             throw new PrismInterfaceServiceException( e );
         } finally {
             callbacks.remove( req.getId() );
@@ -507,7 +579,7 @@ public class RpcService {
         int batchId = rawBatch ? 0 : req.getExecuteIndexedStatementBatchRequest().getStatementId();
         try {
             callbackQueues.put( req.getId(), callback );
-            sendMessage( req.build() );
+            sendMessageBeforeDeadline( req.build(), callback.getDeadlineNanos(), timeout );
             while ( true ) {
                 Response response = callback.takeNext();
                 if ( !response.hasStatementBatchResponse() ) {
@@ -533,7 +605,7 @@ public class RpcService {
                 }
                 firstFrame = false;
             }
-        } catch ( IOException e ) {
+        } catch ( IOException | TimeoutException e ) {
             throw new PrismInterfaceServiceException( e );
         } catch ( PrismInterfaceServiceException.ServerError error ) {
             throw completed == null ? error : error.withCompletedBatch( completed );

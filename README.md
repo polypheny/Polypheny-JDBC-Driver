@@ -49,7 +49,7 @@ The column-name and one-based column-index overloads return those columns in req
 
 A failed batch entry raises `BatchUpdateException`. When the server reports the completed entries, `getUpdateCounts()` and `getLargeUpdateCounts()` return their counts, and `getGeneratedKeys()` exposes their keys. An explicit progress response with zero completed entries yields an empty array. If the server sends no progress response, both count methods return `null` and the batch may have partially committed.
 
-The driver closes the connection when a batch exceeds its network or query timeout because Prism has no batch cancellation request. A query timeout raises `SQLTimeoutException`. The server may still commit writes from the timed-out batch.
+The driver closes the connection when a batch exceeds its network or query timeout, or when the calling thread is interrupted before the batch completes. Prism has no batch cancellation request. A query timeout raises `SQLTimeoutException`. The server may still commit writes from an incomplete batch.
 
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).

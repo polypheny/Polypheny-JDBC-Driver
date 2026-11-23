@@ -62,7 +62,7 @@ public class PolyConnection implements Connection {
 
     private boolean hasRunningTransaction;
 
-    private Set<Statement> openStatements;
+    private final Set<Statement> openStatements;
 
     private Map<String, Class<?>> typeMap;
 
@@ -107,15 +107,18 @@ public class PolyConnection implements Connection {
 
 
     public void startTracking( Statement statement ) {
-        openStatements.add( statement );
+        synchronized ( openStatements ) {
+            if ( !isClosed ) {
+                openStatements.add( statement );
+            }
+        }
     }
 
 
     public void endTracking( Statement statement ) {
-        if ( !openStatements.contains( statement ) ) {
-            return;
+        synchronized ( openStatements ) {
+            openStatements.remove( statement );
         }
-        openStatements.remove( statement );
     }
 
 
@@ -209,7 +212,11 @@ public class PolyConnection implements Connection {
         if ( isClosed() ) {
             return;
         }
-        for ( Statement openStatement : new HashSet<>( openStatements ) ) {
+        Set<Statement> statements;
+        synchronized ( openStatements ) {
+            statements = new HashSet<>( openStatements );
+        }
+        for ( Statement openStatement : statements ) {
             openStatement.close();
         }
         getPrismInterfaceClient().unregister( properties.getNetworkTimeout() );
@@ -227,19 +234,23 @@ public class PolyConnection implements Connection {
      * Closes the transport after an interrupted or timed-out request with unknown outcome.
      */
     public void abortAfterIncompleteRequest() {
-        if ( isClosed ) {
-            return;
+        Set<Statement> statements;
+        synchronized ( openStatements ) {
+            if ( isClosed ) {
+                return;
+            }
+            isClosed = true;
+            statements = new HashSet<>( openStatements );
+            openStatements.clear();
         }
-        isClosed = true;
         getPrismInterfaceClient().abort();
-        for ( Statement openStatement : new HashSet<>( openStatements ) ) {
+        for ( Statement openStatement : statements ) {
             try {
                 openStatement.close();
             } catch ( SQLException e ) {
                 log.warn( "Could not dispose of statement after aborting the connection", e );
             }
         }
-        openStatements.clear();
     }
 
 

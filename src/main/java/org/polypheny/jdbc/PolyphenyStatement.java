@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import java.nio.channels.ClosedByInterruptException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -99,7 +100,7 @@ public class PolyphenyStatement implements Statement {
         clearExecutionResults();
         if ( statementId != NO_STATEMENT_ID ) {
             if ( !polyConnection.isClosed() ) {
-                getClient().closeStatement( statementId, getTimeout() );
+                closeResource( timeout -> getClient().closeStatement( statementId, timeout ) );
             }
             statementId = NO_STATEMENT_ID;
         }
@@ -126,15 +127,35 @@ public class PolyphenyStatement implements Statement {
 
 
     public void notifyResultClosure() throws SQLException {
+        if ( !polyConnection.isClosed() ) {
+            closeResource( timeout -> getClient().closeResult( statementId, timeout ) );
+        }
         currentResult = null;
         if ( polyConnection.isClosed() ) {
             return;
         }
-        getClient().closeResult( statementId, getTimeout() );
         boolean hasOpenKeys = generatedKeysFrame != null && (generatedKeysResult == null || !generatedKeysResult.isClosed());
         if ( !clearingResults && !hasOpenKeys && isCloseOnCompletion() ) {
             close();
         }
+    }
+
+
+    private void closeResource( CloseRequest request ) throws SQLException {
+        int timeout = polyConnection.getNetworkTimeout();
+        try {
+            request.execute( timeout );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
+    }
+
+
+    @FunctionalInterface
+    private interface CloseRequest {
+
+        void execute( int timeout ) throws PrismInterfaceServiceException;
+
     }
 
 
@@ -191,9 +212,9 @@ public class PolyphenyStatement implements Statement {
         if ( isClosed ) {
             return;
         }
-        polyConnection.endTracking( this );
         prepareForReExecution();
         isClosed = true;
+        polyConnection.endTracking( this );
     }
 
 
@@ -541,17 +562,26 @@ public class PolyphenyStatement implements Statement {
         } catch ( PrismInterfaceServiceException.ServerError failure ) {
             throw batchFailure( failure );
         } catch ( PrismInterfaceServiceException failure ) {
-            Throwable cause = failure.getCause();
-            if ( !(cause instanceof TimeoutException) ) {
-                throw failure;
-            }
-            // Prism has no batch cancellation request. The in-flight write may still complete.
+            throw handleIncompleteRequest( failure, networkDeadline );
+        }
+    }
+
+
+    private SQLException handleIncompleteRequest( PrismInterfaceServiceException failure, boolean networkDeadline ) {
+        Throwable cause = failure.getCause();
+        if ( cause instanceof InterruptedException || cause instanceof ClosedByInterruptException ) {
+            polyConnection.abortAfterIncompleteRequest();
+            return failure;
+        }
+        if ( cause instanceof TimeoutException ) {
+            // Closing the connection cannot undo a request the server has already received.
             polyConnection.abortAfterIncompleteRequest();
             if ( networkDeadline ) {
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, failure.getMessage(), cause );
+                return new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, failure.getMessage(), cause );
             }
-            throw new SQLTimeoutException( failure.getMessage(), cause );
+            return new SQLTimeoutException( failure.getMessage(), cause );
         }
+        return failure;
     }
 
 
