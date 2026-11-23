@@ -461,7 +461,8 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             if ( parameterBatch.isEmpty() ) {
                 return new ArrayList<>();
             }
-            StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
+            StatementBatchResponse status = executeBatchRequest(
+                    timeout -> getClient().executeIndexedStatementBatch( statementId, parameterBatch, timeout ) );
             captureGeneratedKeys( status );
             int batchSize = parameterBatch.size();
             if ( batchSize > 1 && status.getScalarsCount() == 1 && status.getGeneratedKeysCount() == 0 ) {
@@ -469,8 +470,6 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
                 return Collections.nCopies( batchSize, (long) SUCCESS_NO_INFO );
             }
             return status.getScalarsList();
-        } catch ( PrismInterfaceServiceException.ServerError failure ) {
-            throw batchFailure( failure );
         } finally {
             clearParameterBatch();
         }

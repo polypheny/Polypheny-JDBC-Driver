@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -197,7 +198,7 @@ class GeneratedKeysTest {
             return PreparedStatementSignature.newBuilder().setStatementId( 14 ).build();
         } );
         when( rpc.executeIndexedStatement( any(), anyInt() ) ).thenReturn( response( 1, frame( "id", 10 ) ) );
-        when( rpc.executeIndexedStatementBatch( any(), anyInt() ) ).thenAnswer( invocation -> {
+        when( rpc.executeIndexedStatementBatch( any(), anyLong() ) ).thenAnswer( invocation -> {
             ExecuteIndexedStatementBatchRequest request = invocation.getArgument( 0 );
             assertEquals( 14, request.getStatementId() );
             assertEquals( 2, request.getParametersCount() );
@@ -239,7 +240,7 @@ class GeneratedKeysTest {
     @Test
     void rawBatchCombinesKeysFromDifferentTables() throws Exception {
         RpcService rpc = mock( RpcService.class );
-        when( rpc.executeUnparameterizedStatementBatch( any(), anyInt(), any() ) ).thenAnswer( invocation -> {
+        when( rpc.executeUnparameterizedStatementBatch( any(), anyLong(), any() ) ).thenAnswer( invocation -> {
             ExecuteUnparameterizedStatementBatchRequest request = invocation.getArgument( 0 );
             List<ExecuteUnparameterizedStatementRequest> statements = request.getStatementsList();
             assertEquals( 3, statements.size() );

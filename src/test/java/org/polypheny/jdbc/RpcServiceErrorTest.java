@@ -18,10 +18,12 @@ package org.polypheny.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -29,7 +31,9 @@ import java.net.ProtocolException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -39,6 +43,7 @@ import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +59,7 @@ import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.CloseStatementResponse;
+import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
 import org.polypheny.prism.ErrorDetails;
 import org.polypheny.prism.ErrorResponse;
 import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
@@ -79,6 +85,7 @@ class RpcServiceErrorTest {
     private final EOFException eof = new EOFException( "Connection ended before a response" );
     private RequestHandler requestHandler;
     private RpcService rpc;
+    private int transportCloses;
 
 
     @FunctionalInterface
@@ -113,6 +120,7 @@ class RpcServiceErrorTest {
 
             @Override
             public void close() {
+                transportCloses++;
                 incoming.add( endOfStream );
             }
         } );
@@ -261,6 +269,46 @@ class RpcServiceErrorTest {
 
 
     @ParameterizedTest
+    @CsvSource({ "false, false", "true, false", "false, true" })
+    void batchDeadlineClosesTheConnectionAndItsStatements( boolean prepared, boolean queryDeadline ) throws Exception {
+        try ( Connection connection = createConnection(); Statement previousStatement = connection.createStatement() ) {
+            replyTo( TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST, Response.newBuilder().setLast( true )
+                    .setConnectionPropertiesUpdateResponse( ConnectionPropertiesUpdateResponse.getDefaultInstance() ) );
+            connection.setNetworkTimeout( Runnable::run, queryDeadline ? 3000 : 50 );
+            Frame frame = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
+            replyTo( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
+                    .setStatementResponse( StatementResponse.newBuilder().setStatementId( 41 )
+                            .setResult( StatementResult.newBuilder().setFrame( frame ) ) ) );
+            try ( ResultSet previousResult = previousStatement.executeQuery( "SELECT 1" );
+                    Statement statement = createBatchStatement( connection, prepared ) ) {
+                if ( queryDeadline ) {
+                    statement.setQueryTimeout( 1 );
+                }
+                replyToBatch( prepared, batchResponse( 42, false, prepared ? new long[]{ 1 } : new long[0] ) );
+                addBatchEntry( statement );
+
+                SQLException failure = assertThrows( SQLException.class, statement::executeBatch );
+                assertInstanceOf( TimeoutException.class, failure.getCause() );
+                if ( queryDeadline ) {
+                    assertInstanceOf( SQLTimeoutException.class, failure );
+                } else {
+                    assertInstanceOf( PrismInterfaceServiceException.class, failure );
+                    assertEquals( "08003", failure.getSQLState() );
+                }
+                assertTrue( connection.isClosed() );
+                assertEquals( 1, transportCloses );
+                assertFalse( connection.isValid( 0 ) );
+                assertTrue( statement.isClosed() );
+                assertTrue( previousStatement.isClosed() );
+                assertTrue( previousResult.isClosed() );
+                assertThrows( SQLException.class, connection::createStatement );
+                assertThrows( SQLException.class, statement::executeBatch );
+            }
+        }
+    }
+
+
+    @ParameterizedTest
     @ValueSource(booleans = { false, true })
     void reportsUnknownPerCommandCountsForPreparedBatchAggregate( boolean large ) throws Exception {
         try ( Statement statement = createBatchStatement( true ) ) {
@@ -353,6 +401,41 @@ class RpcServiceErrorTest {
     }
 
 
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void previousResultCleanupFailureKeepsPrismExceptionType( boolean prepared ) throws Exception {
+        try ( Statement statement = createBatchStatement( prepared ) ) {
+            TypeCase cleanup;
+            if ( prepared ) {
+                Frame frame = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
+                replyTo( TypeCase.EXECUTE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
+                        .setStatementResult( StatementResult.newBuilder().setFrame( frame ) ) );
+                ((PreparedStatement) statement).executeQuery();
+                cleanup = TypeCase.CLOSE_RESULT_REQUEST;
+            } else {
+                replyTo( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
+                        .setStatementResponse( StatementResponse.newBuilder().setStatementId( 42 )
+                                .setResult( StatementResult.newBuilder().setScalar( 1 ) ) ) );
+                statement.executeUpdate( "INSERT INTO example DEFAULT VALUES" );
+                cleanup = TypeCase.CLOSE_STATEMENT_REQUEST;
+            }
+            addBatchEntry( statement );
+            ErrorDetails details = ErrorDetails.newBuilder().setState( "40001" ).setErrorCode( 7 ).build();
+            requestHandler = request -> {
+                assertEquals( cleanup, request.getTypeCase() );
+                incoming.add( errorResponse( details ).setId( request.getId() ).build().toByteArray() );
+            };
+            try {
+                PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeBatch );
+                assertServerError( failure, "40001", 7 );
+            } finally {
+                replyTo( cleanup );
+            }
+            assertArrayEquals( new int[0], statement.executeBatch() );
+        }
+    }
+
+
     private static void assertBatchProtocolFailure( Statement statement ) {
         PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeLargeBatch );
         assertInstanceOf( ProtocolException.class, failure.getCause() );
@@ -361,7 +444,11 @@ class RpcServiceErrorTest {
 
 
     private Statement createBatchStatement( boolean prepared ) throws SQLException {
-        Connection connection = createConnection();
+        return createBatchStatement( createConnection(), prepared );
+    }
+
+
+    private Statement createBatchStatement( Connection connection, boolean prepared ) throws SQLException {
         if ( prepared ) {
             replyTo( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
                     .setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 42 ) ) );

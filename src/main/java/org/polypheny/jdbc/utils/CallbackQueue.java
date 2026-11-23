@@ -36,7 +36,7 @@ public class CallbackQueue<T> {
     private boolean bIsCompleted = false;
     private final Queue<T> messageQueue = new LinkedList<>();
     private final Function<Response, T> extractResponse;
-    private final int timeoutMillis;
+    private final long timeoutMillis;
     private final long deadline;
     private PrismInterfaceServiceException propagatedException;
 
@@ -47,6 +47,11 @@ public class CallbackQueue<T> {
 
 
     public CallbackQueue( Function<Response, T> extractResponse, int timeoutMillis ) {
+        this( extractResponse, (long) timeoutMillis );
+    }
+
+
+    public CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis ) {
         this.extractResponse = extractResponse;
         this.timeoutMillis = timeoutMillis;
         this.deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );

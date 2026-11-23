@@ -218,7 +218,7 @@ public class PrismInterfaceClient {
     }
 
 
-    StatementBatchResponse executeUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> requests, int timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+    StatementBatchResponse executeUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> requests, long timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
         return rpc.executeUnparameterizedStatementBatch( batchRequest( requests ), timeout, acceptBatchId );
     }
 
@@ -286,6 +286,11 @@ public class PrismInterfaceClient {
 
 
     public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws PrismInterfaceServiceException {
+        return executeIndexedStatementBatch( statementId, parameterBatch, (long) timeout );
+    }
+
+
+    StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, long timeout ) throws PrismInterfaceServiceException {
         ExecuteIndexedStatementBatchRequest.Builder request = ExecuteIndexedStatementBatchRequest.newBuilder()
                 .setStatementId( statementId );
         for ( List<TypedValue> values : parameterBatch ) {

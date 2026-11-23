@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
@@ -51,6 +52,7 @@ import org.polypheny.jdbc.types.PolyStruct;
 import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.PreparedStatementSignature;
 
+@Slf4j
 public class PolyConnection implements Connection {
 
     private PolyphenyConnectionProperties properties;
@@ -225,8 +227,19 @@ public class PolyConnection implements Connection {
      * Closes the transport after an interrupted or timed-out request with unknown outcome.
      */
     public void abortAfterIncompleteRequest() {
+        if ( isClosed ) {
+            return;
+        }
         isClosed = true;
         getPrismInterfaceClient().abort();
+        for ( Statement openStatement : new HashSet<>( openStatements ) ) {
+            try {
+                openStatement.close();
+            } catch ( SQLException e ) {
+                log.warn( "Could not dispose of statement after aborting the connection", e );
+            }
+        }
+        openStatements.clear();
     }
 
 
@@ -475,6 +488,9 @@ public class PolyConnection implements Connection {
     public boolean isValid( int timeout ) throws SQLException {
         if ( timeout < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
+        }
+        if ( isClosed ) {
+            return false;
         }
         // the prism-interface uses milliseconds for timeouts, jdbc uses seconds
         return getPrismInterfaceClient().checkConnection( timeout * 1000 );

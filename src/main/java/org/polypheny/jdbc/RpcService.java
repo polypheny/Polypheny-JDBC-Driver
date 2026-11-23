@@ -457,7 +457,7 @@ public class RpcService {
     }
 
 
-    StatementBatchResponse executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest msg, int timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+    StatementBatchResponse executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest msg, long timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteUnparameterizedStatementBatchRequest( msg );
         return completeBatch( req, msg.getStatementsCount(), timeout, acceptBatchId );
@@ -492,14 +492,14 @@ public class RpcService {
     }
 
 
-    StatementBatchResponse executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest msg, int timeout ) throws PrismInterfaceServiceException {
+    StatementBatchResponse executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest msg, long timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteIndexedStatementBatchRequest( msg );
         return completeBatch( req, msg.getParametersCount(), timeout, null );
     }
 
 
-    private StatementBatchResponse completeBatch( Request.Builder req, int batchSize, int timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+    private StatementBatchResponse completeBatch( Request.Builder req, int batchSize, long timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
         CallbackQueue<Response> callback = new CallbackQueue<>( response -> response, timeout );
         StatementBatchResponse completed = null;
         boolean firstFrame = true;

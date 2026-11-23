@@ -21,11 +21,14 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
@@ -95,7 +98,9 @@ public class PolyphenyStatement implements Statement {
     private void prepareForReExecution() throws SQLException {
         clearExecutionResults();
         if ( statementId != NO_STATEMENT_ID ) {
-            getClient().closeStatement( statementId, getTimeout() );
+            if ( !polyConnection.isClosed() ) {
+                getClient().closeStatement( statementId, getTimeout() );
+            }
             statementId = NO_STATEMENT_ID;
         }
     }
@@ -122,6 +127,9 @@ public class PolyphenyStatement implements Statement {
 
     public void notifyResultClosure() throws SQLException {
         currentResult = null;
+        if ( polyConnection.isClosed() ) {
+            return;
+        }
         getClient().closeResult( statementId, getTimeout() );
         boolean hasOpenKeys = generatedKeysFrame != null && (generatedKeysResult == null || !generatedKeysResult.isClosed());
         if ( !clearingResults && !hasOpenKeys && isCloseOnCompletion() ) {
@@ -131,7 +139,8 @@ public class PolyphenyStatement implements Statement {
 
 
     void notifyGeneratedKeysClosure( PolyphenyResultSet result ) throws SQLException {
-        if ( !clearingResults && result == generatedKeysResult && generatedKeysFrame != null && currentResult == null && isCloseOnCompletion() ) {
+        if ( !clearingResults && !polyConnection.isClosed() && result == generatedKeysResult && generatedKeysFrame != null
+                && currentResult == null && isCloseOnCompletion() ) {
             close();
         }
     }
@@ -194,7 +203,7 @@ public class PolyphenyStatement implements Statement {
 
 
     protected void throwIfClosed() throws SQLException {
-        if ( isClosed ) {
+        if ( isClosed() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation for a closed statement" );
         }
     }
@@ -512,14 +521,45 @@ public class PolyphenyStatement implements Statement {
                 return Collections.emptyList();
             }
             List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
-            StatementBatchResponse status = getClient().executeUnparameterizedStatementBatch( requests, getTimeout(), id -> statementId = id );
+            StatementBatchResponse status = executeBatchRequest(
+                    timeout -> getClient().executeUnparameterizedStatementBatch( requests, timeout, id -> statementId = id ) );
             captureGeneratedKeys( status );
             return status.getScalarsList();
-        } catch ( PrismInterfaceServiceException.ServerError failure ) {
-            throw batchFailure( failure );
         } finally {
             clearBatch();
         }
+    }
+
+
+    final StatementBatchResponse executeBatchRequest( BatchRequest request ) throws SQLException {
+        int networkTimeout = polyConnection.getNetworkTimeout();
+        long queryTimeout = TimeUnit.SECONDS.toMillis( properties.getQueryTimeoutSeconds() );
+        boolean networkDeadline = networkTimeout > 0 && (queryTimeout == 0 || networkTimeout <= queryTimeout);
+        long timeout = networkDeadline ? networkTimeout : queryTimeout;
+        try {
+            return request.execute( timeout );
+        } catch ( PrismInterfaceServiceException.ServerError failure ) {
+            throw batchFailure( failure );
+        } catch ( PrismInterfaceServiceException failure ) {
+            Throwable cause = failure.getCause();
+            if ( !(cause instanceof TimeoutException) ) {
+                throw failure;
+            }
+            // Prism has no batch cancellation request. The in-flight write may still complete.
+            polyConnection.abortAfterIncompleteRequest();
+            if ( networkDeadline ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, failure.getMessage(), cause );
+            }
+            throw new SQLTimeoutException( failure.getMessage(), cause );
+        }
+    }
+
+
+    @FunctionalInterface
+    interface BatchRequest {
+
+        StatementBatchResponse execute( long timeout ) throws PrismInterfaceServiceException;
+
     }
 
 
@@ -641,7 +681,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean isClosed() throws SQLException {
-        return isClosed;
+        return isClosed || polyConnection.isClosed();
     }
 
 
