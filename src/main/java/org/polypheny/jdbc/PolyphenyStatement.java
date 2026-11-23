@@ -159,7 +159,7 @@ public class PolyphenyStatement implements Statement {
 
     final BatchUpdateException batchFailure( PrismInterfaceServiceException.ServerError failure ) {
         StatementBatchResponse completed = failure.completedBatch();
-        long[] counts = completed == null ? new long[0] : completed.getScalarsList().stream().mapToLong( Long::longValue ).toArray();
+        long[] counts = completed == null ? null : completed.getScalarsList().stream().mapToLong( Long::longValue ).toArray();
         BatchUpdateException batch = new BatchUpdateException( failure.getMessage(), failure.getSQLState(), failure.getErrorCode(), counts, failure );
         if ( completed != null ) {
             try {

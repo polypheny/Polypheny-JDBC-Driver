@@ -32,6 +32,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.StringReader;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -43,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.IntConsumer;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.types.TypedValue;
@@ -156,6 +158,30 @@ class GeneratedKeysTest {
             assertEquals( 1, statement.executeUpdate() );
             verify( rpc, times( 3 ) ).executeIndexedStatement( any(), anyInt() );
         }
+    }
+
+
+    @Test
+    void preparedCharacterStreamReplacesRetainedBinding() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        when( rpc.prepareIndexedStatement( any(), anyInt() ) ).thenReturn( PreparedStatementSignature.newBuilder()
+                .setStatementId( 14 )
+                .addParameterMetas( ParameterMeta.newBuilder().setTypeName( "VARCHAR" ) )
+                .build() );
+        when( rpc.executeIndexedStatement( any(), anyInt() ) ).thenReturn( response( 1, frame( "id", 10 ) ) );
+
+        try ( PolyConnection connection = connection( rpc, true );
+                PreparedStatement statement = connection.prepareStatement( "INSERT INTO items (label) VALUES (?)", Statement.RETURN_GENERATED_KEYS ) ) {
+            statement.setString( 1, "first" );
+            assertEquals( 1, statement.executeUpdate() );
+            statement.setCharacterStream( 1, new StringReader( "second" ), 6 );
+            assertEquals( 1, statement.executeUpdate() );
+        }
+
+        ArgumentCaptor<ExecuteIndexedStatementRequest> requests = ArgumentCaptor.forClass( ExecuteIndexedStatementRequest.class );
+        verify( rpc, times( 2 ) ).executeIndexedStatement( requests.capture(), anyInt() );
+        assertEquals( "first", requests.getAllValues().get( 0 ).getParameters().getParameters( 0 ).getString().getString() );
+        assertEquals( "second", requests.getAllValues().get( 1 ).getParameters().getParameters( 0 ).getString().getString() );
     }
 
 

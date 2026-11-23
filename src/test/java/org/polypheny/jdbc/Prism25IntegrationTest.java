@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -172,7 +173,9 @@ class Prism25IntegrationTest {
                 batch.setInt( 1, 2 );
                 batch.addBatch();
                 BatchUpdateException failure = assertThrows( BatchUpdateException.class, batch::executeBatch );
-                assertBatchPrefix( failure, "2200H" );
+                assertBatchDiagnostic( failure, "2200H" );
+                assertNull( failure.getUpdateCounts() );
+                assertNull( failure.getLargeUpdateCounts() );
                 try ( ResultSet keys = batch.getGeneratedKeys();
                         ResultSet rows = sql.executeQuery( "SELECT id FROM " + table ) ) {
                     assertFalse( keys.next() );
@@ -186,12 +189,17 @@ class Prism25IntegrationTest {
 
 
     private static void assertBatchPrefix( BatchUpdateException failure, String state, long... expectedCounts ) {
+        assertBatchDiagnostic( failure, state );
+        assertArrayEquals( expectedCounts, failure.getLargeUpdateCounts() );
+    }
+
+
+    private static void assertBatchDiagnostic( BatchUpdateException failure, String state ) {
         assertEquals( state, failure.getSQLState() );
         assertEquals( -1, failure.getErrorCode() );
         PrismInterfaceServiceException original = assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() );
         assertEquals( failure.getSQLState(), original.getSQLState() );
         assertEquals( failure.getErrorCode(), original.getErrorCode() );
-        assertArrayEquals( expectedCounts, failure.getLargeUpdateCounts() );
     }
 
 

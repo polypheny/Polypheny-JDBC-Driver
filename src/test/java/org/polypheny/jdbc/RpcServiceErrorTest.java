@@ -56,7 +56,12 @@ import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.CloseStatementResponse;
 import org.polypheny.prism.ErrorDetails;
 import org.polypheny.prism.ErrorResponse;
+import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
+import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
+import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.prism.Frame;
 import org.polypheny.prism.PreparedStatementSignature;
+import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Request.TypeCase;
 import org.polypheny.prism.Response;
@@ -174,7 +179,8 @@ class RpcServiceErrorTest {
             assertEquals( LEGACY_MESSAGE, failure.getMessage() );
             assertEquals( "UNSPECIFIED", failure.getSQLState() );
             assertEquals( -1, failure.getErrorCode() );
-            assertArrayEquals( new int[0], failure.getUpdateCounts() );
+            assertNull( failure.getUpdateCounts() );
+            assertNull( failure.getLargeUpdateCounts() );
             assertServerError( assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() ), "UNSPECIFIED", -1 );
         }
     }
@@ -262,6 +268,63 @@ class RpcServiceErrorTest {
             addBatchEntry( statement );
             assertArrayEquals( new long[]{ 2 }, statement.executeLargeBatch() );
         }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void rejectsShortTerminalBatchCounts( boolean prepared ) throws Exception {
+        try ( Statement statement = createBatchStatement( prepared ) ) {
+            Response.Builder response = prepared ? batchResponse( 42, true, 1, 1 ) : batchResponse( 42, true, 1 );
+            replyToBatch( prepared, response );
+            addBatchEntry( statement );
+            addBatchEntry( statement );
+            if ( prepared ) {
+                addBatchEntry( statement );
+            }
+            assertBatchProtocolFailure( statement );
+        }
+    }
+
+
+    @Test
+    void rejectsPreparedAggregateCountWithGeneratedKeys() throws Exception {
+        Frame keys = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
+        Response.Builder response = batchResponse( 42, true, 2 );
+        response.getStatementBatchResponseBuilder().addGeneratedKeys( BatchGeneratedKeys.newBuilder().setStatementIndex( 0 ).setKeys( keys ) );
+        try ( Statement statement = createBatchStatement( true ) ) {
+            replyToBatch( true, response );
+            addBatchEntry( statement );
+            addBatchEntry( statement );
+            assertBatchProtocolFailure( statement );
+        }
+    }
+
+
+    @Test
+    void acceptsZeroCountsForAnEmptyBatch() throws Exception {
+        replyToBatch( true, batchResponse( 42, true ) );
+        ExecuteIndexedStatementBatchRequest prepared = ExecuteIndexedStatementBatchRequest.newBuilder().setStatementId( 42 ).build();
+        assertEquals( 0, rpc.executeIndexedStatementBatch( prepared, 1000 ).getScalarsCount() );
+
+        replyToBatch( false, batchResponse( 42, true ) );
+        List<Integer> batchIds = new ArrayList<>();
+        ExecuteUnparameterizedStatementBatchRequest raw = ExecuteUnparameterizedStatementBatchRequest.getDefaultInstance();
+        assertEquals( 0, rpc.executeUnparameterizedStatementBatch( raw, 1000, batchIds::add ).getScalarsCount() );
+        assertEquals( Collections.singletonList( 42 ), batchIds );
+    }
+
+
+    @Test
+    void doesNotAcceptAnIdFromAnInvalidInitialBatchPayload() {
+        replyTo( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, batchResponse( 42, true, 1, 1 ) );
+        ExecuteUnparameterizedStatementBatchRequest request = ExecuteUnparameterizedStatementBatchRequest.newBuilder()
+                .addStatements( ExecuteUnparameterizedStatementRequest.getDefaultInstance() ).build();
+        List<Integer> batchIds = new ArrayList<>();
+        PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class,
+                () -> rpc.executeUnparameterizedStatementBatch( request, 1000, batchIds::add ) );
+        assertInstanceOf( ProtocolException.class, failure.getCause() );
+        assertEquals( Collections.emptyList(), batchIds );
     }
 
 

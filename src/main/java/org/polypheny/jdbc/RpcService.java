@@ -503,7 +503,8 @@ public class RpcService {
         CallbackQueue<Response> callback = new CallbackQueue<>( response -> response, timeout );
         StatementBatchResponse completed = null;
         boolean firstFrame = true;
-        int batchId = acceptBatchId == null ? req.getExecuteIndexedStatementBatchRequest().getStatementId() : 0;
+        boolean rawBatch = acceptBatchId != null;
+        int batchId = rawBatch ? 0 : req.getExecuteIndexedStatementBatchRequest().getStatementId();
         try {
             callbackQueues.put( req.getId(), callback );
             sendMessage( req.build() );
@@ -513,7 +514,8 @@ public class RpcService {
                     throw invalidBatchResponse( "Expected a Prism batch response, received " + response.getTypeCase() + "." );
                 }
                 StatementBatchResponse batch = response.getStatementBatchResponse();
-                if ( firstFrame && acceptBatchId != null ) {
+                validateBatchPayload( batch, batchSize, response.getLast(), !rawBatch );
+                if ( firstFrame && rawBatch ) {
                     batchId = batch.getBatchId();
                     if ( batchId == 0 ) {
                         throw invalidBatchResponse( "Initial Prism batch response is missing its batch ID." );
@@ -522,12 +524,11 @@ public class RpcService {
                 } else if ( batch.getBatchId() != batchId ) {
                     throw invalidBatchResponse( "Unexpected Prism batch ID " + batch.getBatchId() + ", expected " + batchId + "." );
                 }
-                validateBatchPayload( batch, batchSize, response.getLast() );
                 if ( response.getLast() ) {
                     return batch;
                 }
-                // An unparameterized batch starts with an ID-only acknowledgment.
-                if ( batch.getScalarsCount() > 0 ) {
+                boolean acknowledgment = firstFrame && rawBatch && batch.getScalarsCount() == 0;
+                if ( !acknowledgment && (completed == null || batch.getScalarsCount() > 0) ) {
                     completed = batch;
                 }
                 firstFrame = false;
@@ -542,9 +543,10 @@ public class RpcService {
     }
 
 
-    private static void validateBatchPayload( StatementBatchResponse batch, int batchSize, boolean last ) throws PrismInterfaceServiceException {
+    private static void validateBatchPayload( StatementBatchResponse batch, int batchSize, boolean last, boolean prepared ) throws PrismInterfaceServiceException {
         int count = batch.getScalarsCount();
-        if ( count > batchSize || (last && batchSize > 0 && count == 0) ) {
+        boolean aggregateCount = prepared && count == 1 && batch.getGeneratedKeysCount() == 0;
+        if ( count > batchSize || (last && count != batchSize && !aggregateCount) ) {
             throw invalidBatchResponse( "Invalid Prism batch update count length " + count + " for " + batchSize + " entries." );
         }
         if ( batch.getGeneratedKeysCount() > 0 ) {

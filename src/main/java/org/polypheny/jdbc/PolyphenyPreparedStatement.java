@@ -473,8 +473,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
     @Override
     public void setCharacterStream( int parameterIndex, Reader reader, int length ) throws SQLException {
-        throwIfClosed();
-        throwIfOutOfBounds( parameterIndex );
+        setCharacterStream( parameterIndex, reader, (long) length );
     }
 
 
