@@ -24,6 +24,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.prism.Response;
@@ -38,6 +39,7 @@ public class CallbackQueue<T> {
     private final Function<Response, T> extractResponse;
     private final long timeoutMillis;
     private final long deadline;
+    private final LongSupplier nanoClock;
     private PrismInterfaceServiceException propagatedException;
 
 
@@ -52,9 +54,20 @@ public class CallbackQueue<T> {
 
 
     public CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis ) {
+        this( extractResponse, timeoutMillis, System::nanoTime );
+    }
+
+
+    CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis, LongSupplier nanoClock ) {
         this.extractResponse = extractResponse;
         this.timeoutMillis = timeoutMillis;
-        this.deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
+        this.nanoClock = nanoClock;
+        this.deadline = nanoClock.getAsLong() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
+    }
+
+
+    public long getTimeoutMillis() {
+        return timeoutMillis;
     }
 
 
@@ -81,7 +94,7 @@ public class CallbackQueue<T> {
         try {
             while ( !bIsCompleted && propagatedException == null ) {
                 if ( !awaitSignal( isCompleted ) ) {
-                    return timeoutFailure();
+                    return recordTimeout();
                 }
             }
             return propagatedException;
@@ -96,7 +109,7 @@ public class CallbackQueue<T> {
         try {
             while ( messageQueue.isEmpty() && propagatedException == null && !bIsCompleted ) {
                 if ( !awaitSignal( hasNext ) ) {
-                    throw timeoutFailure();
+                    throw recordTimeout();
                 }
             }
             if ( !messageQueue.isEmpty() ) {
@@ -120,7 +133,7 @@ public class CallbackQueue<T> {
             condition.await();
             return true;
         }
-        long remaining = deadline - System.nanoTime();
+        long remaining = deadline - nanoClock.getAsLong();
         if ( remaining <= 0 ) {
             return false;
         }
@@ -129,16 +142,45 @@ public class CallbackQueue<T> {
     }
 
 
-    private PrismInterfaceServiceException timeoutFailure() {
-        return new PrismInterfaceServiceException( new TimeoutException( "No complete Prism response within " + timeoutMillis + " ms." ) );
+    private PrismInterfaceServiceException recordTimeout() {
+        propagatedException = new PrismInterfaceServiceException( new TimeoutException( "No complete Prism response within " + timeoutMillis + " ms." ) );
+        signalTerminalState();
+        return propagatedException;
+    }
+
+
+    private boolean acceptsCallback() {
+        if ( bIsCompleted || propagatedException != null ) {
+            return false;
+        }
+        if ( timeoutMillis != 0 && deadline - nanoClock.getAsLong() <= 0 ) {
+            recordTimeout();
+            return false;
+        }
+        return true;
+    }
+
+
+    private void signalTerminalState() {
+        hasNext.signalAll();
+        isCompleted.signalAll();
     }
 
 
     public void onNext( Response message ) {
         queueLock.lock();
         try {
+            if ( !acceptsCallback() ) {
+                return;
+            }
             messageQueue.add( extractResponse.apply( message ) );
-            hasNext.signal();
+            if ( message.getLast() ) {
+                // A terminal frame arrives and completes the queue at the same instant.
+                bIsCompleted = true;
+                signalTerminalState();
+            } else {
+                hasNext.signal();
+            }
         } finally {
             queueLock.unlock();
         }
@@ -148,11 +190,12 @@ public class CallbackQueue<T> {
     public void onError( Throwable propagatedException ) {
         queueLock.lock();
         try {
-            this.propagatedException = propagatedException instanceof PrismInterfaceServiceException
-                    ? (PrismInterfaceServiceException) propagatedException
-                    : new PrismInterfaceServiceException( propagatedException );
-            hasNext.signalAll();
-            isCompleted.signalAll();
+            if ( acceptsCallback() ) {
+                this.propagatedException = propagatedException instanceof PrismInterfaceServiceException
+                        ? (PrismInterfaceServiceException) propagatedException
+                        : new PrismInterfaceServiceException( propagatedException );
+                signalTerminalState();
+            }
         } finally {
             queueLock.unlock();
         }
@@ -162,9 +205,10 @@ public class CallbackQueue<T> {
     public void onCompleted() {
         queueLock.lock();
         try {
-            bIsCompleted = true;
-            hasNext.signalAll();
-            isCompleted.signalAll();
+            if ( acceptsCallback() ) {
+                bIsCompleted = true;
+                signalTerminalState();
+            }
         } finally {
             queueLock.unlock();
         }

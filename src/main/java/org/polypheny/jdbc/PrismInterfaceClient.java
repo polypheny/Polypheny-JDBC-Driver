@@ -127,16 +127,21 @@ public class PrismInterfaceClient {
                 .setMinorApiVersion( VersionUtil.MINOR_API_VERSION )
                 //.setClientUuid( clientUUID )
                 .setConnectionProperties( buildConnectionProperties( connectionProperties ) );
-        ConnectionResponse connectionResponse = rpc.connect( requestBuilder.build(), timeout );
-        if ( !connectionResponse.getIsCompatible() ) {
-            throw new PrismInterfaceServiceException( "client version " + getClientApiVersionString()
-                    + " not compatible with server version " + getServerApiVersionString( connectionResponse ) + "." );
+        try {
+            ConnectionResponse response = rpc.connect( requestBuilder.build(), timeout );
+            if ( !response.getIsCompatible() ) {
+                throw new PrismInterfaceServiceException( "client version " + getClientApiVersionString()
+                        + " not compatible with server version " + getServerApiVersionString( response ) + "." );
+            }
+            supportsGeneratedKeys = response.getSupportsGeneratedKeys();
+            if ( supportsGeneratedKeys ) {
+                rpc.setClientInfoProperties( ClientInfoProperties.newBuilder().putProperties( PARTIAL_BATCH_RESULTS, "true" ).build(), timeout );
+            }
+            return response;
+        } catch ( PrismInterfaceServiceException e ) {
+            rpc.abort();
+            throw e;
         }
-        supportsGeneratedKeys = connectionResponse.getSupportsGeneratedKeys();
-        if ( supportsGeneratedKeys ) {
-            rpc.setClientInfoProperties( ClientInfoProperties.newBuilder().putProperties( PARTIAL_BATCH_RESULTS, "true" ).build(), timeout );
-        }
-        return connectionResponse;
     }
 
 
@@ -169,9 +174,14 @@ public class PrismInterfaceClient {
     }
 
 
+    boolean isClosed() {
+        return rpc.isClosed();
+    }
+
+
     public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
         ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName );
-        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+        rpc.executeUnparameterizedStatement( request, callback );
     }
 
 
@@ -191,7 +201,12 @@ public class PrismInterfaceClient {
                 .toBuilder()
                 .setFetchSize( fetchSize )
                 .build();
-        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+        rpc.executeUnparameterizedStatement( request, callback );
+    }
+
+
+    void discardCallback( CallbackQueue<?> callback ) {
+        rpc.discardCallback( callback );
     }
 
 
@@ -261,13 +276,24 @@ public class PrismInterfaceClient {
 
 
     public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
-        ExecuteIndexedStatementRequest request = ExecuteIndexedStatementRequest.newBuilder()
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize ), timeout );
+    }
+
+
+    StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, long timeout ) throws PrismInterfaceServiceException {
+        if ( timeout <= Integer.MAX_VALUE ) {
+            return executeIndexedStatement( statementId, values, fetchSize, (int) timeout );
+        }
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize ), timeout );
+    }
+
+
+    private ExecuteIndexedStatementRequest indexedStatementRequest( int statementId, List<TypedValue> values, int fetchSize ) throws PrismInterfaceServiceException {
+        return ExecuteIndexedStatementRequest.newBuilder()
                 .setStatementId( statementId )
                 .setParameters( buildIndexedParameters( values ) )
                 .setFetchSize( fetchSize )
                 .build();
-
-        return rpc.executeIndexedStatement( request, timeout );
     }
 
 
@@ -331,12 +357,30 @@ public class PrismInterfaceClient {
     }
 
 
+    void closeStatement( int statementId, long timeout ) throws PrismInterfaceServiceException {
+        if ( timeout <= Integer.MAX_VALUE ) {
+            closeStatement( statementId, (int) timeout );
+        } else {
+            rpc.closeStatement( CloseStatementRequest.newBuilder().setStatementId( statementId ).build(), timeout );
+        }
+    }
+
+
     public void closeResult( int statementId, int timeout ) throws PrismInterfaceServiceException {
         CloseResultRequest resultCloseRequest = CloseResultRequest.newBuilder()
                 .setStatementId( statementId )
                 .build();
 
         rpc.closeResult( resultCloseRequest, timeout );
+    }
+
+
+    void closeResult( int statementId, long timeout ) throws PrismInterfaceServiceException {
+        if ( timeout <= Integer.MAX_VALUE ) {
+            closeResult( statementId, (int) timeout );
+        } else {
+            rpc.closeResult( CloseResultRequest.newBuilder().setStatementId( statementId ).build(), timeout );
+        }
     }
 
 

@@ -375,6 +375,41 @@ class GeneratedKeysTest {
 
 
     @Test
+    void generatedKeysLimitFieldsByBytesWithoutSplittingCodePoints() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        byte[] binary = { 0, 1, 2, (byte) 0xFF, 4 };
+        Frame projectedKeys = Frame.newBuilder().setIsLast( true )
+                .setRelationalFrame( RelationalFrame.newBuilder()
+                        .addColumnMeta( ColumnMeta.newBuilder().setColumnName( "label" ).setColumnLabel( "label" )
+                                .setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.VARCHAR ) ) )
+                        .addColumnMeta( ColumnMeta.newBuilder().setColumnName( "payload" ).setColumnLabel( "payload" )
+                                .setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.VARBINARY ) ) )
+                        .addRows( Row.newBuilder().addValues( TypedValue.fromString( "é🙂z" ).serialize() )
+                                .addValues( TypedValue.fromBytes( binary ).serialize() ) ) )
+                .build();
+        String[] selection = { "label", "payload" };
+        stubUnprepared( rpc, GeneratedKeys.requested( selection ), response( 1, projectedKeys ) );
+        try ( PolyConnection connection = connection( rpc, true ); Statement statement = connection.createStatement() ) {
+            statement.setMaxFieldSize( 4 );
+            assertEquals( 1, statement.executeUpdate( INSERT, selection ) );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                assertTrue( keys.next() );
+                assertEquals( "é", keys.getString( 1 ) );
+                assertArrayEquals( new byte[]{ 0, 1, 2, (byte) 0xFF }, keys.getBytes( 2 ) );
+            }
+
+            statement.setMaxFieldSize( 6 );
+            assertEquals( 1, statement.executeUpdate( INSERT, selection ) );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                assertTrue( keys.next() );
+                assertEquals( "é🙂", keys.getString( 1 ) );
+                assertArrayEquals( binary, keys.getBytes( 2 ) );
+            }
+        }
+    }
+
+
+    @Test
     void emptyGeneratedKeysHaveNoCursorPosition() throws Exception {
         RpcService rpc = mock( RpcService.class );
         stubUnprepared( rpc, GeneratedKeys.ALL, response( 1, frame( "id" ) ) );

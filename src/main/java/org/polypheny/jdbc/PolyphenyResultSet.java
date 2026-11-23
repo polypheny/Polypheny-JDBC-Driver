@@ -219,13 +219,18 @@ public class PolyphenyResultSet implements ResultSet {
             return;
         }
         if ( generatedKeys ) {
-            isClosed = true;
+            markClosed();
             statement.notifyGeneratedKeysClosure( this );
             return;
         }
         if ( statement != null ) {
             statement.notifyResultClosure();
         }
+        markClosed();
+    }
+
+
+    void markClosed() {
         isClosed = true;
     }
 

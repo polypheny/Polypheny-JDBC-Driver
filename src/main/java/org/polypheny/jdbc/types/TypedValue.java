@@ -535,7 +535,8 @@ public class TypedValue implements Convertible {
             case BINARY:
                 return binaryValue.length;
             case STRING:
-                return varcharValue.length();
+                long byteLength = varcharValue.codePoints().mapToLong( TypedValue::utf8Bytes ).sum();
+                return (int) Math.min( byteLength, Integer.MAX_VALUE );
         }
         return 0;
     }
@@ -547,10 +548,32 @@ public class TypedValue implements Convertible {
                 byte[] binaryData = Arrays.copyOfRange( binaryValue, 0, length );
                 return TypedValue.fromBytes( binaryData );
             case STRING:
-                String string = varcharValue.substring( 0, length );
-                return TypedValue.fromString( string );
+                int end = 0;
+                int remaining = length;
+                while ( end < varcharValue.length() ) {
+                    int codePoint = varcharValue.codePointAt( end );
+                    int bytes = utf8Bytes( codePoint );
+                    if ( bytes > remaining ) {
+                        break;
+                    }
+                    remaining -= bytes;
+                    end += Character.charCount( codePoint );
+                }
+                return TypedValue.fromString( varcharValue.substring( 0, end ) );
         }
         return this;
+    }
+
+
+    private static int utf8Bytes( int codePoint ) {
+        // A lone surrogate is encoded as a single replacement byte by Java's UTF-8 encoder.
+        if ( codePoint <= 0x7F || codePoint >= Character.MIN_SURROGATE && codePoint <= Character.MAX_SURROGATE ) {
+            return 1;
+        }
+        if ( codePoint <= 0x7FF ) {
+            return 2;
+        }
+        return Character.isBmpCodePoint( codePoint ) ? 3 : 4;
     }
 
 

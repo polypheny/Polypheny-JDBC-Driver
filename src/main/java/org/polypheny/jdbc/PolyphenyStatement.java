@@ -25,7 +25,6 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +56,7 @@ public class PolyphenyStatement implements Statement {
 
     private boolean isClosed;
     private boolean clearingResults;
+    private ExecutionDeadline cleanupDeadline;
     private RelationalFrame generatedKeysFrame;
     private PolyphenyResultSetProperties generatedKeysProperties;
     private PolyphenyResultSet generatedKeysResult;
@@ -110,12 +110,7 @@ public class PolyphenyStatement implements Statement {
     protected final void clearExecutionResults() throws SQLException {
         clearingResults = true;
         try {
-            if ( generatedKeysResult != null ) {
-                generatedKeysResult.close();
-            }
-            generatedKeysResult = null;
-            generatedKeysFrame = null;
-            generatedKeysProperties = null;
+            clearGeneratedKeys();
             if ( currentResult != null ) {
                 currentResult.close();
             }
@@ -126,11 +121,29 @@ public class PolyphenyStatement implements Statement {
     }
 
 
+    private void clearGeneratedKeys() {
+        if ( generatedKeysResult != null ) {
+            generatedKeysResult.markClosed();
+        }
+        generatedKeysResult = null;
+        generatedKeysFrame = null;
+        generatedKeysProperties = null;
+    }
+
+
+    private void clearCurrentResult() {
+        if ( currentResult instanceof PolyphenyResultSet ) {
+            ((PolyphenyResultSet) currentResult).markClosed();
+        }
+        currentResult = null;
+    }
+
+
     public void notifyResultClosure() throws SQLException {
         if ( !polyConnection.isClosed() ) {
             closeResource( timeout -> getClient().closeResult( statementId, timeout ) );
         }
-        currentResult = null;
+        clearCurrentResult();
         if ( polyConnection.isClosed() ) {
             return;
         }
@@ -142,11 +155,12 @@ public class PolyphenyStatement implements Statement {
 
 
     private void closeResource( CloseRequest request ) throws SQLException {
-        int timeout = polyConnection.getNetworkTimeout();
+        ExecutionDeadline deadline = cleanupDeadline;
         try {
+            long timeout = deadline == null ? polyConnection.getNetworkTimeout() : deadline.remainingMillis();
             request.execute( timeout );
         } catch ( PrismInterfaceServiceException failure ) {
-            throw handleIncompleteRequest( failure, true );
+            throw handleIncompleteRequest( failure, deadline == null || deadline.networkDeadline );
         }
     }
 
@@ -154,7 +168,7 @@ public class PolyphenyStatement implements Statement {
     @FunctionalInterface
     private interface CloseRequest {
 
-        void execute( int timeout ) throws PrismInterfaceServiceException;
+        void execute( long timeout ) throws PrismInterfaceServiceException;
 
     }
 
@@ -212,8 +226,21 @@ public class PolyphenyStatement implements Statement {
         if ( isClosed ) {
             return;
         }
-        prepareForReExecution();
         isClosed = true;
+        try {
+            prepareForReExecution();
+        } finally {
+            dispose();
+        }
+    }
+
+
+    final void dispose() {
+        isClosed = true;
+        clearGeneratedKeys();
+        clearCurrentResult();
+        currentUpdateCount = NO_UPDATE_COUNT;
+        statementId = NO_STATEMENT_ID;
         polyConnection.endTracking( this );
     }
 
@@ -281,25 +308,31 @@ public class PolyphenyStatement implements Statement {
             GeneratedKeys.requireSupported( client );
         }
         clearBatch();
-        prepareForReExecution();
-        CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse );
-        String namespaceName = getConnection().getSchema();
-        String language = PropertyUtils.getSQL_LANGUAGE_NAME();
-        if ( keys == null ) {
-            client.executeUnparameterizedStatement( namespaceName, language, statement, callback, getTimeout() );
-        } else {
-            client.executeUnparameterizedStatement( namespaceName, language, statement, keys, callback, getTimeout() );
-        }
-        while ( true ) {
-            StatementResponse response = callback.takeNext();
-            if ( !hasStatementId() ) {
-                statementId = response.getStatementId();
+        return executeWithDeadline( this::prepareForReExecution, timeout -> {
+            CallbackQueue<StatementResponse> callback = new CallbackQueue<>( Response::getStatementResponse, timeout );
+            String namespaceName = getConnection().getSchema();
+            String language = PropertyUtils.getSQL_LANGUAGE_NAME();
+            int clientTimeout = (int) Math.min( timeout, Integer.MAX_VALUE );
+            try {
+                if ( keys == null ) {
+                    client.executeUnparameterizedStatement( namespaceName, language, statement, callback, clientTimeout );
+                } else {
+                    client.executeUnparameterizedStatement( namespaceName, language, statement, keys, callback, clientTimeout );
+                }
+                while ( true ) {
+                    StatementResponse response = callback.takeNext();
+                    if ( !hasStatementId() ) {
+                        statementId = response.getStatementId();
+                    }
+                    if ( response.hasResult() ) {
+                        awaitCompletion( callback );
+                        return response.getResult();
+                    }
+                }
+            } finally {
+                client.discardCallback( callback );
             }
-            if ( response.hasResult() ) {
-                awaitCompletion( callback );
-                return response.getResult();
-            }
-        }
+        } );
     }
 
 
@@ -537,13 +570,12 @@ public class PolyphenyStatement implements Statement {
     private List<Long> executeUnparameterizedBatch() throws SQLException {
         try {
             throwIfClosed();
-            prepareForReExecution();
-            if ( statementBatch.isEmpty() ) {
-                return Collections.emptyList();
-            }
-            List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
-            StatementBatchResponse status = executeBatchRequest(
-                    timeout -> getClient().executeUnparameterizedStatementBatch( requests, timeout, id -> statementId = id ) );
+            StatementBatchResponse status = executeBatchRequest( this::prepareForReExecution, timeout -> {
+                if ( statementBatch.isEmpty() ) {
+                    return StatementBatchResponse.getDefaultInstance();
+                }
+                return getClient().executeUnparameterizedStatementBatch( buildBatchRequest(), timeout, id -> statementId = id );
+            } );
             captureGeneratedKeys( status );
             return status.getScalarsList();
         } finally {
@@ -552,24 +584,40 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    final StatementBatchResponse executeBatchRequest( BatchRequest request ) throws SQLException {
-        int networkTimeout = polyConnection.getNetworkTimeout();
-        long queryTimeout = TimeUnit.SECONDS.toMillis( properties.getQueryTimeoutSeconds() );
-        boolean networkDeadline = networkTimeout > 0 && (queryTimeout == 0 || networkTimeout <= queryTimeout);
-        long timeout = networkDeadline ? networkTimeout : queryTimeout;
+    final StatementBatchResponse executeBatchRequest( StatementCleanup cleanup, TimedRequest<StatementBatchResponse> request ) throws SQLException {
+        return executeWithDeadline( cleanup, timeout -> {
+            try {
+                return request.execute( timeout );
+            } catch ( PrismInterfaceServiceException.ServerError failure ) {
+                throw batchFailure( failure );
+            }
+        } );
+    }
+
+
+    final <T> T executeWithDeadline( StatementCleanup cleanup, TimedRequest<T> request ) throws SQLException {
+        ExecutionDeadline deadline = new ExecutionDeadline( polyConnection.getNetworkTimeout(), properties.getQueryTimeoutSeconds() );
+        cleanupDeadline = deadline;
         try {
-            return request.execute( timeout );
-        } catch ( PrismInterfaceServiceException.ServerError failure ) {
-            throw batchFailure( failure );
+            cleanup.execute();
+        } finally {
+            cleanupDeadline = null;
+        }
+        try {
+            return request.execute( deadline.remainingMillis() );
         } catch ( PrismInterfaceServiceException failure ) {
-            throw handleIncompleteRequest( failure, networkDeadline );
+            throw handleIncompleteRequest( failure, deadline.networkDeadline );
         }
     }
 
 
     private SQLException handleIncompleteRequest( PrismInterfaceServiceException failure, boolean networkDeadline ) {
+        if ( failure instanceof PrismInterfaceServiceException.ServerError ) {
+            return failure;
+        }
         Throwable cause = failure.getCause();
-        if ( cause instanceof InterruptedException || cause instanceof ClosedByInterruptException ) {
+        if ( cause instanceof InterruptedException || cause instanceof ClosedByInterruptException
+                || PrismInterfaceErrors.CONNECTION_FAILURE.state.equals( failure.getSQLState() ) ) {
             polyConnection.abortAfterIncompleteRequest();
             return failure;
         }
@@ -586,9 +634,46 @@ public class PolyphenyStatement implements Statement {
 
 
     @FunctionalInterface
-    interface BatchRequest {
+    interface StatementCleanup {
 
-        StatementBatchResponse execute( long timeout ) throws PrismInterfaceServiceException;
+        void execute() throws SQLException;
+
+    }
+
+
+    @FunctionalInterface
+    interface TimedRequest<T> {
+
+        T execute( long timeout ) throws SQLException;
+
+    }
+
+
+    private static final class ExecutionDeadline {
+
+        private final boolean networkDeadline;
+        private final long timeoutMillis;
+        private final long deadlineNanos;
+
+
+        private ExecutionDeadline( int networkTimeout, int queryTimeoutSeconds ) {
+            long queryTimeout = TimeUnit.SECONDS.toMillis( queryTimeoutSeconds );
+            networkDeadline = networkTimeout > 0 && (queryTimeout == 0 || networkTimeout <= queryTimeout);
+            timeoutMillis = networkDeadline ? networkTimeout : queryTimeout;
+            deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
+        }
+
+
+        private long remainingMillis() throws PrismInterfaceServiceException {
+            if ( timeoutMillis == 0 ) {
+                return 0;
+            }
+            long remaining = deadlineNanos - System.nanoTime();
+            if ( remaining <= 0 ) {
+                throw new PrismInterfaceServiceException( new TimeoutException( "Prism statement did not complete within " + timeoutMillis + " ms." ) );
+            }
+            return 1 + TimeUnit.NANOSECONDS.toMillis( remaining - 1 );
+        }
 
     }
 

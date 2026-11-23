@@ -68,7 +68,7 @@ public class PolyConnection implements Connection {
 
 
     private void throwIfClosed() throws SQLException {
-        if ( isClosed ) {
+        if ( isClosed() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, "Illegal operation on closed connection." );
         }
     }
@@ -148,6 +148,7 @@ public class PolyConnection implements Connection {
 
     @Override
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
+        throwIfClosed();
         PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
                 properties.getNamespaceName(),
                 PropertyUtils.getSQL_LANGUAGE_NAME(),
@@ -216,22 +217,30 @@ public class PolyConnection implements Connection {
         synchronized ( openStatements ) {
             statements = new HashSet<>( openStatements );
         }
-        for ( Statement openStatement : statements ) {
-            openStatement.close();
+        try {
+            for ( Statement openStatement : statements ) {
+                openStatement.close();
+            }
+            if ( !isClosed ) {
+                getPrismInterfaceClient().unregister( properties.getNetworkTimeout() );
+            }
+        } finally {
+            abortAfterIncompleteRequest();
         }
-        getPrismInterfaceClient().unregister( properties.getNetworkTimeout() );
-        isClosed = true;
     }
 
 
     @Override
     public boolean isClosed() {
+        if ( !isClosed && getPrismInterfaceClient().isClosed() ) {
+            abortAfterIncompleteRequest();
+        }
         return isClosed;
     }
 
 
     /**
-     * Closes the transport after an interrupted or timed-out request with unknown outcome.
+     * Closes the connection and releases locally tracked resources without further Prism requests.
      */
     public void abortAfterIncompleteRequest() {
         Set<Statement> statements;
@@ -245,6 +254,10 @@ public class PolyConnection implements Connection {
         }
         getPrismInterfaceClient().abort();
         for ( Statement openStatement : statements ) {
+            if ( openStatement instanceof PolyphenyStatement ) {
+                ((PolyphenyStatement) openStatement).dispose();
+                continue;
+            }
             try {
                 openStatement.close();
             } catch ( SQLException e ) {
@@ -324,7 +337,9 @@ public class PolyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
-        return new PolyphenyStatement( this, statementProperties );
+        PolyphenyStatement statement = new PolyphenyStatement( this, statementProperties );
+        startTracking( statement );
+        return statement;
     }
 
 
@@ -339,7 +354,9 @@ public class PolyConnection implements Connection {
                 sql,
                 getTimeout()
         );
-        return new PolyphenyPreparedStatement( this, statementProperties, signature );
+        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
+        startTracking( statement );
+        return statement;
     }
 
 
@@ -407,7 +424,7 @@ public class PolyConnection implements Connection {
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatement statement = new PolyphenyStatement( this, statementProperties );
-        openStatements.add( statement );
+        startTracking( statement );
         return statement;
     }
 
@@ -424,7 +441,7 @@ public class PolyConnection implements Connection {
                 getTimeout()
         );
         PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
-        openStatements.add( statement );
+        startTracking( statement );
         return statement;
     }
 
@@ -500,7 +517,7 @@ public class PolyConnection implements Connection {
         if ( timeout < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
         }
-        if ( isClosed ) {
+        if ( isClosed() ) {
             return false;
         }
         // the prism-interface uses milliseconds for timeouts, jdbc uses seconds

@@ -23,19 +23,31 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntConsumer;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -68,27 +80,36 @@ class BatchCleanupTimeoutTest {
     @ParameterizedTest
     @EnumSource( Cleanup.class )
     void closesConnectionOnCleanupTimeoutBeforeBatch( Cleanup cleanup ) throws Exception {
-        checkBatchCleanup( cleanup, false );
+        checkBatchCleanup( cleanup, Intercept.TIMEOUT, false );
+    }
+
+
+    @ParameterizedTest
+    @EnumSource( Cleanup.class )
+    void queryTimeoutAppliesToCleanupWithoutNetworkTimeout( Cleanup cleanup ) throws Exception {
+        checkBatchCleanup( cleanup, Intercept.TIMEOUT, true );
     }
 
 
     @ParameterizedTest
     @EnumSource( Cleanup.class )
     void preservesServerErrorFromCleanupBeforeBatch( Cleanup cleanup ) throws Exception {
-        checkBatchCleanup( cleanup, true );
+        checkBatchCleanup( cleanup, Intercept.SERVER_ERROR, false );
     }
 
 
-    private static void checkBatchCleanup( Cleanup cleanup, boolean serverError ) throws Exception {
-        CleanupTransport transport = new CleanupTransport( cleanup.requestType, serverError );
+    private static void checkBatchCleanup( Cleanup cleanup, Intercept intercept, boolean queryOnly ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( cleanup.requestType, intercept );
         RpcService rpc = new RpcService( transport );
         try {
             PrismInterfaceClient client = new PrismInterfaceClient( rpc );
-            ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
-            PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
-            try ( Connection connection = new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
+            try ( Connection connection = connection( client );
                     Statement statement = cleanup == Cleanup.PREPARED_RESULT ? connection.prepareStatement( SELECT ) : connection.createStatement() ) {
-                connection.setNetworkTimeout( Runnable::run, 150 );
+                if ( queryOnly ) {
+                    statement.setQueryTimeout( 1 );
+                } else {
+                    connection.setNetworkTimeout( Runnable::run, 150 );
+                }
                 ResultSet previousResult = null;
                 switch ( cleanup ) {
                     case RAW_BATCH:
@@ -107,10 +128,10 @@ class BatchCleanupTimeoutTest {
                 }
 
                 int requestsBeforeCleanup = transport.requests.size();
-                PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeBatch );
+                SQLException failure = assertThrows( SQLException.class, statement::executeBatch );
                 assertEquals( 1, transport.requests.size() - requestsBeforeCleanup );
                 assertEquals( cleanup.requestType, transport.requests.get( requestsBeforeCleanup ) );
-                if ( serverError ) {
+                if ( intercept == Intercept.SERVER_ERROR ) {
                     assertEquals( "Cannot close previous resource", failure.getMessage() );
                     assertEquals( "26000", failure.getSQLState() );
                     assertEquals( 73, failure.getErrorCode() );
@@ -122,7 +143,11 @@ class BatchCleanupTimeoutTest {
                         assertFalse( previousResult.isClosed() );
                     }
                 } else {
-                    assertEquals( "08003", failure.getSQLState() );
+                    if ( queryOnly ) {
+                        assertInstanceOf( SQLTimeoutException.class, failure );
+                    } else {
+                        assertEquals( "08003", failure.getSQLState() );
+                    }
                     assertInstanceOf( TimeoutException.class, failure.getCause() );
                     assertTrue( connection.isClosed() );
                     assertTrue( statement.isClosed() );
@@ -135,6 +160,108 @@ class BatchCleanupTimeoutTest {
         } finally {
             rpc.close();
         }
+    }
+
+
+    @Test
+    void consumesTheSameQueryBudgetForCleanupAndExecution() throws Exception {
+        PrismInterfaceClient client = mock( PrismInterfaceClient.class );
+        AtomicLong cleanupTimeout = new AtomicLong();
+        AtomicLong executionTimeout = new AtomicLong();
+        doAnswer( invocation -> {
+            cleanupTimeout.set( invocation.getArgument( 1 ) );
+            TimeUnit.MILLISECONDS.sleep( 150 );
+            return null;
+        } ).when( client ).closeStatement( eq( 41 ), anyLong() );
+        when( client.executeUnparameterizedStatementBatch( any(), anyLong(), any() ) ).thenAnswer( invocation -> {
+            executionTimeout.set( invocation.getArgument( 1 ) );
+            IntConsumer acceptBatchId = invocation.getArgument( 2 );
+            acceptBatchId.accept( 41 );
+            return StatementBatchResponse.newBuilder().setBatchId( 41 ).addScalars( 1 ).build();
+        } );
+        try ( Connection connection = connection( client ); Statement statement = connection.createStatement() ) {
+            statement.setQueryTimeout( 3 );
+            statement.addBatch( INSERT );
+            assertArrayEquals( new int[]{ 1 }, statement.executeBatch() );
+            statement.addBatch( INSERT );
+            assertArrayEquals( new int[]{ 1 }, statement.executeBatch() );
+            assertTrue( executionTimeout.get() > 0 );
+            assertTrue( cleanupTimeout.get() - executionTimeout.get() >= 100 );
+        }
+    }
+
+
+    @Test
+    void closesTheLocalCursorWhenCloseOnCompletionCannotCloseTheStatement() throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.CLOSE_STATEMENT_REQUEST, Intercept.TIMEOUT );
+        RpcService rpc = new RpcService( transport );
+        try ( Connection connection = connection( new PrismInterfaceClient( rpc ) );
+                Statement statement = connection.createStatement();
+                ResultSet result = statement.executeQuery( SELECT ) ) {
+            connection.setNetworkTimeout( Runnable::run, 150 );
+            statement.closeOnCompletion();
+
+            assertThrows( SQLException.class, result::close );
+            assertTrue( connection.isClosed() );
+            assertTrue( statement.isClosed() );
+            assertTrue( result.isClosed() );
+            assertThrows( SQLException.class, result::next );
+        } finally {
+            rpc.close();
+        }
+    }
+
+
+    @Test
+    void explicitStatementCloseDisposesTheLocalCursorAfterServerError() throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.CLOSE_RESULT_REQUEST, Intercept.SERVER_ERROR );
+        RpcService rpc = new RpcService( transport );
+        try ( Connection connection = connection( new PrismInterfaceClient( rpc ) );
+                Statement statement = connection.createStatement();
+                ResultSet result = statement.executeQuery( SELECT ) ) {
+            SQLException failure = assertThrows( SQLException.class, statement::close );
+            assertEquals( "26000", failure.getSQLState() );
+            assertFalse( connection.isClosed() );
+            assertTrue( statement.isClosed() );
+            assertTrue( result.isClosed() );
+        } finally {
+            rpc.close();
+        }
+    }
+
+
+    @Test
+    void writeFailureClosesTheConnectionAndItsOtherCursors() throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, Intercept.WRITE_FAILURE );
+        RpcService rpc = new RpcService( transport );
+        try ( Connection connection = connection( new PrismInterfaceClient( rpc ) );
+                Statement query = connection.createStatement();
+                ResultSet result = query.executeQuery( SELECT );
+                Statement batch = connection.createStatement() ) {
+            batch.addBatch( INSERT );
+
+            SQLException failure = assertThrows( SQLException.class, batch::executeBatch );
+            assertEquals( "08006", failure.getSQLState() );
+            assertTrue( connection.isClosed() );
+            assertTrue( query.isClosed() );
+            assertTrue( result.isClosed() );
+            assertTrue( batch.isClosed() );
+            assertEquals( 1, transport.closes.get() );
+        } finally {
+            rpc.close();
+        }
+    }
+
+
+    private static Connection connection( PrismInterfaceClient client ) throws SQLException {
+        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
+        PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
+        return new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
+    }
+
+
+    private enum Intercept {
+        TIMEOUT, SERVER_ERROR, WRITE_FAILURE
     }
 
 
@@ -158,13 +285,13 @@ class BatchCleanupTimeoutTest {
         private final byte[] endOfStream = new byte[0];
         private final AtomicInteger closes = new AtomicInteger();
         private final TypeCase cleanupType;
-        private final boolean serverError;
+        private final Intercept intercept;
         private boolean interceptedCleanup;
 
 
-        private CleanupTransport( TypeCase cleanupType, boolean serverError ) {
+        private CleanupTransport( TypeCase cleanupType, Intercept intercept ) {
             this.cleanupType = cleanupType;
-            this.serverError = serverError;
+            this.intercept = intercept;
         }
 
 
@@ -176,10 +303,16 @@ class BatchCleanupTimeoutTest {
             Response.Builder response = Response.newBuilder().setId( request.getId() ).setLast( true );
             if ( type == cleanupType && !interceptedCleanup ) {
                 interceptedCleanup = true;
-                if ( serverError ) {
-                    response.setErrorResponse( ErrorResponse.newBuilder().setMessage( "Cannot close previous resource" )
-                            .setDetails( ErrorDetails.newBuilder().setState( "26000" ).setErrorCode( 73 ) ) );
-                    responses.add( response.build().toByteArray() );
+                switch ( intercept ) {
+                    case SERVER_ERROR:
+                        response.setErrorResponse( ErrorResponse.newBuilder().setMessage( "Cannot close previous resource" )
+                                .setDetails( ErrorDetails.newBuilder().setState( "26000" ).setErrorCode( 73 ) ) );
+                        responses.add( response.build().toByteArray() );
+                        break;
+                    case WRITE_FAILURE:
+                        throw new IOException( "Peer closed during write" );
+                    case TIMEOUT:
+                        break;
                 }
                 return;
             }

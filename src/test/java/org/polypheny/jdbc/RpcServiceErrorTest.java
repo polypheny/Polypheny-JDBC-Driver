@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -65,6 +64,7 @@ import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.CloseResultResponse;
 import org.polypheny.prism.CloseStatementResponse;
 import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
+import org.polypheny.prism.ConnectionResponse;
 import org.polypheny.prism.ErrorDetails;
 import org.polypheny.prism.ErrorResponse;
 import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
@@ -609,19 +609,19 @@ class RpcServiceErrorTest {
 
         PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class,
                 () -> createConnection().prepareStatement( "SELECT 1" ) );
-        assertUnspecified( failure );
+        assertEquals( "08006", failure.getSQLState() );
         assertSame( transportFailure, failure.getCause() );
     }
 
 
     @Test
-    void preservesSynchronousTransportReadFailureChain() throws Exception {
+    void preservesSynchronousTransportReadFailureAsCause() throws Exception {
         endStreamOnRequest( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST );
 
         PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class,
                 () -> createConnection().prepareStatement( "SELECT 1" ) );
-        assertUnspecified( failure );
-        assertSame( eof, assertInstanceOf( ExecutionException.class, failure.getCause() ).getCause() );
+        assertEquals( "08006", failure.getSQLState() );
+        assertSame( eof, failure.getCause() );
     }
 
 
@@ -632,9 +632,53 @@ class RpcServiceErrorTest {
         try ( Statement statement = createConnection().createStatement() ) {
             PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class,
                     () -> statement.execute( "SELECT 1" ) );
-            assertUnspecified( failure );
+            assertEquals( "08006", failure.getSQLState() );
             assertSame( eof, failure.getCause() );
         }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void failedRegistrationClosesTransport( boolean duringCapabilityNegotiation ) throws Exception {
+        ConnectionString target = new ConnectionString( "jdbc:polypheny:http://localhost/", new Properties() );
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+        PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
+        ErrorDetails details = ErrorDetails.newBuilder().setState( "08004" ).setErrorCode( 17 ).build();
+        requestHandler = request -> {
+            if ( duringCapabilityNegotiation && request.hasConnectionRequest() ) {
+                incoming.add( Response.newBuilder().setId( request.getId() ).setLast( true ).setConnectionResponse(
+                        ConnectionResponse.newBuilder().setIsCompatible( true ).setSupportsGeneratedKeys( true ) ).build().toByteArray() );
+                return;
+            }
+            assertEquals( duringCapabilityNegotiation ? TypeCase.SET_CLIENT_INFO_PROPERTIES_REQUEST : TypeCase.CONNECTION_REQUEST, request.getTypeCase() );
+            incoming.add( errorResponse( details ).setId( request.getId() ).build().toByteArray() );
+        };
+
+        PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, () -> client.register( properties, 1000 ) );
+        assertServerError( failure, "08004", 17 );
+        assertTrue( client.isClosed() );
+        assertEquals( 1, transportCloses );
+    }
+
+
+    @Test
+    void connectionCloseDisposesRemainingStatementsAfterServerError() throws Exception {
+        Connection connection = createConnection();
+        Statement statement = connection.createStatement();
+        Frame frame = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
+        replyTo( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST, Response.newBuilder().setLast( true ).setStatementResponse(
+                StatementResponse.newBuilder().setStatementId( 41 ).setResult( StatementResult.newBuilder().setFrame( frame ) ) ) );
+        ResultSet result = statement.executeQuery( "SELECT 1" );
+        Statement remaining = connection.createStatement();
+        replyTo( TypeCase.CLOSE_RESULT_REQUEST, errorResponse( ErrorDetails.newBuilder().setState( "XX000" ).setErrorCode( 17 ).build() ) );
+
+        assertServerError( assertThrows( PrismInterfaceServiceException.class, connection::close ), "XX000", 17 );
+        assertTrue( connection.isClosed() );
+        assertTrue( statement.isClosed() );
+        assertTrue( result.isClosed() );
+        assertTrue( remaining.isClosed() );
+        assertEquals( 1, transportCloses );
     }
 
 
