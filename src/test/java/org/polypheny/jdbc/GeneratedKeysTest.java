@@ -37,7 +37,6 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
@@ -247,6 +246,58 @@ class GeneratedKeysTest {
     }
 
 
+    @Test
+    void limitsGeneratedKeyRowsWithoutChangingUpdateCount() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        stubUnprepared( rpc, GeneratedKeys.ALL, response( 2, frame( "id", 41, 42 ) ) );
+        try ( PolyConnection connection = connection( rpc, true );
+                Statement statement = connection.createStatement() ) {
+            statement.setMaxRows( 1 );
+            assertEquals( 2, statement.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+            assertEquals( 2, statement.getUpdateCount() );
+            statement.setMaxRows( 0 );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                assertTrue( keys.next() );
+                assertEquals( 41, keys.getLong( 1 ) );
+                assertFalse( keys.next() );
+            }
+            assertEquals( 2, statement.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                assertTrue( keys.next() );
+                assertTrue( keys.next() );
+                assertEquals( 42, keys.getLong( 1 ) );
+                assertFalse( keys.next() );
+            }
+        }
+    }
+
+
+    @Test
+    void emptyGeneratedKeysHaveNoCursorPosition() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        stubUnprepared( rpc, GeneratedKeys.ALL, response( 1, frame( "id" ) ) );
+        try ( PolyConnection connection = connection( rpc, true );
+                Statement statement = connection.createStatement() ) {
+            statement.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                assertEquals( 1, keys.getMetaData().getColumnCount() );
+                assertNoCursorPosition( keys );
+                assertFalse( keys.next() );
+                assertNoCursorPosition( keys );
+            }
+        }
+    }
+
+
+    private static void assertNoCursorPosition( ResultSet keys ) throws SQLException {
+        assertFalse( keys.isBeforeFirst() );
+        assertFalse( keys.isAfterLast() );
+        assertFalse( keys.isFirst() );
+        assertFalse( keys.isLast() );
+        assertEquals( 0, keys.getRow() );
+    }
+
+
     private static PolyConnection connection( RpcService rpc, boolean capability ) throws SQLException {
         ConnectionResponse.Builder response = ConnectionResponse.newBuilder().setIsCompatible( true );
         if ( capability ) {
@@ -291,14 +342,14 @@ class GeneratedKeysTest {
     }
 
 
-    private static Frame frame( String name, long value ) throws SQLException {
-        return Frame.newBuilder()
-                .setIsLast( true )
-                .setRelationalFrame( RelationalFrame.newBuilder()
-                        .addColumnMeta( ColumnMeta.newBuilder().setColumnName( name ).setColumnLabel( name ).setIsAutoIncrement( true )
-                                .setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.BIGINT ) ) )
-                        .addRows( Row.newBuilder().addAllValues( Collections.singletonList( TypedValue.fromLong( value ).serialize() ) ) ) )
-                .build();
+    private static Frame frame( String name, long... values ) throws SQLException {
+        RelationalFrame.Builder frame = RelationalFrame.newBuilder()
+                .addColumnMeta( ColumnMeta.newBuilder().setColumnName( name ).setColumnLabel( name ).setIsAutoIncrement( true )
+                        .setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.BIGINT ) ) );
+        for ( long value : values ) {
+            frame.addRows( Row.newBuilder().addValues( TypedValue.fromLong( value ).serialize() ) );
+        }
+        return Frame.newBuilder().setIsLast( true ).setRelationalFrame( frame ).build();
     }
 
 }

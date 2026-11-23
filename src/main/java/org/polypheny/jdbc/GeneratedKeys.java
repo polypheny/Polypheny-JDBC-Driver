@@ -97,7 +97,14 @@ final class GeneratedKeys {
         if ( !frame.hasRelationalFrame() || !frame.getIsLast() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Generated keys must be a complete relational frame." );
         }
-        return frame.getRelationalFrame();
+        RelationalFrame keys = frame.getRelationalFrame();
+        int columnCount = keys.getColumnMetaCount();
+        for ( Row row : keys.getRowsList() ) {
+            if ( row.getValuesCount() != columnCount ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Generated-key row does not match its column metadata." );
+            }
+        }
+        return keys;
     }
 
 
@@ -158,9 +165,6 @@ final class GeneratedKeys {
                 }
             }
             for ( Row row : frame.getRowsList() ) {
-                if ( row.getValuesCount() != projection.size() ) {
-                    throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Generated-key row does not match its column metadata." );
-                }
                 List<ProtoValue> values = new ArrayList<>( Collections.nCopies( columns.size(), missing ) );
                 for ( int column = 0; column < row.getValuesCount(); column++ ) {
                     values.set( projection.get( column ), row.getValues( column ) );

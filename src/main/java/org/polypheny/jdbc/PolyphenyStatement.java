@@ -34,6 +34,7 @@ import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.Frame.ResultCase;
 import org.polypheny.prism.GeneratedKeysRequest;
+import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Response;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
@@ -50,7 +51,7 @@ public class PolyphenyStatement implements Statement {
 
     private boolean isClosed;
     private boolean clearingResults;
-    private Frame generatedKeysFrame;
+    private RelationalFrame generatedKeysFrame;
     private PolyphenyResultSet generatedKeysResult;
     protected PolyphenyStatementProperties properties;
 
@@ -134,17 +135,24 @@ public class PolyphenyStatement implements Statement {
 
     protected void captureGeneratedKeys( StatementResult result ) throws SQLException {
         if ( result.hasGeneratedKeys() ) {
-            Frame frame = result.getGeneratedKeys();
-            GeneratedKeys.requireComplete( frame );
-            generatedKeysFrame = frame;
+            storeGeneratedKeys( GeneratedKeys.requireComplete( result.getGeneratedKeys() ) );
         }
     }
 
 
     protected void captureGeneratedKeys( StatementBatchResponse result ) throws SQLException {
         if ( result.getGeneratedKeysCount() > 0 ) {
-            generatedKeysFrame = GeneratedKeys.combine( result.getGeneratedKeysList() );
+            storeGeneratedKeys( GeneratedKeys.combine( result.getGeneratedKeysList() ).getRelationalFrame() );
         }
+    }
+
+
+    private void storeGeneratedKeys( RelationalFrame keys ) {
+        long maxRows = properties.getLargeMaxRows();
+        if ( maxRows > 0 && maxRows < keys.getRowsCount() ) {
+            keys = keys.toBuilder().clearRows().addAllRows( keys.getRowsList().subList( 0, (int) maxRows ) ).build();
+        }
+        generatedKeysFrame = keys;
     }
 
 
@@ -551,8 +559,8 @@ public class PolyphenyStatement implements Statement {
         throwIfClosed();
         GeneratedKeys.requireSupported( getClient() );
         if ( generatedKeysResult == null ) {
-            Frame keys = generatedKeysFrame == null ? GeneratedKeys.EMPTY : generatedKeysFrame;
-            generatedKeysResult = new PolyphenyResultSet( this, GeneratedKeys.requireComplete( keys ), properties.toResultSetProperties() );
+            RelationalFrame keys = generatedKeysFrame == null ? RelationalFrame.getDefaultInstance() : generatedKeysFrame;
+            generatedKeysResult = new PolyphenyResultSet( this, keys, properties.toResultSetProperties() );
         }
         return generatedKeysResult;
     }

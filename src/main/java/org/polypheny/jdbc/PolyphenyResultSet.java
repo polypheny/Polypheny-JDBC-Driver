@@ -56,6 +56,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     private boolean isMeta = false;
     private boolean generatedKeys;
+    private boolean emptyGeneratedKeys;
 
     private final PolyphenyStatement statement;
 
@@ -101,6 +102,7 @@ public class PolyphenyResultSet implements ResultSet {
         this.properties.setResultSetType( ResultSet.TYPE_FORWARD_ONLY );
         this.properties.setResultSetConcurrency( ResultSet.CONCUR_READ_ONLY );
         this.generatedKeys = true;
+        this.emptyGeneratedKeys = keys.getRowsCount() == 0;
     }
 
 
@@ -522,25 +524,25 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public boolean isBeforeFirst() throws SQLException {
-        return resultScroller.isBeforeFirst();
+        return !emptyGeneratedKeys && resultScroller.isBeforeFirst();
     }
 
 
     @Override
     public boolean isAfterLast() throws SQLException {
-        return resultScroller.isAfterLast();
+        return !emptyGeneratedKeys && resultScroller.isAfterLast();
     }
 
 
     @Override
     public boolean isFirst() throws SQLException {
-        return resultScroller.isFirst();
+        return !emptyGeneratedKeys && resultScroller.isFirst();
     }
 
 
     @Override
     public boolean isLast() throws SQLException {
-        return resultScroller.isLast();
+        return !emptyGeneratedKeys && resultScroller.isLast();
     }
 
 

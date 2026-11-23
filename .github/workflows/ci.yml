@@ -13,6 +13,8 @@ jobs:
                         ref: 50a394aedcf172b8f8240a17edf69268289c5082
                     -   name: prism24
                         ref: 01a2e438d761190e889f1a9f91426d3264b3e6d8
+                    -   name: prism25
+                        ref: 29bfcacdd300a7d10a87dfadbad30c781100dbdc
         timeout-minutes: 15
         runs-on: ubuntu-latest
         steps:
@@ -172,6 +174,27 @@ jobs:
                 uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
                 with:
                     cmd: ./gradlew test -PdisableToolchain=true -Pprism24Integration --tests org.polypheny.jdbc.Prism24IntegrationTest
+                    jar: dbms-0.10.1-SNAPSHOT.jar
+                    autodocker: 'false'
+                    default-store: hsqldb
+
+    test-prism25:
+        needs: build-polypheny
+        timeout-minutes: 10
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: 17
+            -   uses: actions/download-artifact@v4
+                with:
+                    name: polypheny-jar-prism25
+            -   name: Test generated keys against Prism 2.5
+                uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
+                with:
+                    cmd: ./gradlew test -PdisableToolchain=true -Pprism25Integration --tests org.polypheny.jdbc.Prism25IntegrationTest
                     jar: dbms-0.10.1-SNAPSHOT.jar
                     autodocker: 'false'
                     default-store: hsqldb
