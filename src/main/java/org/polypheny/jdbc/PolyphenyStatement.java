@@ -157,19 +157,18 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    final PrismInterfaceServiceException batchFailure( PrismInterfaceServiceException.ServerError failure ) {
+    final BatchUpdateException batchFailure( PrismInterfaceServiceException.ServerError failure ) {
         StatementBatchResponse completed = failure.completedBatch();
+        long[] counts = completed == null ? new long[0] : completed.getScalarsList().stream().mapToLong( Long::longValue ).toArray();
+        BatchUpdateException batch = new BatchUpdateException( failure.getMessage(), failure.getSQLState(), failure.getErrorCode(), counts, failure );
         if ( completed != null ) {
-            long[] counts = completed.getScalarsList().stream().mapToLong( Long::longValue ).toArray();
-            BatchUpdateException batch = new BatchUpdateException( failure.getMessage(), failure.getSQLState(), failure.getErrorCode(), counts, null );
-            failure.setNextException( batch );
             try {
                 captureGeneratedKeys( completed );
             } catch ( SQLException malformedKeys ) {
                 batch.addSuppressed( malformedKeys );
             }
         }
-        return failure;
+        return batch;
     }
 
 

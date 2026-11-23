@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.Transport;
+import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.CloseStatementResponse;
 import org.polypheny.prism.ErrorDetails;
 import org.polypheny.prism.ErrorResponse;
@@ -145,7 +146,7 @@ class RpcServiceErrorTest {
 
     @ParameterizedTest
     @CsvSource({ "false, false", "true, false", "false, true", "true, true" })
-    void preservesBatchErrorAndChainsReportedCounts( boolean prepared, boolean emptyProgress ) throws Exception {
+    void batchExceptionCarriesDiagnosticAndReportedCounts( boolean prepared, boolean emptyProgress ) throws Exception {
         try ( Statement statement = createBatchStatement( prepared ) ) {
             long[] expected = emptyProgress ? new long[0] : new long[]{ 0, 1L + Integer.MAX_VALUE };
             ErrorDetails details = ErrorDetails.newBuilder().setState( "23505" ).setErrorCode( 71 ).build();
@@ -153,17 +154,12 @@ class RpcServiceErrorTest {
             addBatchEntry( statement );
             addBatchEntry( statement );
             addBatchEntry( statement );
-            PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeLargeBatch );
+            BatchUpdateException failure = assertThrows( BatchUpdateException.class, statement::executeLargeBatch );
             assertEquals( LEGACY_MESSAGE, failure.getMessage() );
             assertEquals( "23505", failure.getSQLState() );
             assertEquals( 71, failure.getErrorCode() );
-            assertNull( failure.getCause() );
-            BatchUpdateException progress = assertInstanceOf( BatchUpdateException.class, failure.getNextException() );
-            assertArrayEquals( expected, progress.getLargeUpdateCounts() );
-            assertEquals( failure.getMessage(), progress.getMessage() );
-            assertEquals( failure.getSQLState(), progress.getSQLState() );
-            assertEquals( failure.getErrorCode(), progress.getErrorCode() );
-            assertNull( progress.getCause() );
+            assertArrayEquals( expected, failure.getLargeUpdateCounts() );
+            assertServerError( assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() ), "23505", 71 );
         }
     }
 
@@ -174,8 +170,47 @@ class RpcServiceErrorTest {
         try ( Statement statement = createBatchStatement( prepared ) ) {
             replyToBatch( prepared, errorResponse( null ) );
             addBatchEntry( statement );
-            PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeBatch );
-            assertServerError( failure, "UNSPECIFIED", -1 );
+            BatchUpdateException failure = assertThrows( BatchUpdateException.class, statement::executeBatch );
+            assertEquals( LEGACY_MESSAGE, failure.getMessage() );
+            assertEquals( "UNSPECIFIED", failure.getSQLState() );
+            assertEquals( -1, failure.getErrorCode() );
+            assertArrayEquals( new int[0], failure.getUpdateCounts() );
+            assertServerError( assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() ), "UNSPECIFIED", -1 );
+        }
+    }
+
+
+    @Test
+    void rejectsZeroIdInRawBatchAcknowledgment() throws Exception {
+        try ( Statement statement = createBatchStatement( false ) ) {
+            replyTo( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, batchResponse( 0, false ) );
+            addBatchEntry( statement );
+            assertBatchProtocolFailure( statement );
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void rejectsMoreCountsThanRequestedEntries( boolean prepared ) throws Exception {
+        try ( Statement statement = createBatchStatement( prepared ) ) {
+            replyToBatch( prepared, batchResponse( 42, true, 1, 1 ) );
+            addBatchEntry( statement );
+            assertBatchProtocolFailure( statement );
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { -1, 0, 1 })
+    void rejectsInvalidOrDuplicateGeneratedKeyIndexes( int index ) throws Exception {
+        try ( Statement statement = createBatchStatement( true ) ) {
+            Response.Builder response = batchResponse( 42, true, 1 );
+            response.getStatementBatchResponseBuilder().addGeneratedKeys( BatchGeneratedKeys.getDefaultInstance() )
+                    .addGeneratedKeys( BatchGeneratedKeys.newBuilder().setStatementIndex( index ) );
+            replyToBatch( true, response );
+            addBatchEntry( statement );
+            assertBatchProtocolFailure( statement );
         }
     }
 

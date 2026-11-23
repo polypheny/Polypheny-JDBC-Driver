@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -103,7 +102,7 @@ class Prism25IntegrationTest {
                 batch.addBatch( "INSERT INTO " + table + " DEFAULT VALUES; -- committed batch member" );
                 batch.addBatch( "INSERT INTO " + table + "_missing DEFAULT VALUES" );
                 batch.addBatch( "INSERT INTO " + table + " DEFAULT VALUES" );
-                PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, batch::executeBatch );
+                BatchUpdateException failure = assertThrows( BatchUpdateException.class, batch::executeBatch );
                 assertBatchPrefix( failure, "42P01", 1L );
                 try ( ResultSet keys = batch.getGeneratedKeys() ) {
                     assertSingleKey( keys, 1L );
@@ -134,7 +133,7 @@ class Prism25IntegrationTest {
                     batch.addBatch();
                     batch.setString( 1, "longer" );
                     batch.addBatch();
-                    PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, batch::executeLargeBatch );
+                    BatchUpdateException failure = assertThrows( BatchUpdateException.class, batch::executeLargeBatch );
                     assertEquals( "Char value is too long", failure.getMessage() );
                     assertBatchPrefix( failure, "XX000", 1L );
                     try ( ResultSet keys = batch.getGeneratedKeys() ) {
@@ -172,10 +171,8 @@ class Prism25IntegrationTest {
                 batch.addBatch();
                 batch.setInt( 1, 2 );
                 batch.addBatch();
-                PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, batch::executeBatch );
-                assertEquals( "2200H", failure.getSQLState() );
-                assertEquals( -1, failure.getErrorCode() );
-                assertNull( failure.getNextException() );
+                BatchUpdateException failure = assertThrows( BatchUpdateException.class, batch::executeBatch );
+                assertBatchPrefix( failure, "2200H" );
                 try ( ResultSet keys = batch.getGeneratedKeys();
                         ResultSet rows = sql.executeQuery( "SELECT id FROM " + table ) ) {
                     assertFalse( keys.next() );
@@ -188,13 +185,13 @@ class Prism25IntegrationTest {
     }
 
 
-    private static void assertBatchPrefix( PrismInterfaceServiceException failure, String state, long... expectedCounts ) {
+    private static void assertBatchPrefix( BatchUpdateException failure, String state, long... expectedCounts ) {
         assertEquals( state, failure.getSQLState() );
         assertEquals( -1, failure.getErrorCode() );
-        BatchUpdateException progress = assertInstanceOf( BatchUpdateException.class, failure.getNextException() );
-        assertEquals( failure.getSQLState(), progress.getSQLState() );
-        assertEquals( failure.getErrorCode(), progress.getErrorCode() );
-        assertArrayEquals( expectedCounts, progress.getLargeUpdateCounts() );
+        PrismInterfaceServiceException original = assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() );
+        assertEquals( failure.getSQLState(), original.getSQLState() );
+        assertEquals( failure.getErrorCode(), original.getErrorCode() );
+        assertArrayEquals( expectedCounts, failure.getLargeUpdateCounts() );
     }
 
 

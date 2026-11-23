@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.utils.CallbackQueue;
+import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.ClientInfoProperties;
 import org.polypheny.prism.ClientInfoPropertiesRequest;
 import org.polypheny.prism.ClientInfoPropertiesResponse;
@@ -514,18 +515,19 @@ public class RpcService {
                 StatementBatchResponse batch = response.getStatementBatchResponse();
                 if ( firstFrame && acceptBatchId != null ) {
                     batchId = batch.getBatchId();
+                    if ( batchId == 0 ) {
+                        throw invalidBatchResponse( "Initial Prism batch response is missing its batch ID." );
+                    }
                     acceptBatchId.accept( batchId );
                 } else if ( batch.getBatchId() != batchId ) {
                     throw invalidBatchResponse( "Unexpected Prism batch ID " + batch.getBatchId() + ", expected " + batchId + "." );
                 }
+                validateBatchPayload( batch, batchSize, response.getLast() );
                 if ( response.getLast() ) {
-                    if ( batchSize > 0 && batch.getScalarsCount() == 0 ) {
-                        throw invalidBatchResponse( "Final Prism batch response is missing update counts." );
-                    }
                     return batch;
                 }
                 // An unparameterized batch starts with an ID-only acknowledgment.
-                if ( !firstFrame || acceptBatchId == null || batch.getScalarsCount() > 0 ) {
+                if ( batch.getScalarsCount() > 0 ) {
                     completed = batch;
                 }
                 firstFrame = false;
@@ -536,6 +538,24 @@ public class RpcService {
             throw completed == null ? error : error.withCompletedBatch( completed );
         } finally {
             callbackQueues.remove( req.getId() );
+        }
+    }
+
+
+    private static void validateBatchPayload( StatementBatchResponse batch, int batchSize, boolean last ) throws PrismInterfaceServiceException {
+        int count = batch.getScalarsCount();
+        if ( count > batchSize || (last && batchSize > 0 && count == 0) ) {
+            throw invalidBatchResponse( "Invalid Prism batch update count length " + count + " for " + batchSize + " entries." );
+        }
+        if ( batch.getGeneratedKeysCount() > 0 ) {
+            boolean[] seen = new boolean[count];
+            for ( BatchGeneratedKeys keys : batch.getGeneratedKeysList() ) {
+                int index = keys.getStatementIndex();
+                if ( index < 0 || index >= count || seen[index] ) {
+                    throw invalidBatchResponse( "Invalid or duplicate Prism generated-key batch index " + index + "." );
+                }
+                seen[index] = true;
+            }
         }
     }
 
