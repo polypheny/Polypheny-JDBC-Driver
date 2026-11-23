@@ -266,7 +266,7 @@ public class RpcService {
         }
         ErrorDetails details = error.getDetails();
         String state = details.getState();
-        return new PrismInterfaceServiceException(
+        return new PrismInterfaceServiceException.ServerError(
                 error.getMessage(),
                 SQLSTATE.matcher( state ).matches() ? state : PrismInterfaceErrors.UNSPECIFIED.state,
                 details.hasErrorCode() ? details.getErrorCode() : PrismInterfaceErrors.UNSPECIFIED.errorCode );
@@ -486,7 +486,24 @@ public class RpcService {
     StatementBatchResponse executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteIndexedStatementBatchRequest( msg );
-        return completeSynchronously( req, timeout ).getStatementBatchResponse();
+        CallbackQueue<Response> callback = new CallbackQueue<>( response -> response, timeout );
+        StatementBatchResponse completed = null;
+        try {
+            callbackQueues.put( req.getId(), callback );
+            sendMessage( req.build() );
+            Response response = callback.takeNext();
+            while ( !response.getLast() ) {
+                completed = response.getStatementBatchResponse();
+                response = callback.takeNext();
+            }
+            return response.getStatementBatchResponse();
+        } catch ( IOException e ) {
+            throw new PrismInterfaceServiceException( e );
+        } catch ( PrismInterfaceServiceException.ServerError error ) {
+            throw completed == null ? error : error.withCompletedBatch( completed );
+        } finally {
+            callbackQueues.remove( req.getId() );
+        }
     }
 
 

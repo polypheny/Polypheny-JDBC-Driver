@@ -25,11 +25,13 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.GeneratedKeysRequest;
+import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Row;
@@ -38,7 +40,6 @@ import org.polypheny.prism.Row;
 final class GeneratedKeys {
 
     static final GeneratedKeysRequest ALL = GeneratedKeysRequest.newBuilder().setAll( true ).build();
-    static final Frame EMPTY = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
 
 
     private GeneratedKeys() {
@@ -110,7 +111,7 @@ final class GeneratedKeys {
 
     static Frame combine( List<BatchGeneratedKeys> batch ) throws SQLException {
         if ( batch.isEmpty() ) {
-            return EMPTY;
+            return Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
         }
         if ( batch.size() == 1 ) {
             Frame frame = batch.get( 0 ).getKeys();
@@ -135,13 +136,24 @@ final class GeneratedKeys {
                 } else {
                     ColumnMeta known = columns.get( position );
                     ColumnMeta.Builder merged = known.toBuilder();
-                    if ( !known.getEntityName().equals( column.getEntityName() ) || !known.getNamespace().equals( column.getNamespace() ) ) {
-                        merged.clearEntityName().clearNamespace();
+                    if ( !known.getEntityName().equals( column.getEntityName() ) ) {
+                        merged.clearEntityName();
+                    }
+                    if ( !PolyphenyColumnMeta.schemaName( known ).equals( PolyphenyColumnMeta.schemaName( column ) ) ) {
+                        merged.clearNamespace().clearSchemaName();
+                        merged.clearEntityName();
+                    }
+                    if ( integerTypeWidth( column ) > integerTypeWidth( known ) ) {
+                        merged.setTypeMeta( column.getTypeMeta() )
+                                .setPrecision( column.getPrecision() )
+                                .setLength( column.getLength() )
+                                .setScale( column.getScale() );
                     }
                     if ( column.getIsNullable() ) {
                         merged.setIsNullable( true );
                     }
-                    if ( known.getIsAutoIncrement() != column.getIsAutoIncrement() ) {
+                    if ( known.hasIsAutoIncrement() != column.hasIsAutoIncrement()
+                            || known.getIsAutoIncrement() != column.getIsAutoIncrement() ) {
                         merged.clearIsAutoIncrement();
                     }
                     columns.set( position, merged.build() );
@@ -167,7 +179,12 @@ final class GeneratedKeys {
             for ( Row row : frame.getRowsList() ) {
                 List<ProtoValue> values = new ArrayList<>( Collections.nCopies( columns.size(), missing ) );
                 for ( int column = 0; column < row.getValuesCount(); column++ ) {
-                    values.set( projection.get( column ), row.getValues( column ) );
+                    int position = projection.get( column );
+                    ProtoValue value = row.getValues( column );
+                    if ( columns.get( position ).getTypeMeta().getProtoValueType() == ProtoPolyType.BIGINT && value.hasInteger() ) {
+                        value = TypedValue.fromLong( value.getInteger().getInteger() ).serialize();
+                    }
+                    values.set( position, value );
                 }
                 combined.addRows( Row.newBuilder().addAllValues( values ) );
             }
@@ -180,13 +197,30 @@ final class GeneratedKeys {
         for ( int i = 0; i < columns.size(); i++ ) {
             ColumnMeta column = columns.get( i );
             if ( !used.contains( i )
-                    && column.getColumnName().equals( candidate.getColumnName() )
-                    && column.getColumnLabel().equals( candidate.getColumnLabel() )
-                    && column.getTypeMeta().equals( candidate.getTypeMeta() ) ) {
+                    && column.getColumnName().equalsIgnoreCase( candidate.getColumnName() )
+                    && column.getColumnLabel().equalsIgnoreCase( candidate.getColumnLabel() )
+                    && (column.getTypeMeta().equals( candidate.getTypeMeta() )
+                    || (integerTypeWidth( column ) > 0 && integerTypeWidth( candidate ) > 0)) ) {
                 return i;
             }
         }
         return columns.size();
+    }
+
+
+    private static int integerTypeWidth( ColumnMeta column ) {
+        switch ( column.getTypeMeta().getProtoValueType() ) {
+            case TINYINT:
+                return Byte.SIZE;
+            case SMALLINT:
+                return Short.SIZE;
+            case INTEGER:
+                return Integer.SIZE;
+            case BIGINT:
+                return Long.SIZE;
+            default:
+                return 0;
+        }
     }
 
 }

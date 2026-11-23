@@ -68,6 +68,16 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     }
 
 
+    private List<TypedValue> boundParameters() throws SQLException {
+        for ( int index = 0; index < parameters.length; index++ ) {
+            if ( parameters[index] == null ) {
+                throw new PrismInterfaceServiceException( "No value specified for parameter " + (index + 1) + ".", "07001", -1 );
+            }
+        }
+        return Arrays.asList( parameters );
+    }
+
+
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
         throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Method should not be called on a prepared statement." );
@@ -155,7 +165,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             clearExecutionResults();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
-                    Arrays.asList( parameters ),
+                    boundParameters(),
                     properties.getFetchSize(),
                     getTimeout()
             );
@@ -168,7 +178,6 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
             return currentResult;
         } finally {
-            clearParameters();
             clearParameterBatch();
         }
     }
@@ -181,7 +190,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             clearExecutionResults();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
-                    Arrays.asList( parameters ),
+                    boundParameters(),
                     properties.getFetchSize(),
                     getTimeout()
             );
@@ -192,7 +201,6 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             currentUpdateCount = result.getScalar();
             return currentUpdateCount;
         } finally {
-            clearParameters();
             clearParameterBatch();
         }
     }
@@ -390,7 +398,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             clearExecutionResults();
             StatementResult result = getClient().executeIndexedStatement(
                     statementId,
-                    Arrays.asList( parameters ),
+                    boundParameters(),
                     properties.getFetchSize(),
                     getTimeout()
             );
@@ -404,7 +412,6 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
             return true;
         } finally {
-            clearParameters();
             clearParameterBatch();
         }
     }
@@ -413,7 +420,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public void addBatch() throws SQLException {
         throwIfClosed();
-        parameterBatch.add( Arrays.asList( parameters.clone() ) );
+        parameterBatch.add( new ArrayList<>( boundParameters() ) );
     }
 
 
@@ -456,9 +463,9 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
             captureGeneratedKeys( status );
             return status.getScalarsList();
+        } catch ( PrismInterfaceServiceException.ServerError failure ) {
+            throw batchFailure( failure, failure.completedBatch() );
         } finally {
-            // jdbc: batch and individual parameters are always cleared even in the execution fails.
-            clearParameters();
             clearParameterBatch();
         }
     }

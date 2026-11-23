@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -153,6 +154,20 @@ public class PolyphenyStatement implements Statement {
             keys = keys.toBuilder().clearRows().addAllRows( keys.getRowsList().subList( 0, (int) maxRows ) ).build();
         }
         generatedKeysFrame = keys;
+    }
+
+
+    protected final BatchUpdateException batchFailure( PrismInterfaceServiceException failure, StatementBatchResponse completed ) {
+        long[] counts = completed == null ? new long[0] : completed.getScalarsList().stream().mapToLong( Long::longValue ).toArray();
+        BatchUpdateException batch = new BatchUpdateException( failure.getMessage(), failure.getSQLState(), failure.getErrorCode(), counts, failure );
+        if ( completed != null ) {
+            try {
+                captureGeneratedKeys( completed );
+            } catch ( SQLException malformedKeys ) {
+                batch.addSuppressed( malformedKeys );
+            }
+        }
+        return batch;
     }
 
 
@@ -494,17 +509,22 @@ public class PolyphenyStatement implements Statement {
             List<ExecuteUnparameterizedStatementRequest> requests = buildBatchRequest();
             clearBatch();
             getClient().executeUnparameterizedStatementBatch( requests, callback, getTimeout() );
-            while ( true ) {
-                StatementBatchResponse status = callback.takeNext();
-                if ( !hasStatementId() ) {
-                    statementId = status.getBatchId();
+            StatementBatchResponse completed = null;
+            try {
+                while ( true ) {
+                    StatementBatchResponse status = callback.takeNext();
+                    if ( !hasStatementId() ) {
+                        statementId = status.getBatchId();
+                    }
+                    if ( status.getScalarsCount() > 0 ) {
+                        completed = status;
+                        awaitCompletion( callback );
+                        captureGeneratedKeys( status );
+                        return status.getScalarsList();
+                    }
                 }
-                if ( status.getScalarsCount() == 0 ) {
-                    continue;
-                }
-                awaitCompletion( callback );
-                captureGeneratedKeys( status );
-                return status.getScalarsList();
+            } catch ( PrismInterfaceServiceException.ServerError error ) {
+                throw batchFailure( error, completed );
             }
         } finally {
             clearBatch();

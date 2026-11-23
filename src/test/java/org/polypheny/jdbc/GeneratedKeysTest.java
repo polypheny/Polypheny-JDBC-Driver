@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,7 +37,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
@@ -47,10 +50,12 @@ import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.ConnectionResponse;
 import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
+import org.polypheny.prism.ExecuteIndexedStatementRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.GeneratedKeysRequest;
+import org.polypheny.prism.ParameterMeta;
 import org.polypheny.prism.PrepareStatementRequest;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProtoPolyType;
@@ -112,6 +117,43 @@ class GeneratedKeysTest {
             assertThrows( SQLException.class, () -> statement.executeUpdate( INSERT, new int[]{ 0 } ) );
             assertThrows( SQLException.class, () -> statement.executeUpdate( INSERT, new String[]{ null } ) );
             verify( rpc, never() ).closeResult( any(), anyInt() );
+        }
+    }
+
+
+    @Test
+    void preparedKeyRequestsKeepTheBindingAndRejectAnUnsetParameter() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        when( rpc.prepareIndexedStatement( any(), anyInt() ) ).thenReturn( PreparedStatementSignature.newBuilder()
+                .setStatementId( 14 )
+                .addParameterMetas( ParameterMeta.newBuilder().setTypeName( "INTEGER" ) )
+                .build() );
+        when( rpc.executeIndexedStatement( any(), anyInt() ) ).thenAnswer( invocation -> {
+            ExecuteIndexedStatementRequest request = invocation.getArgument( 0 );
+            assertEquals( Collections.singletonList( TypedValue.fromInteger( 8 ).serialize() ), request.getParameters().getParametersList() );
+            return response( 1, frame( "id", 10 ) );
+        } );
+
+        try ( PolyConnection connection = connection( rpc, true );
+                PreparedStatement statement = connection.prepareStatement( "INSERT INTO items (label) VALUES (?)", Statement.RETURN_GENERATED_KEYS ) ) {
+            statement.setInt( 1, 8 );
+            assertEquals( 1, statement.executeUpdate() );
+            assertFalse( statement.execute() );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                assertTrue( keys.next() );
+                assertEquals( 10, keys.getLong( 1 ) );
+            }
+            statement.clearParameters();
+            assertEquals( "07001", assertThrows( SQLException.class, statement::executeUpdate ).getSQLState() );
+            assertEquals( "07001", assertThrows( SQLException.class, statement::addBatch ).getSQLState() );
+            doAnswer( invocation -> {
+                ExecuteIndexedStatementRequest request = invocation.getArgument( 0 );
+                assertEquals( Collections.singletonList( TypedValue.fromNull().serialize() ), request.getParameters().getParametersList() );
+                return response( 1, frame( "id", 11 ) );
+            } ).when( rpc ).executeIndexedStatement( any(), anyInt() );
+            statement.setNull( 1, Types.INTEGER );
+            assertEquals( 1, statement.executeUpdate() );
+            verify( rpc, times( 3 ) ).executeIndexedStatement( any(), anyInt() );
         }
     }
 

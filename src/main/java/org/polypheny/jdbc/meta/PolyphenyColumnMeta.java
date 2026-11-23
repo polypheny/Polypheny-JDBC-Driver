@@ -86,7 +86,7 @@ public class PolyphenyColumnMeta {
         this.displaySize = protoColumnMeta.getLength();
         this.columnLabel = protoColumnMeta.getColumnLabel();
         this.columnName = protoColumnMeta.getColumnName();
-        this.namespace = protoColumnMeta.getNamespace();
+        this.namespace = schemaName( protoColumnMeta );
         this.precision = protoColumnMeta.getPrecision();
         this.scale = 1;
         // table = entity
@@ -109,6 +109,11 @@ public class PolyphenyColumnMeta {
         }
         this.sqlType = ProtoToJdbcTypeMap.getJdbcTypeFromProto( type );
         this.polyphenyFieldTypeName = type.name();
+    }
+
+
+    public static String schemaName( ColumnMeta columnMeta ) {
+        return columnMeta.getNamespace().isEmpty() ? columnMeta.getSchemaName() : columnMeta.getNamespace();
     }
 
 

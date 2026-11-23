@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,7 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ProtocolException;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -48,9 +51,11 @@ import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.prism.CloseStatementResponse;
 import org.polypheny.prism.ErrorDetails;
 import org.polypheny.prism.ErrorResponse;
+import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Request.TypeCase;
 import org.polypheny.prism.Response;
+import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
 
@@ -131,6 +136,56 @@ class RpcServiceErrorTest {
                 Arguments.of( ErrorDetails.newBuilder().setErrorCode( 17 ).build(), "UNSPECIFIED", 17 ),
                 Arguments.of( ErrorDetails.newBuilder().setState( "42P01" ).setErrorCode( 0 ).setMessage( "Nested details message" ).build(), "42P01", 0 )
         );
+    }
+
+
+    @Test
+    void indexedBatchWaitsForTheFinalErrorAfterReceivingCompletedCounts() throws Exception {
+        replyTo( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
+                .setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 42 ) ) );
+        try ( PreparedStatement statement = createConnection().prepareStatement( "INSERT INTO example DEFAULT VALUES" ) ) {
+            StatementBatchResponse completed = StatementBatchResponse.newBuilder().setBatchId( 42 ).addScalars( 2 ).build();
+            ErrorDetails details = ErrorDetails.newBuilder().setState( "23505" ).setErrorCode( 71 ).build();
+            replyTo( TypeCase.EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST, Response.newBuilder().setStatementBatchResponse( completed ), errorResponse( details ) );
+            statement.addBatch();
+            statement.addBatch();
+            BatchUpdateException failure = assertThrows( BatchUpdateException.class, statement::executeLargeBatch );
+            assertArrayEquals( new long[]{ 2 }, failure.getLargeUpdateCounts() );
+            assertEquals( "23505", failure.getSQLState() );
+            assertEquals( 71, failure.getErrorCode() );
+            assertServerError( assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() ), "23505", 71 );
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void wrapsLegacyBatchErrorsWithoutDetails( boolean prepared ) throws Exception {
+        Connection connection = createConnection();
+        if ( prepared ) {
+            replyTo( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
+                    .setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 42 ) ) );
+            try ( PreparedStatement statement = connection.prepareStatement( "INSERT INTO example DEFAULT VALUES" ) ) {
+                replyTo( TypeCase.EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST, errorResponse( null ) );
+                statement.addBatch();
+                assertLegacyBatchError( statement );
+            }
+        } else {
+            try ( Statement statement = connection.createStatement() ) {
+                replyTo( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, errorResponse( null ) );
+                statement.addBatch( "INSERT INTO example DEFAULT VALUES" );
+                assertLegacyBatchError( statement );
+            }
+        }
+    }
+
+
+    private static void assertLegacyBatchError( Statement statement ) {
+        BatchUpdateException failure = assertThrows( BatchUpdateException.class, statement::executeBatch );
+        assertArrayEquals( new int[0], failure.getUpdateCounts() );
+        assertEquals( "UNSPECIFIED", failure.getSQLState() );
+        assertEquals( -1, failure.getErrorCode() );
+        assertServerError( assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() ), "UNSPECIFIED", -1 );
     }
 
 

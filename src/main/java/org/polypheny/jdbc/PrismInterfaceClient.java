@@ -79,6 +79,7 @@ import org.polypheny.prism.TypesRequest;
 
 public class PrismInterfaceClient {
 
+    private static final String PARTIAL_BATCH_RESULTS = "PolyphenyPartialBatchResults";
     private final RpcService rpc;
     private boolean supportsGeneratedKeys;
 
@@ -131,6 +132,9 @@ public class PrismInterfaceClient {
                     + " not compatible with server version " + getServerApiVersionString( connectionResponse ) + "." );
         }
         supportsGeneratedKeys = connectionResponse.getSupportsGeneratedKeys();
+        if ( supportsGeneratedKeys ) {
+            rpc.setClientInfoProperties( ClientInfoProperties.newBuilder().putProperties( PARTIAL_BATCH_RESULTS, "true" ).build(), timeout );
+        }
         return connectionResponse;
     }
 

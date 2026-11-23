@@ -47,6 +47,8 @@ try (PreparedStatement insert = connection.prepareStatement(
 
 The column-name and one-based column-index overloads return those columns in request order. Prepared batches preserve the selection from `prepareStatement`. Unprepared batches collect generated identity values in statement order. Use `Connection.getMetaData().supportsGetGeneratedKeys()` to check server support. Use either SQL `INSERT ... RETURNING` or a JDBC generated-key request for a given statement. The server treats these as separate ways to request output.
 
+A failed batch entry raises `BatchUpdateException`. When the server reports a successful prefix, the exception carries its update counts and `getGeneratedKeys()` exposes its generated keys.
+
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).
 
