@@ -464,7 +464,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             captureGeneratedKeys( status );
             return status.getScalarsList();
         } catch ( PrismInterfaceServiceException.ServerError failure ) {
-            throw batchFailure( failure, failure.completedBatch() );
+            throw batchFailure( failure );
         } finally {
             clearParameterBatch();
         }

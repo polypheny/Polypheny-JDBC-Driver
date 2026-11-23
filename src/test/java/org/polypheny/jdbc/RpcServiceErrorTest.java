@@ -32,6 +32,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -43,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
@@ -139,53 +143,137 @@ class RpcServiceErrorTest {
     }
 
 
-    @Test
-    void indexedBatchWaitsForTheFinalErrorAfterReceivingCompletedCounts() throws Exception {
-        replyTo( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
-                .setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 42 ) ) );
-        try ( PreparedStatement statement = createConnection().prepareStatement( "INSERT INTO example DEFAULT VALUES" ) ) {
-            StatementBatchResponse completed = StatementBatchResponse.newBuilder().setBatchId( 42 ).addScalars( 2 ).build();
+    @ParameterizedTest
+    @CsvSource({ "false, false", "true, false", "false, true", "true, true" })
+    void preservesBatchErrorAndChainsReportedCounts( boolean prepared, boolean emptyProgress ) throws Exception {
+        try ( Statement statement = createBatchStatement( prepared ) ) {
+            long[] expected = emptyProgress ? new long[0] : new long[]{ 0, 1L + Integer.MAX_VALUE };
             ErrorDetails details = ErrorDetails.newBuilder().setState( "23505" ).setErrorCode( 71 ).build();
-            replyTo( TypeCase.EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST, Response.newBuilder().setStatementBatchResponse( completed ), errorResponse( details ) );
-            statement.addBatch();
-            statement.addBatch();
-            BatchUpdateException failure = assertThrows( BatchUpdateException.class, statement::executeLargeBatch );
-            assertArrayEquals( new long[]{ 2 }, failure.getLargeUpdateCounts() );
+            replyToBatch( prepared, batchResponse( 42, false, expected ), errorResponse( details ) );
+            addBatchEntry( statement );
+            addBatchEntry( statement );
+            addBatchEntry( statement );
+            PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeLargeBatch );
+            assertEquals( LEGACY_MESSAGE, failure.getMessage() );
             assertEquals( "23505", failure.getSQLState() );
             assertEquals( 71, failure.getErrorCode() );
-            assertServerError( assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() ), "23505", 71 );
+            assertNull( failure.getCause() );
+            BatchUpdateException progress = assertInstanceOf( BatchUpdateException.class, failure.getNextException() );
+            assertArrayEquals( expected, progress.getLargeUpdateCounts() );
+            assertEquals( failure.getMessage(), progress.getMessage() );
+            assertEquals( failure.getSQLState(), progress.getSQLState() );
+            assertEquals( failure.getErrorCode(), progress.getErrorCode() );
+            assertNull( progress.getCause() );
         }
     }
 
 
     @ParameterizedTest
     @ValueSource(booleans = { false, true })
-    void wrapsLegacyBatchErrorsWithoutDetails( boolean prepared ) throws Exception {
-        Connection connection = createConnection();
-        if ( prepared ) {
-            replyTo( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
-                    .setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 42 ) ) );
-            try ( PreparedStatement statement = connection.prepareStatement( "INSERT INTO example DEFAULT VALUES" ) ) {
-                replyTo( TypeCase.EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST, errorResponse( null ) );
-                statement.addBatch();
-                assertLegacyBatchError( statement );
-            }
-        } else {
-            try ( Statement statement = connection.createStatement() ) {
-                replyTo( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, errorResponse( null ) );
-                statement.addBatch( "INSERT INTO example DEFAULT VALUES" );
-                assertLegacyBatchError( statement );
-            }
+    void preservesLegacyBatchErrorsWithoutClaimingProgress( boolean prepared ) throws Exception {
+        try ( Statement statement = createBatchStatement( prepared ) ) {
+            replyToBatch( prepared, errorResponse( null ) );
+            addBatchEntry( statement );
+            PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeBatch );
+            assertServerError( failure, "UNSPECIFIED", -1 );
         }
     }
 
 
-    private static void assertLegacyBatchError( Statement statement ) {
-        BatchUpdateException failure = assertThrows( BatchUpdateException.class, statement::executeBatch );
-        assertArrayEquals( new int[0], failure.getUpdateCounts() );
-        assertEquals( "UNSPECIFIED", failure.getSQLState() );
-        assertEquals( -1, failure.getErrorCode() );
-        assertServerError( assertInstanceOf( PrismInterfaceServiceException.class, failure.getCause() ), "UNSPECIFIED", -1 );
+    @ParameterizedTest
+    @CsvSource({ "false, false", "true, false", "false, true", "true, true" })
+    void rejectsUnexpectedBatchResponseTypeAfterProgress( boolean prepared, boolean last ) throws Exception {
+        try ( Statement statement = createBatchStatement( prepared ) ) {
+            replyToBatch( prepared, batchResponse( 42, false, 1 ), Response.newBuilder().setLast( last )
+                    .setCloseStatementResponse( CloseStatementResponse.getDefaultInstance() ) );
+            addBatchEntry( statement );
+            addBatchEntry( statement );
+            assertBatchProtocolFailure( statement );
+
+            replyToBatch( prepared, batchResponse( 42, true, 1 ) );
+            addBatchEntry( statement );
+            assertArrayEquals( new int[]{ 1 }, statement.executeBatch() );
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void rejectsUnexpectedBatchResponseId( boolean prepared ) throws Exception {
+        try ( Statement statement = createBatchStatement( prepared ) ) {
+            replyToBatch( prepared, batchResponse( 43, true, 1 ) );
+            addBatchEntry( statement );
+            assertBatchProtocolFailure( statement );
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void rejectsMissingCountsInFinalBatchResponse( boolean prepared ) throws Exception {
+        try ( Statement statement = createBatchStatement( prepared ) ) {
+            replyToBatch( prepared, batchResponse( 42, true ) );
+            addBatchEntry( statement );
+            assertBatchProtocolFailure( statement );
+        }
+    }
+
+
+    @Test
+    void acceptsLegacyAggregateCountForPreparedBatch() throws Exception {
+        try ( Statement statement = createBatchStatement( true ) ) {
+            replyToBatch( true, batchResponse( 42, true, 2 ) );
+            addBatchEntry( statement );
+            addBatchEntry( statement );
+            assertArrayEquals( new long[]{ 2 }, statement.executeLargeBatch() );
+        }
+    }
+
+
+    private static void assertBatchProtocolFailure( Statement statement ) {
+        PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeLargeBatch );
+        assertInstanceOf( ProtocolException.class, failure.getCause() );
+        assertNull( failure.getNextException() );
+    }
+
+
+    private Statement createBatchStatement( boolean prepared ) throws SQLException {
+        Connection connection = createConnection();
+        if ( prepared ) {
+            replyTo( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
+                    .setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 42 ) ) );
+            return connection.prepareStatement( "INSERT INTO example DEFAULT VALUES" );
+        }
+        return connection.createStatement();
+    }
+
+
+    private static void addBatchEntry( Statement statement ) throws SQLException {
+        if ( statement instanceof PreparedStatement ) {
+            ((PreparedStatement) statement).addBatch();
+        } else {
+            statement.addBatch( "INSERT INTO example DEFAULT VALUES" );
+        }
+    }
+
+
+    private void replyToBatch( boolean prepared, Response.Builder... responses ) {
+        List<Response.Builder> frames = new ArrayList<>();
+        if ( !prepared ) {
+            frames.add( batchResponse( 42, false ) );
+        }
+        Collections.addAll( frames, responses );
+        TypeCase request = prepared ? TypeCase.EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST : TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST;
+        replyTo( request, frames.toArray( new Response.Builder[0] ) );
+    }
+
+
+    private static Response.Builder batchResponse( int batchId, boolean last, long... counts ) {
+        StatementBatchResponse.Builder batch = StatementBatchResponse.newBuilder().setBatchId( batchId );
+        for ( long count : counts ) {
+            batch.addScalars( count );
+        }
+        return Response.newBuilder().setLast( last ).setStatementBatchResponse( batch );
     }
 
 

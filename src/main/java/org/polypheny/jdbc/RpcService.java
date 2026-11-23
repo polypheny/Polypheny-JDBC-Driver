@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntConsumer;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.transport.Transport;
@@ -455,6 +456,13 @@ public class RpcService {
     }
 
 
+    StatementBatchResponse executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest msg, int timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setExecuteUnparameterizedStatementBatchRequest( msg );
+        return completeBatch( req, msg.getStatementsCount(), timeout, acceptBatchId );
+    }
+
+
     PreparedStatementSignature prepareIndexedStatement( PrepareStatementRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setPrepareIndexedStatementRequest( msg );
@@ -486,17 +494,42 @@ public class RpcService {
     StatementBatchResponse executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteIndexedStatementBatchRequest( msg );
+        return completeBatch( req, msg.getParametersCount(), timeout, null );
+    }
+
+
+    private StatementBatchResponse completeBatch( Request.Builder req, int batchSize, int timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
         CallbackQueue<Response> callback = new CallbackQueue<>( response -> response, timeout );
         StatementBatchResponse completed = null;
+        boolean firstFrame = true;
+        int batchId = acceptBatchId == null ? req.getExecuteIndexedStatementBatchRequest().getStatementId() : 0;
         try {
             callbackQueues.put( req.getId(), callback );
             sendMessage( req.build() );
-            Response response = callback.takeNext();
-            while ( !response.getLast() ) {
-                completed = response.getStatementBatchResponse();
-                response = callback.takeNext();
+            while ( true ) {
+                Response response = callback.takeNext();
+                if ( !response.hasStatementBatchResponse() ) {
+                    throw invalidBatchResponse( "Expected a Prism batch response, received " + response.getTypeCase() + "." );
+                }
+                StatementBatchResponse batch = response.getStatementBatchResponse();
+                if ( firstFrame && acceptBatchId != null ) {
+                    batchId = batch.getBatchId();
+                    acceptBatchId.accept( batchId );
+                } else if ( batch.getBatchId() != batchId ) {
+                    throw invalidBatchResponse( "Unexpected Prism batch ID " + batch.getBatchId() + ", expected " + batchId + "." );
+                }
+                if ( response.getLast() ) {
+                    if ( batchSize > 0 && batch.getScalarsCount() == 0 ) {
+                        throw invalidBatchResponse( "Final Prism batch response is missing update counts." );
+                    }
+                    return batch;
+                }
+                // An unparameterized batch starts with an ID-only acknowledgment.
+                if ( !firstFrame || acceptBatchId == null || batch.getScalarsCount() > 0 ) {
+                    completed = batch;
+                }
+                firstFrame = false;
             }
-            return response.getStatementBatchResponse();
         } catch ( IOException e ) {
             throw new PrismInterfaceServiceException( e );
         } catch ( PrismInterfaceServiceException.ServerError error ) {
@@ -504,6 +537,11 @@ public class RpcService {
         } finally {
             callbackQueues.remove( req.getId() );
         }
+    }
+
+
+    private static PrismInterfaceServiceException invalidBatchResponse( String message ) {
+        return new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, message, new ProtocolException( message ) );
     }
 
 

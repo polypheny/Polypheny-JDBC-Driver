@@ -14,7 +14,7 @@ jobs:
                     -   name: prism24
                         ref: 01a2e438d761190e889f1a9f91426d3264b3e6d8
                     -   name: prism25
-                        ref: 29bfcacdd300a7d10a87dfadbad30c781100dbdc
+                        ref: 46439f3b8aa1142b6d753b1a1035783e9873978a
         timeout-minutes: 15
         runs-on: ubuntu-latest
         steps:
@@ -191,7 +191,7 @@ jobs:
             -   uses: actions/download-artifact@v4
                 with:
                     name: polypheny-jar-prism25
-            -   name: Test generated keys against Prism 2.5
+            -   name: Test generated keys and batch progress against Prism 2.5
                 uses: polypheny/GitHub-Action-Run-Polypheny@v0.2.0
                 with:
                     cmd: ./gradlew test -PdisableToolchain=true -Pprism25Integration --tests org.polypheny.jdbc.Prism25IntegrationTest

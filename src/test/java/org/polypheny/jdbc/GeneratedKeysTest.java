@@ -41,6 +41,7 @@ import java.sql.Types;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.IntConsumer;
 import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
@@ -210,19 +211,18 @@ class GeneratedKeysTest {
     @Test
     void rawBatchCombinesKeysFromDifferentTables() throws Exception {
         RpcService rpc = mock( RpcService.class );
-        doAnswer( invocation -> {
+        when( rpc.executeUnparameterizedStatementBatch( any(), anyInt(), any() ) ).thenAnswer( invocation -> {
             ExecuteUnparameterizedStatementBatchRequest request = invocation.getArgument( 0 );
             List<ExecuteUnparameterizedStatementRequest> statements = request.getStatementsList();
             assertEquals( 3, statements.size() );
             statements.forEach( item -> assertEquals( GeneratedKeys.ALL, item.getGeneratedKeys() ) );
-            CallbackQueue<StatementBatchResponse> callback = invocation.getArgument( 1 );
-            callback.onNext( Response.newBuilder().setStatementBatchResponse( StatementBatchResponse.newBuilder()
+            IntConsumer acceptBatchId = invocation.getArgument( 2 );
+            acceptBatchId.accept( 22 );
+            return StatementBatchResponse.newBuilder()
                     .setBatchId( 22 ).addAllScalars( Arrays.asList( 1L, 1L, 1L ) )
                     .addGeneratedKeys( batchKeys( 2, frame( "other_id", 81 ) ) )
-                    .addGeneratedKeys( batchKeys( 0, frame( "id", 41 ) ) ) ).build() );
-            callback.onCompleted();
-            return null;
-        } ).when( rpc ).executeUnparameterizedStatementBatch( any(), any() );
+                    .addGeneratedKeys( batchKeys( 0, frame( "id", 41 ) ) ).build();
+        } );
 
         try ( PolyConnection connection = connection( rpc, true );
                 Statement statement = connection.createStatement() ) {

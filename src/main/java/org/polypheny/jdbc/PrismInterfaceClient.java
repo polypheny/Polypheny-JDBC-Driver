@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.IntConsumer;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
@@ -213,10 +214,17 @@ public class PrismInterfaceClient {
 
 
     public void executeUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> requests, CallbackQueue<StatementBatchResponse> updateCallback, int timeout ) throws PrismInterfaceServiceException {
-        ExecuteUnparameterizedStatementBatchRequest request = ExecuteUnparameterizedStatementBatchRequest.newBuilder()
-                .addAllStatements( requests )
-                .build();
-        rpc.executeUnparameterizedStatementBatch( request, updateCallback ); // TODO timeout
+        rpc.executeUnparameterizedStatementBatch( batchRequest( requests ), updateCallback ); // TODO timeout
+    }
+
+
+    StatementBatchResponse executeUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> requests, int timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+        return rpc.executeUnparameterizedStatementBatch( batchRequest( requests ), timeout, acceptBatchId );
+    }
+
+
+    private static ExecuteUnparameterizedStatementBatchRequest batchRequest( List<ExecuteUnparameterizedStatementRequest> requests ) {
+        return ExecuteUnparameterizedStatementBatchRequest.newBuilder().addAllStatements( requests ).build();
     }
 
 
