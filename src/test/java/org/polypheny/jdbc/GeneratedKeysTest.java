@@ -174,7 +174,9 @@ class GeneratedKeysTest {
                 PreparedStatement statement = connection.prepareStatement( "INSERT INTO items (label) VALUES (?)", Statement.RETURN_GENERATED_KEYS ) ) {
             statement.setString( 1, "first" );
             assertEquals( 1, statement.executeUpdate() );
-            statement.setCharacterStream( 1, new StringReader( "second" ), 6 );
+            assertThrows( SQLException.class, () -> statement.setCharacterStream( 1, new StringReader( "short" ), 6L ) );
+            assertThrows( SQLException.class, () -> statement.setCharacterStream( 1, new StringReader( "second" ), -1 ) );
+            statement.setCharacterStream( 1, new StringReader( "second trailing characters" ), 6 );
             assertEquals( 1, statement.executeUpdate() );
         }
 

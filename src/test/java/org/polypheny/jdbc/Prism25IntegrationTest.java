@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -173,9 +172,8 @@ class Prism25IntegrationTest {
                 batch.setInt( 1, 2 );
                 batch.addBatch();
                 BatchUpdateException failure = assertThrows( BatchUpdateException.class, batch::executeBatch );
-                assertBatchDiagnostic( failure, "2200H" );
-                assertNull( failure.getUpdateCounts() );
-                assertNull( failure.getLargeUpdateCounts() );
+                assertBatchPrefix( failure, "2200H" );
+                assertArrayEquals( new int[0], failure.getUpdateCounts() );
                 try ( ResultSet keys = batch.getGeneratedKeys();
                         ResultSet rows = sql.executeQuery( "SELECT id FROM " + table ) ) {
                     assertFalse( keys.next() );

@@ -19,6 +19,7 @@ package org.polypheny.jdbc.types;
 import com.google.protobuf.ByteString;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -304,12 +305,33 @@ public class TypedValue implements Convertible {
 
 
     public static TypedValue fromCharacterStream( Reader characterStream, int length ) throws SQLException {
-        return fromCharacterStream( characterStream );
+        return fromCharacterStream( characterStream, (long) length );
     }
 
 
     public static TypedValue fromCharacterStream( Reader characterStream, long length ) throws SQLException {
-        return fromCharacterStream( characterStream );
+        if ( length < 0 ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Character stream length must not be negative." );
+        }
+        if ( characterStream == null ) {
+            return fromNull();
+        }
+        try ( Reader reader = characterStream ) {
+            char[] buffer = new char[8 * 1024];
+            StringBuilder result = new StringBuilder();
+            long remaining = length;
+            while ( remaining > 0 ) {
+                int count = reader.read( buffer, 0, (int) Math.min( remaining, buffer.length ) );
+                if ( count <= 0 ) {
+                    throw new EOFException( "Character stream ended before the declared length." );
+                }
+                result.append( buffer, 0, count );
+                remaining -= count;
+            }
+            return fromString( result.toString() );
+        } catch ( IOException e ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Failed to read from character stream.", e );
+        }
     }
 
 
