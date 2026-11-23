@@ -38,6 +38,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.jdbc.meta.PolyphenyParameterMetaData;
@@ -462,6 +463,11 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             }
             StatementBatchResponse status = getClient().executeIndexedStatementBatch( statementId, parameterBatch, getTimeout() );
             captureGeneratedKeys( status );
+            int batchSize = parameterBatch.size();
+            if ( batchSize > 1 && status.getScalarsCount() == 1 && status.getGeneratedKeysCount() == 0 ) {
+                // A grouped execution reports the total without the count for each command.
+                return Collections.nCopies( batchSize, (long) SUCCESS_NO_INFO );
+            }
             return status.getScalarsList();
         } catch ( PrismInterfaceServiceException.ServerError failure ) {
             throw batchFailure( failure );

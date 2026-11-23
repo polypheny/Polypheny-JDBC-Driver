@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.utils.CallbackQueue;
@@ -53,6 +54,7 @@ public class PolyphenyStatement implements Statement {
     private boolean isClosed;
     private boolean clearingResults;
     private RelationalFrame generatedKeysFrame;
+    private PolyphenyResultSetProperties generatedKeysProperties;
     private PolyphenyResultSet generatedKeysResult;
     protected PolyphenyStatementProperties properties;
 
@@ -107,6 +109,7 @@ public class PolyphenyStatement implements Statement {
             }
             generatedKeysResult = null;
             generatedKeysFrame = null;
+            generatedKeysProperties = null;
             if ( currentResult != null ) {
                 currentResult.close();
             }
@@ -149,11 +152,13 @@ public class PolyphenyStatement implements Statement {
 
 
     private void storeGeneratedKeys( RelationalFrame keys ) {
-        long maxRows = properties.getLargeMaxRows();
+        PolyphenyResultSetProperties keyProperties = properties.toResultSetProperties();
+        long maxRows = keyProperties.getLargeMaxRows();
         if ( maxRows > 0 && maxRows < keys.getRowsCount() ) {
             keys = keys.toBuilder().clearRows().addAllRows( keys.getRowsList().subList( 0, (int) maxRows ) ).build();
         }
         generatedKeysFrame = keys;
+        generatedKeysProperties = keyProperties;
     }
 
 
@@ -566,7 +571,8 @@ public class PolyphenyStatement implements Statement {
         GeneratedKeys.requireSupported( getClient() );
         if ( generatedKeysResult == null ) {
             RelationalFrame keys = generatedKeysFrame == null ? RelationalFrame.getDefaultInstance() : generatedKeysFrame;
-            generatedKeysResult = new PolyphenyResultSet( this, keys, properties.toResultSetProperties() );
+            PolyphenyResultSetProperties keyProperties = generatedKeysProperties == null ? properties.toResultSetProperties() : generatedKeysProperties;
+            generatedKeysResult = new PolyphenyResultSet( this, keys, keyProperties );
         }
         return generatedKeysResult;
     }

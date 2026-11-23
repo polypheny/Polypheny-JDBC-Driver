@@ -260,13 +260,38 @@ class RpcServiceErrorTest {
     }
 
 
-    @Test
-    void acceptsLegacyAggregateCountForPreparedBatch() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void reportsUnknownPerCommandCountsForPreparedBatchAggregate( boolean large ) throws Exception {
         try ( Statement statement = createBatchStatement( true ) ) {
-            replyToBatch( true, batchResponse( 42, true, 2 ) );
+            replyToBatch( true, batchResponse( 42, true, 3 ) );
             addBatchEntry( statement );
             addBatchEntry( statement );
-            assertArrayEquals( new long[]{ 2 }, statement.executeLargeBatch() );
+            if ( large ) {
+                assertArrayEquals( new long[]{ Statement.SUCCESS_NO_INFO, Statement.SUCCESS_NO_INFO }, statement.executeLargeBatch() );
+            } else {
+                assertArrayEquals( new int[]{ Statement.SUCCESS_NO_INFO, Statement.SUCCESS_NO_INFO }, statement.executeBatch() );
+            }
+        }
+    }
+
+
+    @Test
+    void preservesExactCountsForPreparedBatches() throws Exception {
+        try ( Statement statement = createBatchStatement( true ) ) {
+            replyToBatch( true, batchResponse( 42, true, 7 ) );
+            addBatchEntry( statement );
+            assertArrayEquals( new int[]{ 7 }, statement.executeBatch() );
+
+            replyToBatch( true, batchResponse( 42, true, 0, 2 ) );
+            addBatchEntry( statement );
+            addBatchEntry( statement );
+            assertArrayEquals( new int[]{ 0, 2 }, statement.executeBatch() );
+
+            replyToBatch( true, batchResponse( 42, true, 0, Long.MAX_VALUE ) );
+            addBatchEntry( statement );
+            addBatchEntry( statement );
+            assertArrayEquals( new long[]{ 0, Long.MAX_VALUE }, statement.executeLargeBatch() );
         }
     }
 

@@ -343,6 +343,37 @@ class GeneratedKeysTest {
 
 
     @Test
+    void generatedKeysUseTheFieldLimitFromTheirExecution() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        Frame projectedKey = Frame.newBuilder().setIsLast( true )
+                .setRelationalFrame( RelationalFrame.newBuilder()
+                        .addColumnMeta( ColumnMeta.newBuilder().setColumnName( "label" ).setColumnLabel( "label" )
+                                .setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.VARCHAR ) ) )
+                        .addRows( Row.newBuilder().addValues( TypedValue.fromString( "abcdef" ).serialize() ) ) )
+                .build();
+        String sql = "INSERT INTO items (label) VALUES ('abcdef')";
+        String[] selectedKeys = { "label" };
+        stubUnprepared( rpc, GeneratedKeys.requested( selectedKeys ), response( 1, projectedKey ) );
+        try ( PolyConnection connection = connection( rpc, true );
+                Statement statement = connection.createStatement() ) {
+            statement.setMaxFieldSize( 2 );
+            assertEquals( 1, statement.executeUpdate( sql, selectedKeys ) );
+            statement.setMaxFieldSize( 0 );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                assertTrue( keys.next() );
+                assertEquals( "ab", keys.getString( 1 ) );
+            }
+
+            assertEquals( 1, statement.executeUpdate( sql, selectedKeys ) );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                assertTrue( keys.next() );
+                assertEquals( "abcdef", keys.getString( 1 ) );
+            }
+        }
+    }
+
+
+    @Test
     void emptyGeneratedKeysHaveNoCursorPosition() throws Exception {
         RpcService rpc = mock( RpcService.class );
         stubUnprepared( rpc, GeneratedKeys.ALL, response( 1, frame( "id" ) ) );
