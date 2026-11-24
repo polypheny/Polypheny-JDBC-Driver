@@ -1197,28 +1197,25 @@ public class TypedValue implements Convertible {
 
     @Override
     public <T> T asObject( Class<T> aClass ) throws SQLException {
-        switch ( valueCase ) {
-            case NULL:
-                return null;
-            case LIST:
-            case DOCUMENT:
-            case NODE:
-            case EDGE:
-            case PATH:
-            case GRAPH:
-                Object value = asObject();
-                if ( aClass != null && aClass.isInstance( value ) ) {
-                    return aClass.cast( value );
-                }
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Cannot convert " + valueCase + " to " + aClass + "." );
+        return asObject( aClass, null );
+    }
+
+
+    public <T> T asObject( Class<T> aClass, Calendar calendar ) throws SQLException {
+        if ( aClass == null ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "The requested Java type must not be null." );
         }
-        if ( isSerialized ) {
-            deserialize();
+        if ( isNull() ) {
+            return null;
         }
-        if ( otherValue == null || !(otherValue instanceof UDTPrototype) ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type USER_DEFINED_TYPE." );
+        if ( otherValue instanceof UDTPrototype ) {
+            return aClass.cast( buildFromUdtPrototype( aClass, (UDTPrototype) otherValue ) );
         }
-        return aClass.cast( buildFromUdtPrototype( aClass, (UDTPrototype) otherValue ) );
+        Object value = calendar == null ? asObject() : asObject( calendar );
+        if ( !aClass.isInstance( value ) ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Cannot convert " + valueCase + " to " + aClass + "." );
+        }
+        return aClass.cast( value );
     }
 
 

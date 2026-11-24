@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.StringReader;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -38,6 +39,30 @@ import org.junit.jupiter.api.Test;
 class Prism25IntegrationTest {
 
     private static final String DB_URL = "jdbc:polypheny://127.0.0.1:" + System.getenv().getOrDefault( "POLYPHENY_TEST_PORT", "20590" );
+
+
+    @Test
+    void nationalCharacterStreamHonorsItsDeclaredLength() throws SQLException {
+        String table = "jdbc_nchars_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement ddl = connection.createStatement() ) {
+            ddl.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, label VARCHAR(30))" );
+            try ( PreparedStatement insert = connection.prepareStatement( "INSERT INTO " + table + " VALUES (1, ?)" ) ) {
+                assertThrows( SQLException.class, () -> insert.setNCharacterStream( 1, new StringReader( "short" ), 6 ) );
+                assertThrows( SQLException.class, () -> insert.setNCharacterStream( 1, new StringReader( "short" ), -1 ) );
+                insert.setNCharacterStream( 1, new StringReader( "préfixe-tail" ), 6 );
+                assertEquals( 1, insert.executeUpdate() );
+
+                try ( ResultSet rows = ddl.executeQuery( "SELECT label FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( "préfix", rows.getString( 1 ) );
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
 
 
     @Test

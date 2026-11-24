@@ -238,6 +238,15 @@ public class PrismInterfaceClient {
     }
 
 
+    StatementBatchResponse executeUnparameterizedStatementBatch(
+            List<ExecuteUnparameterizedStatementRequest> requests, RequestDeadline deadline, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+        if ( deadline.timeoutMillis == 0 ) {
+            return executeUnparameterizedStatementBatch( requests, 0L, acceptBatchId );
+        }
+        return rpc.executeUnparameterizedStatementBatch( batchRequest( requests ), deadline, acceptBatchId );
+    }
+
+
     private static ExecuteUnparameterizedStatementBatchRequest batchRequest( List<ExecuteUnparameterizedStatementRequest> requests ) {
         return ExecuteUnparameterizedStatementBatchRequest.newBuilder().addAllStatements( requests ).build();
     }
@@ -288,6 +297,15 @@ public class PrismInterfaceClient {
     }
 
 
+    StatementResult executeIndexedStatement(
+            int statementId, List<TypedValue> values, int fetchSize, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        if ( deadline.timeoutMillis == 0 ) {
+            return executeIndexedStatement( statementId, values, fetchSize, 0L );
+        }
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize ), deadline );
+    }
+
+
     private ExecuteIndexedStatementRequest indexedStatementRequest( int statementId, List<TypedValue> values, int fetchSize ) throws PrismInterfaceServiceException {
         return ExecuteIndexedStatementRequest.newBuilder()
                 .setStatementId( statementId )
@@ -317,13 +335,28 @@ public class PrismInterfaceClient {
 
 
     StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, long timeout ) throws PrismInterfaceServiceException {
+        return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch ), timeout );
+    }
+
+
+    StatementBatchResponse executeIndexedStatementBatch(
+            int statementId, List<List<TypedValue>> parameterBatch, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        if ( deadline.timeoutMillis == 0 ) {
+            return executeIndexedStatementBatch( statementId, parameterBatch, 0L );
+        }
+        return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch ), deadline );
+    }
+
+
+    private ExecuteIndexedStatementBatchRequest indexedBatchRequest(
+            int statementId, List<List<TypedValue>> parameterBatch ) throws PrismInterfaceServiceException {
         ExecuteIndexedStatementBatchRequest.Builder request = ExecuteIndexedStatementBatchRequest.newBuilder()
                 .setStatementId( statementId );
         for ( List<TypedValue> values : parameterBatch ) {
             request.addParameters( buildIndexedParameters( values ) );
         }
 
-        return rpc.executeIndexedStatementBatch( request.build(), timeout );
+        return request.build();
     }
 
 
@@ -366,6 +399,15 @@ public class PrismInterfaceClient {
     }
 
 
+    void closeStatement( int statementId, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        if ( deadline.timeoutMillis == 0 ) {
+            closeStatement( statementId, 0L );
+        } else {
+            rpc.closeStatement( CloseStatementRequest.newBuilder().setStatementId( statementId ).build(), deadline );
+        }
+    }
+
+
     public void closeResult( int statementId, int timeout ) throws PrismInterfaceServiceException {
         CloseResultRequest resultCloseRequest = CloseResultRequest.newBuilder()
                 .setStatementId( statementId )
@@ -380,6 +422,15 @@ public class PrismInterfaceClient {
             closeResult( statementId, (int) timeout );
         } else {
             rpc.closeResult( CloseResultRequest.newBuilder().setStatementId( statementId ).build(), timeout );
+        }
+    }
+
+
+    void closeResult( int statementId, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        if ( deadline.timeoutMillis == 0 ) {
+            closeResult( statementId, 0L );
+        } else {
+            rpc.closeResult( CloseResultRequest.newBuilder().setStatementId( statementId ).build(), deadline );
         }
     }
 

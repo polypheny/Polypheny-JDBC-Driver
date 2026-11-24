@@ -136,7 +136,7 @@ public class PolyphenyColumnMetaTest {
     @Test
     public void protoConstructor__ColumnMeta_Signed() {
         PolyphenyColumnMeta meta = new PolyphenyColumnMeta( protoColumnMeta );
-        assertFalse( meta.isSigned() );
+        assertTrue( meta.isSigned() );
     }
 
 
@@ -178,7 +178,7 @@ public class PolyphenyColumnMetaTest {
     @Test
     public void protoConstructor__ColumnMeta_Scale() {
         PolyphenyColumnMeta meta = new PolyphenyColumnMeta( protoColumnMeta );
-        assertEquals( 1, meta.getScale() );
+        assertEquals( 0, meta.getScale() );
     }
 
 
@@ -220,7 +220,7 @@ public class PolyphenyColumnMetaTest {
     @Test
     public void protoConstructor__ColumnMeta_ColumnClassName() {
         PolyphenyColumnMeta meta = new PolyphenyColumnMeta( protoColumnMeta );
-        assertEquals( "", meta.getColumnClassName() );
+        assertEquals( Long.class.getName(), meta.getColumnClassName() );
     }
 
 

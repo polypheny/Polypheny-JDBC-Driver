@@ -176,6 +176,10 @@ public class RpcService {
             sendMessage( request );
             return;
         }
+        if ( deadline - System.nanoTime() <= 0 ) {
+            throw writeTimeout( timeoutMillis );
+        }
+        byte[] payload = request.toByteArray();
         long remaining = deadline - System.nanoTime();
         if ( remaining <= 0 ) {
             throw writeTimeout( timeoutMillis );
@@ -190,7 +194,13 @@ public class RpcService {
         IOException failure = null;
         boolean finishedBeforeWatchdog;
         try {
-            sendMessage( request );
+            if ( deadline - System.nanoTime() <= 0 ) {
+                throw writeTimeout( timeoutMillis );
+            }
+            if ( closed ) {
+                throw new IOException( "Connection is closed" );
+            }
+            con.sendMessage( payload );
         } catch ( IOException e ) {
             failure = e;
         } finally {
@@ -294,8 +304,9 @@ public class RpcService {
     private Response completeSynchronously( Request.Builder req, long timeout ) throws PrismInterfaceServiceException {
         TypeCase type = req.getTypeCase();
         if ( timeout > 0 && (type == TypeCase.CLOSE_STATEMENT_REQUEST || type == TypeCase.CLOSE_RESULT_REQUEST
-                || type == TypeCase.EXECUTE_INDEXED_STATEMENT_REQUEST || type == TypeCase.EXECUTE_NAMED_STATEMENT_REQUEST) ) {
-            return completeBeforeDeadline( req, timeout );
+                || type == TypeCase.EXECUTE_INDEXED_STATEMENT_REQUEST || type == TypeCase.EXECUTE_NAMED_STATEMENT_REQUEST
+                || (type == TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST && req.getPrepareIndexedStatementRequest().hasGeneratedKeys())) ) {
+            return completeBeforeDeadline( req, new RequestDeadline( timeout ) );
         }
         try {
             CompletableFuture<Response> f = new CompletableFuture<>();
@@ -314,11 +325,11 @@ public class RpcService {
     }
 
 
-    private Response completeBeforeDeadline( Request.Builder req, long timeout ) throws PrismInterfaceServiceException {
-        CallbackQueue<Response> callback = new CallbackQueue<>( response -> response, timeout );
+    private Response completeBeforeDeadline( Request.Builder req, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        CallbackQueue<Response> callback = deadline.callback( response -> response );
         try {
             callbackQueues.put( req.getId(), callback );
-            sendMessageBeforeDeadline( req.build(), callback.getDeadlineNanos(), timeout );
+            sendMessageBeforeDeadline( req.build(), callback.getDeadlineNanos(), callback.getTimeoutMillis() );
             return callback.takeNext();
         } catch ( IOException e ) {
             throw connectionFailure( e );
@@ -536,9 +547,15 @@ public class RpcService {
 
 
     StatementBatchResponse executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest msg, long timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+        return executeUnparameterizedStatementBatch( msg, new RequestDeadline( timeout ), acceptBatchId );
+    }
+
+
+    StatementBatchResponse executeUnparameterizedStatementBatch(
+            ExecuteUnparameterizedStatementBatchRequest msg, RequestDeadline deadline, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteUnparameterizedStatementBatchRequest( msg );
-        return completeBatch( req, msg.getStatementsCount(), timeout, acceptBatchId );
+        return completeBatch( req, msg.getStatementsCount(), deadline, acceptBatchId );
     }
 
 
@@ -568,6 +585,13 @@ public class RpcService {
     }
 
 
+    StatementResult executeIndexedStatement( ExecuteIndexedStatementRequest msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setExecuteIndexedStatementRequest( msg );
+        return completeBeforeDeadline( req, deadline ).getStatementResult();
+    }
+
+
     public StatementResult executeNamedStatement( ExecuteNamedStatementRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteNamedStatementRequest( msg );
@@ -576,21 +600,27 @@ public class RpcService {
 
 
     StatementBatchResponse executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest msg, long timeout ) throws PrismInterfaceServiceException {
-        Request.Builder req = newMessage();
-        req.setExecuteIndexedStatementBatchRequest( msg );
-        return completeBatch( req, msg.getParametersCount(), timeout, null );
+        return executeIndexedStatementBatch( msg, new RequestDeadline( timeout ) );
     }
 
 
-    private StatementBatchResponse completeBatch( Request.Builder req, int batchSize, long timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
-        CallbackQueue<Response> callback = new CallbackQueue<>( response -> response, timeout );
+    StatementBatchResponse executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setExecuteIndexedStatementBatchRequest( msg );
+        return completeBatch( req, msg.getParametersCount(), deadline, null );
+    }
+
+
+    private StatementBatchResponse completeBatch(
+            Request.Builder req, int batchSize, RequestDeadline deadline, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+        CallbackQueue<Response> callback = deadline.callback( response -> response );
         StatementBatchResponse completed = null;
         boolean firstFrame = true;
         boolean rawBatch = acceptBatchId != null;
         int batchId = rawBatch ? 0 : req.getExecuteIndexedStatementBatchRequest().getStatementId();
         try {
             callbackQueues.put( req.getId(), callback );
-            sendMessageBeforeDeadline( req.build(), callback.getDeadlineNanos(), timeout );
+            sendMessageBeforeDeadline( req.build(), callback.getDeadlineNanos(), callback.getTimeoutMillis() );
             while ( true ) {
                 Response response = callback.takeNext();
                 if ( !response.hasStatementBatchResponse() ) {
@@ -671,6 +701,13 @@ public class RpcService {
     }
 
 
+    CloseStatementResponse closeStatement( CloseStatementRequest msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setCloseStatementRequest( msg );
+        return completeBeforeDeadline( req, deadline ).getCloseStatementResponse();
+    }
+
+
     CloseResultResponse closeResult( CloseResultRequest msg, int timeout ) throws PrismInterfaceServiceException {
         return closeResult( msg, (long) timeout );
     }
@@ -680,6 +717,13 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setCloseResultRequest( msg );
         return completeSynchronously( req, timeout ).getCloseResultResponse();
+    }
+
+
+    CloseResultResponse closeResult( CloseResultRequest msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setCloseResultRequest( msg );
+        return completeBeforeDeadline( req, deadline ).getCloseResultResponse();
     }
 
 }

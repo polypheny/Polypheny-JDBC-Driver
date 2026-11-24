@@ -42,20 +42,24 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.PlainTransport;
+import org.polypheny.prism.ClientInfoPropertiesResponse;
 import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
+import org.polypheny.prism.ConnectionResponse;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Response;
 
 @Timeout(10)
 class BatchSocketDeadlineTest {
 
-    @Test
-    void networkDeadlineClosesConnectionWhenPeerStopsReading() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void networkDeadlineClosesConnectionWhenPeerStopsReading( boolean generatedKeyPrepare ) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
         CountDownLatch releasePeer = new CountDownLatch( 1 );
         try ( ServerSocket server = new ServerSocket() ) {
@@ -64,20 +68,20 @@ class BatchSocketDeadlineTest {
             server.setSoTimeout( 3000 );
             Future<?> peer = executor.submit( () -> {
                 try ( Socket socket = server.accept() ) {
-                    acknowledgeConnectionSettings( socket );
+                    acknowledgeConnectionSettings( socket, generatedKeyPrepare );
                     // Leave the TCP receive buffer full until the client hits its deadline.
                     releasePeer.await();
                 }
                 return null;
             } );
 
-            CountDownLatch writingBatch = new CountDownLatch( 1 );
+            CountDownLatch writingRequest = new CountDownLatch( 1 );
             AtomicInteger transportCloses = new AtomicInteger();
             PlainTransport transport = new PlainTransport( "127.0.0.1", server.getLocalPort() ) {
                 @Override
                 protected void writeEntireBuffer( ByteBuffer buffer ) throws IOException {
                     if ( buffer.remaining() > 1024 * 1024 ) {
-                        writingBatch.countDown();
+                        writingRequest.countDown();
                         con.setOption( StandardSocketOptions.SO_SNDBUF, 4096 );
                     }
                     super.writeEntireBuffer( buffer );
@@ -94,17 +98,26 @@ class BatchSocketDeadlineTest {
             try {
                 PrismInterfaceClient client = new PrismInterfaceClient( rpc );
                 ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort(), new Properties() );
-                PolyConnection connection = new PolyConnection( new PolyphenyConnectionProperties( target, client ),
-                        new PolyphenyDatabaseMetadata( client, target ) );
+                PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
+                if ( generatedKeyPrepare ) {
+                    client.register( properties, 3000 );
+                }
+                PolyConnection connection = new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
                 connection.setNetworkTimeout( Runnable::run, 500 );
                 Statement statement = connection.createStatement();
                 char[] payload = new char[8 * 1024 * 1024];
                 Arrays.fill( payload, 'x' );
-                statement.addBatch( "INSERT INTO probe VALUES ('" + new String( payload ) + "')" );
-
-                Future<SQLException> batch = executor.submit( () -> assertThrows( SQLException.class, statement::executeBatch ) );
-                assertTrue( writingBatch.await( 3, TimeUnit.SECONDS ) );
-                SQLException failure = batch.get( 3, TimeUnit.SECONDS );
+                String sql = "INSERT INTO probe VALUES ('" + new String( payload ) + "')";
+                Future<SQLException> result;
+                if ( generatedKeyPrepare ) {
+                    result = executor.submit( () -> assertThrows( SQLException.class,
+                            () -> connection.prepareStatement( sql, Statement.RETURN_GENERATED_KEYS ) ) );
+                } else {
+                    statement.addBatch( sql );
+                    result = executor.submit( () -> assertThrows( SQLException.class, statement::executeBatch ) );
+                }
+                assertTrue( writingRequest.await( 3, TimeUnit.SECONDS ) );
+                SQLException failure = result.get( 3, TimeUnit.SECONDS );
                 assertEquals( "08003", failure.getSQLState() );
                 assertInstanceOf( TimeoutException.class, failure.getCause() );
                 assertTrue( connection.isClosed() );
@@ -122,7 +135,7 @@ class BatchSocketDeadlineTest {
     }
 
 
-    private static void acknowledgeConnectionSettings( Socket socket ) throws IOException {
+    private static void acknowledgeConnectionSettings( Socket socket, boolean generatedKeyPrepare ) throws IOException {
         socket.setSoTimeout( 3000 );
         socket.setReceiveBufferSize( 4096 );
         DataInputStream input = new DataInputStream( socket.getInputStream() );
@@ -134,12 +147,29 @@ class BatchSocketDeadlineTest {
 
         int size = input.readUnsignedByte();
         input.readFully( new byte[size] );
+        if ( generatedKeyPrepare ) {
+            Request connect = readRequest( input, Request.TypeCase.CONNECTION_REQUEST );
+            writeResponse( output, connect, Response.newBuilder().setConnectionResponse(
+                    ConnectionResponse.newBuilder().setIsCompatible( true ).setSupportsGeneratedKeys( true ) ) );
+            Request clientInfo = readRequest( input, Request.TypeCase.SET_CLIENT_INFO_PROPERTIES_REQUEST );
+            writeResponse( output, clientInfo, Response.newBuilder().setSetClientInfoPropertiesResponse( ClientInfoPropertiesResponse.getDefaultInstance() ) );
+        }
+        Request settings = readRequest( input, Request.TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST );
+        writeResponse( output, settings, Response.newBuilder().setConnectionPropertiesUpdateResponse( ConnectionPropertiesUpdateResponse.getDefaultInstance() ) );
+    }
+
+
+    private static Request readRequest( DataInputStream input, Request.TypeCase type ) throws IOException {
         byte[] payload = new byte[(int) Long.reverseBytes( input.readLong() )];
         input.readFully( payload );
         Request request = Request.parseFrom( payload );
-        assertEquals( Request.TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST, request.getTypeCase() );
-        byte[] response = Response.newBuilder().setId( request.getId() ).setLast( true )
-                .setConnectionPropertiesUpdateResponse( ConnectionPropertiesUpdateResponse.getDefaultInstance() ).build().toByteArray();
+        assertEquals( type, request.getTypeCase() );
+        return request;
+    }
+
+
+    private static void writeResponse( DataOutputStream output, Request request, Response.Builder builder ) throws IOException {
+        byte[] response = builder.setId( request.getId() ).setLast( true ).build().toByteArray();
         output.writeLong( Long.reverseBytes( response.length ) );
         output.write( response );
         output.flush();

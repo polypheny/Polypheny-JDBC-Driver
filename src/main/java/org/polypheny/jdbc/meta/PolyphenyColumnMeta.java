@@ -16,8 +16,12 @@
 
 package org.polypheny.jdbc.meta;
 
+import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
+import java.sql.Time;
+import java.sql.Timestamp;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.jdbc.types.PolyEdge;
@@ -76,26 +80,26 @@ public class PolyphenyColumnMeta {
 
     //column = field
     public PolyphenyColumnMeta( ColumnMeta protoColumnMeta ) {
+        ProtoPolyType type = protoColumnMeta.getTypeMeta().getProtoValueType();
         this.ordinal = protoColumnMeta.getColumnIndex();
         this.autoIncrement = protoColumnMeta.getIsAutoIncrement();
         this.caseSensitive = true;
         this.searchable = false;
         this.currency = false;
         this.nullable = protoColumnMeta.getIsNullable() ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls;
-        this.signed = false;
+        this.signed = isSigned( type );
         this.displaySize = protoColumnMeta.getLength();
         this.columnLabel = protoColumnMeta.getColumnLabel();
         this.columnName = protoColumnMeta.getColumnName();
         this.namespace = schemaName( protoColumnMeta );
         this.precision = protoColumnMeta.getPrecision();
-        this.scale = 1;
+        this.scale = type == ProtoPolyType.DECIMAL ? protoColumnMeta.getScale() : 0;
         // table = entity
         this.tableName = protoColumnMeta.getEntityName();
         this.catalogName = "";
         this.readOnly = false;
         this.writable = false;
         this.definitelyWritable = false;
-        ProtoPolyType type = protoColumnMeta.getTypeMeta().getProtoValueType();
         this.columnClassName = getColumnClassName( type );
         if ( type == ProtoPolyType.USER_DEFINED_TYPE ) {
             //TODO: This is required once user defined types are introduced. Depending on their implementation this might even become obsolete.
@@ -117,8 +121,53 @@ public class PolyphenyColumnMeta {
     }
 
 
+    private static boolean isSigned( ProtoPolyType type ) {
+        switch ( type ) {
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+            case BIGINT:
+            case DECIMAL:
+            case REAL:
+            case FLOAT:
+            case DOUBLE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+
     private static String getColumnClassName( ProtoPolyType type ) {
         switch ( type ) {
+            case BOOLEAN:
+                return Boolean.class.getName();
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                return Integer.class.getName();
+            case BIGINT:
+                return Long.class.getName();
+            case DECIMAL:
+                return BigDecimal.class.getName();
+            case REAL:
+            case FLOAT:
+                return Float.class.getName();
+            case DOUBLE:
+                return Double.class.getName();
+            case DATE:
+                return Date.class.getName();
+            case TIME:
+                return Time.class.getName();
+            case TIMESTAMP:
+                return Timestamp.class.getName();
+            case CHAR:
+            case VARCHAR:
+            case TEXT:
+                return String.class.getName();
+            case BINARY:
+            case VARBINARY:
+                return byte[].class.getName();
             case NODE:
                 return PolyNode.class.getName();
             case EDGE:

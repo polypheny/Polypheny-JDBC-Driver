@@ -1540,7 +1540,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public <T> T getObject( int columnIndex, Class<T> aClass ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asObject( aClass );
+        return accessValue( columnIndex ).asObject( aClass, properties.getCalendar() );
     }
 
 

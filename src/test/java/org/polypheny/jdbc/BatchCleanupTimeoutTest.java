@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -169,12 +168,12 @@ class BatchCleanupTimeoutTest {
         AtomicLong cleanupTimeout = new AtomicLong();
         AtomicLong executionTimeout = new AtomicLong();
         doAnswer( invocation -> {
-            cleanupTimeout.set( invocation.getArgument( 1 ) );
+            cleanupTimeout.set( invocation.getArgument( 1, RequestDeadline.class ).remainingMillis() );
             TimeUnit.MILLISECONDS.sleep( 150 );
             return null;
-        } ).when( client ).closeStatement( eq( 41 ), anyLong() );
-        when( client.executeUnparameterizedStatementBatch( any(), anyLong(), any() ) ).thenAnswer( invocation -> {
-            executionTimeout.set( invocation.getArgument( 1 ) );
+        } ).when( client ).closeStatement( eq( 41 ), any( RequestDeadline.class ) );
+        when( client.executeUnparameterizedStatementBatch( any(), any( RequestDeadline.class ), any() ) ).thenAnswer( invocation -> {
+            executionTimeout.set( invocation.getArgument( 1, RequestDeadline.class ).remainingMillis() );
             IntConsumer acceptBatchId = invocation.getArgument( 2 );
             acceptBatchId.accept( 41 );
             return StatementBatchResponse.newBuilder().setBatchId( 41 ).addScalars( 1 ).build();

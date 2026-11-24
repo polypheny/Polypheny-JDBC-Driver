@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.ProtocolException;
 import java.nio.channels.ClosedByInterruptException;
 import java.sql.BatchUpdateException;
@@ -47,6 +48,8 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +63,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.Transport;
+import org.polypheny.jdbc.types.PolyBlob;
 import org.polypheny.prism.BatchGeneratedKeys;
+import org.polypheny.prism.ClientInfoPropertiesResponse;
 import org.polypheny.prism.CloseResultResponse;
 import org.polypheny.prism.CloseStatementResponse;
 import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
@@ -71,6 +76,7 @@ import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.ParameterMeta;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Request;
@@ -483,6 +489,116 @@ class RpcServiceErrorTest {
     }
 
 
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void expiredDeadlinePreventsSendingAfterPreparedParameterSerialization( boolean batch ) throws Exception {
+        Connection connection = createConnection();
+        replyTo( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
+                .setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 42 )
+                        .addParameterMetas( ParameterMeta.newBuilder().setTypeName( "FILE" ) ) ) );
+        try ( PreparedStatement statement = connection.prepareStatement( "INSERT INTO example VALUES (?) RETURNING id" ) ) {
+            statement.setBlob( 1, new PolyBlob( new byte[]{ 1 } ) );
+            Frame frame = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
+            Response.Builder successfulInsert = Response.newBuilder().setLast( true )
+                    .setStatementResult( StatementResult.newBuilder().setFrame( frame ) );
+            replyTo( TypeCase.EXECUTE_INDEXED_STATEMENT_REQUEST, successfulInsert );
+            ResultSet previousResult = statement.executeQuery();
+
+            AtomicBoolean serializationStarted = new AtomicBoolean();
+            statement.setBlob( 1, new PolyBlob( new byte[]{ 2 } ) {
+                @Override
+                public InputStream getBinaryStream() throws SQLException {
+                    serializationStarted.set( true );
+                    try {
+                        TimeUnit.MILLISECONDS.sleep( 650 );
+                    } catch ( InterruptedException e ) {
+                        Thread.currentThread().interrupt();
+                        throw new SQLException( e );
+                    }
+                    return super.getBinaryStream();
+                }
+            } );
+            statement.setQueryTimeout( 1 );
+            if ( batch ) {
+                statement.addBatch();
+            }
+            AtomicInteger submitted = new AtomicInteger();
+            requestHandler = request -> {
+                Response.Builder response;
+                switch ( request.getTypeCase() ) {
+                    case CLOSE_RESULT_REQUEST:
+                        try {
+                            TimeUnit.MILLISECONDS.sleep( 500 );
+                        } catch ( InterruptedException e ) {
+                            Thread.currentThread().interrupt();
+                            throw new IOException( e );
+                        }
+                        response = Response.newBuilder().setLast( true ).setCloseResultResponse( CloseResultResponse.getDefaultInstance() );
+                        break;
+                    case CLOSE_STATEMENT_REQUEST:
+                        response = Response.newBuilder().setLast( true ).setCloseStatementResponse( CloseStatementResponse.getDefaultInstance() );
+                        break;
+                    case EXECUTE_INDEXED_STATEMENT_REQUEST:
+                        submitted.incrementAndGet();
+                        response = successfulInsert;
+                        break;
+                    case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST:
+                        submitted.incrementAndGet();
+                        response = batchResponse( 42, true, 1 );
+                        break;
+                    default:
+                        throw new AssertionError( "Unexpected request: " + request.getTypeCase() );
+                }
+                incoming.add( response.setId( request.getId() ).build().toByteArray() );
+            };
+            SQLException failure = batch
+                    ? assertThrows( SQLTimeoutException.class, statement::executeBatch )
+                    : assertThrows( SQLTimeoutException.class, statement::executeQuery );
+            assertInstanceOf( TimeoutException.class, failure.getCause() );
+            assertTrue( serializationStarted.get() );
+            assertEquals( 0, submitted.get() );
+            assertTrue( connection.isClosed() );
+            assertTrue( statement.isClosed() );
+            assertTrue( previousResult.isClosed() );
+            assertEquals( 1, transportCloses );
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void generatedKeyPrepareDistinguishesNetworkTimeoutFromServerSqlstate( boolean serverError ) throws Exception {
+        Connection connection = createConnection( true );
+        replyTo( TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST, Response.newBuilder().setLast( true )
+                .setConnectionPropertiesUpdateResponse( ConnectionPropertiesUpdateResponse.getDefaultInstance() ) );
+        connection.setNetworkTimeout( Runnable::run, 200 );
+        try ( Statement previouslyOpen = connection.createStatement() ) {
+            requestHandler = request -> {
+                assertEquals( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, request.getTypeCase() );
+                assertTrue( request.getPrepareIndexedStatementRequest().hasGeneratedKeys() );
+                if ( serverError ) {
+                    ErrorDetails details = ErrorDetails.newBuilder().setState( "08006" ).setErrorCode( 37 ).build();
+                    incoming.add( errorResponse( details ).setId( request.getId() ).build().toByteArray() );
+                }
+            };
+            PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class,
+                    () -> connection.prepareStatement( "INSERT INTO example DEFAULT VALUES", Statement.RETURN_GENERATED_KEYS ) );
+            if ( serverError ) {
+                assertServerError( failure, "08006", 37 );
+                assertFalse( connection.isClosed() );
+                assertFalse( previouslyOpen.isClosed() );
+                assertEquals( 0, transportCloses );
+            } else {
+                assertEquals( "08003", failure.getSQLState() );
+                assertInstanceOf( TimeoutException.class, failure.getCause() );
+                assertTrue( connection.isClosed() );
+                assertTrue( previouslyOpen.isClosed() );
+                assertEquals( 1, transportCloses );
+            }
+        }
+    }
+
+
     private static void assertBatchProtocolFailure( Statement statement ) {
         PrismInterfaceServiceException failure = assertThrows( PrismInterfaceServiceException.class, statement::executeLargeBatch );
         assertInstanceOf( ProtocolException.class, failure.getCause() );
@@ -696,9 +812,28 @@ class RpcServiceErrorTest {
 
 
     private Connection createConnection() throws SQLException {
+        return createConnection( false );
+    }
+
+
+    private Connection createConnection( boolean generatedKeys ) throws SQLException {
         ConnectionString target = new ConnectionString( "jdbc:polypheny:http://localhost/", new Properties() );
         PrismInterfaceClient client = new PrismInterfaceClient( rpc );
-        return new PolyConnection( new PolyphenyConnectionProperties( target, client ), new PolyphenyDatabaseMetadata( client, target ) );
+        PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
+        if ( generatedKeys ) {
+            requestHandler = request -> {
+                Response.Builder response = Response.newBuilder().setId( request.getId() ).setLast( true );
+                if ( request.hasConnectionRequest() ) {
+                    response.setConnectionResponse( ConnectionResponse.newBuilder().setIsCompatible( true ).setSupportsGeneratedKeys( true ) );
+                } else {
+                    assertEquals( TypeCase.SET_CLIENT_INFO_PROPERTIES_REQUEST, request.getTypeCase() );
+                    response.setSetClientInfoPropertiesResponse( ClientInfoPropertiesResponse.getDefaultInstance() );
+                }
+                incoming.add( response.build().toByteArray() );
+            };
+            client.register( properties, 1000 );
+        }
+        return new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
     }
 
 

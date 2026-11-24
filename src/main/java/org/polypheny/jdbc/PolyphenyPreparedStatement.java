@@ -201,8 +201,8 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
     private StatementResult executePreparedStatement() throws SQLException {
         throwIfClosed();
-        return executeWithDeadline( this::clearExecutionResults, timeout -> getClient().executeIndexedStatement(
-                statementId, boundParameters(), properties.getFetchSize(), timeout ) );
+        return executeWithDeadline( this::clearExecutionResults, deadline -> getClient().executeIndexedStatement(
+                statementId, boundParameters(), properties.getFetchSize(), deadline ) );
     }
 
 
@@ -443,11 +443,11 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
         try {
-            StatementBatchResponse status = executeBatchRequest( this::clearExecutionResults, timeout -> {
+            StatementBatchResponse status = executeBatchRequest( this::clearExecutionResults, deadline -> {
                 if ( parameterBatch.isEmpty() ) {
                     return StatementBatchResponse.getDefaultInstance();
                 }
-                return getClient().executeIndexedStatementBatch( statementId, parameterBatch, timeout );
+                return getClient().executeIndexedStatementBatch( statementId, parameterBatch, deadline );
             } );
             captureGeneratedKeys( status );
             int batchSize = parameterBatch.size();
@@ -572,7 +572,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     public void setNCharacterStream( int parameterIndex, Reader value, long length ) throws SQLException {
         throwIfClosed();
         throwIfOutOfBounds( parameterIndex );
-        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNCharacterStream( value );
+        parameters[indexFromParameterIndex( parameterIndex )] = TypedValue.fromNCharacterStream( value, length );
     }
 
 

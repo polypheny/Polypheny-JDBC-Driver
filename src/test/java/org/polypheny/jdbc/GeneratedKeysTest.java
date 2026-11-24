@@ -34,8 +34,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.StringReader;
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
@@ -404,6 +406,53 @@ class GeneratedKeysTest {
                 assertTrue( keys.next() );
                 assertEquals( "é🙂", keys.getString( 1 ) );
                 assertArrayEquals( binary, keys.getBytes( 2 ) );
+            }
+        }
+    }
+
+
+    @Test
+    void exposesTypesAndSupportsTypedGetObjectForNamedKeys() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        BigDecimal amount = new BigDecimal( "-123.4567" );
+        long id = 9_007_199_254_740_993L;
+        String[] selection = { "amount", "id", "label" };
+        Frame frame = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.newBuilder()
+                .addColumnMeta( ColumnMeta.newBuilder().setColumnIndex( 0 ).setColumnName( "amount" ).setColumnLabel( "amount" )
+                        .setPrecision( 12 ).setScale( 4 ).setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.DECIMAL ) ) )
+                .addColumnMeta( ColumnMeta.newBuilder().setColumnIndex( 1 ).setColumnName( "id" ).setColumnLabel( "id" )
+                        .setIsAutoIncrement( true ).setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.BIGINT ) ) )
+                .addColumnMeta( ColumnMeta.newBuilder().setColumnIndex( 2 ).setColumnName( "label" ).setColumnLabel( "label" )
+                        .setIsNullable( true ).setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.VARCHAR ) ) )
+                .addRows( Row.newBuilder().addValues( TypedValue.fromBigDecimal( amount ).serialize() )
+                        .addValues( TypedValue.fromLong( id ).serialize() ).addValues( TypedValue.fromNull().serialize() ) ) ).build();
+        stubUnprepared( rpc, GeneratedKeys.requested( selection ), response( 1, frame ) );
+
+        try ( PolyConnection connection = connection( rpc, true ); Statement statement = connection.createStatement() ) {
+            assertEquals( 1, statement.executeUpdate( INSERT, selection ) );
+            try ( ResultSet keys = statement.getGeneratedKeys() ) {
+                ResultSetMetaData metadata = keys.getMetaData();
+                assertEquals( Types.DECIMAL, metadata.getColumnType( 1 ) );
+                assertEquals( 12, metadata.getPrecision( 1 ) );
+                assertEquals( 4, metadata.getScale( 1 ) );
+                assertEquals( BigDecimal.class.getName(), metadata.getColumnClassName( 1 ) );
+                assertTrue( metadata.isSigned( 1 ) );
+                assertEquals( Types.BIGINT, metadata.getColumnType( 2 ) );
+                assertEquals( 0, metadata.getScale( 2 ) );
+                assertEquals( Long.class.getName(), metadata.getColumnClassName( 2 ) );
+                assertTrue( metadata.isSigned( 2 ) );
+                assertTrue( metadata.isAutoIncrement( 2 ) );
+                assertEquals( String.class.getName(), metadata.getColumnClassName( 3 ) );
+                assertFalse( metadata.isSigned( 3 ) );
+
+                assertTrue( keys.next() );
+                assertEquals( amount, keys.getObject( "amount", BigDecimal.class ) );
+                assertEquals( Long.valueOf( id ), keys.getObject( 2, Long.class ) );
+                assertFalse( keys.wasNull() );
+                assertNull( keys.getObject( "label", String.class ) );
+                assertTrue( keys.wasNull() );
+                assertThrows( SQLException.class, () -> keys.getObject( 2, byte[].class ) );
+                assertThrows( SQLException.class, () -> keys.getObject( 3, (Class<?>) null ) );
             }
         }
     }

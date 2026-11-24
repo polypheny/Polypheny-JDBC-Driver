@@ -58,11 +58,21 @@ public class CallbackQueue<T> {
     }
 
 
+    public CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis, long deadlineNanos ) {
+        this( extractResponse, timeoutMillis, deadlineNanos, System::nanoTime );
+    }
+
+
     CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis, LongSupplier nanoClock ) {
+        this( extractResponse, timeoutMillis, nanoClock.getAsLong() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis ), nanoClock );
+    }
+
+
+    private CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis, long deadlineNanos, LongSupplier nanoClock ) {
         this.extractResponse = extractResponse;
         this.timeoutMillis = timeoutMillis;
         this.nanoClock = nanoClock;
-        this.deadline = nanoClock.getAsLong() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
+        this.deadline = deadlineNanos;
     }
 
 

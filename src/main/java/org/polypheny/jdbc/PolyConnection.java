@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import java.nio.channels.ClosedByInterruptException;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -28,6 +29,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Savepoint;
@@ -39,6 +41,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.multimodel.PolyStatement;
@@ -236,6 +239,28 @@ public class PolyConnection implements Connection {
             abortAfterIncompleteRequest();
         }
         return isClosed;
+    }
+
+
+    SQLException handleIncompleteRequest( PrismInterfaceServiceException failure, boolean networkDeadline ) {
+        if ( failure instanceof PrismInterfaceServiceException.ServerError ) {
+            return failure;
+        }
+        Throwable cause = failure.getCause();
+        if ( cause instanceof InterruptedException || cause instanceof ClosedByInterruptException
+                || PrismInterfaceErrors.CONNECTION_FAILURE.state.equals( failure.getSQLState() ) ) {
+            abortAfterIncompleteRequest();
+            return failure;
+        }
+        if ( cause instanceof TimeoutException ) {
+            // Closing the connection cannot undo a request the server has already received.
+            abortAfterIncompleteRequest();
+            if ( networkDeadline ) {
+                return new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, failure.getMessage(), cause );
+            }
+            return new SQLTimeoutException( failure.getMessage(), cause );
+        }
+        return failure;
     }
 
 
@@ -479,8 +504,13 @@ public class PolyConnection implements Connection {
         }
         PrismInterfaceClient client = getPrismInterfaceClient();
         GeneratedKeys.requireSupported( client );
-        PreparedStatementSignature signature = client.prepareIndexedStatement(
-                properties.getNamespaceName(), PropertyUtils.getSQL_LANGUAGE_NAME(), sql, keys, getTimeout() );
+        PreparedStatementSignature signature;
+        try {
+            signature = client.prepareIndexedStatement(
+                    properties.getNamespaceName(), PropertyUtils.getSQL_LANGUAGE_NAME(), sql, keys, getTimeout() );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
         PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, properties.toStatementProperties(), signature );
         startTracking( statement );
         return statement;
