@@ -164,7 +164,13 @@ public class PolyphenyResultSet implements ResultSet {
 
     private TypedValue accessFloatingValue( int columnIndex ) throws SQLException {
         TypedValue value = accessValue( columnIndex );
-        return generatedKeys ? GeneratedKeys.valueForFloatingGetter( value, metadata.getColumnType( columnIndex ) ) : value;
+        return generatedKeys ? GeneratedKeys.normalizeFloatingValue( value, metadata.getColumnType( columnIndex ) ) : value;
+    }
+
+
+    private TypedValue accessDecimalValue( int columnIndex ) throws SQLException {
+        TypedValue value = accessValue( columnIndex );
+        return generatedKeys ? GeneratedKeys.valueForDecimalGetter( value, metadata.getColumnType( columnIndex ) ) : value;
     }
 
 
@@ -272,7 +278,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public String getString( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asString();
+        return accessFloatingValue( columnIndex ).asString();
     }
 
 
@@ -329,7 +335,8 @@ public class PolyphenyResultSet implements ResultSet {
     @Deprecated //according to jdbc 4.3
     public BigDecimal getBigDecimal( int columnIndex, int scale ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asBigDecimal( scale );
+        TypedValue value = accessDecimalValue( columnIndex );
+        return value.isNull() ? null : value.asBigDecimal( scale );
     }
 
 
@@ -544,7 +551,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public BigDecimal getBigDecimal( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asBigDecimal();
+        return accessDecimalValue( columnIndex ).asBigDecimal();
     }
 
 
@@ -1344,8 +1351,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public String getNString( int columnIndex ) throws SQLException {
-        throwIfClosed();
-        return accessValue( columnIndex ).asNString();
+        return getString( columnIndex );
     }
 
 

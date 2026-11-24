@@ -138,14 +138,20 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    final void closeGeneratedKeysAtCommit() throws SQLException {
+    final void closeResultsAtCommit() throws SQLException {
         boolean closeStatement;
         synchronized ( resultsLock ) {
-            if ( generatedKeysProperties == null || generatedKeysProperties.getResultSetHoldability() != ResultSet.CLOSE_CURSORS_AT_COMMIT ) {
-                return;
+            boolean closedDependentResult = false;
+            if ( currentResult != null && properties.getResultSetHoldability() == ResultSet.CLOSE_CURSORS_AT_COMMIT ) {
+                // The server commit has already closed this result.
+                clearCurrentResult();
+                closedDependentResult = true;
             }
-            closeStatement = generatedKeysFrame != null && currentResult == null && properties.isCloseOnCompletion();
-            clearGeneratedKeys();
+            if ( generatedKeysProperties != null && generatedKeysProperties.getResultSetHoldability() == ResultSet.CLOSE_CURSORS_AT_COMMIT ) {
+                closedDependentResult |= generatedKeysFrame != null;
+                clearGeneratedKeys();
+            }
+            closeStatement = closedDependentResult && currentResult == null && !hasOpenGeneratedKeys() && properties.isCloseOnCompletion();
         }
         if ( closeStatement ) {
             close();
@@ -168,12 +174,16 @@ public class PolyphenyStatement implements Statement {
         boolean canClose;
         synchronized ( resultsLock ) {
             clearCurrentResult();
-            boolean hasOpenKeys = generatedKeysFrame != null && (generatedKeysResult == null || !generatedKeysResult.isClosed());
-            canClose = !clearingResults && !hasOpenKeys;
+            canClose = !clearingResults && !hasOpenGeneratedKeys();
         }
         if ( !polyConnection.isClosed() && canClose && isCloseOnCompletion() ) {
             close();
         }
+    }
+
+
+    private boolean hasOpenGeneratedKeys() throws SQLException {
+        return generatedKeysFrame != null && (generatedKeysResult == null || !generatedKeysResult.isClosed());
     }
 
 

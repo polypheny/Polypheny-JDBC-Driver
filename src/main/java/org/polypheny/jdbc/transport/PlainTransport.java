@@ -125,6 +125,22 @@ public class PlainTransport implements Transport {
     }
 
 
+    @Override
+    public <E extends Exception> boolean withWriteReservation( int timeoutMillis, WriteOperation<E> operation ) throws E, InterruptedException {
+        if ( timeoutMillis == 0 ) {
+            writeLock.lockInterruptibly();
+        } else if ( !writeLock.tryLock( timeoutMillis, TimeUnit.MILLISECONDS ) ) {
+            return false;
+        }
+        try {
+            operation.run();
+            return true;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+
     private static ByteBuffer frameMessage( byte[] message ) {
         ByteBuffer frame = ByteBuffer.allocate( 8 + message.length ).order( ByteOrder.LITTLE_ENDIAN );
         frame.putLong( message.length );

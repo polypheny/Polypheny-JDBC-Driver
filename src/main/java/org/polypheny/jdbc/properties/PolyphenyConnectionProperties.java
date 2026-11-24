@@ -103,7 +103,7 @@ public class PolyphenyConnectionProperties {
     @Getter
     private String password;
     @Getter
-    private boolean isAutoCommit;
+    private volatile boolean isAutoCommit;
     @Getter
     private boolean isReadOnly;
     @Getter

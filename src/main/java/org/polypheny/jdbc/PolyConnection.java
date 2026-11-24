@@ -48,6 +48,7 @@ import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
+import org.polypheny.jdbc.transport.Transport.WriteOperation;
 import org.polypheny.jdbc.types.PolyArray;
 import org.polypheny.jdbc.types.PolyBlob;
 import org.polypheny.jdbc.types.PolyClob;
@@ -169,16 +170,31 @@ public class PolyConnection implements Connection {
 
     @Override
     public void setAutoCommit( boolean autoCommit ) throws SQLException {
-        throwIfClosed();
-        if ( properties.isAutoCommit() == autoCommit ) {
-            return;
-        }
-        try {
+        withWriteReservation( () -> {
+            if ( properties.isAutoCommit() == autoCommit ) {
+                return;
+            }
             if ( autoCommit ) {
-                // Prism's mode update only changes the flag. Finish the manual transaction first.
+                // Prism changes only the mode flag. Keep writes from crossing the commit and the mode change.
                 commit();
             }
             properties.setAutoCommit( autoCommit );
+        } );
+    }
+
+
+    private void withWriteReservation( WriteOperation<SQLException> operation ) throws SQLException {
+        throwIfClosed();
+        int timeout = getTimeout();
+        try {
+            if ( !getPrismInterfaceClient().withWriteReservation( timeout, () -> {
+                throwIfClosed();
+                operation.run();
+            } ) ) {
+                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( timeout ) );
+            }
+        } catch ( InterruptedException e ) {
+            throw PrismInterfaceClient.interruptedBeforeWrite( e );
         } catch ( PrismInterfaceServiceException failure ) {
             throw handleIncompleteRequest( failure, true );
         }
@@ -195,13 +211,17 @@ public class PolyConnection implements Connection {
 
     @Override
     public void commit() throws SQLException {
-        throwIfClosed();
+        withWriteReservation( this::commitAndCloseResults );
+    }
+
+
+    private void commitAndCloseResults() throws SQLException {
         throwIfAutoCommit();
         getPrismInterfaceClient().commitTransaction( getNetworkTimeout() );
         for ( Statement statement : snapshotOpenStatements() ) {
             if ( statement instanceof PolyphenyStatement ) {
                 try {
-                    ((PolyphenyStatement) statement).closeGeneratedKeysAtCommit();
+                    ((PolyphenyStatement) statement).closeResultsAtCommit();
                 } catch ( SQLException e ) {
                     log.warn( "Could not close completed statement after committing the transaction", e );
                 }
@@ -212,9 +232,10 @@ public class PolyConnection implements Connection {
 
     @Override
     public void rollback() throws SQLException {
-        throwIfClosed();
-        throwIfAutoCommit();
-        getPrismInterfaceClient().rollbackTransaction( getNetworkTimeout() );
+        withWriteReservation( () -> {
+            throwIfAutoCommit();
+            getPrismInterfaceClient().rollbackTransaction( getNetworkTimeout() );
+        } );
     }
 
 

@@ -150,8 +150,7 @@ final class GeneratedKeys {
                     return value;
             }
         } catch ( ArithmeticException | NumberFormatException e ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL,
-                    "Generated key cannot be represented as " + JDBCType.valueOf( sqlType ) + ".", e );
+            throw numericRangeFailure( sqlType, e );
         }
     }
 
@@ -171,12 +170,16 @@ final class GeneratedKeys {
         switch ( value.getValueCase() ) {
             case INTEGER:
             case LONG:
-                return normalizeNumericValue( value, getterType );
+                return normalizeNumericValue( normalizeFloatingValue( value, columnType ), getterType );
             case BIG_DECIMAL:
                 if ( getterType == Types.INTEGER || getterType == Types.BIGINT ) {
                     // These getters already truncate fractional decimal values toward zero.
-                    BigDecimal integral = value.asBigDecimal().setScale( 0, RoundingMode.DOWN );
-                    return normalizeNumericValue( TypedValue.fromBigDecimal( integral ), getterType );
+                    try {
+                        BigDecimal integral = exactDecimal( normalizeFloatingValue( value, columnType ) ).setScale( 0, RoundingMode.DOWN );
+                        return normalizeNumericValue( TypedValue.fromBigDecimal( integral ), getterType );
+                    } catch ( ArithmeticException | NumberFormatException e ) {
+                        throw numericRangeFailure( getterType, e );
+                    }
                 }
                 break;
             default:
@@ -186,19 +189,30 @@ final class GeneratedKeys {
     }
 
 
-    static TypedValue valueForFloatingGetter( TypedValue value, int columnType ) throws SQLException {
-        ValueCase valueType = value.getValueCase();
-        if ( valueType == ValueCase.INTEGER || valueType == ValueCase.LONG ) {
-            switch ( columnType ) {
-                case Types.REAL:
-                case Types.FLOAT:
-                case Types.DOUBLE:
-                    return normalizeNumericValue( value, columnType );
-                default:
-                    break;
-            }
+    static TypedValue normalizeFloatingValue( TypedValue value, int columnType ) throws SQLException {
+        switch ( columnType ) {
+            case Types.REAL:
+            case Types.FLOAT:
+            case Types.DOUBLE:
+                return normalizeNumericValue( value, columnType );
+            default:
+                return value;
+        }
+    }
+
+
+    static TypedValue valueForDecimalGetter( TypedValue value, int columnType ) throws SQLException {
+        if ( value.getValueCase() == ValueCase.BIG_DECIMAL ) {
+            // Preserve getBigDecimal support when Prism sends a decimal for a floating column.
+            return normalizeNumericValue( normalizeFloatingValue( value, columnType ), Types.DECIMAL );
         }
         return value;
+    }
+
+
+    private static PrismInterfaceServiceException numericRangeFailure( int sqlType, RuntimeException cause ) {
+        return new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL,
+                "Generated key cannot be represented as " + JDBCType.valueOf( sqlType ) + ".", cause );
     }
 
 

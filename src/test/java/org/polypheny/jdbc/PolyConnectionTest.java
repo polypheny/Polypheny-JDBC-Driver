@@ -19,6 +19,9 @@ package org.polypheny.jdbc;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -35,6 +38,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
+import org.polypheny.jdbc.transport.Transport.WriteOperation;
 
 public class PolyConnectionTest {
 
@@ -43,9 +47,15 @@ public class PolyConnectionTest {
     private PolyphenyConnectionProperties properties;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws InterruptedException {
         properties = mock( PolyphenyConnectionProperties.class );
-        when( properties.getPrismInterfaceClient() ).thenReturn( mock( PrismInterfaceClient.class ) );
+        PrismInterfaceClient client = mock( PrismInterfaceClient.class );
+        doAnswer( invocation -> {
+            WriteOperation<?> operation = invocation.getArgument( 1 );
+            operation.run();
+            return true;
+        } ).when( client ).withWriteReservation( anyInt(), any() );
+        when( properties.getPrismInterfaceClient() ).thenReturn( client );
         connection = new PolyConnection( properties, mock( PolyphenyDatabaseMetadata.class ) );
     }
 

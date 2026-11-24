@@ -35,6 +35,22 @@ public interface Transport {
         return true;
     }
 
+    /**
+     * Keeps other sends from interleaving with a multi-request operation. The reader remains independent.
+     * A zero timeout waits indefinitely. A false return means the operation was not started.
+     */
+    default <E extends Exception> boolean withWriteReservation( int timeoutMillis, WriteOperation<E> operation ) throws E, InterruptedException {
+        operation.run();
+        return true;
+    }
+
+    @FunctionalInterface
+    interface WriteOperation<E extends Exception> {
+
+        void run() throws E;
+
+    }
+
     byte[] receiveMessage() throws IOException;
 
     void close();

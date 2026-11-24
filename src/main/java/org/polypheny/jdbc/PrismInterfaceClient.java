@@ -498,8 +498,25 @@ public class PrismInterfaceClient {
     }
 
 
+    <E extends Exception> boolean withWriteReservation( int timeoutMillis, Transport.WriteOperation<E> operation ) throws E, InterruptedException {
+        return rpc.withWriteReservation( timeoutMillis, operation );
+    }
+
+
     public void setConnectionProperties( PolyphenyConnectionProperties connectionProperties, int timeout ) throws PrismInterfaceServiceException {
-        updateConnectionProperties( buildConnectionProperties( connectionProperties ), timeout );
+        try {
+            if ( !withWriteReservation( timeout, () -> updateConnectionProperties( buildConnectionProperties( connectionProperties ), timeout ) ) ) {
+                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( timeout ) );
+            }
+        } catch ( InterruptedException e ) {
+            throw interruptedBeforeWrite( e );
+        }
+    }
+
+
+    static PrismInterfaceServiceException interruptedBeforeWrite( InterruptedException cause ) {
+        Thread.currentThread().interrupt();
+        return new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Interrupted before sending a Prism request.", cause );
     }
 
 

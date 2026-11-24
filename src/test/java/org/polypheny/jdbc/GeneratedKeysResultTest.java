@@ -98,6 +98,34 @@ class GeneratedKeysResultTest {
 
 
     @Test
+    void readsFloatingKeysAtTheirDeclaredPrecisionAcrossGetters() throws SQLException {
+        Frame frame = frame( column( "ratio", "items", "public", ProtoPolyType.REAL ),
+                TypedValue.fromBigDecimal( new BigDecimal( "16777217.25" ) ),
+                TypedValue.fromInteger( Integer.MAX_VALUE ), TypedValue.fromNull() );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            assertTrue( keys.next() );
+            assertEquals( Float.valueOf( 16_777_218f ), keys.getObject( 1, Float.class ) );
+            assertEquals( 16_777_218f, keys.getFloat( 1 ) );
+            assertEquals( 16_777_218d, keys.getDouble( 1 ) );
+            assertEquals( Float.toString( 16_777_218f ), keys.getString( 1 ) );
+            assertEquals( keys.getString( 1 ), keys.getNString( 1 ) );
+            assertEquals( 16_777_218, keys.getInt( 1 ) );
+            assertEquals( BigDecimal.valueOf( 16_777_218 ), keys.getBigDecimal( 1 ) );
+
+            assertTrue( keys.next() );
+            assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getInt( 1 ) ).getSQLState() );
+            assertEquals( 2_147_483_648L, keys.getLong( 1 ) );
+
+            assertTrue( keys.next() );
+            assertNull( keys.getString( 1 ) );
+            assertTrue( keys.wasNull() );
+            assertEquals( 0d, keys.getDouble( 1 ) );
+            assertTrue( keys.wasNull() );
+        }
+    }
+
+
+    @Test
     void checksTheRequestedIntegralGetterRange() throws SQLException {
         Frame frame = frame( column( "id", "items", "public", ProtoPolyType.BIGINT ),
                 TypedValue.fromBigDecimal( BigDecimal.valueOf( 128 ) ),

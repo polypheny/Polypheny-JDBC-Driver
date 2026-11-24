@@ -313,10 +313,16 @@ public class RpcService {
     }
 
 
+    <E extends Exception> boolean withWriteReservation( int timeoutMillis, Transport.WriteOperation<E> operation ) throws E, InterruptedException {
+        return con.withWriteReservation( timeoutMillis, operation );
+    }
+
+
     private Response completeSynchronously( Request.Builder req, long timeout ) throws PrismInterfaceServiceException {
         TypeCase type = req.getTypeCase();
         if ( timeout > 0 && (type == TypeCase.CLOSE_STATEMENT_REQUEST || type == TypeCase.CLOSE_RESULT_REQUEST
                 || type == TypeCase.EXECUTE_INDEXED_STATEMENT_REQUEST || type == TypeCase.EXECUTE_NAMED_STATEMENT_REQUEST
+                || type == TypeCase.COMMIT_REQUEST || type == TypeCase.ROLLBACK_REQUEST || type == TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST
                 || (type == TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST && req.getPrepareIndexedStatementRequest().hasGeneratedKeys())) ) {
             return completeBeforeDeadline( req, new RequestDeadline( timeout ) );
         }

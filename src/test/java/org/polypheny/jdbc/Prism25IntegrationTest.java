@@ -215,6 +215,41 @@ class Prism25IntegrationTest {
     }
 
 
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void commitClosesPagedQueryCursors( boolean enableAutoCommit ) throws SQLException {
+        String sql = "SELECT n FROM (VALUES (1), (2), (3)) AS t(n) ORDER BY n";
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" ) ) {
+            connection.setAutoCommit( false );
+            try ( PreparedStatement reusable = connection.prepareStatement( sql );
+                    PreparedStatement completed = connection.prepareStatement( sql ) ) {
+                reusable.setFetchSize( 1 );
+                completed.setFetchSize( 1 );
+                completed.closeOnCompletion();
+                try ( ResultSet rows = reusable.executeQuery(); ResultSet completedRows = completed.executeQuery() ) {
+                    assertEquals( ResultSet.CLOSE_CURSORS_AT_COMMIT, rows.getHoldability() );
+                    assertFalse( rows.isClosed() );
+                    if ( enableAutoCommit ) {
+                        connection.setAutoCommit( true );
+                    } else {
+                        connection.commit();
+                    }
+                    assertTrue( rows.isClosed() );
+                    assertTrue( completedRows.isClosed() );
+                    assertThrows( SQLException.class, rows::next );
+                    assertFalse( reusable.isClosed() );
+                    assertNull( reusable.getResultSet() );
+                    assertTrue( completed.isClosed() );
+                }
+                try ( ResultSet next = reusable.executeQuery() ) {
+                    assertTrue( next.next() );
+                    assertEquals( 1, next.getInt( 1 ) );
+                }
+            }
+        }
+    }
+
+
     @Test
     void rawGeneratedKeySelectorsRespectNumericTypes() throws SQLException {
         String table = "jdbc_raw_numeric_keys_" + UUID.randomUUID().toString().replace( "-", "" );
@@ -290,6 +325,61 @@ class Prism25IntegrationTest {
                 }
             } finally {
                 ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @Test
+    void readsPreparedFloatingKeysLikeThePersistedRow() throws SQLException {
+        String table = "jdbc_float_key_readback_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement sql = connection.createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY, ratio REAL, approximation DOUBLE)" );
+            try ( PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO " + table + " (ratio, approximation) VALUES (?, ?)", new String[]{ "ratio", "approximation" } ) ) {
+                insert.setDouble( 1, 16_777_217.25d );
+                insert.setLong( 2, 9_007_199_254_740_993L );
+                assertEquals( 1, insert.executeUpdate() );
+                try ( ResultSet keys = insert.getGeneratedKeys();
+                        ResultSet stored = sql.executeQuery( "SELECT ratio, approximation FROM " + table ) ) {
+                    assertTrue( keys.next() );
+                    assertTrue( stored.next() );
+                    assertEquals( 16_777_218d, stored.getDouble( "ratio" ) );
+                    assertEquals( stored.getDouble( "ratio" ), keys.getDouble( "ratio" ) );
+                    assertEquals( stored.getString( "ratio" ), keys.getString( "ratio" ) );
+                    assertEquals( stored.getString( "approximation" ), keys.getString( "approximation" ) );
+                    assertEquals( stored.getObject( "ratio", Float.class ), keys.getObject( "ratio", Float.class ) );
+                    assertEquals( 9_007_199_254_740_992L, keys.getLong( "approximation" ) );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @Test
+    void preparedDecimalKeyMatchesThePersistedScale() throws SQLException {
+        String table = "jdbc_decimal_key_readback_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement sql = connection.createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY, amount DECIMAL(12,4))" );
+            try ( PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO " + table + " (amount) VALUES (?)", new String[]{ "amount" } ) ) {
+                insert.setBigDecimal( 1, new BigDecimal( "1.234567" ) );
+                assertEquals( 1, insert.executeUpdate() );
+                try ( ResultSet keys = insert.getGeneratedKeys(); ResultSet stored = sql.executeQuery( "SELECT amount FROM " + table ) ) {
+                    assertTrue( keys.next() );
+                    assertTrue( stored.next() );
+                    assertEquals( 4, keys.getMetaData().getScale( 1 ) );
+                    assertEquals( new BigDecimal( "1.2346" ), stored.getBigDecimal( 1 ) );
+                    assertEquals( stored.getBigDecimal( 1 ), keys.getBigDecimal( 1 ) );
+                    assertEquals( stored.getBigDecimal( 1 ), keys.getObject( 1, BigDecimal.class ) );
+                    assertFalse( keys.next() );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE " + table );
             }
         }
     }
