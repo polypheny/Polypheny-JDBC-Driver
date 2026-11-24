@@ -285,7 +285,7 @@ public class PrismInterfaceClient {
 
 
     public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
-        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize ), timeout );
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize, null ), timeout );
     }
 
 
@@ -293,7 +293,7 @@ public class PrismInterfaceClient {
         if ( timeout <= Integer.MAX_VALUE ) {
             return executeIndexedStatement( statementId, values, fetchSize, (int) timeout );
         }
-        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize ), timeout );
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize, null ), timeout );
     }
 
 
@@ -302,14 +302,15 @@ public class PrismInterfaceClient {
         if ( deadline.timeoutMillis == 0 ) {
             return executeIndexedStatement( statementId, values, fetchSize, 0L );
         }
-        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize ), deadline );
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize, deadline ), deadline );
     }
 
 
-    private ExecuteIndexedStatementRequest indexedStatementRequest( int statementId, List<TypedValue> values, int fetchSize ) throws PrismInterfaceServiceException {
+    private ExecuteIndexedStatementRequest indexedStatementRequest(
+            int statementId, List<TypedValue> values, int fetchSize, RequestDeadline deadline ) throws PrismInterfaceServiceException {
         return ExecuteIndexedStatementRequest.newBuilder()
                 .setStatementId( statementId )
-                .setParameters( buildIndexedParameters( values ) )
+                .setParameters( buildIndexedParameters( values, deadline ) )
                 .setFetchSize( fetchSize )
                 .build();
     }
@@ -335,7 +336,7 @@ public class PrismInterfaceClient {
 
 
     StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, long timeout ) throws PrismInterfaceServiceException {
-        return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch ), timeout );
+        return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch, null ), timeout );
     }
 
 
@@ -344,25 +345,25 @@ public class PrismInterfaceClient {
         if ( deadline.timeoutMillis == 0 ) {
             return executeIndexedStatementBatch( statementId, parameterBatch, 0L );
         }
-        return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch ), deadline );
+        return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch, deadline ), deadline );
     }
 
 
     private ExecuteIndexedStatementBatchRequest indexedBatchRequest(
-            int statementId, List<List<TypedValue>> parameterBatch ) throws PrismInterfaceServiceException {
+            int statementId, List<List<TypedValue>> parameterBatch, RequestDeadline deadline ) throws PrismInterfaceServiceException {
         ExecuteIndexedStatementBatchRequest.Builder request = ExecuteIndexedStatementBatchRequest.newBuilder()
                 .setStatementId( statementId );
         for ( List<TypedValue> values : parameterBatch ) {
-            request.addParameters( buildIndexedParameters( values ) );
+            request.addParameters( buildIndexedParameters( values, deadline ) );
         }
 
         return request.build();
     }
 
 
-    private static IndexedParameters buildIndexedParameters( List<TypedValue> values ) throws PrismInterfaceServiceException {
+    private static IndexedParameters buildIndexedParameters( List<TypedValue> values, RequestDeadline deadline ) throws PrismInterfaceServiceException {
         return IndexedParameters.newBuilder()
-                .addAllParameters( ProtoUtils.serializeParameterList( values ) )
+                .addAllParameters( deadline == null ? ProtoUtils.serializeParameterList( values ) : ProtoUtils.serializeParameterList( values, deadline::remainingMillis ) )
                 .build();
     }
 

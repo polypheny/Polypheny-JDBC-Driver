@@ -151,8 +151,8 @@ public class PolyphenyColumnMeta {
             case DECIMAL:
                 return BigDecimal.class.getName();
             case REAL:
-            case FLOAT:
                 return Float.class.getName();
+            case FLOAT:
             case DOUBLE:
                 return Double.class.getName();
             case DATE:

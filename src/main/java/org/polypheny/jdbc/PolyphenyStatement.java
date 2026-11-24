@@ -95,6 +95,11 @@ public class PolyphenyStatement implements Statement {
 
     private void prepareForReExecution() throws SQLException {
         clearExecutionResults();
+        releaseStatementHandle();
+    }
+
+
+    private void releaseStatementHandle() throws SQLException {
         if ( statementId != NO_STATEMENT_ID ) {
             if ( !polyConnection.isClosed() ) {
                 closeResource( timeout -> getClient().closeStatement( statementId, timeout ) );
@@ -225,7 +230,17 @@ public class PolyphenyStatement implements Statement {
         }
         isClosed = true;
         try {
-            prepareForReExecution();
+            try {
+                clearExecutionResults();
+            } catch ( PrismInterfaceServiceException.ServerError cleanupFailure ) {
+                try {
+                    releaseStatementHandle();
+                } catch ( SQLException closeFailure ) {
+                    cleanupFailure.addSuppressed( closeFailure );
+                }
+                throw cleanupFailure;
+            }
+            releaseStatementHandle();
         } finally {
             dispose();
         }

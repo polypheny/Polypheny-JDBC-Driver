@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.InputStream;
 import java.io.StringReader;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
@@ -30,15 +31,59 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.polypheny.jdbc.types.PolyBlob;
 
 @Tag("prism25")
 class Prism25IntegrationTest {
 
     private static final String DB_URL = "jdbc:polypheny://127.0.0.1:" + System.getenv().getOrDefault( "POLYPHENY_TEST_PORT", "20590" );
+
+
+    @Test
+    void preSendQueryTimeoutPreservesEarlierWrites() throws SQLException {
+        String table = "jdbc_deadline_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection observer = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement ddl = observer.createStatement() ) {
+            ddl.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, payload VARBINARY(10))" );
+            try {
+                try ( Connection writer = DriverManager.getConnection( DB_URL, "pa", "" );
+                        Statement earlier = writer.createStatement();
+                        PreparedStatement later = writer.prepareStatement( "INSERT INTO " + table + " (id, payload) VALUES (2, ?)" ) ) {
+                    writer.setAutoCommit( false );
+                    assertEquals( 1, earlier.executeUpdate( "INSERT INTO " + table + " (id) VALUES (1)" ) );
+                    later.setBlob( 1, new PolyBlob( new byte[]{ 1 } ) {
+                        @Override
+                        public InputStream getBinaryStream() throws SQLException {
+                            try {
+                                TimeUnit.MILLISECONDS.sleep( 1200 );
+                            } catch ( InterruptedException e ) {
+                                Thread.currentThread().interrupt();
+                                throw new SQLException( e );
+                            }
+                            return super.getBinaryStream();
+                        }
+                    } );
+                    later.setQueryTimeout( 1 );
+                    assertThrows( SQLTimeoutException.class, later::executeUpdate );
+                    assertFalse( writer.isClosed() );
+                    writer.commit();
+                }
+                try ( ResultSet rows = ddl.executeQuery( "SELECT id FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 1, rows.getInt( 1 ) );
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
 
 
     @Test

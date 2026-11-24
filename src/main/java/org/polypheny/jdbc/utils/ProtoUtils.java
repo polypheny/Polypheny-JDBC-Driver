@@ -41,15 +41,31 @@ public class ProtoUtils {
 
 
     public static List<ProtoValue> serializeParameterList( List<TypedValue> values ) throws PrismInterfaceServiceException {
+        return serializeParameterList( values, () -> { } );
+    }
+
+
+    public static List<ProtoValue> serializeParameterList( List<TypedValue> values, SerializationCheck check ) throws PrismInterfaceServiceException {
+        check.run();
         List<ProtoValue> parameters = new ArrayList<>( values.size() );
         for ( TypedValue value : values ) {
             try {
                 parameters.add( value.serialize() );
             } catch ( SQLException e ) {
+                check.run();
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Could not serialize parameter " + (parameters.size() + 1) + ".", e );
             }
+            check.run();
         }
         return parameters;
+    }
+
+
+    @FunctionalInterface
+    public interface SerializationCheck {
+
+        void run() throws PrismInterfaceServiceException;
+
     }
 
 

@@ -38,6 +38,7 @@ import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -49,6 +50,7 @@ import java.util.function.IntConsumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
@@ -211,15 +213,30 @@ class BatchCleanupTimeoutTest {
     }
 
 
-    @Test
-    void explicitStatementCloseDisposesTheLocalCursorAfterServerError() throws Exception {
-        CleanupTransport transport = new CleanupTransport( TypeCase.CLOSE_RESULT_REQUEST, Intercept.SERVER_ERROR );
+    @ParameterizedTest
+    @CsvSource({ "false, false", "true, false", "false, true", "true, true" })
+    void explicitStatementCloseReleasesServerHandleAfterCursorError( boolean prepared, boolean failStatementClose ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.CLOSE_RESULT_REQUEST, Intercept.SERVER_ERROR, failStatementClose );
         RpcService rpc = new RpcService( transport );
         try ( Connection connection = connection( new PrismInterfaceClient( rpc ) );
-                Statement statement = connection.createStatement();
-                ResultSet result = statement.executeQuery( SELECT ) ) {
+                Statement statement = prepared ? connection.prepareStatement( SELECT ) : connection.createStatement();
+                ResultSet result = prepared ? ((PreparedStatement) statement).executeQuery() : statement.executeQuery( SELECT ) ) {
+            int requestsBeforeClose = transport.requests.size();
+
             SQLException failure = assertThrows( SQLException.class, statement::close );
+
+            assertEquals( Arrays.asList( TypeCase.CLOSE_RESULT_REQUEST, TypeCase.CLOSE_STATEMENT_REQUEST ),
+                    transport.requests.subList( requestsBeforeClose, transport.requests.size() ) );
+            assertEquals( "Cannot close previous resource", failure.getMessage() );
             assertEquals( "26000", failure.getSQLState() );
+            assertEquals( 73, failure.getErrorCode() );
+            assertEquals( failStatementClose ? 1 : 0, failure.getSuppressed().length );
+            if ( failStatementClose ) {
+                SQLException laterFailure = assertInstanceOf( SQLException.class, failure.getSuppressed()[0] );
+                assertEquals( "Cannot close statement", laterFailure.getMessage() );
+                assertEquals( "XX000", laterFailure.getSQLState() );
+                assertEquals( 99, laterFailure.getErrorCode() );
+            }
             assertFalse( connection.isClosed() );
             assertTrue( statement.isClosed() );
             assertTrue( result.isClosed() );
@@ -285,12 +302,19 @@ class BatchCleanupTimeoutTest {
         private final AtomicInteger closes = new AtomicInteger();
         private final TypeCase cleanupType;
         private final Intercept intercept;
+        private final boolean failStatementClose;
         private boolean interceptedCleanup;
 
 
         private CleanupTransport( TypeCase cleanupType, Intercept intercept ) {
+            this( cleanupType, intercept, false );
+        }
+
+
+        private CleanupTransport( TypeCase cleanupType, Intercept intercept, boolean failStatementClose ) {
             this.cleanupType = cleanupType;
             this.intercept = intercept;
+            this.failStatementClose = failStatementClose;
         }
 
 
@@ -332,7 +356,12 @@ class BatchCleanupTimeoutTest {
                     response.setStatementResult( queryResult() );
                     break;
                 case CLOSE_STATEMENT_REQUEST:
-                    response.setCloseStatementResponse( CloseStatementResponse.getDefaultInstance() );
+                    if ( failStatementClose ) {
+                        response.setErrorResponse( ErrorResponse.newBuilder().setMessage( "Cannot close statement" )
+                                .setDetails( ErrorDetails.newBuilder().setState( "XX000" ).setErrorCode( 99 ) ) );
+                    } else {
+                        response.setCloseStatementResponse( CloseStatementResponse.getDefaultInstance() );
+                    }
                     break;
                 case CLOSE_RESULT_REQUEST:
                     response.setCloseResultResponse( CloseResultResponse.getDefaultInstance() );

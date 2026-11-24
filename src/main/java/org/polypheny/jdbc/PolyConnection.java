@@ -247,6 +247,9 @@ public class PolyConnection implements Connection {
             return failure;
         }
         Throwable cause = failure.getCause();
+        if ( cause instanceof RequestDeadline.BeforeSendTimeout ) {
+            return new SQLTimeoutException( failure.getMessage(), cause );
+        }
         if ( cause instanceof InterruptedException || cause instanceof ClosedByInterruptException
                 || PrismInterfaceErrors.CONNECTION_FAILURE.state.equals( failure.getSQLState() ) ) {
             abortAfterIncompleteRequest();

@@ -19,6 +19,7 @@ package org.polypheny.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -42,6 +43,41 @@ import org.polypheny.prism.TypeMeta;
 
 
 class GeneratedKeysResultTest {
+
+    @Test
+    void usesTheDeclaredSqlTypeForFloatingPointObjects() throws SQLException {
+        RelationalFrame frame = RelationalFrame.newBuilder()
+                .addColumnMeta( column( "floating", "items", "public", ProtoPolyType.FLOAT ).toBuilder().clearIsAutoIncrement() )
+                .addColumnMeta( column( "real_value", "items", "public", ProtoPolyType.REAL ).toBuilder().setColumnIndex( 1 ).clearIsAutoIncrement() )
+                .addRows( Row.newBuilder().addValues( TypedValue.fromFloat( 1.25f ).serialize() )
+                        .addValues( TypedValue.fromFloat( 1.5f ).serialize() ) )
+                .addRows( Row.newBuilder().addValues( TypedValue.fromNull().serialize() )
+                        .addValues( TypedValue.fromNull().serialize() ) )
+                .build();
+        try ( ResultSet keys = resultSet( Frame.newBuilder().setIsLast( true ).setRelationalFrame( frame ).build() ) ) {
+            ResultSetMetaData metadata = keys.getMetaData();
+            assertEquals( Types.FLOAT, metadata.getColumnType( 1 ) );
+            assertEquals( Double.class.getName(), metadata.getColumnClassName( 1 ) );
+            assertEquals( Types.REAL, metadata.getColumnType( 2 ) );
+            assertEquals( Float.class.getName(), metadata.getColumnClassName( 2 ) );
+
+            assertTrue( keys.next() );
+            assertEquals( Double.valueOf( 1.25d ), keys.getObject( "floating" ) );
+            assertEquals( Double.valueOf( 1.25d ), keys.getObject( 1, Double.class ) );
+            assertEquals( Float.valueOf( 1.5f ), keys.getObject( "real_value" ) );
+            assertEquals( Float.valueOf( 1.5f ), keys.getObject( 2, Float.class ) );
+            assertFalse( keys.wasNull() );
+
+            assertTrue( keys.next() );
+            assertNull( keys.getObject( 1 ) );
+            assertTrue( keys.wasNull() );
+            assertNull( keys.getObject( 1, Double.class ) );
+            assertTrue( keys.wasNull() );
+            assertNull( keys.getObject( 2, Float.class ) );
+            assertTrue( keys.wasNull() );
+        }
+    }
+
 
     @Test
     void combinesIntegerIdentityTypesInStatementOrderWithoutLosingValuesOrSchema() throws SQLException {

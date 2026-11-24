@@ -490,14 +490,16 @@ class RpcServiceErrorTest {
 
 
     @ParameterizedTest
-    @ValueSource(booleans = { false, true })
-    void expiredDeadlinePreventsSendingAfterPreparedParameterSerialization( boolean batch ) throws Exception {
+    @CsvSource({ "false, false", "true, false", "true, true" })
+    void expiredDeadlineStopsPreparedSerializationAndLeavesTheConnectionOpen( boolean batch, boolean laterBatchEntry ) throws Exception {
         Connection connection = createConnection();
         replyTo( TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
                 .setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 42 )
+                        .addParameterMetas( ParameterMeta.newBuilder().setTypeName( "FILE" ) )
                         .addParameterMetas( ParameterMeta.newBuilder().setTypeName( "FILE" ) ) ) );
-        try ( PreparedStatement statement = connection.prepareStatement( "INSERT INTO example VALUES (?) RETURNING id" ) ) {
+        try ( PreparedStatement statement = connection.prepareStatement( "INSERT INTO example VALUES (?, ?) RETURNING id" ) ) {
             statement.setBlob( 1, new PolyBlob( new byte[]{ 1 } ) );
+            statement.setBlob( 2, new PolyBlob( new byte[]{ 1 } ) );
             Frame frame = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
             Response.Builder successfulInsert = Response.newBuilder().setLast( true )
                     .setStatementResult( StatementResult.newBuilder().setFrame( frame ) );
@@ -519,6 +521,18 @@ class RpcServiceErrorTest {
                 }
             } );
             statement.setQueryTimeout( 1 );
+            PolyBlob unread = new PolyBlob( new byte[]{ 3 } ) {
+                @Override
+                public InputStream getBinaryStream() {
+                    throw new AssertionError( "Read a later BLOB after expiry" );
+                }
+            };
+            if ( laterBatchEntry ) {
+                statement.addBatch();
+                statement.setBlob( 1, unread );
+            } else {
+                statement.setBlob( 2, unread );
+            }
             if ( batch ) {
                 statement.addBatch();
             }
@@ -557,10 +571,21 @@ class RpcServiceErrorTest {
             assertInstanceOf( TimeoutException.class, failure.getCause() );
             assertTrue( serializationStarted.get() );
             assertEquals( 0, submitted.get() );
-            assertTrue( connection.isClosed() );
-            assertTrue( statement.isClosed() );
+            assertFalse( connection.isClosed() );
+            assertFalse( statement.isClosed() );
             assertTrue( previousResult.isClosed() );
-            assertEquals( 1, transportCloses );
+            assertEquals( 0, transportCloses );
+
+            statement.setQueryTimeout( 0 );
+            statement.setBlob( 1, new PolyBlob( new byte[]{ 1 } ) );
+            statement.setBlob( 2, new PolyBlob( new byte[]{ 1 } ) );
+            if ( batch ) {
+                statement.addBatch();
+                assertArrayEquals( new int[]{ 1 }, statement.executeBatch() );
+            } else {
+                statement.executeQuery().close();
+            }
+            assertEquals( 1, submitted.get() );
         }
     }
 

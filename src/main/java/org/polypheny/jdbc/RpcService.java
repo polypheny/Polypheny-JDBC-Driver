@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntConsumer;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
@@ -177,25 +178,27 @@ public class RpcService {
             return;
         }
         if ( deadline - System.nanoTime() <= 0 ) {
-            throw writeTimeout( timeoutMillis );
+            throw new RequestDeadline.BeforeSendTimeout( timeoutMillis );
         }
         byte[] payload = request.toByteArray();
         long remaining = deadline - System.nanoTime();
         if ( remaining <= 0 ) {
-            throw writeTimeout( timeoutMillis );
+            throw new RequestDeadline.BeforeSendTimeout( timeoutMillis );
         }
 
-        AtomicBoolean pending = new AtomicBoolean( true );
+        AtomicReference<WriteState> state = new AtomicReference<>( WriteState.READY );
         ScheduledFuture<?> watchdog = WRITE_DEADLINES.schedule( () -> {
-            if ( pending.compareAndSet( true, false ) ) {
+            // Expiry before the caller begins writing leaves the transport untouched.
+            if ( !state.compareAndSet( WriteState.READY, WriteState.EXPIRED )
+                    && state.compareAndSet( WriteState.WRITING, WriteState.EXPIRED ) ) {
                 abort();
             }
         }, remaining, TimeUnit.NANOSECONDS );
         IOException failure = null;
         boolean finishedBeforeWatchdog;
         try {
-            if ( deadline - System.nanoTime() <= 0 ) {
-                throw writeTimeout( timeoutMillis );
+            if ( deadline - System.nanoTime() <= 0 || !state.compareAndSet( WriteState.READY, WriteState.WRITING ) ) {
+                throw new RequestDeadline.BeforeSendTimeout( timeoutMillis );
             }
             if ( closed ) {
                 throw new IOException( "Connection is closed" );
@@ -204,7 +207,7 @@ public class RpcService {
         } catch ( IOException e ) {
             failure = e;
         } finally {
-            finishedBeforeWatchdog = pending.compareAndSet( true, false );
+            finishedBeforeWatchdog = state.compareAndSet( WriteState.WRITING, WriteState.FINISHED );
             watchdog.cancel( false );
         }
 
@@ -223,6 +226,11 @@ public class RpcService {
 
     private static TimeoutException writeTimeout( long timeoutMillis ) {
         return new TimeoutException( "Prism request send did not complete within " + timeoutMillis + " ms." );
+    }
+
+
+    private enum WriteState {
+        READY, WRITING, FINISHED, EXPIRED
     }
 
 

@@ -40,7 +40,7 @@ final class RequestDeadline {
         }
         long remaining = deadlineNanos - System.nanoTime();
         if ( remaining <= 0 ) {
-            throw new PrismInterfaceServiceException( new TimeoutException( "Prism statement did not complete within " + timeoutMillis + " ms." ) );
+            throw new PrismInterfaceServiceException( new BeforeSendTimeout( timeoutMillis ) );
         }
         return 1 + TimeUnit.NANOSECONDS.toMillis( remaining - 1 );
     }
@@ -48,6 +48,15 @@ final class RequestDeadline {
 
     <T> CallbackQueue<T> callback( Function<Response, T> extractResponse ) {
         return new CallbackQueue<>( extractResponse, timeoutMillis, deadlineNanos );
+    }
+
+
+    static final class BeforeSendTimeout extends TimeoutException {
+
+        BeforeSendTimeout( long timeoutMillis ) {
+            super( "Prism request was not sent within " + timeoutMillis + " ms." );
+        }
+
     }
 
 }

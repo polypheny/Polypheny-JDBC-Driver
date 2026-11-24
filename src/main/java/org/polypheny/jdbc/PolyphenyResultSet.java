@@ -36,6 +36,7 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,6 +51,7 @@ import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.Frame.ResultCase;
+import org.polypheny.prism.ProtoValue.ValueCase;
 import org.polypheny.prism.RelationalFrame;
 
 public class PolyphenyResultSet implements ResultSet {
@@ -136,6 +138,16 @@ public class PolyphenyResultSet implements ResultSet {
         TypedValue value = rowUpdates.get( column );
         if ( value == null ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.COLUMN_ACCESS_ILLEGAL, "Can't access unset colum" );
+        }
+        return value;
+    }
+
+
+    private TypedValue accessObjectValue( int columnIndex ) throws SQLException {
+        TypedValue value = accessValue( columnIndex );
+        // Prism may encode both SQL REAL and FLOAT as a 32-bit float. JDBC maps SQL FLOAT to Double.
+        if ( value.getValueCase() == ValueCase.FLOAT && metadata.getColumnType( columnIndex ) == Types.FLOAT ) {
+            return TypedValue.fromDouble( value.asDouble() );
         }
         return value;
     }
@@ -480,7 +492,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public Object getObject( int columnIndex ) throws SQLException {
         throwIfClosed();
-        TypedValue typedValue = accessValue( columnIndex );
+        TypedValue typedValue = accessObjectValue( columnIndex );
         if ( typedValue.isUdt() ) {
             return typedValue.asObject( getStatement().getConnection().getTypeMap() );
         }
@@ -1540,7 +1552,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public <T> T getObject( int columnIndex, Class<T> aClass ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asObject( aClass, properties.getCalendar() );
+        return accessObjectValue( columnIndex ).asObject( aClass, properties.getCalendar() );
     }
 
 
