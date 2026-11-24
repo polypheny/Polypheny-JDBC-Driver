@@ -20,9 +20,11 @@ package org.polypheny.jdbc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -75,6 +77,22 @@ class GeneratedKeysResultTest {
             assertTrue( keys.wasNull() );
             assertNull( keys.getObject( 2, Float.class ) );
             assertTrue( keys.wasNull() );
+        }
+    }
+
+
+    @Test
+    void rejectsFractionalAndOutOfRangeIntegralKeyValues() throws SQLException {
+        Frame frame = frame( column( "id", "items", "public", ProtoPolyType.BIGINT ),
+                TypedValue.fromBigDecimal( new BigDecimal( "12.5" ) ),
+                TypedValue.fromBigDecimal( new BigDecimal( "9223372036854775808" ) ) );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            assertTrue( keys.next() );
+            SQLException fractional = assertThrows( SQLException.class, () -> keys.getLong( 1 ) );
+            assertEquals( "22003", fractional.getSQLState() );
+            assertTrue( keys.next() );
+            SQLException outOfRange = assertThrows( SQLException.class, () -> keys.getObject( 1, Long.class ) );
+            assertEquals( "22003", outOfRange.getSQLState() );
         }
     }
 

@@ -172,11 +172,13 @@ public class RpcService {
     }
 
 
-    private void sendMessageBeforeDeadline( Request request, long deadline, long timeoutMillis ) throws IOException, TimeoutException {
+    private void sendMessageBeforeDeadline( Request request, CallbackQueue<?> callback ) throws IOException, TimeoutException {
+        long timeoutMillis = callback.getTimeoutMillis();
         if ( timeoutMillis <= 0 ) {
             sendMessage( request );
             return;
         }
+        long deadline = callback.getDeadlineNanos();
         if ( deadline - System.nanoTime() <= 0 ) {
             throw new RequestDeadline.BeforeSendTimeout( timeoutMillis );
         }
@@ -188,30 +190,32 @@ public class RpcService {
 
         AtomicReference<WriteState> state = new AtomicReference<>( WriteState.READY );
         ScheduledFuture<?> watchdog = WRITE_DEADLINES.schedule( () -> {
-            // Expiry before the caller begins writing leaves the transport untouched.
-            if ( !state.compareAndSet( WriteState.READY, WriteState.EXPIRED )
+            // Before the writer starts, an expired request cannot have reached the server.
+            if ( !state.compareAndSet( WriteState.READY, WriteState.FINISHED )
+                    && state.get() == WriteState.WRITING
+                    && !callback.hasTerminalResponse()
                     && state.compareAndSet( WriteState.WRITING, WriteState.EXPIRED ) ) {
                 abort();
             }
         }, remaining, TimeUnit.NANOSECONDS );
         IOException failure = null;
-        boolean finishedBeforeWatchdog;
         try {
-            if ( deadline - System.nanoTime() <= 0 || !state.compareAndSet( WriteState.READY, WriteState.WRITING ) ) {
-                throw new RequestDeadline.BeforeSendTimeout( timeoutMillis );
-            }
             if ( closed ) {
                 throw new IOException( "Connection is closed" );
             }
-            con.sendMessage( payload );
+            boolean sent = con.trySendMessage( payload, deadline,
+                    () -> deadline - System.nanoTime() > 0 && state.compareAndSet( WriteState.READY, WriteState.WRITING ) );
+            if ( !sent ) {
+                throw new RequestDeadline.BeforeSendTimeout( timeoutMillis );
+            }
         } catch ( IOException e ) {
             failure = e;
         } finally {
-            finishedBeforeWatchdog = state.compareAndSet( WriteState.WRITING, WriteState.FINISHED );
+            state.compareAndSet( WriteState.WRITING, WriteState.FINISHED );
             watchdog.cancel( false );
         }
 
-        if ( !finishedBeforeWatchdog || (failure == null && deadline - System.nanoTime() <= 0) ) {
+        if ( state.get() == WriteState.EXPIRED || (failure == null && deadline - System.nanoTime() <= 0 && !callback.hasTerminalResponse()) ) {
             TimeoutException timeout = writeTimeout( timeoutMillis );
             if ( failure != null ) {
                 timeout.addSuppressed( failure );
@@ -252,7 +256,7 @@ public class RpcService {
                     if ( cq != null ) {
                         if ( resp.hasErrorResponse() ) {
                             callbackQueues.remove( resp.getId() );
-                            cq.onError( decodeErrorResponse( resp ) );
+                            cq.onError( decodeErrorResponse( resp ), resp.getLast() );
                         } else {
                             cq.onNext( resp );
                             if ( resp.getLast() ) {
@@ -337,7 +341,7 @@ public class RpcService {
         CallbackQueue<Response> callback = deadline.callback( response -> response );
         try {
             callbackQueues.put( req.getId(), callback );
-            sendMessageBeforeDeadline( req.build(), callback.getDeadlineNanos(), callback.getTimeoutMillis() );
+            sendMessageBeforeDeadline( req.build(), callback );
             return callback.takeNext();
         } catch ( IOException e ) {
             throw connectionFailure( e );
@@ -525,7 +529,7 @@ public class RpcService {
         req.setExecuteUnparameterizedStatementRequest( msg );
         try {
             callbackQueues.put( req.getId(), callback );
-            sendMessageBeforeDeadline( req.build(), callback.getDeadlineNanos(), callback.getTimeoutMillis() );
+            sendMessageBeforeDeadline( req.build(), callback );
         } catch ( IOException e ) {
             callbackQueues.remove( req.getId() );
             throw connectionFailure( e );
@@ -628,7 +632,7 @@ public class RpcService {
         int batchId = rawBatch ? 0 : req.getExecuteIndexedStatementBatchRequest().getStatementId();
         try {
             callbackQueues.put( req.getId(), callback );
-            sendMessageBeforeDeadline( req.build(), callback.getDeadlineNanos(), callback.getTimeoutMillis() );
+            sendMessageBeforeDeadline( req.build(), callback );
             while ( true ) {
                 Response response = callback.takeNext();
                 if ( !response.hasStatementBatchResponse() ) {

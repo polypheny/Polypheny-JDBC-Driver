@@ -17,10 +17,23 @@
 package org.polypheny.jdbc.transport;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 public interface Transport {
 
     void sendMessage( byte[] message ) throws IOException;
+
+    /**
+     * Attempts a timed send. Call beginWrite after preparing the message and acquiring any write lock.
+     * A false return indicates that no bytes were sent.
+     */
+    default boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite ) throws IOException {
+        if ( !beginWrite.getAsBoolean() ) {
+            return false;
+        }
+        sendMessage( message );
+        return true;
+    }
 
     byte[] receiveMessage() throws IOException;
 

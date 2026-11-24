@@ -16,9 +16,12 @@
 
 package org.polypheny.jdbc;
 
+import java.math.BigDecimal;
+import java.sql.JDBCType;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,6 +36,7 @@ import org.polypheny.prism.Frame;
 import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.ProtoValue;
+import org.polypheny.prism.ProtoValue.ValueCase;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Row;
 
@@ -106,6 +110,62 @@ final class GeneratedKeys {
             }
         }
         return keys;
+    }
+
+
+    static TypedValue normalizeNumericValue( TypedValue value, int sqlType ) throws SQLException {
+        ValueCase valueType = value.getValueCase();
+        switch ( valueType ) {
+            case INTEGER:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case BIG_DECIMAL:
+                break;
+            default:
+                return value;
+        }
+
+        // Prism can transport a projected numeric column as a decimal regardless of its declared type.
+        try {
+            switch ( sqlType ) {
+                case Types.TINYINT:
+                    return TypedValue.fromByte( exactDecimal( value ).byteValueExact() );
+                case Types.SMALLINT:
+                    return TypedValue.fromShort( exactDecimal( value ).shortValueExact() );
+                case Types.INTEGER:
+                    return valueType == ValueCase.INTEGER ? value : TypedValue.fromInteger( exactDecimal( value ).intValueExact() );
+                case Types.BIGINT:
+                    return valueType == ValueCase.LONG ? value : TypedValue.fromLong( exactDecimal( value ).longValueExact() );
+                case Types.REAL:
+                    return valueType == ValueCase.FLOAT ? value : TypedValue.fromFloat( ((Number) value.asObject()).floatValue() );
+                case Types.FLOAT:
+                case Types.DOUBLE:
+                    return valueType == ValueCase.DOUBLE ? value : TypedValue.fromDouble( ((Number) value.asObject()).doubleValue() );
+                case Types.NUMERIC:
+                case Types.DECIMAL:
+                    return valueType == ValueCase.BIG_DECIMAL ? value : TypedValue.fromBigDecimal( exactDecimal( value ) );
+                default:
+                    return value;
+            }
+        } catch ( ArithmeticException | NumberFormatException e ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL,
+                    "Generated key cannot be represented as " + JDBCType.valueOf( sqlType ) + ".", e );
+        }
+    }
+
+
+    private static BigDecimal exactDecimal( TypedValue value ) throws SQLException {
+        switch ( value.getValueCase() ) {
+            case INTEGER:
+            case LONG:
+                return BigDecimal.valueOf( value.asLong() );
+            case FLOAT:
+            case DOUBLE:
+                return new BigDecimal( value.asDouble() );
+            default:
+                return value.asBigDecimal();
+        }
     }
 
 

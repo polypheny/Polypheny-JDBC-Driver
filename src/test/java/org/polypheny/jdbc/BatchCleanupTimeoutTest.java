@@ -26,7 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.io.EOFException;
@@ -238,6 +240,48 @@ class BatchCleanupTimeoutTest {
                 assertEquals( 99, laterFailure.getErrorCode() );
             }
             assertFalse( connection.isClosed() );
+            assertTrue( statement.isClosed() );
+            assertTrue( result.isClosed() );
+        } finally {
+            rpc.close();
+        }
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({ "false, false", "true, false", "false, true", "true, true" })
+    void explicitStatementCloseRecoversFromPreSendTimeout( boolean prepared, boolean retryHandleClose ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( null, Intercept.TIMEOUT );
+        RpcService rpc = new RpcService( transport );
+        PrismInterfaceClient client = spy( new PrismInterfaceClient( rpc ) );
+        doThrow( new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( 1000 ) ) )
+                .doCallRealMethod().when( client ).closeResult( eq( 41 ), any( RequestDeadline.class ) );
+        if ( retryHandleClose ) {
+            doThrow( new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( 1000 ) ) )
+                    .doCallRealMethod().when( client ).closeStatement( eq( 41 ), any( RequestDeadline.class ) );
+        }
+        try ( Connection connection = connection( client );
+                Statement statement = prepared ? connection.prepareStatement( SELECT ) : connection.createStatement();
+                ResultSet result = prepared ? ((PreparedStatement) statement).executeQuery() : statement.executeQuery( SELECT ) ) {
+            connection.setNetworkTimeout( Runnable::run, 1000 );
+            int requestsBeforeClose = transport.requests.size();
+
+            SQLTimeoutException failure = assertThrows( SQLTimeoutException.class, statement::close );
+            assertInstanceOf( RequestDeadline.BeforeSendTimeout.class, failure.getCause() );
+            assertFalse( connection.isClosed() );
+            if ( retryHandleClose ) {
+                assertEquals( 1, failure.getSuppressed().length );
+                assertInstanceOf( SQLTimeoutException.class, failure.getSuppressed()[0] );
+                assertFalse( statement.isClosed() );
+                assertFalse( result.isClosed() );
+                assertEquals( requestsBeforeClose, transport.requests.size() );
+                statement.close();
+                assertEquals( Arrays.asList( TypeCase.CLOSE_RESULT_REQUEST, TypeCase.CLOSE_STATEMENT_REQUEST ),
+                        transport.requests.subList( requestsBeforeClose, transport.requests.size() ) );
+            } else {
+                assertEquals( Arrays.asList( TypeCase.CLOSE_STATEMENT_REQUEST ),
+                        transport.requests.subList( requestsBeforeClose, transport.requests.size() ) );
+            }
             assertTrue( statement.isClosed() );
             assertTrue( result.isClosed() );
         } finally {

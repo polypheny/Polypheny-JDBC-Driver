@@ -133,6 +133,18 @@ public class PolyphenyStatement implements Statement {
     }
 
 
+    final void closeGeneratedKeysAtCommit() throws SQLException {
+        if ( generatedKeysProperties == null || generatedKeysProperties.getResultSetHoldability() != ResultSet.CLOSE_CURSORS_AT_COMMIT ) {
+            return;
+        }
+        boolean closeStatement = generatedKeysFrame != null && currentResult == null && properties.isCloseOnCompletion();
+        clearGeneratedKeys();
+        if ( closeStatement ) {
+            close();
+        }
+    }
+
+
     private void clearCurrentResult() {
         if ( currentResult instanceof PolyphenyResultSet ) {
             ((PolyphenyResultSet) currentResult).markClosed();
@@ -229,20 +241,32 @@ public class PolyphenyStatement implements Statement {
             return;
         }
         isClosed = true;
+        boolean retryable = false;
         try {
+            SQLException resultFailure = null;
             try {
                 clearExecutionResults();
-            } catch ( PrismInterfaceServiceException.ServerError cleanupFailure ) {
-                try {
-                    releaseStatementHandle();
-                } catch ( SQLException closeFailure ) {
-                    cleanupFailure.addSuppressed( closeFailure );
-                }
-                throw cleanupFailure;
+            } catch ( SQLException failure ) {
+                resultFailure = failure;
             }
-            releaseStatementHandle();
+            try {
+                releaseStatementHandle();
+            } catch ( SQLException failure ) {
+                retryable = failure.getCause() instanceof RequestDeadline.BeforeSendTimeout;
+                if ( resultFailure == null ) {
+                    throw failure;
+                }
+                resultFailure.addSuppressed( failure );
+            }
+            if ( resultFailure != null ) {
+                throw resultFailure;
+            }
         } finally {
-            dispose();
+            if ( retryable && !polyConnection.isClosed() ) {
+                isClosed = false;
+            } else {
+                dispose();
+            }
         }
     }
 
@@ -703,8 +727,10 @@ public class PolyphenyStatement implements Statement {
         GeneratedKeys.requireSupported( getClient() );
         if ( generatedKeysResult == null ) {
             RelationalFrame keys = generatedKeysFrame == null ? RelationalFrame.getDefaultInstance() : generatedKeysFrame;
-            PolyphenyResultSetProperties keyProperties = generatedKeysProperties == null ? properties.toResultSetProperties() : generatedKeysProperties;
-            generatedKeysResult = new PolyphenyResultSet( this, keys, keyProperties );
+            if ( generatedKeysProperties == null ) {
+                generatedKeysProperties = properties.toResultSetProperties();
+            }
+            generatedKeysResult = new PolyphenyResultSet( this, keys, generatedKeysProperties );
         }
         return generatedKeysResult;
     }

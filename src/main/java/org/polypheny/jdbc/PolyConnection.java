@@ -200,6 +200,15 @@ public class PolyConnection implements Connection {
         throwIfAutoCommit();
         getPrismInterfaceClient().commitTransaction( getNetworkTimeout() );
         hasRunningTransaction = false;
+        for ( Statement statement : snapshotOpenStatements() ) {
+            if ( statement instanceof PolyphenyStatement ) {
+                try {
+                    ((PolyphenyStatement) statement).closeGeneratedKeysAtCommit();
+                } catch ( SQLException e ) {
+                    log.warn( "Could not close completed statement after committing the transaction", e );
+                }
+            }
+        }
     }
 
 
@@ -216,12 +225,8 @@ public class PolyConnection implements Connection {
         if ( isClosed() ) {
             return;
         }
-        Set<Statement> statements;
-        synchronized ( openStatements ) {
-            statements = new HashSet<>( openStatements );
-        }
         try {
-            for ( Statement openStatement : statements ) {
+            for ( Statement openStatement : snapshotOpenStatements() ) {
                 openStatement.close();
             }
             if ( !isClosed ) {
@@ -229,6 +234,13 @@ public class PolyConnection implements Connection {
             }
         } finally {
             abortAfterIncompleteRequest();
+        }
+    }
+
+
+    private Set<Statement> snapshotOpenStatements() {
+        synchronized ( openStatements ) {
+            return new HashSet<>( openStatements );
         }
     }
 

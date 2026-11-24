@@ -20,11 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStream;
 import java.io.StringReader;
+import java.math.BigDecimal;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -158,6 +160,91 @@ class Prism25IntegrationTest {
                 ddl.executeUpdate( "DROP TABLE " + table );
             }
         }
+    }
+
+
+    @Test
+    void commitClosesGeneratedKeyCursors() throws SQLException {
+        String table = "jdbc_keys_commit_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection observer = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement ddl = observer.createStatement() ) {
+            ddl.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY)" );
+            String sql = "INSERT INTO " + table + " DEFAULT VALUES";
+            try {
+                try ( Connection writer = DriverManager.getConnection( DB_URL, "pa", "" );
+                        Statement raw = writer.createStatement();
+                        PreparedStatement prepared = writer.prepareStatement( sql, Statement.RETURN_GENERATED_KEYS ) ) {
+                    writer.setAutoCommit( false );
+                    prepared.closeOnCompletion();
+                    assertEquals( 1, raw.executeUpdate( sql, Statement.RETURN_GENERATED_KEYS ) );
+                    assertEquals( 1, prepared.executeUpdate() );
+                    try ( ResultSet rawKeys = raw.getGeneratedKeys(); ResultSet preparedKeys = prepared.getGeneratedKeys() ) {
+                        assertEquals( ResultSet.CLOSE_CURSORS_AT_COMMIT, rawKeys.getHoldability() );
+                        assertTrue( preparedKeys.next() );
+                        writer.commit();
+                        assertTrue( rawKeys.isClosed() );
+                        assertTrue( preparedKeys.isClosed() );
+                        assertThrows( SQLException.class, rawKeys::next );
+                        assertTrue( prepared.isClosed() );
+                        assertFalse( raw.isClosed() );
+                    }
+                    try ( ResultSet cleared = raw.getGeneratedKeys() ) {
+                        assertFalse( cleared.next() );
+                    }
+                }
+            } finally {
+                ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @Test
+    void rawGeneratedKeySelectorsRespectNumericTypes() throws SQLException {
+        String table = "jdbc_raw_numeric_keys_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement sql = connection.createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY, small_num SMALLINT, qty INTEGER, "
+                    + "wide_num BIGINT, ratio REAL, approximation DOUBLE, amount DECIMAL(12,4), optional_num INTEGER)" );
+            try {
+                String insert = "INSERT INTO " + table + " (small_num, qty, wide_num, ratio, approximation, amount) "
+                        + "VALUES (-42, 42.6, 9007199254740993, 1.5, 2.5, 1.2)";
+                assertEquals( 1, sql.executeUpdate( insert, new int[]{ 2, 3, 4, 5, 6, 7, 8 } ) );
+                try ( ResultSet keys = sql.getGeneratedKeys() ) {
+                    assertNumericProjection( keys );
+                }
+                assertEquals( 1, sql.executeUpdate( insert,
+                        new String[]{ "small_num", "qty", "wide_num", "ratio", "approximation", "amount", "optional_num" } ) );
+                try ( ResultSet keys = sql.getGeneratedKeys() ) {
+                    assertNumericProjection( keys );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    private static void assertNumericProjection( ResultSet keys ) throws SQLException {
+        long exactLong = 9_007_199_254_740_993L;
+        BigDecimal amount = new BigDecimal( "1.2000" );
+        assertTrue( keys.next() );
+        assertEquals( (short) -42, keys.getShort( "small_num" ) );
+        assertEquals( Integer.valueOf( -42 ), keys.getObject( "small_num", Integer.class ) );
+        assertEquals( 43, keys.getInt( "qty" ) );
+        assertEquals( Integer.valueOf( 43 ), keys.getObject( "qty" ) );
+        assertEquals( BigDecimal.valueOf( 43 ), keys.getBigDecimal( "qty" ) );
+        assertEquals( exactLong, keys.getLong( "wide_num" ) );
+        assertEquals( Long.valueOf( exactLong ), keys.getObject( "wide_num", Long.class ) );
+        assertEquals( 1.5f, keys.getFloat( "ratio" ) );
+        assertEquals( Float.valueOf( 1.5f ), keys.getObject( "ratio", Float.class ) );
+        assertEquals( 2.5d, keys.getDouble( "approximation" ) );
+        assertEquals( Double.valueOf( 2.5d ), keys.getObject( "approximation", Double.class ) );
+        assertEquals( amount, keys.getBigDecimal( "amount" ) );
+        assertEquals( amount, keys.getObject( "amount", BigDecimal.class ) );
+        assertNull( keys.getObject( "optional_num", Integer.class ) );
+        assertTrue( keys.wasNull() );
+        assertFalse( keys.next() );
     }
 
 

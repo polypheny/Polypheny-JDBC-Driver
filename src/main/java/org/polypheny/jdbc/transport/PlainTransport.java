@@ -22,11 +22,14 @@ import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 
 public class PlainTransport implements Transport {
 
@@ -89,12 +92,45 @@ public class PlainTransport implements Transport {
 
     @Override
     public void sendMessage( byte[] message ) throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate( 8 + message.length );
-        bb.order( ByteOrder.LITTLE_ENDIAN );
-        bb.putLong( message.length );
-        bb.put( message );
-        bb.rewind();
-        writeEntireBuffer( bb );
+        writeEntireBuffer( frameMessage( message ) );
+    }
+
+
+    @Override
+    public boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite ) throws IOException {
+        ByteBuffer frame = frameMessage( message );
+        long remaining = deadlineNanos - System.nanoTime();
+        if ( remaining <= 0 ) {
+            return false;
+        }
+        try {
+            if ( !writeLock.tryLock( remaining, TimeUnit.NANOSECONDS ) ) {
+                return false;
+            }
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            ClosedByInterruptException interrupted = new ClosedByInterruptException();
+            interrupted.initCause( e );
+            throw interrupted;
+        }
+        try {
+            if ( !beginWrite.getAsBoolean() ) {
+                return false;
+            }
+            writeEntireBuffer( frame );
+            return true;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+
+    private static ByteBuffer frameMessage( byte[] message ) {
+        ByteBuffer frame = ByteBuffer.allocate( 8 + message.length ).order( ByteOrder.LITTLE_ENDIAN );
+        frame.putLong( message.length );
+        frame.put( message );
+        frame.rewind();
+        return frame;
     }
 
 

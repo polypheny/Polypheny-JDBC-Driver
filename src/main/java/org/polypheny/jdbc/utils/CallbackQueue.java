@@ -35,6 +35,7 @@ public class CallbackQueue<T> {
     private final Condition hasNext = queueLock.newCondition();
     private final Condition isCompleted = queueLock.newCondition();
     private boolean bIsCompleted = false;
+    private boolean terminalResponseReceived;
     private final Queue<T> messageQueue = new LinkedList<>();
     private final Function<Response, T> extractResponse;
     private final long timeoutMillis;
@@ -186,6 +187,7 @@ public class CallbackQueue<T> {
             messageQueue.add( extractResponse.apply( message ) );
             if ( message.getLast() ) {
                 // A terminal frame arrives and completes the queue at the same instant.
+                terminalResponseReceived = true;
                 bIsCompleted = true;
                 signalTerminalState();
             } else {
@@ -198,14 +200,30 @@ public class CallbackQueue<T> {
 
 
     public void onError( Throwable propagatedException ) {
+        onError( propagatedException, false );
+    }
+
+
+    public void onError( Throwable propagatedException, boolean terminalResponse ) {
         queueLock.lock();
         try {
             if ( acceptsCallback() ) {
+                terminalResponseReceived = terminalResponse;
                 this.propagatedException = propagatedException instanceof PrismInterfaceServiceException
                         ? (PrismInterfaceServiceException) propagatedException
                         : new PrismInterfaceServiceException( propagatedException );
                 signalTerminalState();
             }
+        } finally {
+            queueLock.unlock();
+        }
+    }
+
+
+    public boolean hasTerminalResponse() {
+        queueLock.lock();
+        try {
+            return terminalResponseReceived;
         } finally {
             queueLock.unlock();
         }

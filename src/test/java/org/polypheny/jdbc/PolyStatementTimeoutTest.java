@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,7 +50,7 @@ class PolyStatementTimeoutTest {
     void closesTheConnectionWhenCypherDoesNotReturnAnExecutionResult( boolean acknowledgeStatement, boolean interrupted ) throws Exception {
         byte[] endOfStream = new byte[0];
         BlockingQueue<byte[]> incoming = new LinkedBlockingQueue<>();
-        Transport transport = mock( Transport.class );
+        Transport transport = mock( Transport.class, CALLS_REAL_METHODS );
         when( transport.receiveMessage() ).thenAnswer( invocation -> {
             byte[] message = incoming.take();
             if ( message == endOfStream ) {

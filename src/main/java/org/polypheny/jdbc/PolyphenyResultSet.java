@@ -145,9 +145,30 @@ public class PolyphenyResultSet implements ResultSet {
 
     private TypedValue accessObjectValue( int columnIndex ) throws SQLException {
         TypedValue value = accessValue( columnIndex );
+        if ( generatedKeys ) {
+            return GeneratedKeys.normalizeNumericValue( value, metadata.getColumnType( columnIndex ) );
+        }
         // Prism may encode both SQL REAL and FLOAT as a 32-bit float. JDBC maps SQL FLOAT to Double.
         if ( value.getValueCase() == ValueCase.FLOAT && metadata.getColumnType( columnIndex ) == Types.FLOAT ) {
             return TypedValue.fromDouble( value.asDouble() );
+        }
+        return value;
+    }
+
+
+    private TypedValue accessIntegralValue( int columnIndex ) throws SQLException {
+        TypedValue value = accessValue( columnIndex );
+        if ( generatedKeys ) {
+            int sqlType = metadata.getColumnType( columnIndex );
+            switch ( sqlType ) {
+                case Types.TINYINT:
+                case Types.SMALLINT:
+                case Types.INTEGER:
+                case Types.BIGINT:
+                    return GeneratedKeys.normalizeNumericValue( value, sqlType );
+                default:
+                    break;
+            }
         }
         return value;
     }
@@ -271,28 +292,28 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public byte getByte( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asByte();
+        return accessIntegralValue( columnIndex ).asByte();
     }
 
 
     @Override
     public short getShort( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asShort();
+        return accessIntegralValue( columnIndex ).asShort();
     }
 
 
     @Override
     public int getInt( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asInt();
+        return accessIntegralValue( columnIndex ).asInt();
     }
 
 
     @Override
     public long getLong( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asLong();
+        return accessIntegralValue( columnIndex ).asLong();
     }
 
 
