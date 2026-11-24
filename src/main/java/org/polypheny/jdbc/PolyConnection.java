@@ -63,8 +63,6 @@ public class PolyConnection implements Connection {
     private PolyphenyDatabaseMetadata databaseMetaData;
     private volatile boolean isClosed;
 
-    private boolean hasRunningTransaction;
-
     private final Set<Statement> openStatements;
 
     private Map<String, Class<?>> typeMap;
@@ -83,13 +81,6 @@ public class PolyConnection implements Connection {
         }
         if ( properties.isAutoCommit() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on auto committing connection." );
-        }
-    }
-
-
-    private void throwIfRunningTransaction() throws SQLException {
-        if ( hasRunningTransaction ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation during running transaction." );
         }
     }
 
@@ -179,10 +170,18 @@ public class PolyConnection implements Connection {
     @Override
     public void setAutoCommit( boolean autoCommit ) throws SQLException {
         throwIfClosed();
-        if ( hasRunningTransaction ) {
-            commit();
+        if ( properties.isAutoCommit() == autoCommit ) {
+            return;
         }
-        properties.setAutoCommit( autoCommit );
+        try {
+            if ( autoCommit ) {
+                // Prism's mode update only changes the flag. Finish the manual transaction first.
+                commit();
+            }
+            properties.setAutoCommit( autoCommit );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
     }
 
 
@@ -199,7 +198,6 @@ public class PolyConnection implements Connection {
         throwIfClosed();
         throwIfAutoCommit();
         getPrismInterfaceClient().commitTransaction( getNetworkTimeout() );
-        hasRunningTransaction = false;
         for ( Statement statement : snapshotOpenStatements() ) {
             if ( statement instanceof PolyphenyStatement ) {
                 try {
@@ -317,7 +315,6 @@ public class PolyConnection implements Connection {
     @Override
     public void setReadOnly( boolean readOnly ) throws SQLException {
         throwIfClosed();
-        throwIfRunningTransaction();
         properties.setReadOnly( readOnly );
     }
 

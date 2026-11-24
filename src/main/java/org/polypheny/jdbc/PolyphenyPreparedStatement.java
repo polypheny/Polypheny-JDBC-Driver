@@ -44,7 +44,6 @@ import java.util.List;
 import org.polypheny.jdbc.meta.PolyphenyParameterMetaData;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.types.TypedValue;
-import org.polypheny.prism.Frame;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResult;
@@ -167,10 +166,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
             }
             captureGeneratedKeys( result );
-            Frame frame = result.getFrame();
-            throwIfNotRelational( frame );
-            currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
-            return currentResult;
+            return publishResult( result.getFrame() );
         } finally {
             clearParameterBatch();
         }
@@ -394,9 +390,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
                 currentUpdateCount = result.getScalar();
                 return false;
             }
-            Frame frame = result.getFrame();
-            throwIfNotRelational( frame );
-            currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+            publishResult( result.getFrame() );
             return true;
         } finally {
             clearParameterBatch();

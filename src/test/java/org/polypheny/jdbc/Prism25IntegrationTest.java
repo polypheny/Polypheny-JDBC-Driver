@@ -39,6 +39,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.types.PolyBlob;
 
 @Tag("prism25")
@@ -163,8 +165,9 @@ class Prism25IntegrationTest {
     }
 
 
-    @Test
-    void commitClosesGeneratedKeyCursors() throws SQLException {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void commitClosesGeneratedKeyCursors( boolean enableAutoCommit ) throws SQLException {
         String table = "jdbc_keys_commit_" + UUID.randomUUID().toString().replace( "-", "" );
         try ( Connection observer = DriverManager.getConnection( DB_URL, "pa", "" );
                 Statement ddl = observer.createStatement() ) {
@@ -181,7 +184,12 @@ class Prism25IntegrationTest {
                     try ( ResultSet rawKeys = raw.getGeneratedKeys(); ResultSet preparedKeys = prepared.getGeneratedKeys() ) {
                         assertEquals( ResultSet.CLOSE_CURSORS_AT_COMMIT, rawKeys.getHoldability() );
                         assertTrue( preparedKeys.next() );
-                        writer.commit();
+                        if ( enableAutoCommit ) {
+                            writer.setAutoCommit( true );
+                        } else {
+                            writer.commit();
+                        }
+                        assertEquals( enableAutoCommit, writer.getAutoCommit() );
                         assertTrue( rawKeys.isClosed() );
                         assertTrue( preparedKeys.isClosed() );
                         assertThrows( SQLException.class, rawKeys::next );
@@ -190,6 +198,14 @@ class Prism25IntegrationTest {
                     }
                     try ( ResultSet cleared = raw.getGeneratedKeys() ) {
                         assertFalse( cleared.next() );
+                    }
+                    try ( Connection reader = DriverManager.getConnection( DB_URL, "pa", "" );
+                            Statement query = reader.createStatement() ) {
+                        query.setQueryTimeout( 2 );
+                        try ( ResultSet count = query.executeQuery( "SELECT COUNT(*) FROM " + table ) ) {
+                            assertTrue( count.next() );
+                            assertEquals( 2, count.getInt( 1 ) );
+                        }
                     }
                 }
             } finally {
@@ -208,7 +224,7 @@ class Prism25IntegrationTest {
                     + "wide_num BIGINT, ratio REAL, approximation DOUBLE, amount DECIMAL(12,4), optional_num INTEGER)" );
             try {
                 String insert = "INSERT INTO " + table + " (small_num, qty, wide_num, ratio, approximation, amount) "
-                        + "VALUES (-42, 42.6, 9007199254740993, 1.5, 2.5, 1.2)";
+                        + "VALUES (128, 42.6, 9007199254740993, 1.5, 2.5, 1.2)";
                 assertEquals( 1, sql.executeUpdate( insert, new int[]{ 2, 3, 4, 5, 6, 7, 8 } ) );
                 try ( ResultSet keys = sql.getGeneratedKeys() ) {
                     assertNumericProjection( keys );
@@ -229,13 +245,15 @@ class Prism25IntegrationTest {
         long exactLong = 9_007_199_254_740_993L;
         BigDecimal amount = new BigDecimal( "1.2000" );
         assertTrue( keys.next() );
-        assertEquals( (short) -42, keys.getShort( "small_num" ) );
-        assertEquals( Integer.valueOf( -42 ), keys.getObject( "small_num", Integer.class ) );
+        assertEquals( (short) 128, keys.getShort( "small_num" ) );
+        assertEquals( Integer.valueOf( 128 ), keys.getObject( "small_num", Integer.class ) );
+        assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getByte( "small_num" ) ).getSQLState() );
         assertEquals( 43, keys.getInt( "qty" ) );
         assertEquals( Integer.valueOf( 43 ), keys.getObject( "qty" ) );
         assertEquals( BigDecimal.valueOf( 43 ), keys.getBigDecimal( "qty" ) );
         assertEquals( exactLong, keys.getLong( "wide_num" ) );
         assertEquals( Long.valueOf( exactLong ), keys.getObject( "wide_num", Long.class ) );
+        assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getInt( "wide_num" ) ).getSQLState() );
         assertEquals( 1.5f, keys.getFloat( "ratio" ) );
         assertEquals( Float.valueOf( 1.5f ), keys.getObject( "ratio", Float.class ) );
         assertEquals( 2.5d, keys.getDouble( "approximation" ) );
@@ -245,6 +263,35 @@ class Prism25IntegrationTest {
         assertNull( keys.getObject( "optional_num", Integer.class ) );
         assertTrue( keys.wasNull() );
         assertFalse( keys.next() );
+    }
+
+
+    @Test
+    void preparedGeneratedKeysConvertIntegralWireValuesToFloatingTypes() throws SQLException {
+        String table = "jdbc_prepared_numeric_keys_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement ddl = connection.createStatement() ) {
+            ddl.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY, ratio REAL, approximation DOUBLE)" );
+            try ( PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO " + table + " (ratio, approximation) VALUES (?, ?)", new String[]{ "ratio", "approximation" } ) ) {
+                int realInput = 16_777_217;
+                long doubleInput = 9_007_199_254_740_993L;
+                insert.setInt( 1, realInput );
+                insert.setLong( 2, doubleInput );
+                assertEquals( 1, insert.executeUpdate() );
+                try ( ResultSet keys = insert.getGeneratedKeys() ) {
+                    assertTrue( keys.next() );
+                    assertEquals( (float) realInput, keys.getFloat( "ratio" ) );
+                    assertEquals( (double) (float) realInput, keys.getDouble( "ratio" ) );
+                    assertEquals( Float.valueOf( realInput ), keys.getObject( "ratio", Float.class ) );
+                    assertEquals( (double) doubleInput, keys.getDouble( "approximation" ) );
+                    assertEquals( Double.valueOf( doubleInput ), keys.getObject( "approximation", Double.class ) );
+                    assertFalse( keys.next() );
+                }
+            } finally {
+                ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
     }
 
 

@@ -43,11 +43,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntConsumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -59,19 +66,25 @@ import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.prism.CloseResultResponse;
 import org.polypheny.prism.CloseStatementResponse;
+import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
 import org.polypheny.prism.DisconnectResponse;
 import org.polypheny.prism.ErrorDetails;
 import org.polypheny.prism.ErrorResponse;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.PreparedStatementSignature;
+import org.polypheny.prism.ProtoLong;
+import org.polypheny.prism.ProtoPolyType;
+import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Request.TypeCase;
 import org.polypheny.prism.Response;
+import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
+import org.polypheny.prism.TypeMeta;
 
 @Timeout(5)
 class BatchCleanupTimeoutTest {
@@ -313,6 +326,112 @@ class BatchCleanupTimeoutTest {
     }
 
 
+    @ParameterizedTest
+    @CsvSource({ "false, false", "false, true", "true, false", "true, true" })
+    void connectionTimeoutDuringResultConstructionPreventsPublication( boolean prepared, boolean execute ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, Intercept.TIMEOUT );
+        RpcService rpc = new RpcService( transport );
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        CountDownLatch buildingResult = new CountDownLatch( 1 );
+        CountDownLatch resumeResult = new CountDownLatch( 1 );
+        AtomicReference<Thread> queryThread = new AtomicReference<>();
+        AtomicInteger timeoutReads = new AtomicInteger();
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
+        PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
+        try ( Connection connection = new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) ) {
+            @Override
+            public int getNetworkTimeout() throws SQLException {
+                int timeout = super.getNetworkTimeout();
+                if ( Thread.currentThread() == queryThread.get() && timeoutReads.incrementAndGet() == 2 ) {
+                    // The query received its result. Pause after its last check for an open connection.
+                    waitToContinue( buildingResult, resumeResult );
+                }
+                return timeout;
+            }
+        };
+                Statement query = prepared ? connection.prepareStatement( SELECT ) : connection.createStatement();
+                Statement timed = connection.createStatement() ) {
+            Future<?> result = executor.submit( () -> {
+                queryThread.set( Thread.currentThread() );
+                if ( prepared ) {
+                    PreparedStatement preparedQuery = (PreparedStatement) query;
+                    return execute ? preparedQuery.execute() : preparedQuery.executeQuery();
+                }
+                return execute ? query.execute( SELECT ) : query.executeQuery( SELECT );
+            } );
+
+            assertResultCannotBePublishedAfterAbort( connection, query, timed, result, buildingResult, resumeResult );
+        } finally {
+            resumeResult.countDown();
+            executor.shutdownNow();
+            rpc.close();
+        }
+    }
+
+
+    @Test
+    void connectionTimeoutDuringGeneratedKeysLookupPreventsPublication() throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST, Intercept.TIMEOUT );
+        RpcService rpc = new RpcService( transport );
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        CountDownLatch findingKeys = new CountDownLatch( 1 );
+        CountDownLatch resumeKeys = new CountDownLatch( 1 );
+        AtomicBoolean pauseLookup = new AtomicBoolean();
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc ) {
+            @Override
+            public boolean supportsGeneratedKeys() {
+                if ( pauseLookup.getAndSet( false ) ) {
+                    waitToContinue( findingKeys, resumeKeys );
+                }
+                return true;
+            }
+        };
+        try ( Connection connection = connection( client );
+                Statement insert = connection.createStatement();
+                Statement timed = connection.createStatement() ) {
+            assertEquals( 1, insert.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+            pauseLookup.set( true );
+            Future<ResultSet> result = executor.submit( insert::getGeneratedKeys );
+
+            assertResultCannotBePublishedAfterAbort( connection, insert, timed, result, findingKeys, resumeKeys );
+        } finally {
+            resumeKeys.countDown();
+            executor.shutdownNow();
+            rpc.close();
+        }
+    }
+
+
+    private static void assertResultCannotBePublishedAfterAbort(
+            Connection connection, Statement completed, Statement timed, Future<?> result,
+            CountDownLatch paused, CountDownLatch resume ) throws Exception {
+        assertTrue( paused.await( 2, TimeUnit.SECONDS ) );
+        timed.setQueryTimeout( 1 );
+        timed.addBatch( INSERT );
+        assertThrows( SQLTimeoutException.class, timed::executeBatch );
+        assertTrue( connection.isClosed() );
+        assertTrue( completed.isClosed() );
+        assertTrue( timed.isClosed() );
+
+        resume.countDown();
+        ExecutionException failure = assertThrows( ExecutionException.class, () -> result.get( 2, TimeUnit.SECONDS ) );
+        SQLException sqlFailure = assertInstanceOf( SQLException.class, failure.getCause() );
+        assertEquals( PrismInterfaceErrors.OPERATION_ILLEGAL.state, sqlFailure.getSQLState() );
+    }
+
+
+    private static void waitToContinue( CountDownLatch paused, CountDownLatch resume ) {
+        paused.countDown();
+        try {
+            assertTrue( resume.await( 3, TimeUnit.SECONDS ) );
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError( e );
+        }
+    }
+
+
     private static Connection connection( PrismInterfaceClient client ) throws SQLException {
         ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
         PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
@@ -391,7 +510,8 @@ class BatchCleanupTimeoutTest {
                     response.setStatementBatchResponse( StatementBatchResponse.newBuilder().setBatchId( 41 ).addScalars( 1 ) );
                     break;
                 case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST:
-                    response.setStatementResponse( StatementResponse.newBuilder().setStatementId( 41 ).setResult( queryResult() ) );
+                    StatementResult result = request.getExecuteUnparameterizedStatementRequest().hasGeneratedKeys() ? insertResult() : queryResult();
+                    response.setStatementResponse( StatementResponse.newBuilder().setStatementId( 41 ).setResult( result ) );
                     break;
                 case PREPARE_INDEXED_STATEMENT_REQUEST:
                     response.setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 41 ) );
@@ -417,6 +537,16 @@ class BatchCleanupTimeoutTest {
                     throw new AssertionError( "Unexpected request: " + type );
             }
             responses.add( response.build().toByteArray() );
+        }
+
+
+        private static StatementResult insertResult() {
+            return StatementResult.newBuilder().setScalar( 1 )
+                    .setGeneratedKeys( Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.newBuilder()
+                            .addColumnMeta( ColumnMeta.newBuilder().setColumnName( "id" )
+                                    .setTypeMeta( TypeMeta.newBuilder().setProtoValueType( ProtoPolyType.BIGINT ) ) )
+                            .addRows( Row.newBuilder().addValues( ProtoValue.newBuilder().setLong( ProtoLong.newBuilder().setLong( 1 ) ) ) ) ) )
+                    .build();
         }
 
 

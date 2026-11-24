@@ -499,8 +499,18 @@ public class PrismInterfaceClient {
 
 
     public void setConnectionProperties( PolyphenyConnectionProperties connectionProperties, int timeout ) throws PrismInterfaceServiceException {
+        updateConnectionProperties( buildConnectionProperties( connectionProperties ), timeout );
+    }
+
+
+    public void setAutoCommit( boolean autoCommit, int timeout ) throws PrismInterfaceServiceException {
+        updateConnectionProperties( ConnectionProperties.newBuilder().setIsAutoCommit( autoCommit ).build(), timeout );
+    }
+
+
+    private void updateConnectionProperties( ConnectionProperties changes, int timeout ) throws PrismInterfaceServiceException {
         ConnectionPropertiesUpdateRequest request = ConnectionPropertiesUpdateRequest.newBuilder()
-                .setConnectionProperties( buildConnectionProperties( connectionProperties ) )
+                .setConnectionProperties( changes )
                 .build();
         rpc.updateConnectionProperties( request, timeout );
     }

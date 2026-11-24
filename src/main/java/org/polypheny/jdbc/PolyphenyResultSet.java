@@ -66,7 +66,7 @@ public class PolyphenyResultSet implements ResultSet {
     private Scrollable<List<TypedValue>> resultScroller;
     private Class<BidirectionalScroller> bidirectionScrollerClass;
     private TypedValue lastRead;
-    private boolean isClosed;
+    private volatile boolean isClosed;
     private Map<Integer, TypedValue> rowUpdates;
     private boolean isInInsertMode;
 
@@ -156,21 +156,15 @@ public class PolyphenyResultSet implements ResultSet {
     }
 
 
-    private TypedValue accessIntegralValue( int columnIndex ) throws SQLException {
+    private TypedValue accessIntegralValue( int columnIndex, int getterType ) throws SQLException {
         TypedValue value = accessValue( columnIndex );
-        if ( generatedKeys ) {
-            int sqlType = metadata.getColumnType( columnIndex );
-            switch ( sqlType ) {
-                case Types.TINYINT:
-                case Types.SMALLINT:
-                case Types.INTEGER:
-                case Types.BIGINT:
-                    return GeneratedKeys.normalizeNumericValue( value, sqlType );
-                default:
-                    break;
-            }
-        }
-        return value;
+        return generatedKeys ? GeneratedKeys.valueForIntegralGetter( value, metadata.getColumnType( columnIndex ), getterType ) : value;
+    }
+
+
+    private TypedValue accessFloatingValue( int columnIndex ) throws SQLException {
+        TypedValue value = accessValue( columnIndex );
+        return generatedKeys ? GeneratedKeys.valueForFloatingGetter( value, metadata.getColumnType( columnIndex ) ) : value;
     }
 
 
@@ -292,42 +286,42 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public byte getByte( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessIntegralValue( columnIndex ).asByte();
+        return accessIntegralValue( columnIndex, Types.TINYINT ).asByte();
     }
 
 
     @Override
     public short getShort( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessIntegralValue( columnIndex ).asShort();
+        return accessIntegralValue( columnIndex, Types.SMALLINT ).asShort();
     }
 
 
     @Override
     public int getInt( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessIntegralValue( columnIndex ).asInt();
+        return accessIntegralValue( columnIndex, Types.INTEGER ).asInt();
     }
 
 
     @Override
     public long getLong( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessIntegralValue( columnIndex ).asLong();
+        return accessIntegralValue( columnIndex, Types.BIGINT ).asLong();
     }
 
 
     @Override
     public float getFloat( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asFloat();
+        return accessFloatingValue( columnIndex ).asFloat();
     }
 
 
     @Override
     public double getDouble( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asDouble();
+        return accessFloatingValue( columnIndex ).asDouble();
     }
 
 

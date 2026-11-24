@@ -17,6 +17,7 @@
 package org.polypheny.jdbc;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.JDBCType;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -152,6 +153,52 @@ final class GeneratedKeys {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL,
                     "Generated key cannot be represented as " + JDBCType.valueOf( sqlType ) + ".", e );
         }
+    }
+
+
+    static TypedValue valueForIntegralGetter( TypedValue value, int columnType, int getterType ) throws SQLException {
+        switch ( columnType ) {
+            case Types.TINYINT:
+            case Types.SMALLINT:
+            case Types.INTEGER:
+            case Types.BIGINT:
+                TypedValue normalized = normalizeNumericValue( value, columnType );
+                return columnType == getterType ? normalized : normalizeNumericValue( normalized, getterType );
+            default:
+                break;
+        }
+
+        switch ( value.getValueCase() ) {
+            case INTEGER:
+            case LONG:
+                return normalizeNumericValue( value, getterType );
+            case BIG_DECIMAL:
+                if ( getterType == Types.INTEGER || getterType == Types.BIGINT ) {
+                    // These getters already truncate fractional decimal values toward zero.
+                    BigDecimal integral = value.asBigDecimal().setScale( 0, RoundingMode.DOWN );
+                    return normalizeNumericValue( TypedValue.fromBigDecimal( integral ), getterType );
+                }
+                break;
+            default:
+                break;
+        }
+        return value;
+    }
+
+
+    static TypedValue valueForFloatingGetter( TypedValue value, int columnType ) throws SQLException {
+        ValueCase valueType = value.getValueCase();
+        if ( valueType == ValueCase.INTEGER || valueType == ValueCase.LONG ) {
+            switch ( columnType ) {
+                case Types.REAL:
+                case Types.FLOAT:
+                case Types.DOUBLE:
+                    return normalizeNumericValue( value, columnType );
+                default:
+                    break;
+            }
+        }
+        return value;
     }
 
 

@@ -124,8 +124,8 @@ public class PolyphenyConnectionProperties {
 
 
     public void setAutoCommit( boolean isAutoCommit ) throws PrismInterfaceServiceException {
+        prismInterfaceClient.setAutoCommit( isAutoCommit, getNetworkTimeout() );
         this.isAutoCommit = isAutoCommit;
-        sync();
     }
 
 

@@ -46,13 +46,14 @@ public class PolyphenyStatement implements Statement {
 
     @Getter
     private PolyConnection polyConnection;
-    protected ResultSet currentResult;
+    protected volatile ResultSet currentResult;
     protected long currentUpdateCount;
     @Getter
     protected int statementId;
 
-    private boolean isClosed;
-    private boolean clearingResults;
+    private final Object resultsLock = new Object();
+    private volatile boolean isClosed;
+    private volatile boolean clearingResults;
     private ExecutionDeadline cleanupDeadline;
     private RelationalFrame generatedKeysFrame;
     private PolyphenyResultSetProperties generatedKeysProperties;
@@ -112,9 +113,13 @@ public class PolyphenyStatement implements Statement {
     protected final void clearExecutionResults() throws SQLException {
         clearingResults = true;
         try {
-            clearGeneratedKeys();
-            if ( currentResult != null ) {
-                currentResult.close();
+            ResultSet previousResult;
+            synchronized ( resultsLock ) {
+                clearGeneratedKeys();
+                previousResult = currentResult;
+            }
+            if ( previousResult != null ) {
+                previousResult.close();
             }
             currentUpdateCount = NO_UPDATE_COUNT;
         } finally {
@@ -134,11 +139,14 @@ public class PolyphenyStatement implements Statement {
 
 
     final void closeGeneratedKeysAtCommit() throws SQLException {
-        if ( generatedKeysProperties == null || generatedKeysProperties.getResultSetHoldability() != ResultSet.CLOSE_CURSORS_AT_COMMIT ) {
-            return;
+        boolean closeStatement;
+        synchronized ( resultsLock ) {
+            if ( generatedKeysProperties == null || generatedKeysProperties.getResultSetHoldability() != ResultSet.CLOSE_CURSORS_AT_COMMIT ) {
+                return;
+            }
+            closeStatement = generatedKeysFrame != null && currentResult == null && properties.isCloseOnCompletion();
+            clearGeneratedKeys();
         }
-        boolean closeStatement = generatedKeysFrame != null && currentResult == null && properties.isCloseOnCompletion();
-        clearGeneratedKeys();
         if ( closeStatement ) {
             close();
         }
@@ -157,12 +165,13 @@ public class PolyphenyStatement implements Statement {
         if ( !polyConnection.isClosed() ) {
             closeResource( timeout -> getClient().closeResult( statementId, timeout ) );
         }
-        clearCurrentResult();
-        if ( polyConnection.isClosed() ) {
-            return;
+        boolean canClose;
+        synchronized ( resultsLock ) {
+            clearCurrentResult();
+            boolean hasOpenKeys = generatedKeysFrame != null && (generatedKeysResult == null || !generatedKeysResult.isClosed());
+            canClose = !clearingResults && !hasOpenKeys;
         }
-        boolean hasOpenKeys = generatedKeysFrame != null && (generatedKeysResult == null || !generatedKeysResult.isClosed());
-        if ( !clearingResults && !hasOpenKeys && isCloseOnCompletion() ) {
+        if ( !polyConnection.isClosed() && canClose && isCloseOnCompletion() ) {
             close();
         }
     }
@@ -188,8 +197,11 @@ public class PolyphenyStatement implements Statement {
 
 
     void notifyGeneratedKeysClosure( PolyphenyResultSet result ) throws SQLException {
-        if ( !clearingResults && !polyConnection.isClosed() && result == generatedKeysResult && generatedKeysFrame != null
-                && currentResult == null && isCloseOnCompletion() ) {
+        boolean canClose;
+        synchronized ( resultsLock ) {
+            canClose = !clearingResults && result == generatedKeysResult && generatedKeysFrame != null && currentResult == null;
+        }
+        if ( canClose && !polyConnection.isClosed() && isCloseOnCompletion() ) {
             close();
         }
     }
@@ -215,8 +227,12 @@ public class PolyphenyStatement implements Statement {
         if ( maxRows > 0 && maxRows < keys.getRowsCount() ) {
             keys = keys.toBuilder().clearRows().addAllRows( keys.getRowsList().subList( 0, (int) maxRows ) ).build();
         }
-        generatedKeysFrame = keys;
-        generatedKeysProperties = keyProperties;
+        synchronized ( resultsLock ) {
+            if ( !isClosed ) {
+                generatedKeysFrame = keys;
+                generatedKeysProperties = keyProperties;
+            }
+        }
     }
 
 
@@ -272,11 +288,13 @@ public class PolyphenyStatement implements Statement {
 
 
     final void dispose() {
-        isClosed = true;
-        clearGeneratedKeys();
-        clearCurrentResult();
-        currentUpdateCount = NO_UPDATE_COUNT;
-        statementId = NO_STATEMENT_ID;
+        synchronized ( resultsLock ) {
+            isClosed = true;
+            clearGeneratedKeys();
+            clearCurrentResult();
+            currentUpdateCount = NO_UPDATE_COUNT;
+            statementId = NO_STATEMENT_ID;
+        }
         polyConnection.endTracking( this );
     }
 
@@ -288,8 +306,37 @@ public class PolyphenyStatement implements Statement {
 
     protected void throwIfClosed() throws SQLException {
         if ( isClosed() ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation for a closed statement" );
+            throw closedStatement();
         }
+    }
+
+
+    private static PrismInterfaceServiceException closedStatement() {
+        return new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation for a closed statement" );
+    }
+
+
+    protected final ResultSet publishResult( Frame frame ) throws SQLException {
+        throwIfNotRelational( frame );
+        PolyphenyResultSet result = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+        synchronized ( resultsLock ) {
+            if ( isClosed ) {
+                result.markClosed();
+                throw closedStatement();
+            }
+            currentResult = result;
+        }
+        return checkPublishedResult( result );
+    }
+
+
+    private ResultSet checkPublishedResult( PolyphenyResultSet result ) throws SQLException {
+        // The connection can be marked closed before its abort has disposed of every statement.
+        if ( isClosed() ) {
+            result.markClosed();
+            throw closedStatement();
+        }
+        return result;
     }
 
 
@@ -307,10 +354,7 @@ public class PolyphenyStatement implements Statement {
         if ( !result.hasFrame() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
         }
-        Frame frame = result.getFrame();
-        throwIfNotRelational( frame );
-        currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
-        return currentResult;
+        return publishResult( result.getFrame() );
     }
 
 
@@ -485,9 +529,7 @@ public class PolyphenyStatement implements Statement {
             currentUpdateCount = result.getScalar();
             return false;
         }
-        Frame frame = result.getFrame();
-        throwIfNotRelational( frame );
-        currentResult = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+        publishResult( result.getFrame() );
         return true;
     }
 
@@ -515,8 +557,9 @@ public class PolyphenyStatement implements Statement {
     @Override
     public boolean getMoreResults() throws SQLException {
         throwIfClosed();
-        if ( currentResult != null ) {
-            currentResult.close();
+        ResultSet previousResult = currentResult;
+        if ( previousResult != null ) {
+            previousResult.close();
         }
         currentUpdateCount = NO_UPDATE_COUNT;
         return false;
@@ -725,14 +768,21 @@ public class PolyphenyStatement implements Statement {
     public ResultSet getGeneratedKeys() throws SQLException {
         throwIfClosed();
         GeneratedKeys.requireSupported( getClient() );
-        if ( generatedKeysResult == null ) {
-            RelationalFrame keys = generatedKeysFrame == null ? RelationalFrame.getDefaultInstance() : generatedKeysFrame;
-            if ( generatedKeysProperties == null ) {
-                generatedKeysProperties = properties.toResultSetProperties();
+        PolyphenyResultSet result;
+        synchronized ( resultsLock ) {
+            if ( isClosed ) {
+                throw closedStatement();
             }
-            generatedKeysResult = new PolyphenyResultSet( this, keys, generatedKeysProperties );
+            if ( generatedKeysResult == null ) {
+                RelationalFrame keys = generatedKeysFrame == null ? RelationalFrame.getDefaultInstance() : generatedKeysFrame;
+                if ( generatedKeysProperties == null ) {
+                    generatedKeysProperties = properties.toResultSetProperties();
+                }
+                generatedKeysResult = new PolyphenyResultSet( this, keys, generatedKeysProperties );
+            }
+            result = generatedKeysResult;
         }
-        return generatedKeysResult;
+        return checkPublishedResult( result );
     }
 
 

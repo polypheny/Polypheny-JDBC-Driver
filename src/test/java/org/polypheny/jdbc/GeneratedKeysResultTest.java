@@ -98,6 +98,48 @@ class GeneratedKeysResultTest {
 
 
     @Test
+    void checksTheRequestedIntegralGetterRange() throws SQLException {
+        Frame frame = frame( column( "id", "items", "public", ProtoPolyType.BIGINT ),
+                TypedValue.fromBigDecimal( BigDecimal.valueOf( 128 ) ),
+                TypedValue.fromBigDecimal( BigDecimal.valueOf( -32_769 ) ),
+                TypedValue.fromLong( 2_147_483_648L ), TypedValue.fromNull() );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            assertTrue( keys.next() );
+            assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getByte( 1 ) ).getSQLState() );
+            assertEquals( (short) 128, keys.getShort( 1 ) );
+            assertTrue( keys.next() );
+            assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getShort( 1 ) ).getSQLState() );
+            assertEquals( -32_769, keys.getInt( 1 ) );
+            assertTrue( keys.next() );
+            assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getInt( 1 ) ).getSQLState() );
+            assertEquals( 2_147_483_648L, keys.getLong( 1 ) );
+            assertTrue( keys.next() );
+            assertEquals( 0, keys.getByte( 1 ) );
+            assertTrue( keys.wasNull() );
+        }
+    }
+
+
+    @Test
+    void preservesDecimalTruncationAndChecksTheRangeOfTheResult() throws SQLException {
+        Frame frame = frame( column( "amount", "items", "public", ProtoPolyType.DECIMAL ),
+                TypedValue.fromBigDecimal( new BigDecimal( "-42.75" ) ),
+                TypedValue.fromBigDecimal( new BigDecimal( "2147483648.9" ) ),
+                TypedValue.fromBigDecimal( new BigDecimal( "9223372036854775808.9" ) ) );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            assertTrue( keys.next() );
+            assertEquals( -42, keys.getInt( 1 ) );
+            assertEquals( new BigDecimal( "-42.75" ), keys.getBigDecimal( 1 ) );
+            assertTrue( keys.next() );
+            assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getInt( 1 ) ).getSQLState() );
+            assertEquals( 2_147_483_648L, keys.getLong( 1 ) );
+            assertTrue( keys.next() );
+            assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getLong( 1 ) ).getSQLState() );
+        }
+    }
+
+
+    @Test
     void combinesIntegerIdentityTypesInStatementOrderWithoutLosingValuesOrSchema() throws SQLException {
         Frame small = frame( column( "id", "small_items", "public", ProtoPolyType.SMALLINT ), TypedValue.fromShort( Short.MIN_VALUE ) );
         Frame integer = frame( column( "ID", "items", "", ProtoPolyType.INTEGER ).toBuilder().setNamespace( "public" ).build(),
