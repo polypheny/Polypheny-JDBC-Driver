@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.polypheny.jdbc.ResultFetcher.FetchFailure;
 import org.polypheny.jdbc.ResultFetcher.FetchThread;
+import org.polypheny.jdbc.ResultFetcher.PageRequest;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
@@ -40,11 +41,16 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
 
 
     public ForwardOnlyScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
+        this( frame, properties, fetchSize -> client.fetchResult( statementId, fetchSize, fetchTimeout ) );
+    }
+
+
+    ForwardOnlyScroller( Frame frame, PolyphenyResultSetProperties properties, PageRequest pageRequest ) {
         this.values = new LinkedList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
         if ( properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows() ) {
             values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
         }
-        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
+        this.resultFetcher = new ResultFetcher( pageRequest, properties, values.size() );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.properties = properties;
         this.baseIndex = INDEX_BEFORE_FIRST;
@@ -111,7 +117,14 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
         if ( fetcherThread == null ) {
             return;
         }
-        values.addAll( fetcherThread.awaitPage() );
+        try {
+            values.addAll( fetcherThread.awaitPage() );
+        } catch ( PrismInterfaceServiceException failure ) {
+            if ( failure.getCause() instanceof RequestDeadline.BeforeSendTimeout || failure instanceof PrismInterfaceServiceException.InterruptedBeforeSend ) {
+                fetcherThread = null;
+            }
+            throw failure;
+        }
         fetcherThread = null;
     }
 
@@ -136,34 +149,31 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
 
     @Override
     public boolean isBeforeFirst() {
-        return baseIndex == INDEX_BEFORE_FIRST;
+        return baseIndex == INDEX_BEFORE_FIRST && (!values.isEmpty() || fetcherThread != null || !resultFetcher.isLast());
     }
 
 
     @Override
     public boolean isAfterLast() {
-        return values.isEmpty() && currentRow == null;
+        return baseIndex != INDEX_BEFORE_FIRST && !hasCurrent();
     }
 
 
     @Override
     public boolean isFirst() {
-        return baseIndex == 0;
+        return hasCurrent() && baseIndex == 0;
     }
 
 
     @Override
     public boolean isLast() {
-        return values.isEmpty() && currentRow != null;
+        return hasCurrent() && values.isEmpty() && fetcherThread == null && resultFetcher.isLast();
     }
 
 
     @Override
     public int getRow() {
-        if ( isBeforeFirst() || isAfterLast() ) {
-            return 0;
-        }
-        return baseIndex + 1;
+        return hasCurrent() ? baseIndex + 1 : 0;
     }
 
 

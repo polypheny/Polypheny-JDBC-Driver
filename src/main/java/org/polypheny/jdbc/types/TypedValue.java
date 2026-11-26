@@ -19,6 +19,7 @@ package org.polypheny.jdbc.types;
 import com.google.protobuf.ByteString;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -304,12 +305,33 @@ public class TypedValue implements Convertible {
 
 
     public static TypedValue fromCharacterStream( Reader characterStream, int length ) throws SQLException {
-        return fromCharacterStream( characterStream );
+        return fromCharacterStream( characterStream, (long) length );
     }
 
 
     public static TypedValue fromCharacterStream( Reader characterStream, long length ) throws SQLException {
-        return fromCharacterStream( characterStream );
+        if ( length < 0 ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Character stream length must not be negative." );
+        }
+        if ( characterStream == null ) {
+            return fromNull();
+        }
+        try ( Reader reader = characterStream ) {
+            char[] buffer = new char[8 * 1024];
+            StringBuilder result = new StringBuilder();
+            long remaining = length;
+            while ( remaining > 0 ) {
+                int count = reader.read( buffer, 0, (int) Math.min( remaining, buffer.length ) );
+                if ( count <= 0 ) {
+                    throw new EOFException( "Character stream ended before the declared length." );
+                }
+                result.append( buffer, 0, count );
+                remaining -= count;
+            }
+            return fromString( result.toString() );
+        } catch ( IOException e ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.STREAM_ERROR, "Failed to read from character stream.", e );
+        }
     }
 
 
@@ -513,7 +535,8 @@ public class TypedValue implements Convertible {
             case BINARY:
                 return binaryValue.length;
             case STRING:
-                return varcharValue.length();
+                long byteLength = varcharValue.codePoints().mapToLong( TypedValue::utf8Bytes ).sum();
+                return (int) Math.min( byteLength, Integer.MAX_VALUE );
         }
         return 0;
     }
@@ -525,10 +548,32 @@ public class TypedValue implements Convertible {
                 byte[] binaryData = Arrays.copyOfRange( binaryValue, 0, length );
                 return TypedValue.fromBytes( binaryData );
             case STRING:
-                String string = varcharValue.substring( 0, length );
-                return TypedValue.fromString( string );
+                int end = 0;
+                int remaining = length;
+                while ( end < varcharValue.length() ) {
+                    int codePoint = varcharValue.codePointAt( end );
+                    int bytes = utf8Bytes( codePoint );
+                    if ( bytes > remaining ) {
+                        break;
+                    }
+                    remaining -= bytes;
+                    end += Character.charCount( codePoint );
+                }
+                return TypedValue.fromString( varcharValue.substring( 0, end ) );
         }
         return this;
+    }
+
+
+    private static int utf8Bytes( int codePoint ) {
+        // A lone surrogate is encoded as a single replacement byte by Java's UTF-8 encoder.
+        if ( codePoint <= 0x7F || codePoint >= Character.MIN_SURROGATE && codePoint <= Character.MAX_SURROGATE ) {
+            return 1;
+        }
+        if ( codePoint <= 0x7FF ) {
+            return 2;
+        }
+        return Character.isBmpCodePoint( codePoint ) ? 3 : 4;
     }
 
 
@@ -1152,28 +1197,25 @@ public class TypedValue implements Convertible {
 
     @Override
     public <T> T asObject( Class<T> aClass ) throws SQLException {
-        switch ( valueCase ) {
-            case NULL:
-                return null;
-            case LIST:
-            case DOCUMENT:
-            case NODE:
-            case EDGE:
-            case PATH:
-            case GRAPH:
-                Object value = asObject();
-                if ( aClass != null && aClass.isInstance( value ) ) {
-                    return aClass.cast( value );
-                }
-                throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Cannot convert " + valueCase + " to " + aClass + "." );
+        return asObject( aClass, null );
+    }
+
+
+    public <T> T asObject( Class<T> aClass, Calendar calendar ) throws SQLException {
+        if ( aClass == null ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "The requested Java type must not be null." );
         }
-        if ( isSerialized ) {
-            deserialize();
+        if ( isNull() ) {
+            return null;
         }
-        if ( otherValue == null || !(otherValue instanceof UDTPrototype) ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "This value is not of type USER_DEFINED_TYPE." );
+        if ( otherValue instanceof UDTPrototype ) {
+            return aClass.cast( buildFromUdtPrototype( aClass, (UDTPrototype) otherValue ) );
         }
-        return aClass.cast( buildFromUdtPrototype( aClass, (UDTPrototype) otherValue ) );
+        Object value = calendar == null ? asObject() : asObject( calendar );
+        if ( !aClass.isInstance( value ) ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.DATA_TYPE_MISMATCH, "Cannot convert " + valueCase + " to " + aClass + "." );
+        }
+        return aClass.cast( value );
     }
 
 

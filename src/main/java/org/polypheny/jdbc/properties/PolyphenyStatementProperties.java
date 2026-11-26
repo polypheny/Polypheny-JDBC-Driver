@@ -114,7 +114,7 @@ public class PolyphenyStatementProperties {
         if ( fetchSize < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal value for fetch size" );
         }
-        this.fetchSize = fetchSize;
+        this.fetchSize = fetchSize == 0 ? PropertyUtils.getDEFAULT_FETCH_SIZE() : fetchSize;
     }
 
 

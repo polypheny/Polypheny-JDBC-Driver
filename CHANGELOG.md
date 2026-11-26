@@ -1,7 +1,8 @@
-## 3.3
+## 3.3 (unreleased)
 
-* Use Prism API 2.4.
+* Use Prism API 2.5.
 * Expose server SQLSTATE and vendor error codes through `SQLException` while preserving the server message and existing exception type.
+* Retrieve generated keys from JDBC statements and prepared batches, and expose identity columns in JDBC metadata.
 
 
 ## 3.2

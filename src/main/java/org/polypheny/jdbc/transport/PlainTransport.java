@@ -25,8 +25,10 @@ import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 
 public class PlainTransport implements Transport {
 
@@ -89,12 +91,84 @@ public class PlainTransport implements Transport {
 
     @Override
     public void sendMessage( byte[] message ) throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate( 8 + message.length );
-        bb.order( ByteOrder.LITTLE_ENDIAN );
-        bb.putLong( message.length );
-        bb.put( message );
-        bb.rewind();
-        writeEntireBuffer( bb );
+        sendMessage( message, () -> {} );
+    }
+
+
+    @Override
+    public void sendMessage( byte[] message, Runnable beginWrite ) throws IOException {
+        ByteBuffer frame = frameMessage( message );
+        try {
+            writeLock.lockInterruptibly();
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw new WriteInterruptedException( e );
+        }
+        try {
+            beginWrite.run();
+            writeEntireBuffer( frame );
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+
+    @Override
+    public boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite ) throws IOException {
+        return trySendMessage( message, deadlineNanos, beginWrite, () -> {} );
+    }
+
+
+    @Override
+    public boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite, Runnable finishWrite ) throws IOException {
+        ByteBuffer frame = frameMessage( message );
+        long remaining = deadlineNanos - System.nanoTime();
+        if ( remaining <= 0 ) {
+            return false;
+        }
+        try {
+            if ( !writeLock.tryLock( remaining, TimeUnit.NANOSECONDS ) ) {
+                return false;
+            }
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw new WriteInterruptedException( e );
+        }
+        try {
+            if ( !beginWrite.getAsBoolean() ) {
+                return false;
+            }
+            writeEntireBuffer( frame );
+            finishWrite.run();
+            return true;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+
+    @Override
+    public <E extends Exception> boolean withWriteReservation( int timeoutMillis, WriteOperation<E> operation ) throws E, InterruptedException {
+        if ( timeoutMillis == 0 ) {
+            writeLock.lockInterruptibly();
+        } else if ( !writeLock.tryLock( timeoutMillis, TimeUnit.MILLISECONDS ) ) {
+            return false;
+        }
+        try {
+            operation.run();
+            return true;
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+
+    private static ByteBuffer frameMessage( byte[] message ) {
+        ByteBuffer frame = ByteBuffer.allocate( 8 + message.length ).order( ByteOrder.LITTLE_ENDIAN );
+        frame.putLong( message.length );
+        frame.put( message );
+        frame.rewind();
+        return frame;
     }
 
 

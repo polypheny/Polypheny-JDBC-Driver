@@ -29,10 +29,17 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
     private final List<PolyphenyColumnMeta> columnMetas;
     private final Map<String, Integer> columnIndexes;
+    private final boolean readOnly;
 
 
     public PolyphenyResultSetMetadata( List<PolyphenyColumnMeta> columnMetas ) {
+        this( columnMetas, false );
+    }
+
+
+    public PolyphenyResultSetMetadata( List<PolyphenyColumnMeta> columnMetas, boolean readOnly ) {
         this.columnMetas = columnMetas;
+        this.readOnly = readOnly;
         this.columnIndexes = new HashMap<>();
         for ( PolyphenyColumnMeta column : columnMetas ) {
             columnIndexes.putIfAbsent( column.getColumnLabel().toLowerCase( Locale.ROOT ), column.getOrdinal() + 1 );
@@ -165,19 +172,19 @@ public class PolyphenyResultSetMetadata implements ResultSetMetaData {
 
     @Override
     public boolean isReadOnly( int columnIndex ) throws SQLException {
-        return getMeta( columnIndex ).isReadOnly();
+        return getMeta( columnIndex ).isReadOnly() || readOnly;
     }
 
 
     @Override
     public boolean isWritable( int columnIndex ) throws SQLException {
-        return getMeta( columnIndex ).isWritable();
+        return getMeta( columnIndex ).isWritable() && !readOnly;
     }
 
 
     @Override
     public boolean isDefinitelyWritable( int columnIndex ) throws SQLException {
-        return getMeta( columnIndex ).isDefinitelyWritable();
+        return getMeta( columnIndex ).isDefinitelyWritable() && !readOnly;
     }
 
 

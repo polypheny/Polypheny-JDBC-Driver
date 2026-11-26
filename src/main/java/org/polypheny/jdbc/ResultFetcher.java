@@ -28,27 +28,33 @@ import org.polypheny.prism.Row;
 
 public class ResultFetcher implements Runnable {
 
-    private PrismInterfaceClient client;
-    private int statementId;
+    private final PageRequest pageRequest;
     @Setter
     @Getter
     private PolyphenyResultSetProperties properties;
-    private int fetchTimeout;
     private long totalFetched;
     @Setter
-    @Getter
     private boolean isLast;
     @Getter
     private List<List<TypedValue>> fetchedValues;
 
 
     public ResultFetcher( PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, long totalFetched, int fetchTimeout ) {
-        this.fetchTimeout = fetchTimeout;
-        this.client = client;
-        this.statementId = statementId;
+        this( fetchSize -> client.fetchResult( statementId, fetchSize, fetchTimeout ), properties, totalFetched );
+    }
+
+
+    ResultFetcher( PageRequest pageRequest, PolyphenyResultSetProperties properties, long totalFetched ) {
+        this.pageRequest = pageRequest;
         this.properties = properties;
         this.totalFetched = totalFetched;
         this.isLast = false;
+    }
+
+
+    public boolean isLast() {
+        long maxRows = properties.getLargeMaxRows();
+        return isLast || (maxRows > 0 && totalFetched >= maxRows);
     }
 
 
@@ -70,22 +76,29 @@ public class ResultFetcher implements Runnable {
 
 
     private void fetch() throws PrismInterfaceServiceException {
-        long fetchEnd = totalFetched + properties.getStatementFetchSize();
-        Frame nextFrame = client.fetchResult( statementId, properties.getFetchSize(), fetchTimeout );
+        Frame nextFrame = pageRequest.fetch( properties.getFetchSize() );
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new PrismInterfaceServiceException( "Illegal result type." );
         }
         List<Row> rows = nextFrame.getRelationalFrame().getRowsList();
-        if ( properties.getLargeMaxRows() != 0 && fetchEnd > properties.getLargeMaxRows() ) {
-            long rowEndIndex = properties.getLargeMaxRows() - totalFetched;
-            if ( rowEndIndex > Integer.MAX_VALUE ) {
-                throw new RuntimeException( "Should never be thrown" );
+        long maxRows = properties.getLargeMaxRows();
+        if ( maxRows > 0 ) {
+            long remainingRows = Math.max( 0, maxRows - totalFetched );
+            if ( rows.size() > remainingRows ) {
+                rows = rows.subList( 0, (int) remainingRows );
             }
-            rows = rows.subList( 0, (int) rowEndIndex );
         }
         fetchedValues = TypedValueUtils.buildRows( rows );
         totalFetched = totalFetched + rows.size();
         isLast = nextFrame.getIsLast();
+    }
+
+
+    @FunctionalInterface
+    interface PageRequest {
+
+        Frame fetch( int fetchSize ) throws PrismInterfaceServiceException;
+
     }
 
 

@@ -24,6 +24,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.prism.Response;
@@ -34,10 +35,13 @@ public class CallbackQueue<T> {
     private final Condition hasNext = queueLock.newCondition();
     private final Condition isCompleted = queueLock.newCondition();
     private boolean bIsCompleted = false;
+    private boolean terminalResponseReceived;
+    private long transactionGeneration = -1;
     private final Queue<T> messageQueue = new LinkedList<>();
     private final Function<Response, T> extractResponse;
-    private final int timeoutMillis;
+    private final long timeoutMillis;
     private final long deadline;
+    private final LongSupplier nanoClock;
     private PrismInterfaceServiceException propagatedException;
 
 
@@ -47,9 +51,40 @@ public class CallbackQueue<T> {
 
 
     public CallbackQueue( Function<Response, T> extractResponse, int timeoutMillis ) {
+        this( extractResponse, (long) timeoutMillis );
+    }
+
+
+    public CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis ) {
+        this( extractResponse, timeoutMillis, System::nanoTime );
+    }
+
+
+    public CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis, long deadlineNanos ) {
+        this( extractResponse, timeoutMillis, deadlineNanos, System::nanoTime );
+    }
+
+
+    CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis, LongSupplier nanoClock ) {
+        this( extractResponse, timeoutMillis, nanoClock.getAsLong() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis ), nanoClock );
+    }
+
+
+    private CallbackQueue( Function<Response, T> extractResponse, long timeoutMillis, long deadlineNanos, LongSupplier nanoClock ) {
         this.extractResponse = extractResponse;
         this.timeoutMillis = timeoutMillis;
-        this.deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
+        this.nanoClock = nanoClock;
+        this.deadline = deadlineNanos;
+    }
+
+
+    public long getTimeoutMillis() {
+        return timeoutMillis;
+    }
+
+
+    public long getDeadlineNanos() {
+        return deadline;
     }
 
 
@@ -71,7 +106,7 @@ public class CallbackQueue<T> {
         try {
             while ( !bIsCompleted && propagatedException == null ) {
                 if ( !awaitSignal( isCompleted ) ) {
-                    return timeoutFailure();
+                    return recordTimeout();
                 }
             }
             return propagatedException;
@@ -86,7 +121,7 @@ public class CallbackQueue<T> {
         try {
             while ( messageQueue.isEmpty() && propagatedException == null && !bIsCompleted ) {
                 if ( !awaitSignal( hasNext ) ) {
-                    throw timeoutFailure();
+                    throw recordTimeout();
                 }
             }
             if ( !messageQueue.isEmpty() ) {
@@ -110,7 +145,7 @@ public class CallbackQueue<T> {
             condition.await();
             return true;
         }
-        long remaining = deadline - System.nanoTime();
+        long remaining = deadline - nanoClock.getAsLong();
         if ( remaining <= 0 ) {
             return false;
         }
@@ -119,16 +154,52 @@ public class CallbackQueue<T> {
     }
 
 
-    private PrismInterfaceServiceException timeoutFailure() {
-        return new PrismInterfaceServiceException( new TimeoutException( "No complete Prism response within " + timeoutMillis + " ms." ) );
+    private PrismInterfaceServiceException recordTimeout() {
+        propagatedException = new PrismInterfaceServiceException( new TimeoutException( "No complete Prism response within " + timeoutMillis + " ms." ) );
+        signalTerminalState();
+        return propagatedException;
+    }
+
+
+    private boolean acceptsCallback() {
+        if ( bIsCompleted || propagatedException != null ) {
+            return false;
+        }
+        if ( timeoutMillis != 0 && deadline - nanoClock.getAsLong() <= 0 ) {
+            recordTimeout();
+            return false;
+        }
+        return true;
+    }
+
+
+    private void signalTerminalState() {
+        hasNext.signalAll();
+        isCompleted.signalAll();
     }
 
 
     public void onNext( Response message ) {
+        onNext( message, -1 );
+    }
+
+
+    public void onNext( Response message, long transactionGeneration ) {
         queueLock.lock();
         try {
+            if ( !acceptsCallback() ) {
+                return;
+            }
             messageQueue.add( extractResponse.apply( message ) );
-            hasNext.signal();
+            this.transactionGeneration = transactionGeneration;
+            if ( message.getLast() ) {
+                // A terminal frame arrives and completes the queue at the same instant.
+                terminalResponseReceived = true;
+                bIsCompleted = true;
+                signalTerminalState();
+            } else {
+                hasNext.signal();
+            }
         } finally {
             queueLock.unlock();
         }
@@ -136,13 +207,46 @@ public class CallbackQueue<T> {
 
 
     public void onError( Throwable propagatedException ) {
+        onError( propagatedException, false, -1 );
+    }
+
+
+    public void onError( Throwable propagatedException, boolean terminalResponse ) {
+        onError( propagatedException, terminalResponse, -1 );
+    }
+
+
+    public void onError( Throwable propagatedException, boolean terminalResponse, long transactionGeneration ) {
         queueLock.lock();
         try {
-            this.propagatedException = propagatedException instanceof PrismInterfaceServiceException
-                    ? (PrismInterfaceServiceException) propagatedException
-                    : new PrismInterfaceServiceException( propagatedException );
-            hasNext.signalAll();
-            isCompleted.signalAll();
+            if ( acceptsCallback() ) {
+                terminalResponseReceived = terminalResponse;
+                this.transactionGeneration = transactionGeneration;
+                this.propagatedException = propagatedException instanceof PrismInterfaceServiceException
+                        ? (PrismInterfaceServiceException) propagatedException
+                        : new PrismInterfaceServiceException( propagatedException );
+                signalTerminalState();
+            }
+        } finally {
+            queueLock.unlock();
+        }
+    }
+
+
+    public long getTransactionGeneration() {
+        queueLock.lock();
+        try {
+            return transactionGeneration;
+        } finally {
+            queueLock.unlock();
+        }
+    }
+
+
+    public boolean hasTerminalResponse() {
+        queueLock.lock();
+        try {
+            return terminalResponseReceived;
         } finally {
             queueLock.unlock();
         }
@@ -152,9 +256,10 @@ public class CallbackQueue<T> {
     public void onCompleted() {
         queueLock.lock();
         try {
-            bIsCompleted = true;
-            hasNext.signalAll();
-            isCompleted.signalAll();
+            if ( acceptsCallback() ) {
+                bIsCompleted = true;
+                signalTerminalState();
+            }
         } finally {
             queueLock.unlock();
         }

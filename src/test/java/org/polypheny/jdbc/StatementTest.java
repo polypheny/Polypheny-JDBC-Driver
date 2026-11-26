@@ -249,7 +249,12 @@ public class StatementTest {
             p.setInt( 2, 2 );
             p.addBatch();
             long[] res = p.executeLargeBatch();
-            assertArrayEquals( new long[]{ 2 }, res );
+            assertArrayEquals( new long[]{ Statement.SUCCESS_NO_INFO, Statement.SUCCESS_NO_INFO }, res );
+        }
+        try ( Statement statement = con.createStatement();
+                ResultSet rows = statement.executeQuery( "SELECT COUNT(*) FROM t" ) ) {
+            assertTrue( rows.next() );
+            assertEquals( 2, rows.getLong( 1 ) );
         }
     }
 

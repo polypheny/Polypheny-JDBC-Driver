@@ -18,8 +18,45 @@ package org.polypheny.jdbc;
 
 import java.sql.SQLException;
 import org.polypheny.prism.ErrorDetails;
+import org.polypheny.prism.StatementBatchResponse;
 
 public class PrismInterfaceServiceException extends SQLException {
+
+    public static final class InterruptedBeforeSend extends PrismInterfaceServiceException {
+
+        InterruptedBeforeSend( InterruptedException cause ) {
+            super( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Interrupted before sending a Prism request.", cause );
+        }
+
+    }
+
+
+    static final class ServerError extends PrismInterfaceServiceException {
+
+        private final StatementBatchResponse completedBatch;
+
+
+        ServerError( String message, String state, int code ) {
+            this( message, state, code, null );
+        }
+
+
+        private ServerError( String message, String state, int code, StatementBatchResponse completedBatch ) {
+            super( message, state, code );
+            this.completedBatch = completedBatch;
+        }
+
+
+        StatementBatchResponse completedBatch() {
+            return completedBatch;
+        }
+
+
+        ServerError withCompletedBatch( StatementBatchResponse response ) {
+            return new ServerError( getMessage(), getSQLState(), getErrorCode(), response );
+        }
+
+    }
 
     public PrismInterfaceServiceException( PrismInterfaceErrors sqlError, String message ) {
         this( message, sqlError.state, sqlError.errorCode );

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.jdbc.ResultFetcher.FetchFailure;
 import org.polypheny.jdbc.ResultFetcher.FetchThread;
+import org.polypheny.jdbc.ResultFetcher.PageRequest;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
@@ -38,11 +39,16 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
 
 
     public BidirectionalScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
+        this( frame, properties, fetchSize -> client.fetchResult( statementId, fetchSize, fetchTimeout ) );
+    }
+
+
+    BidirectionalScroller( Frame frame, PolyphenyResultSetProperties properties, PageRequest pageRequest ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
         if ( properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows() ) {
             values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
         }
-        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
+        this.resultFetcher = new ResultFetcher( pageRequest, properties, values.size() );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.currentIndex = INDEX_BEFORE_FIRST;
         this.properties = properties;
@@ -86,7 +92,14 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
         if ( fetcherThread == null ) {
             fetcherThread = resultFetcher.startFetch();
         }
-        values.addAll( fetcherThread.awaitPage() );
+        try {
+            values.addAll( fetcherThread.awaitPage() );
+        } catch ( PrismInterfaceServiceException failure ) {
+            if ( failure.getCause() instanceof RequestDeadline.BeforeSendTimeout || failure instanceof PrismInterfaceServiceException.InterruptedBeforeSend ) {
+                fetcherThread = null;
+            }
+            throw failure;
+        }
         fetcherThread = null;
     }
 
@@ -94,23 +107,20 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
     @Override
     public boolean absolute( int rowIndex ) throws PrismInterfaceServiceException {
         try {
-            if ( rowToIndex( rowIndex ) == currentIndex ) {
-                return true;
+            if ( rowIndex == 0 ) {
+                currentIndex = INDEX_BEFORE_FIRST;
+                currentRow = null;
+                return false;
             }
             if ( rowIndex < 0 ) {
                 fetchAll();
                 currentIndex = values.size() + rowIndex;
-                if ( currentIndex < 1 ) {
+                if ( currentIndex < 0 ) {
                     currentIndex = INDEX_BEFORE_FIRST;
                     currentRow = null;
                     return false;
                 }
                 currentRow = values.get( currentIndex );
-                return true;
-            }
-            if ( rowIndex == 0 ) {
-                currentIndex = INDEX_BEFORE_FIRST;
-                currentRow = null;
                 return true;
             }
             if ( rowIndex <= values.size() ) {
@@ -270,31 +280,31 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
 
     @Override
     public boolean isBeforeFirst() {
-        return currentIndex == INDEX_BEFORE_FIRST;
+        return currentIndex == INDEX_BEFORE_FIRST && (!values.isEmpty() || fetcherThread != null || !resultFetcher.isLast());
     }
 
 
     @Override
     public boolean isAfterLast() {
-        return values.isEmpty() || currentIndex == values.size();
+        return !values.isEmpty() && currentIndex == values.size();
     }
 
 
     @Override
     public boolean isFirst() {
-        return currentIndex == 0;
+        return hasCurrent() && currentIndex == 0;
     }
 
 
     @Override
     public boolean isLast() {
-        return currentIndex == values.size() - 1;
+        return hasCurrent() && currentIndex == values.size() - 1 && fetcherThread == null && resultFetcher.isLast();
     }
 
 
     @Override
     public int getRow() {
-        return indexToRow( currentIndex );
+        return hasCurrent() ? indexToRow( currentIndex ) : 0;
     }
 
 

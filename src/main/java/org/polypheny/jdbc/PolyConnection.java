@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import java.nio.channels.ClosedByInterruptException;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -28,17 +29,26 @@ import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
@@ -48,8 +58,11 @@ import org.polypheny.jdbc.types.PolyArray;
 import org.polypheny.jdbc.types.PolyBlob;
 import org.polypheny.jdbc.types.PolyClob;
 import org.polypheny.jdbc.types.PolyStruct;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.PreparedStatementSignature;
 
+@Slf4j
 public class PolyConnection implements Connection {
 
     private PolyphenyConnectionProperties properties;
@@ -57,15 +70,19 @@ public class PolyConnection implements Connection {
     private PolyphenyDatabaseMetadata databaseMetaData;
     private volatile boolean isClosed;
 
-    private boolean hasRunningTransaction;
-
-    private Set<Statement> openStatements;
+    private final Set<Statement> openStatements;
+    private final AtomicLong appliedTransactionGeneration = new AtomicLong();
+    private final ExecutorService completedStatementCloser = new ThreadPoolExecutor( 0, 1, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), task -> {
+        Thread thread = new Thread( task, "PrismCompletedStatementCloser" );
+        thread.setDaemon( true );
+        return thread;
+    } );
 
     private Map<String, Class<?>> typeMap;
 
 
     private void throwIfClosed() throws SQLException {
-        if ( isClosed ) {
+        if ( isClosed() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, "Illegal operation on closed connection." );
         }
     }
@@ -77,13 +94,6 @@ public class PolyConnection implements Connection {
         }
         if ( properties.isAutoCommit() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation on auto committing connection." );
-        }
-    }
-
-
-    private void throwIfRunningTransaction() throws SQLException {
-        if ( hasRunningTransaction ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Illegal operation during running transaction." );
         }
     }
 
@@ -104,15 +114,18 @@ public class PolyConnection implements Connection {
 
 
     public void startTracking( Statement statement ) {
-        openStatements.add( statement );
+        synchronized ( openStatements ) {
+            if ( !isClosed ) {
+                openStatements.add( statement );
+            }
+        }
     }
 
 
     public void endTracking( Statement statement ) {
-        if ( !openStatements.contains( statement ) ) {
-            return;
+        synchronized ( openStatements ) {
+            openStatements.remove( statement );
         }
-        openStatements.remove( statement );
     }
 
 
@@ -142,15 +155,8 @@ public class PolyConnection implements Connection {
 
     @Override
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
-        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
-                properties.getNamespaceName(),
-                PropertyUtils.getSQL_LANGUAGE_NAME(),
-                sql,
-                getTimeout()
-        );
-        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, properties.toStatementProperties(), signature );
-        startTracking( statement );
-        return statement;
+        throwIfClosed();
+        return prepareStatement( sql, properties.toStatementProperties(), null );
     }
 
 
@@ -169,10 +175,47 @@ public class PolyConnection implements Connection {
     @Override
     public void setAutoCommit( boolean autoCommit ) throws SQLException {
         throwIfClosed();
-        if ( hasRunningTransaction ) {
-            commit();
+        if ( properties.isAutoCommit() == autoCommit ) {
+            return;
         }
-        properties.setAutoCommit( autoCommit );
+        withWriteReservation( deadline -> {
+            if ( properties.isAutoCommit() == autoCommit ) {
+                return;
+            }
+            try {
+                // Prism changes only the mode flag. Finish the prior transaction in either direction.
+                getPrismInterfaceClient().commitTransaction( deadline );
+                properties.setAutoCommit( autoCommit, (int) deadline.remainingMillis() );
+            } finally {
+                refreshTransactionResults();
+            }
+        } );
+    }
+
+
+    private void withWriteReservation( DeadlineWriteOperation operation ) throws SQLException {
+        throwIfClosed();
+        RequestDeadline deadline = new RequestDeadline( getTimeout() );
+        try {
+            if ( !getPrismInterfaceClient().withWriteReservation( (int) deadline.remainingMillis(), () -> {
+                throwIfClosed();
+                operation.run( deadline );
+            } ) ) {
+                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( deadline.timeoutMillis ) );
+            }
+        } catch ( InterruptedException e ) {
+            throw PrismInterfaceClient.interruptedBeforeWrite( e );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
+    }
+
+
+    @FunctionalInterface
+    private interface DeadlineWriteOperation {
+
+        void run( RequestDeadline deadline ) throws SQLException;
+
     }
 
 
@@ -186,18 +229,59 @@ public class PolyConnection implements Connection {
 
     @Override
     public void commit() throws SQLException {
-        throwIfClosed();
-        throwIfAutoCommit();
-        getPrismInterfaceClient().commitTransaction( getNetworkTimeout() );
-        hasRunningTransaction = false;
+        withWriteReservation( deadline -> {
+            throwIfAutoCommit();
+            try {
+                getPrismInterfaceClient().commitTransaction( deadline );
+            } finally {
+                refreshTransactionResults();
+            }
+        } );
+    }
+
+
+    public void refreshTransactionResults() {
+        refreshTransactionResults( false );
+    }
+
+
+    void refreshTransactionResults( boolean deferStatementClose ) {
+        long generation = getPrismInterfaceClient().getTransactionGeneration();
+        if ( generation <= appliedTransactionGeneration.get() ) {
+            return;
+        }
+        for ( Statement statement : snapshotOpenStatements() ) {
+            if ( statement instanceof PolyphenyStatement ) {
+                try {
+                    ((PolyphenyStatement) statement).closeResultsFromEarlierTransactions( generation, deferStatementClose );
+                } catch ( SQLException e ) {
+                    log.warn( "Could not close a completed statement after the transaction finished", e );
+                }
+            }
+        }
+        appliedTransactionGeneration.accumulateAndGet( generation, Math::max );
+    }
+
+
+    void closeCompletedStatementLater( PolyphenyStatement statement ) {
+        synchronized ( openStatements ) {
+            if ( !isClosed ) {
+                completedStatementCloser.execute( statement::closeAfterTransaction );
+            }
+        }
     }
 
 
     @Override
     public void rollback() throws SQLException {
-        throwIfClosed();
-        throwIfAutoCommit();
-        getPrismInterfaceClient().rollbackTransaction( getNetworkTimeout() );
+        withWriteReservation( deadline -> {
+            throwIfAutoCommit();
+            try {
+                getPrismInterfaceClient().rollbackTransaction( deadline );
+            } finally {
+                refreshTransactionResults();
+            }
+        } );
     }
 
 
@@ -206,26 +290,123 @@ public class PolyConnection implements Connection {
         if ( isClosed() ) {
             return;
         }
-        for ( Statement openStatement : new HashSet<>( openStatements ) ) {
-            openStatement.close();
+        try {
+            for ( Statement openStatement : snapshotOpenStatements() ) {
+                openStatement.close();
+            }
+            if ( !isClosed ) {
+                getPrismInterfaceClient().unregister( properties.getNetworkTimeout() );
+            }
+        } finally {
+            abortAfterIncompleteRequest();
         }
-        getPrismInterfaceClient().unregister( properties.getNetworkTimeout() );
-        isClosed = true;
+    }
+
+
+    private Set<Statement> snapshotOpenStatements() {
+        synchronized ( openStatements ) {
+            return new HashSet<>( openStatements );
+        }
     }
 
 
     @Override
     public boolean isClosed() {
+        if ( !isClosed && getPrismInterfaceClient().isClosed() ) {
+            abortAfterIncompleteRequest();
+        }
         return isClosed;
     }
 
 
+    boolean isTransportClosed() {
+        // ResultSet may check this while its statement's result lock is held.
+        return isClosed || getPrismInterfaceClient().isClosed();
+    }
+
+
+    SQLException handleIncompleteRequest( PrismInterfaceServiceException failure, boolean networkDeadline ) {
+        if ( failure instanceof PrismInterfaceServiceException.ServerError || failure instanceof PrismInterfaceServiceException.InterruptedBeforeSend ) {
+            return failure;
+        }
+        Throwable cause = failure.getCause();
+        if ( cause instanceof RequestDeadline.BeforeSendTimeout ) {
+            return new SQLTimeoutException( failure.getMessage(), cause );
+        }
+        if ( cause instanceof InterruptedException || cause instanceof ClosedByInterruptException
+                || PrismInterfaceErrors.CONNECTION_FAILURE.state.equals( failure.getSQLState() ) ) {
+            abortAfterIncompleteRequest();
+            return failure;
+        }
+        if ( cause instanceof TimeoutException ) {
+            // Closing the connection cannot undo a request the server has already received.
+            abortAfterIncompleteRequest();
+            if ( networkDeadline ) {
+                return new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, failure.getMessage(), cause );
+            }
+            return new SQLTimeoutException( failure.getMessage(), cause );
+        }
+        return failure;
+    }
+
+
+    public <T> T executeNetworkRequest( NetworkRequest<T> request ) throws SQLException {
+        int timeout = getNetworkTimeout();
+        try {
+            return request.execute( timeout );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
+    }
+
+
+    @FunctionalInterface
+    public interface NetworkRequest<T> {
+
+        T execute( int timeout ) throws PrismInterfaceServiceException;
+
+    }
+
+
+    Frame fetchPage( int statementId, int fetchSize ) throws PrismInterfaceServiceException {
+        if ( isClosed() ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, "Illegal operation on closed connection." );
+        }
+        try {
+            return getPrismInterfaceClient().fetchResult( statementId, fetchSize, getTimeout() );
+        } catch ( PrismInterfaceServiceException failure ) {
+            SQLException handled = handleIncompleteRequest( failure, true );
+            throw handled instanceof PrismInterfaceServiceException ? (PrismInterfaceServiceException) handled : failure;
+        }
+    }
+
+
     /**
-     * Closes the transport after an interrupted or timed-out request with unknown outcome.
+     * Closes the connection and releases locally tracked resources without further Prism requests.
      */
     public void abortAfterIncompleteRequest() {
-        isClosed = true;
+        Set<Statement> statements;
+        synchronized ( openStatements ) {
+            if ( isClosed ) {
+                return;
+            }
+            isClosed = true;
+            completedStatementCloser.shutdownNow();
+            statements = new HashSet<>( openStatements );
+            openStatements.clear();
+        }
         getPrismInterfaceClient().abort();
+        for ( Statement openStatement : statements ) {
+            if ( openStatement instanceof PolyphenyStatement ) {
+                ((PolyphenyStatement) openStatement).dispose();
+                continue;
+            }
+            try {
+                openStatement.close();
+            } catch ( SQLException e ) {
+                log.warn( "Could not dispose of statement after aborting the connection", e );
+            }
+        }
     }
 
 
@@ -239,7 +420,6 @@ public class PolyConnection implements Connection {
     @Override
     public void setReadOnly( boolean readOnly ) throws SQLException {
         throwIfClosed();
-        throwIfRunningTransaction();
         properties.setReadOnly( readOnly );
     }
 
@@ -299,7 +479,9 @@ public class PolyConnection implements Connection {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
-        return new PolyphenyStatement( this, statementProperties );
+        PolyphenyStatement statement = new PolyphenyStatement( this, statementProperties );
+        startTracking( statement );
+        return statement;
     }
 
 
@@ -307,14 +489,7 @@ public class PolyConnection implements Connection {
     public PreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency ) throws SQLException {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
-        PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
-        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
-                properties.getNamespaceName(),
-                PropertyUtils.getSQL_LANGUAGE_NAME(),
-                sql,
-                getTimeout()
-        );
-        return new PolyphenyPreparedStatement( this, statementProperties, signature );
+        return prepareStatement( sql, properties.toStatementProperties( resultSetType, resultSetConcurrency ), null );
     }
 
 
@@ -382,7 +557,7 @@ public class PolyConnection implements Connection {
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
         PolyphenyStatement statement = new PolyphenyStatement( this, statementProperties );
-        openStatements.add( statement );
+        startTracking( statement );
         return statement;
     }
 
@@ -391,16 +566,7 @@ public class PolyConnection implements Connection {
     public PreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
-        PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
-        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
-                properties.getNamespaceName(),
-                PropertyUtils.getSQL_LANGUAGE_NAME(),
-                sql,
-                getTimeout()
-        );
-        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
-        openStatements.add( statement );
-        return statement;
+        return prepareStatement( sql, properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability ), null );
     }
 
 
@@ -414,25 +580,46 @@ public class PolyConnection implements Connection {
 
     @Override
     public PreparedStatement prepareStatement( String sql, int autoGeneratedKeys ) throws SQLException {
-        throwIfClosed();
-        if ( !PropertyUtils.isValidAutogeneratedKeys( autoGeneratedKeys ) ) {
-            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for autogenerated keys" );
-        }
-        throw new SQLFeatureNotSupportedException();
+        return prepareStatementWithKeys( sql, GeneratedKeys.requested( autoGeneratedKeys ) );
     }
 
 
     @Override
     public PreparedStatement prepareStatement( String sql, int[] columnIndexes ) throws SQLException {
-        throwIfClosed();
-        throw new SQLFeatureNotSupportedException();
+        return prepareStatementWithKeys( sql, GeneratedKeys.requested( columnIndexes ) );
     }
 
 
     @Override
     public PreparedStatement prepareStatement( String sql, String[] columnNames ) throws SQLException {
+        return prepareStatementWithKeys( sql, GeneratedKeys.requested( columnNames ) );
+    }
+
+
+    private PreparedStatement prepareStatementWithKeys( String sql, GeneratedKeysRequest keys ) throws SQLException {
         throwIfClosed();
-        throw new SQLFeatureNotSupportedException();
+        return prepareStatement( sql, properties.toStatementProperties(), keys );
+    }
+
+
+    private PreparedStatement prepareStatement( String sql, PolyphenyStatementProperties statementProperties, GeneratedKeysRequest keys ) throws SQLException {
+        PrismInterfaceClient client = getPrismInterfaceClient();
+        if ( keys != null ) {
+            GeneratedKeys.requireSupported( client );
+        }
+        PreparedStatementSignature signature;
+        try {
+            String namespace = properties.getNamespaceName();
+            String language = PropertyUtils.getSQL_LANGUAGE_NAME();
+            signature = keys == null
+                    ? client.prepareIndexedStatement( namespace, language, sql, getTimeout() )
+                    : client.prepareIndexedStatement( namespace, language, sql, keys, getTimeout() );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
+        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
+        startTracking( statement );
+        return statement;
     }
 
 
@@ -466,31 +653,68 @@ public class PolyConnection implements Connection {
         if ( timeout < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
         }
-        // the prism-interface uses milliseconds for timeouts, jdbc uses seconds
-        return getPrismInterfaceClient().checkConnection( timeout * 1000 );
+        if ( isClosed() ) {
+            return false;
+        }
+        long validationTimeout = timeout * 1000L;
+        int networkTimeout = getTimeout();
+        boolean networkDeadline = networkTimeout > 0 && (validationTimeout == 0 || networkTimeout <= validationTimeout);
+        try {
+            getPrismInterfaceClient().verifyConnection( networkDeadline ? networkTimeout : validationTimeout );
+            return true;
+        } catch ( PrismInterfaceServiceException failure ) {
+            if ( networkDeadline || !(failure.getCause() instanceof TimeoutException) ) {
+                handleIncompleteRequest( failure, networkDeadline );
+            }
+            return false;
+        }
     }
 
 
     @Override
     public void setClientInfo( String name, String value ) throws SQLClientInfoException {
-        Properties clientInfoProperties = getClientInfo();
-        clientInfoProperties.setProperty( name, value );
+        validateClientInfoNames( Collections.singleton( name ) );
         try {
-            getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
-        } catch ( PrismInterfaceServiceException e ) {
-            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
+            executeNetworkRequest( timeout -> {
+                getPrismInterfaceClient().setClientInfoProperty( name, value, timeout );
+                return null;
+            } );
+        } catch ( SQLException e ) {
+            ClientInfoStatus status = value != null && "22023".equals( e.getSQLState() )
+                    ? ClientInfoStatus.REASON_VALUE_INVALID : ClientInfoStatus.REASON_UNKNOWN;
+            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), Collections.singletonMap( name, status ), e );
         }
     }
 
 
     @Override
     public void setClientInfo( Properties clientInfoProperties ) throws SQLClientInfoException {
+        Set<String> pending = new HashSet<>( clientInfoProperties.stringPropertyNames() );
+        validateClientInfoNames( pending );
         try {
-            getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
-        } catch ( PrismInterfaceServiceException e ) {
-            HashMap<String, ClientInfoStatus> failedOptions = new HashMap<>();
-            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
+            executeNetworkRequest( timeout -> {
+                getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, timeout, pending );
+                return null;
+            } );
+        } catch ( SQLException e ) {
+            Map<String, ClientInfoStatus> failed = new HashMap<>();
+            pending.forEach( name -> failed.put( name, ClientInfoStatus.REASON_UNKNOWN ) );
+            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), failed, e );
         }
+    }
+
+
+    private static void validateClientInfoNames( Set<String> names ) throws SQLClientInfoException {
+        if ( names.stream().allMatch( PrismInterfaceClient::isValidClientInfoPropertyName ) ) {
+            return;
+        }
+        Map<String, ClientInfoStatus> failed = new HashMap<>();
+        for ( String name : names ) {
+            failed.put( name, PrismInterfaceClient.isValidClientInfoPropertyName( name )
+                    ? ClientInfoStatus.REASON_UNKNOWN : ClientInfoStatus.REASON_UNKNOWN_PROPERTY );
+        }
+        throw new SQLClientInfoException( "Invalid ClientInfo property name.", PrismInterfaceErrors.VALUE_ILLEGAL.state,
+                PrismInterfaceErrors.VALUE_ILLEGAL.errorCode, failed );
     }
 
 
@@ -504,7 +728,7 @@ public class PolyConnection implements Connection {
     public Properties getClientInfo() throws SQLClientInfoException {
         try {
             Properties properties = new Properties();
-            properties.putAll( getPrismInterfaceClient().getClientInfoProperties( getNetworkTimeout() ) );
+            properties.putAll( executeNetworkRequest( getPrismInterfaceClient()::getClientInfoProperties ) );
             return properties;
         } catch ( SQLException e ) {
             throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), null, e );
@@ -529,7 +753,11 @@ public class PolyConnection implements Connection {
     @Override
     public void setSchema( String schema ) throws SQLException {
         throwIfClosed();
-        properties.setNamespaceName( schema );
+        try {
+            properties.setNamespaceName( schema );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
     }
 
 
@@ -549,6 +777,9 @@ public class PolyConnection implements Connection {
     @Override
     public void setNetworkTimeout( Executor executor, int milliseconds ) throws SQLException {
         throwIfClosed();
+        if ( executor == null ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Network timeout executor cannot be null." );
+        }
         if ( milliseconds < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
         }

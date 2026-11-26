@@ -26,7 +26,32 @@ This driver is compatible with JVM version 8 or higher.
 
 ## Server errors
 
-Starting with driver 3.3, JDBC operations expose the SQLSTATE and vendor error code from final Prism error responses via `SQLException.getSQLState()` and `getErrorCode()`. Structured error details are available starting with Prism 2.4. A missing or invalid SQLSTATE falls back to `UNSPECIFIED`. A missing error code falls back to `-1`, and an explicitly supplied `0` is preserved. `PrismInterfaceServiceException` remains the driver exception for server errors, with the original server message available through `getMessage()`. A non-final error response has the same fallback values and a `ProtocolException` cause.
+Starting with driver 3.3, JDBC operations expose the SQLSTATE and vendor error code from final Prism error responses via `SQLException.getSQLState()` and `getErrorCode()`. Structured error details are available starting with Prism 2.4. A missing or invalid SQLSTATE falls back to `UNSPECIFIED`. A missing error code falls back to `-1`, and an explicitly supplied `0` is preserved. The server diagnostic is a `PrismInterfaceServiceException` with the original message. A batch failure exposes this diagnostic as the cause of its `BatchUpdateException`. A non-final error response has the same fallback values and a `ProtocolException` cause.
+
+## Generated keys
+
+On servers that advertise JDBC generated keys, request the identity values assigned by an insert.
+
+```java
+try (PreparedStatement insert = connection.prepareStatement(
+        "INSERT INTO orders (label) VALUES (?)", Statement.RETURN_GENERATED_KEYS)) {
+    insert.setString(1, "First order");
+    insert.executeUpdate();
+    try (ResultSet keys = insert.getGeneratedKeys()) {
+        if (keys.next()) {
+            long orderId = keys.getLong(1);
+        }
+    }
+}
+```
+
+The column-name and one-based column-index overloads return those columns in request order. Prepared batches preserve the selection from `prepareStatement`. Unprepared batches collect generated identity values in statement order. Use `Connection.getMetaData().supportsGetGeneratedKeys()` to check server support. Use either SQL `INSERT ... RETURNING` or a JDBC generated-key request for a given statement. The server treats these as separate ways to request output.
+
+A failed batch entry raises `BatchUpdateException`. When the server reports the completed entries, `getUpdateCounts()` and `getLargeUpdateCounts()` return their counts, and `getGeneratedKeys()` exposes their keys. An explicit progress response with zero completed entries yields an empty array. If the server sends no progress response, both count methods return `null` and the batch may have partially committed.
+
+A query timeout before the driver sends a request raises `SQLTimeoutException` and leaves the connection open. The query deadline also bounds cleanup of a previous execution. If the driver sends a cleanup request and its reply misses that deadline, the connection closes and the new execution times out before sending its SQL.
+
+Servers that support query cancellation start the transmitted budget when they first read bytes of the request frame. Delays before those bytes reach the server can extend the total wait. A shorter network timeout can close the JDBC connection while the server still enforces the query deadline of the dispatched request. A confirmed batch query timeout leaves the connection open and carries a `BatchUpdateException` as its cause with the progress reported by the server. A timeout while sending a partial request, an expired network deadline, or an interrupt after dispatch can close the connection. An unconfirmed batch may have partially committed.
 
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).

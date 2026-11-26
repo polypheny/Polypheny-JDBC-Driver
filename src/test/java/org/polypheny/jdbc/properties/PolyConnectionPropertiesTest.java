@@ -18,8 +18,14 @@ package org.polypheny.jdbc.properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -33,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.PolyphenyStatement;
 import org.polypheny.jdbc.PrismInterfaceClient;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class PolyConnectionPropertiesTest {
 
@@ -158,13 +165,19 @@ public class PolyConnectionPropertiesTest {
 
     @Test
     public void setNamespaceName_Valid_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, PRISM_INTERFACE_CLIENT );
+        PrismInterfaceClient client = mock( PrismInterfaceClient.class );
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, client );
         String namespaceName = "testNamespace";
+        doAnswer( invocation -> {
+            Runnable publish = invocation.getArgument( 2 );
+            publish.run();
+            return null;
+        } ).when( client ).setNamespaceName( eq( namespaceName ), eq( connectionProperties.getNetworkTimeout() ), any() );
 
         connectionProperties.setNamespaceName( namespaceName );
 
         assertEquals( namespaceName, connectionProperties.getNamespaceName() );
-        verify( PRISM_INTERFACE_CLIENT, times( 1 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );
+        verify( client ).setNamespaceName( eq( namespaceName ), eq( connectionProperties.getNetworkTimeout() ), any() );
     }
 
 
@@ -210,13 +223,13 @@ public class PolyConnectionPropertiesTest {
 
 
     @Test
-    public void setNetworkTimeout_Valid_Sync() throws SQLException {
+    public void setNetworkTimeout_Valid_NoSync() throws SQLException {
         PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, PRISM_INTERFACE_CLIENT );
         int networkTimeout = 5000;
 
         connectionProperties.setNetworkTimeout( networkTimeout );
 
-        verify( PRISM_INTERFACE_CLIENT, times( 1 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );
+        verify( PRISM_INTERFACE_CLIENT, times( 0 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );
         assertEquals( connectionProperties.getNetworkTimeout(), networkTimeout );
     }
 
@@ -266,21 +279,35 @@ public class PolyConnectionPropertiesTest {
 
     @Test
     public void setAutoCommit_False_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, PRISM_INTERFACE_CLIENT );
+        PrismInterfaceClient client = mock( PrismInterfaceClient.class );
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, client );
         connectionProperties.setAutoCommit( false );
 
         assertFalse( connectionProperties.isAutoCommit() );
-        verify( PRISM_INTERFACE_CLIENT, times( 1 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );
+        verify( client ).setAutoCommit( false, connectionProperties.getNetworkTimeout() );
     }
 
 
     @Test
     public void setAutoCommit_True_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, PRISM_INTERFACE_CLIENT );
+        PrismInterfaceClient client = mock( PrismInterfaceClient.class );
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, client );
         connectionProperties.setAutoCommit( true );
 
         assertTrue( connectionProperties.isAutoCommit() );
-        verify( PRISM_INTERFACE_CLIENT, times( 1 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );
+        verify( client ).setAutoCommit( true, connectionProperties.getNetworkTimeout() );
+    }
+
+
+    @Test
+    void rejectedAutoCommitModeUpdateKeepsPreviousMode() throws SQLException {
+        PrismInterfaceClient client = mock( PrismInterfaceClient.class );
+        PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( connectionString, client );
+        PrismInterfaceServiceException failure = new PrismInterfaceServiceException( "Mode update rejected", "25001", 47 );
+        doThrow( failure ).when( client ).setAutoCommit( false, properties.getNetworkTimeout() );
+
+        assertSame( failure, assertThrows( SQLException.class, () -> properties.setAutoCommit( false ) ) );
+        assertTrue( properties.isAutoCommit() );
     }
 
 }

@@ -17,16 +17,29 @@
 package org.polypheny.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.sql.SQLException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InOrder;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
+import org.polypheny.jdbc.transport.Transport.WriteOperation;
 
 public class PolyConnectionTest {
 
@@ -34,15 +47,22 @@ public class PolyConnectionTest {
 
     private PolyphenyConnectionProperties properties;
 
-    private PolyphenyDatabaseMetadata databaseMetaData;
+    @BeforeEach
+    void setUp() throws InterruptedException {
+        properties = mock( PolyphenyConnectionProperties.class );
+        PrismInterfaceClient client = mock( PrismInterfaceClient.class );
+        doAnswer( invocation -> {
+            WriteOperation<?> operation = invocation.getArgument( 1 );
+            operation.run();
+            return true;
+        } ).when( client ).withWriteReservation( anyInt(), any() );
+        when( properties.getPrismInterfaceClient() ).thenReturn( client );
+        connection = new PolyConnection( properties, mock( PolyphenyDatabaseMetadata.class ) );
+    }
 
 
     @Test
     public void getAutoCommitWhenConnectionIsNotClosed() {
-        properties = mock( PolyphenyConnectionProperties.class );
-        databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
-        connection = new PolyConnection( properties, databaseMetaData );
-
         assertDoesNotThrow( () -> connection.getAutoCommit() );
 
         verify( properties, times( 1 ) ).isAutoCommit();
@@ -51,11 +71,6 @@ public class PolyConnectionTest {
 
     @Test
     public void getAutoCommitWhenConnectionIsClosedThenThrowException() throws SQLException {
-        properties = mock( PolyphenyConnectionProperties.class );
-        PrismInterfaceClient prismInterfaceClient = mock( PrismInterfaceClient.class );
-        when( properties.getPrismInterfaceClient() ).thenReturn( prismInterfaceClient );
-        databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
-        connection = new PolyConnection( properties, databaseMetaData );
         connection.close();
 
         assertThrows( SQLException.class, () -> connection.getAutoCommit() );
@@ -64,11 +79,6 @@ public class PolyConnectionTest {
 
     @Test
     public void setAutoCommitWhenConnectionIsClosedThenThrowException() throws SQLException {
-        properties = mock( PolyphenyConnectionProperties.class );
-        PrismInterfaceClient prismInterfaceClient = mock( PrismInterfaceClient.class );
-        when( properties.getPrismInterfaceClient() ).thenReturn( prismInterfaceClient );
-        databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
-        connection = new PolyConnection( properties, databaseMetaData );
         connection.close();
 
         assertThrows( SQLException.class, () -> connection.setAutoCommit( true ) );
@@ -77,31 +87,55 @@ public class PolyConnectionTest {
 
     @Test
     public void setAutoCommitToTrue() throws SQLException {
-        properties = mock( PolyphenyConnectionProperties.class );
-        databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
-        connection = new PolyConnection( properties, databaseMetaData );
-        connection.setAutoCommit( false );
-
         when( properties.isAutoCommit() ).thenReturn( false );
+        when( properties.getNetworkTimeout() ).thenReturn( 5000 );
+        PrismInterfaceClient client = properties.getPrismInterfaceClient();
 
         assertDoesNotThrow( () -> connection.setAutoCommit( true ) );
 
-        verify( properties, times( 1 ) ).setAutoCommit( true );
+        InOrder requests = inOrder( client, properties );
+        requests.verify( client ).commitTransaction( any( RequestDeadline.class ) );
+        requests.verify( properties ).setAutoCommit( eq( true ), anyInt() );
     }
 
 
     @Test
     public void setAutoCommitToFalse() throws PrismInterfaceServiceException {
-        properties = mock( PolyphenyConnectionProperties.class );
-        databaseMetaData = mock( PolyphenyDatabaseMetadata.class );
-        connection = new PolyConnection( properties, databaseMetaData );
-
         when( properties.isAutoCommit() ).thenReturn( true );
         when( properties.getNetworkTimeout() ).thenReturn( 5000 );
 
         assertDoesNotThrow( () -> connection.setAutoCommit( false ) );
 
-        verify( properties, times( 1 ) ).setAutoCommit( false );
+        InOrder requests = inOrder( properties.getPrismInterfaceClient(), properties );
+        requests.verify( properties.getPrismInterfaceClient() ).commitTransaction( any( RequestDeadline.class ) );
+        requests.verify( properties ).setAutoCommit( eq( false ), anyInt() );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void settingTheCurrentAutoCommitModeIsANoOp( boolean autoCommit ) throws SQLException {
+        when( properties.isAutoCommit() ).thenReturn( autoCommit );
+        when( properties.getNetworkTimeout() ).thenReturn( 5000 );
+
+        connection.setAutoCommit( autoCommit );
+
+        verify( properties, never() ).setAutoCommit( eq( autoCommit ), anyInt() );
+        verify( properties.getPrismInterfaceClient(), never() ).commitTransaction( any( RequestDeadline.class ) );
+    }
+
+
+    @Test
+    void enablingAutoCommitKeepsManualModeWhenCommitFails() throws SQLException {
+        when( properties.isAutoCommit() ).thenReturn( false );
+        when( properties.getNetworkTimeout() ).thenReturn( 5000 );
+        PrismInterfaceClient client = properties.getPrismInterfaceClient();
+        PrismInterfaceServiceException failure = new PrismInterfaceServiceException.ServerError( "Commit failed", "40001", 47 );
+        doThrow( failure ).when( client ).commitTransaction( any( RequestDeadline.class ) );
+
+        assertSame( failure, assertThrows( SQLException.class, () -> connection.setAutoCommit( true ) ) );
+
+        verify( properties, never() ).setAutoCommit( eq( true ), anyInt() );
     }
 
 }

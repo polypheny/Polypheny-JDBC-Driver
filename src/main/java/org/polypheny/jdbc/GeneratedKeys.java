@@ -1,0 +1,382 @@
+/*
+ * Copyright 2019-2024 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.jdbc;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.JDBCType;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
+import org.polypheny.jdbc.types.TypedValue;
+import org.polypheny.prism.BatchGeneratedKeys;
+import org.polypheny.prism.ColumnMeta;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.GeneratedKeysRequest;
+import org.polypheny.prism.ProtoPolyType;
+import org.polypheny.prism.ProtoValue;
+import org.polypheny.prism.ProtoValue.ValueCase;
+import org.polypheny.prism.RelationalFrame;
+import org.polypheny.prism.Row;
+
+
+final class GeneratedKeys {
+
+    static final GeneratedKeysRequest ALL = GeneratedKeysRequest.newBuilder().setAll( true ).build();
+
+
+    private GeneratedKeys() {
+    }
+
+
+    static void requireSupported( PrismInterfaceClient client ) throws SQLFeatureNotSupportedException {
+        if ( !client.supportsGeneratedKeys() ) {
+            throw new SQLFeatureNotSupportedException( "The connected Polypheny server does not support JDBC generated keys." );
+        }
+    }
+
+
+    static GeneratedKeysRequest requested( int flag ) throws SQLException {
+        if ( flag == Statement.RETURN_GENERATED_KEYS ) {
+            return ALL;
+        }
+        if ( flag == Statement.NO_GENERATED_KEYS ) {
+            return null;
+        }
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for generated keys: " + flag );
+    }
+
+
+    static GeneratedKeysRequest requested( int[] columnIndexes ) throws SQLException {
+        if ( columnIndexes == null || columnIndexes.length == 0 ) {
+            return null;
+        }
+        GeneratedKeysRequest.ColumnIndexes.Builder indexes = GeneratedKeysRequest.ColumnIndexes.newBuilder();
+        for ( int index : columnIndexes ) {
+            if ( index < 1 ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Generated-key column indexes are one-based." );
+            }
+            indexes.addIndexes( index );
+        }
+        return GeneratedKeysRequest.newBuilder().setColumnIndexes( indexes ).build();
+    }
+
+
+    static GeneratedKeysRequest requested( String[] columnNames ) throws SQLException {
+        if ( columnNames == null || columnNames.length == 0 ) {
+            return null;
+        }
+        GeneratedKeysRequest.ColumnNames.Builder names = GeneratedKeysRequest.ColumnNames.newBuilder();
+        for ( String name : columnNames ) {
+            if ( name == null || name.isEmpty() ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Generated-key column names must be nonempty." );
+            }
+            names.addNames( name );
+        }
+        return GeneratedKeysRequest.newBuilder().setColumnNames( names ).build();
+    }
+
+
+    static RelationalFrame requireComplete( Frame frame ) throws SQLException {
+        if ( !frame.hasRelationalFrame() || !frame.getIsLast() ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Generated keys must be a complete relational frame." );
+        }
+        RelationalFrame keys = frame.getRelationalFrame();
+        int columnCount = keys.getColumnMetaCount();
+        for ( Row row : keys.getRowsList() ) {
+            if ( row.getValuesCount() != columnCount ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Generated-key row does not match its column metadata." );
+            }
+        }
+        return keys;
+    }
+
+
+    static TypedValue normalizeNumericValue( TypedValue value, int sqlType ) throws SQLException {
+        ValueCase valueType = value.getValueCase();
+        switch ( valueType ) {
+            case INTEGER:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case BIG_DECIMAL:
+                break;
+            default:
+                return value;
+        }
+
+        // Prism can transport a projected numeric column as a decimal regardless of its declared type.
+        try {
+            switch ( sqlType ) {
+                case Types.TINYINT:
+                    return TypedValue.fromByte( exactDecimal( value ).byteValueExact() );
+                case Types.SMALLINT:
+                    return TypedValue.fromShort( exactDecimal( value ).shortValueExact() );
+                case Types.INTEGER:
+                    return valueType == ValueCase.INTEGER ? value : TypedValue.fromInteger( exactDecimal( value ).intValueExact() );
+                case Types.BIGINT:
+                    return valueType == ValueCase.LONG ? value : TypedValue.fromLong( exactDecimal( value ).longValueExact() );
+                case Types.REAL:
+                    return valueType == ValueCase.FLOAT ? value : TypedValue.fromFloat( ((Number) value.asObject()).floatValue() );
+                case Types.FLOAT:
+                case Types.DOUBLE:
+                    return valueType == ValueCase.DOUBLE ? value : TypedValue.fromDouble( ((Number) value.asObject()).doubleValue() );
+                case Types.NUMERIC:
+                case Types.DECIMAL:
+                    return valueType == ValueCase.BIG_DECIMAL ? value : TypedValue.fromBigDecimal( exactDecimal( value ) );
+                default:
+                    return value;
+            }
+        } catch ( ArithmeticException | NumberFormatException e ) {
+            throw numericRangeFailure( sqlType, e );
+        }
+    }
+
+
+    static TypedValue valueForNumericGetter( TypedValue value, int columnType, int getterType ) throws SQLException {
+        TypedValue normalized = numericGetterSource( value, columnType );
+        switch ( getterType ) {
+            case Types.TINYINT:
+            case Types.SMALLINT:
+            case Types.INTEGER:
+            case Types.BIGINT:
+                normalized = truncateFraction( normalized, getterType );
+                break;
+            default:
+                break;
+        }
+        return columnType == getterType ? normalized : normalizeNumericValue( normalized, getterType );
+    }
+
+
+    private static TypedValue numericGetterSource( TypedValue value, int columnType ) throws SQLException {
+        if ( value.getValueCase() == ValueCase.BOOLEAN ) {
+            return TypedValue.fromInteger( value.asBoolean() ? 1 : 0 );
+        }
+        if ( value.getValueCase() == ValueCase.STRING ) {
+            switch ( columnType ) {
+                case Types.CHAR:
+                case Types.VARCHAR:
+                case Types.LONGVARCHAR:
+                case Types.NCHAR:
+                case Types.NVARCHAR:
+                case Types.LONGNVARCHAR:
+                    try {
+                        return TypedValue.fromBigDecimal( new BigDecimal( value.asString().trim() ) );
+                    } catch ( NumberFormatException e ) {
+                        throw new PrismInterfaceServiceException( "Generated key contains invalid numeric text.", "22018", e );
+                    }
+                default:
+                    return value;
+            }
+        }
+        return normalizeNumericValue( value, columnType );
+    }
+
+
+    private static TypedValue truncateFraction( TypedValue value, int getterType ) throws SQLException {
+        switch ( value.getValueCase() ) {
+            case FLOAT:
+            case DOUBLE:
+            case BIG_DECIMAL:
+                try {
+                    BigDecimal decimal = exactDecimal( value );
+                    if ( decimal.scale() <= 0 ) {
+                        return TypedValue.fromBigDecimal( decimal );
+                    }
+                    if ( decimal.scale() >= decimal.precision() ) {
+                        return TypedValue.fromBigDecimal( BigDecimal.ZERO );
+                    }
+                    return TypedValue.fromBigDecimal( decimal.setScale( 0, RoundingMode.DOWN ) );
+                } catch ( ArithmeticException | NumberFormatException e ) {
+                    throw numericRangeFailure( getterType, e );
+                }
+            default:
+                return value;
+        }
+    }
+
+
+    static boolean booleanValue( TypedValue value, int columnType ) throws SQLException {
+        if ( value.isNull() ) {
+            return false;
+        }
+        TypedValue normalized = normalizeNumericValue( value, columnType );
+        switch ( normalized.getValueCase() ) {
+            case BIG_DECIMAL:
+                BigDecimal decimal = normalized.asBigDecimal();
+                if ( decimal.signum() == 0 || decimal.compareTo( BigDecimal.ONE ) == 0 ) {
+                    return decimal.signum() != 0;
+                }
+                break;
+            case FLOAT:
+            case DOUBLE:
+                double floating = normalized.asDouble();
+                if ( floating == 0.0 || floating == 1.0 ) {
+                    return floating == 1.0;
+                }
+                break;
+            default:
+                break;
+        }
+        return normalized.asBoolean();
+    }
+
+
+    private static PrismInterfaceServiceException numericRangeFailure( int sqlType, RuntimeException cause ) {
+        return new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL,
+                "Generated key cannot be represented as " + JDBCType.valueOf( sqlType ) + ".", cause );
+    }
+
+
+    private static BigDecimal exactDecimal( TypedValue value ) throws SQLException {
+        switch ( value.getValueCase() ) {
+            case INTEGER:
+            case LONG:
+                return BigDecimal.valueOf( value.asLong() );
+            case FLOAT:
+            case DOUBLE:
+                return new BigDecimal( value.asDouble() );
+            default:
+                return value.asBigDecimal();
+        }
+    }
+
+
+    static Frame combine( List<BatchGeneratedKeys> batch ) throws SQLException {
+        if ( batch.isEmpty() ) {
+            return Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
+        }
+        if ( batch.size() == 1 ) {
+            Frame frame = batch.get( 0 ).getKeys();
+            requireComplete( frame );
+            return frame;
+        }
+
+        List<BatchGeneratedKeys> ordered = new ArrayList<>( batch );
+        ordered.sort( Comparator.comparingInt( BatchGeneratedKeys::getStatementIndex ) );
+        List<ColumnMeta> columns = new ArrayList<>();
+        List<List<Integer>> positions = new ArrayList<>();
+        List<RelationalFrame> frames = new ArrayList<>();
+        for ( BatchGeneratedKeys entry : ordered ) {
+            RelationalFrame frame = requireComplete( entry.getKeys() );
+            frames.add( frame );
+            List<Integer> projection = new ArrayList<>();
+            Set<Integer> used = new HashSet<>();
+            for ( ColumnMeta column : frame.getColumnMetaList() ) {
+                int position = findColumn( columns, column, used );
+                if ( position == columns.size() ) {
+                    columns.add( column.toBuilder().setColumnIndex( position ).build() );
+                } else {
+                    ColumnMeta known = columns.get( position );
+                    ColumnMeta.Builder merged = known.toBuilder();
+                    if ( !known.getEntityName().equals( column.getEntityName() ) ) {
+                        merged.clearEntityName();
+                    }
+                    if ( !PolyphenyColumnMeta.schemaName( known ).equals( PolyphenyColumnMeta.schemaName( column ) ) ) {
+                        merged.clearNamespace().clearSchemaName();
+                        merged.clearEntityName();
+                    }
+                    if ( integerTypeWidth( column ) > integerTypeWidth( known ) ) {
+                        merged.setTypeMeta( column.getTypeMeta() )
+                                .setPrecision( column.getPrecision() )
+                                .setLength( column.getLength() )
+                                .setScale( column.getScale() );
+                    }
+                    if ( column.getIsNullable() ) {
+                        merged.setIsNullable( true );
+                    }
+                    if ( known.hasIsAutoIncrement() != column.hasIsAutoIncrement()
+                            || known.getIsAutoIncrement() != column.getIsAutoIncrement() ) {
+                        merged.clearIsAutoIncrement();
+                    }
+                    columns.set( position, merged.build() );
+                }
+                projection.add( position );
+                used.add( position );
+            }
+            positions.add( projection );
+        }
+
+        ProtoValue missing = TypedValue.fromNull().serialize();
+        RelationalFrame.Builder combined = RelationalFrame.newBuilder();
+        for ( int i = 0; i < frames.size(); i++ ) {
+            List<Integer> projection = positions.get( i );
+            RelationalFrame frame = frames.get( i );
+            if ( frame.getRowsCount() > 0 && projection.size() < columns.size() ) {
+                for ( int column = 0; column < columns.size(); column++ ) {
+                    if ( !projection.contains( column ) ) {
+                        columns.set( column, columns.get( column ).toBuilder().setIsNullable( true ).build() );
+                    }
+                }
+            }
+            for ( Row row : frame.getRowsList() ) {
+                List<ProtoValue> values = new ArrayList<>( Collections.nCopies( columns.size(), missing ) );
+                for ( int column = 0; column < row.getValuesCount(); column++ ) {
+                    int position = projection.get( column );
+                    ProtoValue value = row.getValues( column );
+                    if ( columns.get( position ).getTypeMeta().getProtoValueType() == ProtoPolyType.BIGINT && value.hasInteger() ) {
+                        value = TypedValue.fromLong( value.getInteger().getInteger() ).serialize();
+                    }
+                    values.set( position, value );
+                }
+                combined.addRows( Row.newBuilder().addAllValues( values ) );
+            }
+        }
+        return Frame.newBuilder().setIsLast( true ).setRelationalFrame( combined.addAllColumnMeta( columns ) ).build();
+    }
+
+
+    private static int findColumn( List<ColumnMeta> columns, ColumnMeta candidate, Set<Integer> used ) {
+        for ( int i = 0; i < columns.size(); i++ ) {
+            ColumnMeta column = columns.get( i );
+            if ( !used.contains( i )
+                    && column.getColumnName().equalsIgnoreCase( candidate.getColumnName() )
+                    && column.getColumnLabel().equalsIgnoreCase( candidate.getColumnLabel() )
+                    && (column.getTypeMeta().equals( candidate.getTypeMeta() )
+                    || (integerTypeWidth( column ) > 0 && integerTypeWidth( candidate ) > 0)) ) {
+                return i;
+            }
+        }
+        return columns.size();
+    }
+
+
+    private static int integerTypeWidth( ColumnMeta column ) {
+        switch ( column.getTypeMeta().getProtoValueType() ) {
+            case TINYINT:
+                return Byte.SIZE;
+            case SMALLINT:
+                return Short.SIZE;
+            case INTEGER:
+                return Integer.SIZE;
+            case BIGINT:
+                return Long.SIZE;
+            default:
+                return 0;
+        }
+    }
+
+}

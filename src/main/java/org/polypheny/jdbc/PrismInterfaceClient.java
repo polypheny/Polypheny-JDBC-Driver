@@ -17,10 +17,16 @@
 package org.polypheny.jdbc;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.IntConsumer;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.PlainTransport;
@@ -52,6 +58,7 @@ import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.FetchRequest;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.Function;
 import org.polypheny.prism.FunctionsRequest;
 import org.polypheny.prism.IndexedParameters;
@@ -78,7 +85,11 @@ import org.polypheny.prism.TypesRequest;
 
 public class PrismInterfaceClient {
 
+    private static final String PARTIAL_BATCH_RESULTS = "PolyphenyPartialBatchResults";
+    private static final String REMOVE_CLIENT_INFO_PROPERTY = "PolyphenyRemoveClientInfoProperty";
+    private static final String TRANSACTION_BOUNDARY_EVENTS = "transactionBoundaryEvents";
     private final RpcService rpc;
+    private boolean supportsGeneratedKeys;
 
 
     public PrismInterfaceClient( String host, int port, Map<String, String> parameters ) throws PrismInterfaceServiceException {
@@ -103,14 +114,17 @@ public class PrismInterfaceClient {
 
 
     public boolean checkConnection( int timeout ) {
-        ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
-            /* ConnectionCheckResponses are empty messages */
-            rpc.checkConnection( request, timeout );
+            verifyConnection( timeout );
             return true;
         } catch ( PrismInterfaceServiceException e ) {
             return false;
         }
+    }
+
+
+    void verifyConnection( long timeout ) throws PrismInterfaceServiceException {
+        rpc.checkConnection( ConnectionCheckRequest.getDefaultInstance(), timeout );
     }
 
 
@@ -123,12 +137,42 @@ public class PrismInterfaceClient {
                 .setMinorApiVersion( VersionUtil.MINOR_API_VERSION )
                 //.setClientUuid( clientUUID )
                 .setConnectionProperties( buildConnectionProperties( connectionProperties ) );
-        ConnectionResponse connectionResponse = rpc.connect( requestBuilder.build(), timeout );
-        if ( !connectionResponse.getIsCompatible() ) {
-            throw new PrismInterfaceServiceException( "client version " + getClientApiVersionString()
-                    + " not compatible with server version " + getServerApiVersionString( connectionResponse ) + "." );
+        try {
+            ConnectionResponse response = rpc.connect( requestBuilder.build(), timeout );
+            if ( !response.getIsCompatible() ) {
+                throw new PrismInterfaceServiceException( "client version " + getClientApiVersionString()
+                        + " not compatible with server version " + getServerApiVersionString( response ) + "." );
+            }
+            supportsGeneratedKeys = response.getSupportsGeneratedKeys();
+            boolean boundaryEvents = response.getMajorApiVersion() == VersionUtil.MAJOR_API_VERSION && response.getMinorApiVersion() >= 5;
+            ClientInfoProperties.Builder clientInfo = ClientInfoProperties.newBuilder();
+            if ( supportsGeneratedKeys ) {
+                clientInfo.putProperties( PARTIAL_BATCH_RESULTS, "true" );
+            }
+            if ( boundaryEvents ) {
+                clientInfo.putProperties( TRANSACTION_BOUNDARY_EVENTS, "true" );
+            }
+            if ( clientInfo.getPropertiesCount() != 0 ) {
+                rpc.setClientInfoProperties( clientInfo.build(), timeout );
+            }
+            if ( boundaryEvents ) {
+                rpc.enableTransactionBoundaryEvents();
+            }
+            return response;
+        } catch ( PrismInterfaceServiceException e ) {
+            rpc.abort();
+            throw e;
         }
-        return connectionResponse;
+    }
+
+
+    public boolean supportsGeneratedKeys() {
+        return supportsGeneratedKeys;
+    }
+
+
+    boolean supportsServerQueryTimeout() {
+        return rpc.supportsServerQueryTimeout();
     }
 
 
@@ -156,9 +200,25 @@ public class PrismInterfaceClient {
     }
 
 
+    boolean isClosed() {
+        return rpc.isClosed();
+    }
+
+
     public void executeUnparameterizedStatement( String namespaceName, String languageName, String statement, CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
         ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName );
-        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+        rpc.executeUnparameterizedStatement( request, callback );
+    }
+
+
+    public void executeUnparameterizedStatement(
+            String namespaceName, String languageName, String statement, GeneratedKeysRequest keys,
+            CallbackQueue<StatementResponse> callback, int timeout ) throws PrismInterfaceServiceException {
+        ExecuteUnparameterizedStatementRequest request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName )
+                .toBuilder()
+                .setGeneratedKeys( keys )
+                .build();
+        rpc.executeUnparameterizedStatement( request, callback );
     }
 
 
@@ -167,7 +227,22 @@ public class PrismInterfaceClient {
                 .toBuilder()
                 .setFetchSize( fetchSize )
                 .build();
-        rpc.executeUnparameterizedStatement( request, callback ); // TODO timeout
+        rpc.executeUnparameterizedStatement( request, callback );
+    }
+
+
+    void executeTimedUnparameterizedStatement( String namespaceName, String languageName, String statement, GeneratedKeysRequest keys,
+            CallbackQueue<StatementResponse> callback, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        ExecuteUnparameterizedStatementRequest.Builder request = buildExecuteUnparameterizedStatementRequest( statement, namespaceName, languageName ).toBuilder();
+        if ( keys != null ) {
+            request.setGeneratedKeys( keys );
+        }
+        rpc.executeTimedUnparameterizedStatement( request.build(), callback, deadline );
+    }
+
+
+    void discardCallback( CallbackQueue<?> callback ) {
+        rpc.discardCallback( callback );
     }
 
 
@@ -190,15 +265,38 @@ public class PrismInterfaceClient {
 
 
     public void executeUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> requests, CallbackQueue<StatementBatchResponse> updateCallback, int timeout ) throws PrismInterfaceServiceException {
-        ExecuteUnparameterizedStatementBatchRequest request = ExecuteUnparameterizedStatementBatchRequest.newBuilder()
-                .addAllStatements( requests )
-                .build();
-        rpc.executeUnparameterizedStatementBatch( request, updateCallback ); // TODO timeout
+        rpc.executeUnparameterizedStatementBatch( batchRequest( requests ), updateCallback ); // TODO timeout
+    }
+
+
+    StatementBatchResponse executeUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> requests, long timeout, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+        return rpc.executeUnparameterizedStatementBatch( batchRequest( requests ), timeout, acceptBatchId );
+    }
+
+
+    StatementBatchResponse executeUnparameterizedStatementBatch(
+            List<ExecuteUnparameterizedStatementRequest> requests, RequestDeadline deadline, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
+        return rpc.executeUnparameterizedStatementBatch( batchRequest( requests ), deadline, acceptBatchId );
+    }
+
+
+    private static ExecuteUnparameterizedStatementBatchRequest batchRequest( List<ExecuteUnparameterizedStatementRequest> requests ) {
+        return ExecuteUnparameterizedStatementBatchRequest.newBuilder().addAllStatements( requests ).build();
     }
 
 
     public PreparedStatementSignature prepareIndexedStatement( String namespaceName, String languageName, String statement, int timeout ) throws PrismInterfaceServiceException {
         return rpc.prepareIndexedStatement( buildPrepareStatementRequest( namespaceName, languageName, statement ), timeout );
+    }
+
+
+    public PreparedStatementSignature prepareIndexedStatement(
+            String namespaceName, String languageName, String statement, GeneratedKeysRequest keys, int timeout ) throws PrismInterfaceServiceException {
+        PrepareStatementRequest request = buildPrepareStatementRequest( namespaceName, languageName, statement )
+                .toBuilder()
+                .setGeneratedKeys( keys )
+                .build();
+        return rpc.prepareIndexedStatement( request, timeout );
     }
 
 
@@ -220,13 +318,31 @@ public class PrismInterfaceClient {
 
 
     public StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, int timeout ) throws PrismInterfaceServiceException {
-        ExecuteIndexedStatementRequest request = ExecuteIndexedStatementRequest.newBuilder()
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize, null ), timeout );
+    }
+
+
+    StatementResult executeIndexedStatement( int statementId, List<TypedValue> values, int fetchSize, long timeout ) throws PrismInterfaceServiceException {
+        if ( timeout <= Integer.MAX_VALUE ) {
+            return executeIndexedStatement( statementId, values, fetchSize, (int) timeout );
+        }
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize, null ), timeout );
+    }
+
+
+    StatementResult executeIndexedStatement(
+            int statementId, List<TypedValue> values, int fetchSize, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize, deadline ), deadline );
+    }
+
+
+    private ExecuteIndexedStatementRequest indexedStatementRequest(
+            int statementId, List<TypedValue> values, int fetchSize, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        return ExecuteIndexedStatementRequest.newBuilder()
                 .setStatementId( statementId )
-                .setParameters( buildIndexedParameters( values ) )
+                .setParameters( buildIndexedParameters( values, deadline ) )
                 .setFetchSize( fetchSize )
                 .build();
-
-        return rpc.executeIndexedStatement( request, timeout );
     }
 
 
@@ -245,20 +361,42 @@ public class PrismInterfaceClient {
 
 
     public StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, int timeout ) throws PrismInterfaceServiceException {
-        ExecuteIndexedStatementBatchRequest.Builder request = ExecuteIndexedStatementBatchRequest.newBuilder()
-                .setStatementId( statementId );
-        for ( List<TypedValue> values : parameterBatch ) {
-            request.addParameters( buildIndexedParameters( values ) );
-        }
-
-        return rpc.executeIndexedStatementBatch( request.build(), timeout );
+        return executeIndexedStatementBatch( statementId, parameterBatch, (long) timeout );
     }
 
 
-    private static IndexedParameters buildIndexedParameters( List<TypedValue> values ) throws PrismInterfaceServiceException {
+    StatementBatchResponse executeIndexedStatementBatch( int statementId, List<List<TypedValue>> parameterBatch, long timeout ) throws PrismInterfaceServiceException {
+        return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch, null ), timeout );
+    }
+
+
+    StatementBatchResponse executeIndexedStatementBatch(
+            int statementId, List<List<TypedValue>> parameterBatch, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch, deadline ), deadline );
+    }
+
+
+    private ExecuteIndexedStatementBatchRequest indexedBatchRequest(
+            int statementId, List<List<TypedValue>> parameterBatch, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        ExecuteIndexedStatementBatchRequest.Builder request = ExecuteIndexedStatementBatchRequest.newBuilder()
+                .setStatementId( statementId );
+        for ( List<TypedValue> values : parameterBatch ) {
+            request.addParameters( buildIndexedParameters( values, deadline ) );
+        }
+
+        return request.build();
+    }
+
+
+    private static IndexedParameters buildIndexedParameters( List<TypedValue> values, RequestDeadline deadline ) throws PrismInterfaceServiceException {
         return IndexedParameters.newBuilder()
-                .addAllParameters( ProtoUtils.serializeParameterList( values ) )
+                .addAllParameters( deadline == null ? ProtoUtils.serializeParameterList( values ) : ProtoUtils.serializeParameterList( values, deadline::remainingMillis ) )
                 .build();
+    }
+
+
+    long getTransactionGeneration() {
+        return rpc.getTransactionGeneration();
     }
 
 
@@ -269,10 +407,20 @@ public class PrismInterfaceClient {
     }
 
 
+    void commitTransaction( RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        rpc.commit( CommitRequest.getDefaultInstance(), deadline );
+    }
+
+
     public void rollbackTransaction( int timeout ) throws PrismInterfaceServiceException {
         RollbackRequest rollbackRequest = RollbackRequest.newBuilder().build();
 
         rpc.rollback( rollbackRequest, timeout );
+    }
+
+
+    void rollbackTransaction( RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        rpc.rollback( RollbackRequest.getDefaultInstance(), deadline );
     }
 
 
@@ -285,12 +433,48 @@ public class PrismInterfaceClient {
     }
 
 
+    void closeStatement( int statementId, long timeout ) throws PrismInterfaceServiceException {
+        if ( timeout <= Integer.MAX_VALUE ) {
+            closeStatement( statementId, (int) timeout );
+        } else {
+            rpc.closeStatement( CloseStatementRequest.newBuilder().setStatementId( statementId ).build(), timeout );
+        }
+    }
+
+
+    void closeStatement( int statementId, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        if ( deadline.timeoutMillis == 0 ) {
+            closeStatement( statementId, 0L );
+        } else {
+            rpc.closeStatement( CloseStatementRequest.newBuilder().setStatementId( statementId ).build(), deadline );
+        }
+    }
+
+
     public void closeResult( int statementId, int timeout ) throws PrismInterfaceServiceException {
         CloseResultRequest resultCloseRequest = CloseResultRequest.newBuilder()
                 .setStatementId( statementId )
                 .build();
 
         rpc.closeResult( resultCloseRequest, timeout );
+    }
+
+
+    void closeResult( int statementId, long timeout ) throws PrismInterfaceServiceException {
+        if ( timeout <= Integer.MAX_VALUE ) {
+            closeResult( statementId, (int) timeout );
+        } else {
+            rpc.closeResult( CloseResultRequest.newBuilder().setStatementId( statementId ).build(), timeout );
+        }
+    }
+
+
+    void closeResult( int statementId, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        if ( deadline.timeoutMillis == 0 ) {
+            closeResult( statementId, 0L );
+        } else {
+            rpc.closeResult( CloseResultRequest.newBuilder().setStatementId( statementId ).build(), deadline );
+        }
     }
 
 
@@ -356,11 +540,61 @@ public class PrismInterfaceClient {
     }
 
 
+    <E extends Exception> boolean withWriteReservation( int timeoutMillis, Transport.WriteOperation<E> operation ) throws E, InterruptedException {
+        return rpc.withWriteReservation( timeoutMillis, operation );
+    }
+
+
+    void withExecutionSlot( RequestDeadline deadline, Transport.WriteOperation<PrismInterfaceServiceException> operation ) throws PrismInterfaceServiceException {
+        rpc.withExecutionSlot( deadline, operation );
+    }
+
+
     public void setConnectionProperties( PolyphenyConnectionProperties connectionProperties, int timeout ) throws PrismInterfaceServiceException {
-        ConnectionPropertiesUpdateRequest request = ConnectionPropertiesUpdateRequest.newBuilder()
-                .setConnectionProperties( buildConnectionProperties( connectionProperties ) )
+        RequestDeadline deadline = new RequestDeadline( timeout );
+        reserveConnectionPropertiesUpdate( deadline, () ->
+                rpc.updateConnectionProperties( connectionPropertiesUpdate( buildConnectionProperties( connectionProperties ) ), deadline ) );
+    }
+
+
+    public void setNamespaceName( String namespace, int timeout, Runnable publishNamespace ) throws PrismInterfaceServiceException {
+        ConnectionProperties.Builder changes = ConnectionProperties.newBuilder();
+        Optional.ofNullable( namespace ).ifPresent( changes::setNamespaceName );
+        RequestDeadline deadline = new RequestDeadline( timeout );
+        reserveConnectionPropertiesUpdate( deadline, () -> {
+            rpc.updateConnectionProperties( connectionPropertiesUpdate( changes.build() ), deadline );
+            publishNamespace.run();
+        } );
+    }
+
+
+    private void reserveConnectionPropertiesUpdate( RequestDeadline deadline, Transport.WriteOperation<PrismInterfaceServiceException> operation )
+            throws PrismInterfaceServiceException {
+        try {
+            if ( !withWriteReservation( (int) deadline.remainingMillis(), operation ) ) {
+                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( deadline.timeoutMillis ) );
+            }
+        } catch ( InterruptedException e ) {
+            throw interruptedBeforeWrite( e );
+        }
+    }
+
+
+    static PrismInterfaceServiceException interruptedBeforeWrite( InterruptedException cause ) {
+        Thread.currentThread().interrupt();
+        return new PrismInterfaceServiceException.InterruptedBeforeSend( cause );
+    }
+
+
+    public void setAutoCommit( boolean autoCommit, int timeout ) throws PrismInterfaceServiceException {
+        rpc.updateConnectionProperties( connectionPropertiesUpdate( ConnectionProperties.newBuilder().setIsAutoCommit( autoCommit ).build() ), timeout );
+    }
+
+
+    private static ConnectionPropertiesUpdateRequest connectionPropertiesUpdate( ConnectionProperties changes ) {
+        return ConnectionPropertiesUpdateRequest.newBuilder()
+                .setConnectionProperties( changes )
                 .build();
-        rpc.updateConnectionProperties( request, timeout );
     }
 
 
@@ -373,7 +607,15 @@ public class PrismInterfaceClient {
 
 
     public Map<String, String> getClientInfoProperties( int timeout ) throws PrismInterfaceServiceException {
-        return rpc.getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build(), timeout ).getPropertiesMap();
+        Map<String, String> result = new HashMap<>(
+                rpc.getClientInfoProperties( ClientInfoPropertiesRequest.getDefaultInstance(), timeout ).getPropertiesMap() );
+        result.keySet().removeIf( PrismInterfaceClient::isPrivateClientInfoProperty );
+        return Collections.unmodifiableMap( result );
+    }
+
+
+    private Map<String, String> readClientInfoProperties( RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        return rpc.getClientInfoProperties( ClientInfoPropertiesRequest.getDefaultInstance(), deadline ).getPropertiesMap();
     }
 
 
@@ -401,9 +643,84 @@ public class PrismInterfaceClient {
 
 
     public void setClientInfoProperties( Properties properties, int timeout ) throws PrismInterfaceServiceException {
+        setClientInfoProperties( properties, timeout, new HashSet<>( properties.stringPropertyNames() ) );
+    }
+
+
+    void setClientInfoProperties( Properties properties, int timeout, Set<String> pending ) throws PrismInterfaceServiceException {
         ClientInfoProperties.Builder requestBuilder = ClientInfoProperties.newBuilder();
-        properties.stringPropertyNames().forEach( s -> requestBuilder.putProperties( s, properties.getProperty( s ) ) );
-        rpc.setClientInfoProperties( requestBuilder.build(), timeout );
+        for ( String name : pending ) {
+            validateClientInfoPropertyName( name );
+            requestBuilder.putProperties( name, properties.getProperty( name ) );
+        }
+        ClientInfoProperties request = requestBuilder.build();
+        RequestDeadline deadline = new RequestDeadline( timeout );
+        reserveConnectionPropertiesUpdate( deadline, () -> {
+            Map<String, String> current = readClientInfoProperties( deadline );
+            Set<String> removals = new LinkedHashSet<>();
+            // Older servers only support updating existing properties. Keep their merge behavior.
+            if ( supportsClientInfoRemoval( current ) ) {
+                for ( String name : current.keySet() ) {
+                    if ( !isPrivateClientInfoProperty( name ) && !request.containsProperties( name ) ) {
+                        removals.add( name );
+                    }
+                }
+            }
+            pending.addAll( removals );
+            rpc.setClientInfoProperties( request, deadline );
+            pending.removeAll( request.getPropertiesMap().keySet() );
+            for ( String name : removals ) {
+                removeClientInfoProperty( name, deadline );
+                pending.remove( name );
+            }
+        } );
+    }
+
+
+    void setClientInfoProperty( String name, String value, int timeout ) throws PrismInterfaceServiceException {
+        validateClientInfoPropertyName( name );
+        RequestDeadline deadline = new RequestDeadline( timeout );
+        reserveConnectionPropertiesUpdate( deadline, () -> {
+            if ( value != null ) {
+                rpc.setClientInfoProperties( ClientInfoProperties.newBuilder().putProperties( name, value ).build(), deadline );
+                return;
+            }
+            Map<String, String> properties = readClientInfoProperties( deadline );
+            if ( !properties.containsKey( name ) ) {
+                return;
+            }
+            if ( !supportsClientInfoRemoval( properties ) ) {
+                throw new PrismInterfaceServiceException( "The Prism server does not support removing ClientInfo properties.", "0A000" );
+            }
+            removeClientInfoProperty( name, deadline );
+        } );
+    }
+
+
+    private static boolean supportsClientInfoRemoval( Map<String, String> properties ) {
+        return "".equals( properties.get( REMOVE_CLIENT_INFO_PROPERTY ) );
+    }
+
+
+    private void removeClientInfoProperty( String name, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        rpc.setClientInfoProperties( ClientInfoProperties.newBuilder().putProperties( REMOVE_CLIENT_INFO_PROPERTY, name ).build(), deadline );
+    }
+
+
+    static boolean isValidClientInfoPropertyName( String name ) {
+        return name != null && !name.isEmpty() && !isPrivateClientInfoProperty( name );
+    }
+
+
+    private static boolean isPrivateClientInfoProperty( String name ) {
+        return PARTIAL_BATCH_RESULTS.equals( name ) || REMOVE_CLIENT_INFO_PROPERTY.equals( name ) || TRANSACTION_BOUNDARY_EVENTS.equals( name );
+    }
+
+
+    private static void validateClientInfoPropertyName( String name ) throws PrismInterfaceServiceException {
+        if ( !isValidClientInfoPropertyName( name ) ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Invalid ClientInfo property name." );
+        }
     }
 
 

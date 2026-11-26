@@ -82,12 +82,10 @@ public class PolyStatement implements AutoCloseable {
 
     private void resetStatement() throws PrismInterfaceServiceException {
         if ( statementId != NO_STATEMENT_ID && !connection.isClosed() ) {
-            try {
+            request( () -> {
                 getPrismInterfaceClient().closeStatement( statementId, connection.getTimeout() );
-            } catch ( PrismInterfaceServiceException e ) {
-                abortIfRequestIncomplete( e );
-                throw e;
-            }
+                return null;
+            } );
         }
         statementId = NO_STATEMENT_ID;
         parameterKind = null;
@@ -170,6 +168,8 @@ public class PolyStatement implements AutoCloseable {
         } catch ( PrismInterfaceServiceException e ) {
             abortIfRequestIncomplete( e );
             throw e;
+        } finally {
+            connection.refreshTransactionResults();
         }
     }
 
@@ -199,6 +199,8 @@ public class PolyStatement implements AutoCloseable {
         } catch ( PrismInterfaceServiceException e ) {
             abortIfRequestIncomplete( e );
             throw e;
+        } finally {
+            connection.refreshTransactionResults();
         }
     }
 
@@ -256,12 +258,10 @@ public class PolyStatement implements AutoCloseable {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Prepare a statement with " + kind.description + " parameters first." );
         }
         if ( hasOpenResult ) {
-            try {
+            request( () -> {
                 getPrismInterfaceClient().closeResult( statementId, connection.getTimeout() );
-            } catch ( PrismInterfaceServiceException e ) {
-                abortIfRequestIncomplete( e );
-                throw e;
-            }
+                return null;
+            } );
             hasOpenResult = false;
         }
         execution++;
@@ -274,11 +274,16 @@ public class PolyStatement implements AutoCloseable {
         } catch ( PrismInterfaceServiceException e ) {
             abortIfRequestIncomplete( e );
             throw e;
+        } finally {
+            connection.refreshTransactionResults();
         }
     }
 
 
     private void abortIfRequestIncomplete( PrismInterfaceServiceException error ) {
+        if ( error instanceof PrismInterfaceServiceException.InterruptedBeforeSend ) {
+            return;
+        }
         Throwable cause = error.getCause();
         if ( cause instanceof TimeoutException || cause instanceof InterruptedException || cause instanceof ClosedByInterruptException ) {
             connection.abortAfterIncompleteRequest();

@@ -17,10 +17,69 @@
 package org.polypheny.jdbc.transport;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 public interface Transport {
 
     void sendMessage( byte[] message ) throws IOException;
+
+    /** Calls beginWrite after acquiring any write lock, immediately before the first write. */
+    default void sendMessage( byte[] message, Runnable beginWrite ) throws IOException {
+        beginWrite.run();
+        sendMessage( message );
+    }
+
+    /**
+     * Attempts a timed send. Call beginWrite after preparing the message and acquiring any write lock.
+     * A false return indicates that no bytes were sent.
+     */
+    default boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite ) throws IOException {
+        if ( !beginWrite.getAsBoolean() ) {
+            return false;
+        }
+        sendMessage( message );
+        return true;
+    }
+
+    /** Calls finishWrite when the entire frame has been written. */
+    default boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite, Runnable finishWrite ) throws IOException {
+        if ( !trySendMessage( message, deadlineNanos, beginWrite ) ) {
+            return false;
+        }
+        finishWrite.run();
+        return true;
+    }
+
+    /**
+     * Keeps other sends from interleaving with a multi-request operation. The reader remains independent.
+     * A zero timeout waits indefinitely. A false return means the operation was not started.
+     */
+    default <E extends Exception> boolean withWriteReservation( int timeoutMillis, WriteOperation<E> operation ) throws E, InterruptedException {
+        operation.run();
+        return true;
+    }
+
+
+    final class WriteInterruptedException extends IOException {
+
+        WriteInterruptedException( InterruptedException cause ) {
+            super( cause );
+        }
+
+        @Override
+        public synchronized InterruptedException getCause() {
+            return (InterruptedException) super.getCause();
+        }
+
+    }
+
+
+    @FunctionalInterface
+    interface WriteOperation<E extends Exception> {
+
+        void run() throws E;
+
+    }
 
     byte[] receiveMessage() throws IOException;
 
