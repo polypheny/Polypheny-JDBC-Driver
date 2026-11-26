@@ -386,6 +386,67 @@ class Prism25IntegrationTest {
 
 
     @Test
+    void preparedIntegralProjectionsMatchStoredValues() throws SQLException {
+        String table = "jdbc_integral_key_readback_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement sql = connection.createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY, tiny_num TINYINT, "
+                    + "small_num SMALLINT, qty INTEGER, wide_num BIGINT)" );
+            try {
+                String insert = "INSERT INTO " + table + " (tiny_num, small_num, qty, wide_num) VALUES (?, ?, ?, ?)";
+                long[] keys;
+                long[] returned;
+                try ( PreparedStatement projected = connection.prepareStatement( insert,
+                        new String[]{ "tiny_num", "small_num", "qty", "wide_num" } );
+                        PreparedStatement returning = connection.prepareStatement( insert + " RETURNING tiny_num, small_num, qty, wide_num" ) ) {
+                    bindFractionalIntegralValues( projected );
+                    assertEquals( 1, projected.executeUpdate() );
+                    try ( ResultSet rows = projected.getGeneratedKeys() ) {
+                        keys = readIntegralProjection( rows );
+                        assertFalse( rows.next() );
+                    }
+                    bindFractionalIntegralValues( returning );
+                    try ( ResultSet rows = returning.executeQuery() ) {
+                        returned = readIntegralProjection( rows );
+                        assertFalse( rows.next() );
+                    }
+                }
+                try ( ResultSet stored = sql.executeQuery( "SELECT tiny_num, small_num, qty, wide_num FROM " + table + " ORDER BY id" ) ) {
+                    assertEquals( 9_007_199_254_740_993L, keys[3] );
+                    assertArrayEquals( readIntegralProjection( stored ), keys );
+                    assertArrayEquals( readIntegralProjection( stored ), returned );
+                    assertFalse( stored.next() );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    private static void bindFractionalIntegralValues( PreparedStatement insert ) throws SQLException {
+        insert.setBigDecimal( 1, new BigDecimal( "6.75" ) );
+        insert.setBigDecimal( 2, new BigDecimal( "-7.6" ) );
+        insert.setBigDecimal( 3, new BigDecimal( "42.6" ) );
+        insert.setBigDecimal( 4, new BigDecimal( "9007199254740993.25" ) );
+    }
+
+
+    private static long[] readIntegralProjection( ResultSet rows ) throws SQLException {
+        assertTrue( rows.next() );
+        long[] values = { rows.getByte( 1 ), rows.getShort( 2 ), rows.getInt( 3 ), rows.getLong( 4 ) };
+        for ( int i = 0; i < values.length; i++ ) {
+            assertEquals( Long.toString( values[i] ), rows.getString( i + 1 ) );
+        }
+        for ( int i = 0; i < 3; i++ ) {
+            assertEquals( Integer.valueOf( (int) values[i] ), rows.getObject( i + 1, Integer.class ) );
+        }
+        assertEquals( Long.valueOf( values[3] ), rows.getObject( 4, Long.class ) );
+        return values;
+    }
+
+
+    @Test
     void failedRawBatchExposesItsCommittedPrefix() throws SQLException {
         String table = "jdbc_raw_batch_" + UUID.randomUUID().toString().replace( "-", "" );
         try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );

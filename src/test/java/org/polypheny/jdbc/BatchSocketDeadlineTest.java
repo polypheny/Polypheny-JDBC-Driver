@@ -60,6 +60,7 @@ import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.PlainTransport;
 import org.polypheny.prism.ClientInfoPropertiesResponse;
 import org.polypheny.prism.CommitResponse;
+import org.polypheny.prism.ConnectionCheckResponse;
 import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
 import org.polypheny.prism.ConnectionResponse;
 import org.polypheny.prism.ErrorDetails;
@@ -76,8 +77,9 @@ import org.polypheny.prism.StatementResult;
 class BatchSocketDeadlineTest {
 
     @ParameterizedTest
-    @ValueSource(booleans = { false, true })
-    void networkDeadlineClosesConnectionWhenPeerStopsReading( boolean generatedKeyPrepare ) throws Exception {
+    @EnumSource(BlockedRequest.class)
+    void networkDeadlineClosesConnectionWhenPeerStopsReading( BlockedRequest request ) throws Exception {
+        boolean generatedKeyPrepare = request == BlockedRequest.PREPARE_WITH_KEYS;
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
         CountDownLatch releasePeer = new CountDownLatch( 1 );
         try ( ServerSocket server = new ServerSocket() ) {
@@ -127,9 +129,11 @@ class BatchSocketDeadlineTest {
                 Arrays.fill( payload, 'x' );
                 String sql = "INSERT INTO probe VALUES ('" + new String( payload ) + "')";
                 Future<SQLException> result;
-                if ( generatedKeyPrepare ) {
+                if ( request == BlockedRequest.PREPARE_WITH_KEYS ) {
                     result = executor.submit( () -> assertThrows( SQLException.class,
                             () -> connection.prepareStatement( sql, Statement.RETURN_GENERATED_KEYS ) ) );
+                } else if ( request == BlockedRequest.PREPARE ) {
+                    result = executor.submit( () -> assertThrows( SQLException.class, () -> connection.prepareStatement( sql ) ) );
                 } else {
                     statement.addBatch( sql );
                     result = executor.submit( () -> assertThrows( SQLException.class, statement::executeBatch ) );
@@ -148,6 +152,69 @@ class BatchSocketDeadlineTest {
             peer.get( 3, TimeUnit.SECONDS );
         } finally {
             releasePeer.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+
+    private enum BlockedRequest {
+        BATCH,
+        PREPARE,
+        PREPARE_WITH_KEYS
+    }
+
+
+    @Test
+    void validityAndPrepareUseTheirDeadlinesWhileTheWriterIsReserved() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool( 3 );
+        CountDownLatch reserved = new CountDownLatch( 1 );
+        CountDownLatch release = new CountDownLatch( 1 );
+        try ( ServerSocket server = new ServerSocket() ) {
+            server.bind( new InetSocketAddress( "127.0.0.1", 0 ) );
+            server.setSoTimeout( 3000 );
+            Future<?> peer = executor.submit( () -> {
+                try ( Socket socket = server.accept() ) {
+                    acknowledgeConnectionSettings( socket, false );
+                    DataInputStream input = new DataInputStream( socket.getInputStream() );
+                    DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
+                    Request check = readRequest( input, TypeCase.CONNECTION_CHECK_REQUEST );
+                    writeResponse( output, check, Response.newBuilder().setConnectionCheckResponse( ConnectionCheckResponse.getDefaultInstance() ) );
+                    Request prepare = readRequest( input, TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST );
+                    writeResponse( output, prepare, Response.newBuilder().setPreparedStatementSignature(
+                            PreparedStatementSignature.newBuilder().setStatementId( 42 ) ) );
+                    assertEquals( -1, input.read() );
+                }
+                return null;
+            } );
+            RpcService rpc = new RpcService( new PlainTransport( "127.0.0.1", server.getLocalPort() ) );
+            try {
+                PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+                ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort(), new Properties() );
+                Connection connection = new PolyConnection( new PolyphenyConnectionProperties( target, client ),
+                        new PolyphenyDatabaseMetadata( client, target ) );
+                connection.setNetworkTimeout( Runnable::run, 300 );
+                Future<Boolean> reservation = executor.submit( () -> rpc.withWriteReservation( 3000, () -> {
+                    reserved.countDown();
+                    assertTrue( release.await( 5, TimeUnit.SECONDS ) );
+                } ) );
+                assertTrue( reserved.await( 2, TimeUnit.SECONDS ) );
+                Future<Boolean> validity = executor.submit( () -> connection.isValid( 1 ) );
+                connection.setAutoCommit( true );
+                SQLTimeoutException failure = assertThrows( SQLTimeoutException.class, () -> connection.prepareStatement( "SELECT 1" ) );
+                assertInstanceOf( RequestDeadline.BeforeSendTimeout.class, failure.getCause() );
+                assertFalse( validity.get( 2, TimeUnit.SECONDS ) );
+                assertFalse( connection.isClosed() );
+
+                release.countDown();
+                assertTrue( reservation.get( 2, TimeUnit.SECONDS ) );
+                assertTrue( connection.isValid( Integer.MAX_VALUE ) );
+                assertFalse( connection.prepareStatement( "SELECT 1" ).isClosed() );
+            } finally {
+                release.countDown();
+                rpc.close();
+            }
+            peer.get( 3, TimeUnit.SECONDS );
+        } finally {
             executor.shutdownNow();
         }
     }

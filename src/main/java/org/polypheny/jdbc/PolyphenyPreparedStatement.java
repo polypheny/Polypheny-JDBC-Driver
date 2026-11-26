@@ -161,12 +161,13 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public ResultSet executeQuery() throws SQLException {
         try {
-            StatementResult result = executePreparedStatement();
+            ExecutionResult<StatementResult> execution = executePreparedStatement();
+            StatementResult result = execution.value;
             if ( !result.hasFrame() ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
             }
-            captureGeneratedKeys( result );
-            return publishResult( result.getFrame() );
+            captureGeneratedKeys( result, execution.commitGeneration );
+            return publishResult( result.getFrame(), execution.commitGeneration );
         } finally {
             clearParameterBatch();
         }
@@ -176,11 +177,12 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public long executeLargeUpdate() throws SQLException {
         try {
-            StatementResult result = executePreparedStatement();
+            ExecutionResult<StatementResult> execution = executePreparedStatement();
+            StatementResult result = execution.value;
             if ( result.hasFrame() ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
             }
-            captureGeneratedKeys( result );
+            captureGeneratedKeys( result, execution.commitGeneration );
             currentUpdateCount = result.getScalar();
             return currentUpdateCount;
         } finally {
@@ -195,7 +197,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     }
 
 
-    private StatementResult executePreparedStatement() throws SQLException {
+    private ExecutionResult<StatementResult> executePreparedStatement() throws SQLException {
         throwIfClosed();
         return executeWithDeadline( this::clearExecutionResults, deadline -> getClient().executeIndexedStatement(
                 statementId, boundParameters(), properties.getFetchSize(), deadline ) );
@@ -384,13 +386,14 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     @Override
     public boolean execute() throws SQLException {
         try {
-            StatementResult result = executePreparedStatement();
-            captureGeneratedKeys( result );
+            ExecutionResult<StatementResult> execution = executePreparedStatement();
+            StatementResult result = execution.value;
+            captureGeneratedKeys( result, execution.commitGeneration );
             if ( !result.hasFrame() ) {
                 currentUpdateCount = result.getScalar();
                 return false;
             }
-            publishResult( result.getFrame() );
+            publishResult( result.getFrame(), execution.commitGeneration );
             return true;
         } finally {
             clearParameterBatch();
@@ -437,13 +440,14 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
     private List<Long> executeParameterizedBatch() throws SQLException {
         throwIfClosed();
         try {
-            StatementBatchResponse status = executeBatchRequest( this::clearExecutionResults, deadline -> {
+            ExecutionResult<StatementBatchResponse> execution = executeBatchRequest( this::clearExecutionResults, deadline -> {
                 if ( parameterBatch.isEmpty() ) {
                     return StatementBatchResponse.getDefaultInstance();
                 }
                 return getClient().executeIndexedStatementBatch( statementId, parameterBatch, deadline );
             } );
-            captureGeneratedKeys( status );
+            StatementBatchResponse status = execution.value;
+            captureGeneratedKeys( status, execution.commitGeneration );
             int batchSize = parameterBatch.size();
             if ( batchSize > 1 && status.getScalarsCount() == 1 && status.getGeneratedKeysCount() == 0 ) {
                 // A grouped execution reports the total without the count for each command.

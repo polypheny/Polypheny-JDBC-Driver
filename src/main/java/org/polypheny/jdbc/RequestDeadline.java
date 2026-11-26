@@ -26,6 +26,7 @@ final class RequestDeadline {
 
     final long timeoutMillis;
     private final long deadlineNanos;
+    private long commitGeneration = -1;
 
 
     RequestDeadline( long timeoutMillis ) {
@@ -48,6 +49,16 @@ final class RequestDeadline {
 
     <T> CallbackQueue<T> callback( Function<Response, T> extractResponse ) {
         return new CallbackQueue<>( extractResponse, timeoutMillis, deadlineNanos );
+    }
+
+
+    long getCommitGeneration() {
+        return commitGeneration;
+    }
+
+
+    void recordCommitGeneration( CallbackQueue<?> callback ) {
+        commitGeneration = callback.getCommitGeneration();
     }
 
 

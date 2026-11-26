@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
@@ -42,6 +43,7 @@ import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
 
+@Slf4j
 public class PolyphenyStatement implements Statement {
 
     @Getter
@@ -151,10 +153,24 @@ public class PolyphenyStatement implements Statement {
                 closedDependentResult |= generatedKeysFrame != null;
                 clearGeneratedKeys();
             }
-            closeStatement = closedDependentResult && currentResult == null && !hasOpenGeneratedKeys() && properties.isCloseOnCompletion();
+            closeStatement = closedDependentResult && canCloseAfterDependentResults();
         }
         if ( closeStatement ) {
+            closeAfterCommit();
+        }
+    }
+
+
+    private boolean canCloseAfterDependentResults() throws SQLException {
+        return currentResult == null && !hasOpenGeneratedKeys() && properties.isCloseOnCompletion();
+    }
+
+
+    private void closeAfterCommit() {
+        try {
             close();
+        } catch ( SQLException e ) {
+            log.warn( "Could not close completed statement after committing the transaction", e );
         }
     }
 
@@ -217,42 +233,50 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    protected void captureGeneratedKeys( StatementResult result ) throws SQLException {
+    protected void captureGeneratedKeys( StatementResult result, long commitGeneration ) throws SQLException {
         if ( result.hasGeneratedKeys() ) {
-            storeGeneratedKeys( GeneratedKeys.requireComplete( result.getGeneratedKeys() ) );
+            storeGeneratedKeys( GeneratedKeys.requireComplete( result.getGeneratedKeys() ), commitGeneration, !result.hasFrame() );
         }
     }
 
 
-    protected void captureGeneratedKeys( StatementBatchResponse result ) throws SQLException {
+    protected void captureGeneratedKeys( StatementBatchResponse result, long commitGeneration ) throws SQLException {
         if ( result.getGeneratedKeysCount() > 0 ) {
-            storeGeneratedKeys( GeneratedKeys.combine( result.getGeneratedKeysList() ).getRelationalFrame() );
+            storeGeneratedKeys( GeneratedKeys.combine( result.getGeneratedKeysList() ).getRelationalFrame(), commitGeneration, true );
         }
     }
 
 
-    private void storeGeneratedKeys( RelationalFrame keys ) {
+    private void storeGeneratedKeys( RelationalFrame keys, long commitGeneration, boolean keysOnly ) throws SQLException {
         PolyphenyResultSetProperties keyProperties = properties.toResultSetProperties();
         long maxRows = keyProperties.getLargeMaxRows();
         if ( maxRows > 0 && maxRows < keys.getRowsCount() ) {
             keys = keys.toBuilder().clearRows().addAllRows( keys.getRowsList().subList( 0, (int) maxRows ) ).build();
         }
+        boolean closeStatement = false;
         synchronized ( resultsLock ) {
             if ( !isClosed ) {
-                generatedKeysFrame = keys;
-                generatedKeysProperties = keyProperties;
+                if ( closedByCommit( keyProperties.getResultSetHoldability(), commitGeneration ) ) {
+                    closeStatement = keysOnly && canCloseAfterDependentResults();
+                } else {
+                    generatedKeysFrame = keys;
+                    generatedKeysProperties = keyProperties;
+                }
             }
+        }
+        if ( closeStatement ) {
+            closeAfterCommit();
         }
     }
 
 
-    final BatchUpdateException batchFailure( PrismInterfaceServiceException.ServerError failure ) {
+    final BatchUpdateException batchFailure( PrismInterfaceServiceException.ServerError failure, long commitGeneration ) {
         StatementBatchResponse completed = failure.completedBatch();
         long[] counts = completed == null ? null : completed.getScalarsList().stream().mapToLong( Long::longValue ).toArray();
         BatchUpdateException batch = new BatchUpdateException( failure.getMessage(), failure.getSQLState(), failure.getErrorCode(), counts, failure );
         if ( completed != null ) {
             try {
-                captureGeneratedKeys( completed );
+                captureGeneratedKeys( completed, commitGeneration );
             } catch ( SQLException malformedKeys ) {
                 batch.addSuppressed( malformedKeys );
             }
@@ -326,17 +350,32 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    protected final ResultSet publishResult( Frame frame ) throws SQLException {
+    private boolean closedByCommit( int holdability, long generation ) {
+        return holdability == ResultSet.CLOSE_CURSORS_AT_COMMIT && generation >= 0 && generation != getClient().getCommitGeneration();
+    }
+
+
+    protected final ResultSet publishResult( Frame frame, long commitGeneration ) throws SQLException {
         throwIfNotRelational( frame );
         PolyphenyResultSet result = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+        boolean closeStatement = false;
         synchronized ( resultsLock ) {
             if ( isClosed ) {
                 result.markClosed();
                 throw closedStatement();
             }
-            currentResult = result;
+            if ( closedByCommit( properties.getResultSetHoldability(), commitGeneration ) ) {
+                result.markClosed();
+                closeStatement = canCloseAfterDependentResults();
+            } else {
+                currentResult = result;
+            }
         }
-        return checkPublishedResult( result );
+        checkPublishedResult( result );
+        if ( closeStatement ) {
+            closeAfterCommit();
+        }
+        return result;
     }
 
 
@@ -360,11 +399,12 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public ResultSet executeQuery( String statement ) throws SQLException {
-        StatementResult result = executeUnparameterized( statement, null );
+        ExecutionResult<StatementResult> execution = executeUnparameterized( statement, null );
+        StatementResult result = execution.value;
         if ( !result.hasFrame() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
         }
-        return publishResult( result.getFrame() );
+        return publishResult( result.getFrame(), execution.commitGeneration );
     }
 
 
@@ -381,17 +421,18 @@ public class PolyphenyStatement implements Statement {
 
 
     private long executeUpdateWithKeys( String sql, GeneratedKeysRequest keys ) throws SQLException {
-        StatementResult result = executeUnparameterized( sql, keys );
+        ExecutionResult<StatementResult> execution = executeUnparameterized( sql, keys );
+        StatementResult result = execution.value;
         if ( result.hasFrame() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
         }
-        captureGeneratedKeys( result );
+        captureGeneratedKeys( result, execution.commitGeneration );
         currentUpdateCount = result.getScalar();
         return currentUpdateCount;
     }
 
 
-    private StatementResult executeUnparameterized( String statement, GeneratedKeysRequest keys ) throws SQLException {
+    private ExecutionResult<StatementResult> executeUnparameterized( String statement, GeneratedKeysRequest keys ) throws SQLException {
         throwIfClosed();
         PrismInterfaceClient client = getClient();
         if ( keys != null ) {
@@ -416,6 +457,7 @@ public class PolyphenyStatement implements Statement {
                     }
                     if ( response.hasResult() ) {
                         awaitCompletion( callback );
+                        deadline.recordCommitGeneration( callback );
                         return response.getResult();
                     }
                 }
@@ -533,13 +575,14 @@ public class PolyphenyStatement implements Statement {
 
 
     private boolean executeWithKeys( String statement, GeneratedKeysRequest keys ) throws SQLException {
-        StatementResult result = executeUnparameterized( statement, keys );
-        captureGeneratedKeys( result );
+        ExecutionResult<StatementResult> execution = executeUnparameterized( statement, keys );
+        StatementResult result = execution.value;
+        captureGeneratedKeys( result, execution.commitGeneration );
         if ( !result.hasFrame() ) {
             currentUpdateCount = result.getScalar();
             return false;
         }
-        publishResult( result.getFrame() );
+        publishResult( result.getFrame(), execution.commitGeneration );
         return true;
     }
 
@@ -659,32 +702,32 @@ public class PolyphenyStatement implements Statement {
     private List<Long> executeUnparameterizedBatch() throws SQLException {
         try {
             throwIfClosed();
-            StatementBatchResponse status = executeBatchRequest( this::prepareForReExecution, deadline -> {
+            ExecutionResult<StatementBatchResponse> execution = executeBatchRequest( this::prepareForReExecution, deadline -> {
                 if ( statementBatch.isEmpty() ) {
                     return StatementBatchResponse.getDefaultInstance();
                 }
                 return getClient().executeUnparameterizedStatementBatch( buildBatchRequest(), deadline, id -> statementId = id );
             } );
-            captureGeneratedKeys( status );
-            return status.getScalarsList();
+            captureGeneratedKeys( execution.value, execution.commitGeneration );
+            return execution.value.getScalarsList();
         } finally {
             clearBatch();
         }
     }
 
 
-    final StatementBatchResponse executeBatchRequest( StatementCleanup cleanup, TimedRequest<StatementBatchResponse> request ) throws SQLException {
+    final ExecutionResult<StatementBatchResponse> executeBatchRequest( StatementCleanup cleanup, TimedRequest<StatementBatchResponse> request ) throws SQLException {
         return executeWithDeadline( cleanup, deadline -> {
             try {
                 return request.execute( deadline );
             } catch ( PrismInterfaceServiceException.ServerError failure ) {
-                throw batchFailure( failure );
+                throw batchFailure( failure, deadline.getCommitGeneration() );
             }
         } );
     }
 
 
-    final <T> T executeWithDeadline( StatementCleanup cleanup, TimedRequest<T> request ) throws SQLException {
+    final <T> ExecutionResult<T> executeWithDeadline( StatementCleanup cleanup, TimedRequest<T> request ) throws SQLException {
         ExecutionDeadline deadline = new ExecutionDeadline( polyConnection.getNetworkTimeout(), properties.getQueryTimeoutSeconds() );
         cleanupDeadline = deadline;
         try {
@@ -694,7 +737,8 @@ public class PolyphenyStatement implements Statement {
         }
         try {
             deadline.requestDeadline.remainingMillis();
-            return request.execute( deadline.requestDeadline );
+            T value = request.execute( deadline.requestDeadline );
+            return new ExecutionResult<>( value, deadline.requestDeadline.getCommitGeneration() );
         } catch ( PrismInterfaceServiceException failure ) {
             throw polyConnection.handleIncompleteRequest( failure, deadline.networkDeadline );
         }
@@ -713,6 +757,20 @@ public class PolyphenyStatement implements Statement {
     interface TimedRequest<T> {
 
         T execute( RequestDeadline deadline ) throws SQLException;
+
+    }
+
+
+    static final class ExecutionResult<T> {
+
+        final T value;
+        final long commitGeneration;
+
+
+        private ExecutionResult( T value, long commitGeneration ) {
+            this.value = value;
+            this.commitGeneration = commitGeneration;
+        }
 
     }
 

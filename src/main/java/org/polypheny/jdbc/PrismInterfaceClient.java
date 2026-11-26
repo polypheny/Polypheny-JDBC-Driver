@@ -107,6 +107,11 @@ public class PrismInterfaceClient {
 
 
     public boolean checkConnection( int timeout ) {
+        return checkConnection( (long) timeout );
+    }
+
+
+    boolean checkConnection( long timeout ) {
         ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
             /* ConnectionCheckResponses are empty messages */
@@ -240,9 +245,6 @@ public class PrismInterfaceClient {
 
     StatementBatchResponse executeUnparameterizedStatementBatch(
             List<ExecuteUnparameterizedStatementRequest> requests, RequestDeadline deadline, IntConsumer acceptBatchId ) throws PrismInterfaceServiceException {
-        if ( deadline.timeoutMillis == 0 ) {
-            return executeUnparameterizedStatementBatch( requests, 0L, acceptBatchId );
-        }
         return rpc.executeUnparameterizedStatementBatch( batchRequest( requests ), deadline, acceptBatchId );
     }
 
@@ -299,9 +301,6 @@ public class PrismInterfaceClient {
 
     StatementResult executeIndexedStatement(
             int statementId, List<TypedValue> values, int fetchSize, RequestDeadline deadline ) throws PrismInterfaceServiceException {
-        if ( deadline.timeoutMillis == 0 ) {
-            return executeIndexedStatement( statementId, values, fetchSize, 0L );
-        }
         return rpc.executeIndexedStatement( indexedStatementRequest( statementId, values, fetchSize, deadline ), deadline );
     }
 
@@ -342,9 +341,6 @@ public class PrismInterfaceClient {
 
     StatementBatchResponse executeIndexedStatementBatch(
             int statementId, List<List<TypedValue>> parameterBatch, RequestDeadline deadline ) throws PrismInterfaceServiceException {
-        if ( deadline.timeoutMillis == 0 ) {
-            return executeIndexedStatementBatch( statementId, parameterBatch, 0L );
-        }
         return rpc.executeIndexedStatementBatch( indexedBatchRequest( statementId, parameterBatch, deadline ), deadline );
     }
 
@@ -365,6 +361,11 @@ public class PrismInterfaceClient {
         return IndexedParameters.newBuilder()
                 .addAllParameters( deadline == null ? ProtoUtils.serializeParameterList( values ) : ProtoUtils.serializeParameterList( values, deadline::remainingMillis ) )
                 .build();
+    }
+
+
+    long getCommitGeneration() {
+        return rpc.getCommitGeneration();
     }
 
 

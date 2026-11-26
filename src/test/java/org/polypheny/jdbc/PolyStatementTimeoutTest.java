@@ -20,17 +20,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -50,30 +48,43 @@ class PolyStatementTimeoutTest {
     void closesTheConnectionWhenCypherDoesNotReturnAnExecutionResult( boolean acknowledgeStatement, boolean interrupted ) throws Exception {
         byte[] endOfStream = new byte[0];
         BlockingQueue<byte[]> incoming = new LinkedBlockingQueue<>();
-        Transport transport = mock( Transport.class, CALLS_REAL_METHODS );
-        when( transport.receiveMessage() ).thenAnswer( invocation -> {
-            byte[] message = incoming.take();
-            if ( message == endOfStream ) {
-                throw new EOFException();
+        AtomicInteger sends = new AtomicInteger();
+        AtomicInteger closes = new AtomicInteger();
+        Transport transport = new Transport() {
+            @Override
+            public void sendMessage( byte[] message ) throws IOException {
+                sends.incrementAndGet();
+                Request execution = Request.parseFrom( message );
+                assertTrue( execution.hasExecuteUnparameterizedStatementRequest() );
+                if ( acknowledgeStatement ) {
+                    incoming.add( Response.newBuilder().setId( execution.getId() )
+                            .setStatementResponse( StatementResponse.newBuilder().setStatementId( 42 ) ).build().toByteArray() );
+                }
+                if ( interrupted ) {
+                    Thread.currentThread().interrupt();
+                }
             }
-            return message;
-        } );
-        doAnswer( invocation -> {
-            incoming.add( endOfStream );
-            return null;
-        } ).when( transport ).close();
-        doAnswer( invocation -> {
-            Request execution = Request.parseFrom( (byte[]) invocation.getArgument( 0 ) );
-            assertTrue( execution.hasExecuteUnparameterizedStatementRequest() );
-            if ( acknowledgeStatement ) {
-                incoming.add( Response.newBuilder().setId( execution.getId() )
-                        .setStatementResponse( StatementResponse.newBuilder().setStatementId( 42 ) ).build().toByteArray() );
+
+            @Override
+            public byte[] receiveMessage() throws IOException {
+                try {
+                    byte[] message = incoming.take();
+                    if ( message == endOfStream ) {
+                        throw new EOFException();
+                    }
+                    return message;
+                } catch ( InterruptedException e ) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException( e );
+                }
             }
-            if ( interrupted ) {
-                Thread.currentThread().interrupt();
+
+            @Override
+            public void close() {
+                closes.incrementAndGet();
+                incoming.add( endOfStream );
             }
-            return null;
-        } ).when( transport ).sendMessage( any( byte[].class ) );
+        };
 
         RpcService rpc = new RpcService( transport );
         try {
@@ -92,8 +103,8 @@ class PolyStatementTimeoutTest {
 
                 assertThrows( PrismInterfaceServiceException.class,
                         () -> statement.execute( "graph", "cypher", "MATCH (n) RETURN n" ) );
-                verify( transport ).sendMessage( any( byte[].class ) );
-                verify( transport ).close();
+                assertEquals( 1, sends.get() );
+                assertEquals( 1, closes.get() );
             }
         } finally {
             if ( interrupted ) {

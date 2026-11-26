@@ -144,15 +144,7 @@ public class PolyConnection implements Connection {
     @Override
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
         throwIfClosed();
-        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
-                properties.getNamespaceName(),
-                PropertyUtils.getSQL_LANGUAGE_NAME(),
-                sql,
-                getTimeout()
-        );
-        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, properties.toStatementProperties(), signature );
-        startTracking( statement );
-        return statement;
+        return prepareStatement( sql, properties.toStatementProperties(), null );
     }
 
 
@@ -170,6 +162,10 @@ public class PolyConnection implements Connection {
 
     @Override
     public void setAutoCommit( boolean autoCommit ) throws SQLException {
+        throwIfClosed();
+        if ( properties.isAutoCommit() == autoCommit ) {
+            return;
+        }
         withWriteReservation( () -> {
             if ( properties.isAutoCommit() == autoCommit ) {
                 return;
@@ -405,16 +401,7 @@ public class PolyConnection implements Connection {
     public PreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency ) throws SQLException {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency );
-        PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency );
-        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
-                properties.getNamespaceName(),
-                PropertyUtils.getSQL_LANGUAGE_NAME(),
-                sql,
-                getTimeout()
-        );
-        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
-        startTracking( statement );
-        return statement;
+        return prepareStatement( sql, properties.toStatementProperties( resultSetType, resultSetConcurrency ), null );
     }
 
 
@@ -491,16 +478,7 @@ public class PolyConnection implements Connection {
     public PreparedStatement prepareStatement( String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability ) throws SQLException {
         throwIfClosed();
         PropertyUtils.throwIfInvalid( resultSetType, resultSetConcurrency, resultSetHoldability );
-        PolyphenyStatementProperties statementProperties = properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability );
-        PreparedStatementSignature signature = getPrismInterfaceClient().prepareIndexedStatement(
-                properties.getNamespaceName(),
-                PropertyUtils.getSQL_LANGUAGE_NAME(),
-                sql,
-                getTimeout()
-        );
-        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
-        startTracking( statement );
-        return statement;
+        return prepareStatement( sql, properties.toStatementProperties( resultSetType, resultSetConcurrency, resultSetHoldability ), null );
     }
 
 
@@ -532,19 +510,26 @@ public class PolyConnection implements Connection {
 
     private PreparedStatement prepareStatementWithKeys( String sql, GeneratedKeysRequest keys ) throws SQLException {
         throwIfClosed();
-        if ( keys == null ) {
-            return prepareStatement( sql );
-        }
+        return prepareStatement( sql, properties.toStatementProperties(), keys );
+    }
+
+
+    private PreparedStatement prepareStatement( String sql, PolyphenyStatementProperties statementProperties, GeneratedKeysRequest keys ) throws SQLException {
         PrismInterfaceClient client = getPrismInterfaceClient();
-        GeneratedKeys.requireSupported( client );
+        if ( keys != null ) {
+            GeneratedKeys.requireSupported( client );
+        }
         PreparedStatementSignature signature;
         try {
-            signature = client.prepareIndexedStatement(
-                    properties.getNamespaceName(), PropertyUtils.getSQL_LANGUAGE_NAME(), sql, keys, getTimeout() );
+            String namespace = properties.getNamespaceName();
+            String language = PropertyUtils.getSQL_LANGUAGE_NAME();
+            signature = keys == null
+                    ? client.prepareIndexedStatement( namespace, language, sql, getTimeout() )
+                    : client.prepareIndexedStatement( namespace, language, sql, keys, getTimeout() );
         } catch ( PrismInterfaceServiceException failure ) {
             throw handleIncompleteRequest( failure, true );
         }
-        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, properties.toStatementProperties(), signature );
+        PolyphenyPreparedStatement statement = new PolyphenyPreparedStatement( this, statementProperties, signature );
         startTracking( statement );
         return statement;
     }
@@ -583,8 +568,7 @@ public class PolyConnection implements Connection {
         if ( isClosed() ) {
             return false;
         }
-        // the prism-interface uses milliseconds for timeouts, jdbc uses seconds
-        return getPrismInterfaceClient().checkConnection( timeout * 1000 );
+        return getPrismInterfaceClient().checkConnection( timeout * 1000L );
     }
 
 

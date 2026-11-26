@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -134,7 +133,7 @@ class GeneratedKeysTest {
                 .setStatementId( 14 )
                 .addParameterMetas( ParameterMeta.newBuilder().setTypeName( "INTEGER" ) )
                 .build() );
-        when( rpc.executeIndexedStatement( any(), anyInt() ) ).thenAnswer( invocation -> {
+        when( rpc.executeIndexedStatement( any(), any( RequestDeadline.class ) ) ).thenAnswer( invocation -> {
             ExecuteIndexedStatementRequest request = invocation.getArgument( 0 );
             assertEquals( Collections.singletonList( TypedValue.fromInteger( 8 ).serialize() ), request.getParameters().getParametersList() );
             return response( 1, frame( "id", 10 ) );
@@ -156,10 +155,10 @@ class GeneratedKeysTest {
                 ExecuteIndexedStatementRequest request = invocation.getArgument( 0 );
                 assertEquals( Collections.singletonList( TypedValue.fromNull().serialize() ), request.getParameters().getParametersList() );
                 return response( 1, frame( "id", 11 ) );
-            } ).when( rpc ).executeIndexedStatement( any(), anyInt() );
+            } ).when( rpc ).executeIndexedStatement( any(), any( RequestDeadline.class ) );
             statement.setNull( 1, Types.INTEGER );
             assertEquals( 1, statement.executeUpdate() );
-            verify( rpc, times( 3 ) ).executeIndexedStatement( any(), anyInt() );
+            verify( rpc, times( 3 ) ).executeIndexedStatement( any(), any( RequestDeadline.class ) );
         }
     }
 
@@ -171,7 +170,7 @@ class GeneratedKeysTest {
                 .setStatementId( 14 )
                 .addParameterMetas( ParameterMeta.newBuilder().setTypeName( "VARCHAR" ) )
                 .build() );
-        when( rpc.executeIndexedStatement( any(), anyInt() ) ).thenReturn( response( 1, frame( "id", 10 ) ) );
+        when( rpc.executeIndexedStatement( any(), any( RequestDeadline.class ) ) ).thenReturn( response( 1, frame( "id", 10 ) ) );
 
         try ( PolyConnection connection = connection( rpc, true );
                 PreparedStatement statement = connection.prepareStatement( "INSERT INTO items (label) VALUES (?)", Statement.RETURN_GENERATED_KEYS ) ) {
@@ -184,7 +183,7 @@ class GeneratedKeysTest {
         }
 
         ArgumentCaptor<ExecuteIndexedStatementRequest> requests = ArgumentCaptor.forClass( ExecuteIndexedStatementRequest.class );
-        verify( rpc, times( 2 ) ).executeIndexedStatement( requests.capture(), anyInt() );
+        verify( rpc, times( 2 ) ).executeIndexedStatement( requests.capture(), any( RequestDeadline.class ) );
         assertEquals( "first", requests.getAllValues().get( 0 ).getParameters().getParameters( 0 ).getString().getString() );
         assertEquals( "second", requests.getAllValues().get( 1 ).getParameters().getParameters( 0 ).getString().getString() );
     }
@@ -199,8 +198,8 @@ class GeneratedKeysTest {
             assertEquals( requested, request.getGeneratedKeys() );
             return PreparedStatementSignature.newBuilder().setStatementId( 14 ).build();
         } );
-        when( rpc.executeIndexedStatement( any(), anyInt() ) ).thenReturn( response( 1, frame( "id", 10 ) ) );
-        when( rpc.executeIndexedStatementBatch( any(), anyLong() ) ).thenAnswer( invocation -> {
+        when( rpc.executeIndexedStatement( any(), any( RequestDeadline.class ) ) ).thenReturn( response( 1, frame( "id", 10 ) ) );
+        when( rpc.executeIndexedStatementBatch( any(), any( RequestDeadline.class ) ) ).thenAnswer( invocation -> {
             ExecuteIndexedStatementBatchRequest request = invocation.getArgument( 0 );
             assertEquals( 14, request.getStatementId() );
             assertEquals( 2, request.getParametersCount() );
@@ -242,7 +241,7 @@ class GeneratedKeysTest {
     @Test
     void rawBatchCombinesKeysFromDifferentTables() throws Exception {
         RpcService rpc = mock( RpcService.class );
-        when( rpc.executeUnparameterizedStatementBatch( any(), anyLong(), any() ) ).thenAnswer( invocation -> {
+        when( rpc.executeUnparameterizedStatementBatch( any(), any( RequestDeadline.class ), any() ) ).thenAnswer( invocation -> {
             ExecuteUnparameterizedStatementBatchRequest request = invocation.getArgument( 0 );
             List<ExecuteUnparameterizedStatementRequest> statements = request.getStatementsList();
             assertEquals( 3, statements.size() );

@@ -19,6 +19,7 @@ package org.polypheny.jdbc;
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -77,7 +78,6 @@ import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProceduresRequest;
 import org.polypheny.prism.ProceduresResponse;
 import org.polypheny.prism.Request;
-import org.polypheny.prism.Request.TypeCase;
 import org.polypheny.prism.Response;
 import org.polypheny.prism.RollbackRequest;
 import org.polypheny.prism.RollbackResponse;
@@ -101,6 +101,8 @@ public class RpcService {
     private static final ScheduledThreadPoolExecutor WRITE_DEADLINES = createWriteDeadlineExecutor();
 
     private final AtomicLong idCounter = new AtomicLong( 1 );
+    private final AtomicLong commitGeneration = new AtomicLong();
+    private final Set<Long> pendingCommits = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean transportClosed = new AtomicBoolean();
     private final Transport con;
     private final Thread service;
@@ -250,15 +252,18 @@ public class RpcService {
                 if ( resp.getId() == 0 ) {
                     throw new ProtocolException( "Invalid message id" );
                 }
+                // Stamp replies in wire order, before an application thread can be delayed consuming them.
+                long generation = resp.getLast() && resp.hasCommitResponse() && pendingCommits.remove( resp.getId() )
+                        ? commitGeneration.incrementAndGet() : commitGeneration.get();
                 CompletableFuture<Response> c = callbacks.get( resp.getId() );
                 if ( c == null ) {
                     CallbackQueue<?> cq = callbackQueues.get( resp.getId() );
                     if ( cq != null ) {
                         if ( resp.hasErrorResponse() ) {
                             callbackQueues.remove( resp.getId() );
-                            cq.onError( decodeErrorResponse( resp ), resp.getLast() );
+                            cq.onError( decodeErrorResponse( resp ), resp.getLast(), generation );
                         } else {
-                            cq.onNext( resp );
+                            cq.onNext( resp, generation );
                             if ( resp.getLast() ) {
                                 callbackQueues.remove( resp.getId() );
                             }
@@ -319,11 +324,7 @@ public class RpcService {
 
 
     private Response completeSynchronously( Request.Builder req, long timeout ) throws PrismInterfaceServiceException {
-        TypeCase type = req.getTypeCase();
-        if ( timeout > 0 && (type == TypeCase.CLOSE_STATEMENT_REQUEST || type == TypeCase.CLOSE_RESULT_REQUEST
-                || type == TypeCase.EXECUTE_INDEXED_STATEMENT_REQUEST || type == TypeCase.EXECUTE_NAMED_STATEMENT_REQUEST
-                || type == TypeCase.COMMIT_REQUEST || type == TypeCase.ROLLBACK_REQUEST || type == TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST
-                || (type == TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST && req.getPrepareIndexedStatementRequest().hasGeneratedKeys())) ) {
+        if ( timeout > 0 ) {
             return completeBeforeDeadline( req, new RequestDeadline( timeout ) );
         }
         try {
@@ -348,7 +349,9 @@ public class RpcService {
         try {
             callbackQueues.put( req.getId(), callback );
             sendMessageBeforeDeadline( req.build(), callback );
-            return callback.takeNext();
+            Response response = callback.takeNext();
+            deadline.recordCommitGeneration( callback );
+            return response;
         } catch ( IOException e ) {
             throw connectionFailure( e );
         } catch ( TimeoutException e ) {
@@ -381,7 +384,7 @@ public class RpcService {
     }
 
 
-    ConnectionCheckResponse checkConnection( ConnectionCheckRequest msg, int timeout ) throws PrismInterfaceServiceException {
+    ConnectionCheckResponse checkConnection( ConnectionCheckRequest msg, long timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setConnectionCheckRequest( msg );
         return completeSynchronously( req, timeout ).getConnectionCheckResponse();
@@ -516,10 +519,20 @@ public class RpcService {
     }
 
 
+    long getCommitGeneration() {
+        return commitGeneration.get();
+    }
+
+
     CommitResponse commit( CommitRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setCommitRequest( msg );
-        return completeSynchronously( req, timeout ).getCommitResponse();
+        pendingCommits.add( req.getId() );
+        try {
+            return completeSynchronously( req, timeout ).getCommitResponse();
+        } finally {
+            pendingCommits.remove( req.getId() );
+        }
     }
 
 
@@ -671,6 +684,7 @@ public class RpcService {
         } catch ( PrismInterfaceServiceException.ServerError error ) {
             throw completed == null ? error : error.withCompletedBatch( completed );
         } finally {
+            deadline.recordCommitGeneration( callback );
             callbackQueues.remove( req.getId() );
         }
     }

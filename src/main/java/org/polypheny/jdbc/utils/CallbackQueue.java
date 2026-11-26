@@ -36,6 +36,7 @@ public class CallbackQueue<T> {
     private final Condition isCompleted = queueLock.newCondition();
     private boolean bIsCompleted = false;
     private boolean terminalResponseReceived;
+    private long commitGeneration = -1;
     private final Queue<T> messageQueue = new LinkedList<>();
     private final Function<Response, T> extractResponse;
     private final long timeoutMillis;
@@ -179,12 +180,18 @@ public class CallbackQueue<T> {
 
 
     public void onNext( Response message ) {
+        onNext( message, -1 );
+    }
+
+
+    public void onNext( Response message, long commitGeneration ) {
         queueLock.lock();
         try {
             if ( !acceptsCallback() ) {
                 return;
             }
             messageQueue.add( extractResponse.apply( message ) );
+            this.commitGeneration = commitGeneration;
             if ( message.getLast() ) {
                 // A terminal frame arrives and completes the queue at the same instant.
                 terminalResponseReceived = true;
@@ -200,20 +207,36 @@ public class CallbackQueue<T> {
 
 
     public void onError( Throwable propagatedException ) {
-        onError( propagatedException, false );
+        onError( propagatedException, false, -1 );
     }
 
 
     public void onError( Throwable propagatedException, boolean terminalResponse ) {
+        onError( propagatedException, terminalResponse, -1 );
+    }
+
+
+    public void onError( Throwable propagatedException, boolean terminalResponse, long commitGeneration ) {
         queueLock.lock();
         try {
             if ( acceptsCallback() ) {
                 terminalResponseReceived = terminalResponse;
+                this.commitGeneration = commitGeneration;
                 this.propagatedException = propagatedException instanceof PrismInterfaceServiceException
                         ? (PrismInterfaceServiceException) propagatedException
                         : new PrismInterfaceServiceException( propagatedException );
                 signalTerminalState();
             }
+        } finally {
+            queueLock.unlock();
+        }
+    }
+
+
+    public long getCommitGeneration() {
+        queueLock.lock();
+        try {
+            return commitGeneration;
         } finally {
             queueLock.unlock();
         }
