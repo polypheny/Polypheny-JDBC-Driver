@@ -47,6 +47,9 @@ class MetadataResultSetTest {
                 assertTrue( remote.next() );
                 assertEquals( "public", remote.getString( "TABLE_SCHEM" ) );
                 assertFalse( local.isClosed() );
+                local.setFetchSize( 7 );
+                assertEquals( 7, local.getFetchSize() );
+                assertEquals( 0, remote.getFetchSize() );
                 assertNoPosition( local );
                 assertFalse( local.next() );
                 assertNoPosition( local );

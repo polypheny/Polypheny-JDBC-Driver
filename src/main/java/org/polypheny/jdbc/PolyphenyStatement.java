@@ -246,8 +246,8 @@ public class PolyphenyStatement implements Statement {
         ExecutionDeadline deadline = cleanupDeadline;
         try {
             RequestDeadline requestDeadline = deadline == null ? new RequestDeadline( polyConnection.getNetworkTimeout() ) : deadline.requestDeadline;
-            if ( deadline != null && deadline.admissionDeadline != null ) {
-                getClient().withExecutionSlot( deadline.admissionDeadline, () -> request.execute( requestDeadline ) );
+            if ( deadline != null && deadline.serverQueryTimeout ) {
+                getClient().withExecutionSlot( requestDeadline, () -> request.execute( requestDeadline ) );
             } else {
                 request.execute( requestDeadline );
             }
@@ -797,27 +797,26 @@ public class PolyphenyStatement implements Statement {
 
     final <T> ExecutionResult<T> executeWithDeadline( StatementCleanup cleanup, TimedRequest<T> request ) throws SQLException {
         int networkTimeout = polyConnection.getNetworkTimeout();
-        ExecutionDeadline deadline = new ExecutionDeadline( networkTimeout, properties.getQueryTimeoutSeconds() );
-        boolean serverQueryTimeout = !deadline.networkDeadline && deadline.requestDeadline.timeoutMillis != 0 && getClient().supportsServerQueryTimeout();
-        // A cleanup that has been sent can finish a previous transaction. Only its admission uses the query budget.
-        cleanupDeadline = serverQueryTimeout ? new ExecutionDeadline( networkTimeout, 0, deadline.requestDeadline ) : deadline;
+        ExecutionDeadline deadline = new ExecutionDeadline( networkTimeout, properties.getQueryTimeoutSeconds(), getClient().supportsServerQueryTimeout() );
+        // Cleanup has no server-side cancellation and must complete within the same client budget as admission.
+        cleanupDeadline = deadline;
         try {
             cleanup.execute();
         } finally {
             cleanupDeadline = null;
         }
-        RequestDeadline executionDeadline = serverQueryTimeout ? deadline.requestDeadline.withServerQueryTimeout( networkTimeout ) : deadline.requestDeadline;
+        RequestDeadline executionDeadline = deadline.serverQueryTimeout ? deadline.requestDeadline.withServerQueryTimeout( networkTimeout ) : deadline.requestDeadline;
         try {
             throwIfClosed();
             executionDeadline.remainingMillis();
             T value = request.execute( executionDeadline );
             return new ExecutionResult<>( value, executionDeadline.getTransactionGeneration() );
         } catch ( PrismInterfaceServiceException failure ) {
-            if ( serverQueryTimeout && failure instanceof PrismInterfaceServiceException.ServerError && QUERY_CANCELED_STATE.equals( failure.getSQLState() ) ) {
+            if ( deadline.serverQueryTimeout && failure instanceof PrismInterfaceServiceException.ServerError && QUERY_CANCELED_STATE.equals( failure.getSQLState() ) ) {
                 throw asQueryTimeout( failure );
             }
             boolean querySendTimedOut = failure.getCause() instanceof RequestDeadline.QuerySendTimeout;
-            throw polyConnection.handleIncompleteRequest( failure, !querySendTimedOut && (deadline.networkDeadline || serverQueryTimeout) );
+            throw polyConnection.handleIncompleteRequest( failure, !querySendTimedOut && (deadline.networkDeadline || deadline.serverQueryTimeout) );
         } finally {
             polyConnection.refreshTransactionResults();
         }
@@ -862,20 +861,15 @@ public class PolyphenyStatement implements Statement {
     private static final class ExecutionDeadline {
 
         private final boolean networkDeadline;
+        private final boolean serverQueryTimeout;
         private final RequestDeadline requestDeadline;
-        private final RequestDeadline admissionDeadline;
 
 
-        private ExecutionDeadline( int networkTimeout, int queryTimeoutSeconds ) {
-            this( networkTimeout, queryTimeoutSeconds, null );
-        }
-
-
-        private ExecutionDeadline( int networkTimeout, int queryTimeoutSeconds, RequestDeadline admissionDeadline ) {
+        private ExecutionDeadline( int networkTimeout, int queryTimeoutSeconds, boolean supportsServerQueryTimeout ) {
             long queryTimeout = TimeUnit.SECONDS.toMillis( queryTimeoutSeconds );
             networkDeadline = networkTimeout > 0 && (queryTimeout == 0 || networkTimeout <= queryTimeout);
+            serverQueryTimeout = supportsServerQueryTimeout && !networkDeadline && queryTimeout > 0;
             requestDeadline = new RequestDeadline( networkDeadline ? networkTimeout : queryTimeout );
-            this.admissionDeadline = admissionDeadline;
         }
 
     }

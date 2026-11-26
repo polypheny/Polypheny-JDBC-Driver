@@ -698,7 +698,6 @@ public class PolyphenyResultSet implements ResultSet {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal value for fetch size. fetchSize >= 0 must hold." );
         }
         properties.setFetchSize( fetchSize );
-        getStatement().setFetchSize( fetchSize );
     }
 
 

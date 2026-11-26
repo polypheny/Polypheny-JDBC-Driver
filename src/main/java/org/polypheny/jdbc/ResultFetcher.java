@@ -71,18 +71,17 @@ public class ResultFetcher implements Runnable {
 
 
     private void fetch() throws PrismInterfaceServiceException {
-        long fetchEnd = totalFetched + properties.getStatementFetchSize();
         Frame nextFrame = pageRequest.fetch( properties.getFetchSize() );
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new PrismInterfaceServiceException( "Illegal result type." );
         }
         List<Row> rows = nextFrame.getRelationalFrame().getRowsList();
-        if ( properties.getLargeMaxRows() != 0 && fetchEnd > properties.getLargeMaxRows() ) {
-            long rowEndIndex = properties.getLargeMaxRows() - totalFetched;
-            if ( rowEndIndex > Integer.MAX_VALUE ) {
-                throw new RuntimeException( "Should never be thrown" );
+        long maxRows = properties.getLargeMaxRows();
+        if ( maxRows > 0 ) {
+            long remainingRows = Math.max( 0, maxRows - totalFetched );
+            if ( rows.size() > remainingRows ) {
+                rows = rows.subList( 0, (int) remainingRows );
             }
-            rows = rows.subList( 0, (int) rowEndIndex );
         }
         fetchedValues = TypedValueUtils.buildRows( rows );
         totalFetched = totalFetched + rows.size();

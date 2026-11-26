@@ -93,6 +93,37 @@ class ResultSetFetchErrorTest {
 
     @ParameterizedTest
     @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
+    void aLargerCursorFetchSizeStillRespectsMaxRows( int resultSetType ) throws SQLException {
+        when( client.fetchResult( 7, 4, 2000 ) ).thenReturn( frame( true, 4 ) );
+        try ( ResultSet result = newResultSet( resultSetType, 1, 3 ) ) {
+            result.setFetchSize( 4 );
+            assertTrue( result.next() );
+            assertTrue( result.next() );
+            assertTrue( result.next() );
+            assertFalse( result.next() );
+            assertEquals( 1, statement.getFetchSize() );
+        }
+        verify( client ).fetchResult( 7, 4, 2000 );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
+    void aSmallerCursorFetchSizeAllowsAShortFinalPage( int resultSetType ) throws SQLException {
+        when( client.fetchResult( 7, 1, 2000 ) ).thenReturn( frame( true ) );
+        try ( ResultSet result = newResultSet( resultSetType, 6, 4 ) ) {
+            result.setFetchSize( 1 );
+            assertTrue( result.next() );
+            assertTrue( result.next() );
+            assertFalse( result.next() );
+            assertEquals( 6, statement.getFetchSize() );
+        }
+        verify( client ).fetchResult( 7, 1, 2000 );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
     void fetchUsesTheCurrentNetworkTimeoutAndClosesTheConnectionIfTheReplyIsMissing( int resultSetType ) throws SQLException {
         TimeoutException timeout = new TimeoutException();
         when( client.fetchResult( 7, 1, 75 ) ).thenThrow( new PrismInterfaceServiceException( timeout ) );
@@ -134,19 +165,33 @@ class ResultSetFetchErrorTest {
 
 
     private PolyphenyResultSet newResultSet( int resultSetType ) throws SQLException {
+        return newResultSet( resultSetType, 1, 0 );
+    }
+
+
+    private PolyphenyResultSet newResultSet( int resultSetType, int statementFetchSize, int maxRows ) throws SQLException {
         PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( new ConnectionString( "jdbc:polypheny://localhost:20590" ), client );
         PolyConnection connection = new PolyConnection( properties, mock( PolyphenyDatabaseMetadata.class ) );
         connection.setNetworkTimeout( Runnable::run, 2000 );
         statement = (PolyphenyStatement) connection.createStatement( resultSetType, ResultSet.CONCUR_READ_ONLY );
         statement.statementId = 7;
-        statement.setFetchSize( 1 );
+        statement.setFetchSize( statementFetchSize );
+        statement.setMaxRows( maxRows );
         return (PolyphenyResultSet) statement.publishResult( frame( false ), -1 );
     }
 
 
     private static Frame frame( boolean last ) {
-        return Frame.newBuilder().setIsLast( last )
-                .setRelationalFrame( RelationalFrame.newBuilder().addRows( Row.getDefaultInstance() ) ).build();
+        return frame( last, 1 );
+    }
+
+
+    private static Frame frame( boolean last, int rowCount ) {
+        RelationalFrame.Builder rows = RelationalFrame.newBuilder();
+        for ( int row = 0; row < rowCount; row++ ) {
+            rows.addRows( Row.getDefaultInstance() );
+        }
+        return Frame.newBuilder().setIsLast( last ).setRelationalFrame( rows ).build();
     }
 
 }

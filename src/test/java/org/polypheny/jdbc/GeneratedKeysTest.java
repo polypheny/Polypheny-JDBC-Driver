@@ -87,10 +87,15 @@ class GeneratedKeysTest {
             assertFalse( statement.getGeneratedKeys().next() );
 
             stubUnprepared( rpc, GeneratedKeys.ALL, response( 1, frame( "id", 41 ) ) );
+            statement.setFetchSize( 23 );
             assertEquals( 1, statement.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
             assertNull( statement.getResultSet() );
             ResultSet keys = statement.getGeneratedKeys();
             assertSame( statement, keys.getStatement() );
+            assertEquals( 23, keys.getFetchSize() );
+            keys.setFetchSize( 7 );
+            assertEquals( 7, keys.getFetchSize() );
+            assertEquals( 23, statement.getFetchSize() );
             assertTrue( keys.getMetaData().isAutoIncrement( 1 ) );
             assertTrue( keys.next() );
             assertEquals( 41, keys.getLong( "id" ) );

@@ -49,7 +49,9 @@ The column-name and one-based column-index overloads return those columns in req
 
 A failed batch entry raises `BatchUpdateException`. When the server reports the completed entries, `getUpdateCounts()` and `getLargeUpdateCounts()` return their counts, and `getGeneratedKeys()` exposes their keys. An explicit progress response with zero completed entries yields an empty array. If the server sends no progress response, both count methods return `null` and the batch may have partially committed.
 
-A query timeout before dispatch raises `SQLTimeoutException` and leaves the connection open. Servers that support query cancellation measure the execution budget from receipt of the complete request. A confirmed batch query timeout leaves the connection open and carries a `BatchUpdateException` as its cause with the progress reported by the server. A timeout while sending a partial request, an expired network deadline, or an interrupt after dispatch can close the connection. An unconfirmed batch may have partially committed.
+A query timeout before the driver sends a request raises `SQLTimeoutException` and leaves the connection open. The query deadline also bounds cleanup of a previous execution. If the driver sends a cleanup request and its reply misses that deadline, the connection closes and the new execution times out before sending its SQL.
+
+Servers that support query cancellation start the transmitted budget when they first read bytes of the request frame. Delays before those bytes reach the server can extend the total wait. A confirmed batch query timeout leaves the connection open and carries a `BatchUpdateException` as its cause with the progress reported by the server. A timeout while sending a partial request, an expired network deadline, or an interrupt after dispatch can close the connection. An unconfirmed batch may have partially committed.
 
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).

@@ -31,6 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.UnknownFieldSet;
 import java.io.EOFException;
 import java.io.IOException;
 import java.sql.Connection;
@@ -101,36 +102,46 @@ class BatchCleanupTimeoutTest {
 
     private static final String INSERT = "INSERT INTO items DEFAULT VALUES";
     private static final String SELECT = "SELECT 1";
+    private static final int QUERY_TIMEOUT_EXTENSION = 50001;
 
 
     @ParameterizedTest
     @EnumSource( Cleanup.class )
     void closesConnectionOnCleanupTimeoutBeforeBatch( Cleanup cleanup ) throws Exception {
-        checkBatchCleanup( cleanup, Intercept.TIMEOUT, false );
+        checkBatchCleanup( cleanup, Intercept.TIMEOUT, false, false );
     }
 
 
     @ParameterizedTest
     @EnumSource( Cleanup.class )
     void queryTimeoutAppliesToCleanupWithoutNetworkTimeout( Cleanup cleanup ) throws Exception {
-        checkBatchCleanup( cleanup, Intercept.TIMEOUT, true );
+        checkBatchCleanup( cleanup, Intercept.TIMEOUT, true, false );
+    }
+
+
+    @ParameterizedTest
+    @EnumSource( Cleanup.class )
+    void queryTimeoutBoundsDispatchedCleanupWithServerCancellation( Cleanup cleanup ) throws Exception {
+        checkBatchCleanup( cleanup, Intercept.TIMEOUT, true, true );
     }
 
 
     @ParameterizedTest
     @EnumSource( Cleanup.class )
     void preservesServerErrorFromCleanupBeforeBatch( Cleanup cleanup ) throws Exception {
-        checkBatchCleanup( cleanup, Intercept.SERVER_ERROR, false );
+        checkBatchCleanup( cleanup, Intercept.SERVER_ERROR, false, false );
     }
 
 
-    private static void checkBatchCleanup( Cleanup cleanup, Intercept intercept, boolean queryOnly ) throws Exception {
+    private static void checkBatchCleanup( Cleanup cleanup, Intercept intercept, boolean queryOnly, boolean serverQueryTimeout ) throws Exception {
         CleanupTransport transport = new CleanupTransport( cleanup.requestType, intercept );
+        transport.advertiseQueryTimeout = serverQueryTimeout;
         RpcService rpc = new RpcService( transport );
         try {
             PrismInterfaceClient client = new PrismInterfaceClient( rpc );
-            try ( Connection connection = connection( client );
+            try ( Connection connection = connection( client, serverQueryTimeout );
                     Statement statement = cleanup == Cleanup.PREPARED_RESULT ? connection.prepareStatement( SELECT ) : connection.createStatement() ) {
+                assertEquals( serverQueryTimeout, client.supportsServerQueryTimeout() );
                 if ( queryOnly ) {
                     statement.setQueryTimeout( 1 );
                 } else {
@@ -847,8 +858,16 @@ class BatchCleanupTimeoutTest {
 
 
     private static Connection connection( PrismInterfaceClient client ) throws SQLException {
+        return connection( client, false );
+    }
+
+
+    private static Connection connection( PrismInterfaceClient client, boolean register ) throws SQLException {
         ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
         PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
+        if ( register ) {
+            client.register( properties, 1000 );
+        }
         return new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
     }
 
@@ -891,6 +910,7 @@ class BatchCleanupTimeoutTest {
         private boolean sendImplicitBoundary;
         private boolean implicitBoundaryFails;
         private boolean rejectStatementCloseBeforeSend;
+        private boolean advertiseQueryTimeout;
 
 
         private CleanupTransport( TypeCase cleanupType, Intercept intercept ) {
@@ -937,8 +957,13 @@ class BatchCleanupTimeoutTest {
             }
             switch ( type ) {
                 case CONNECTION_REQUEST:
-                    response.setConnectionResponse( ConnectionResponse.newBuilder().setIsCompatible( true )
-                            .setMajorApiVersion( 2 ).setMinorApiVersion( 5 ).setSupportsGeneratedKeys( true ) );
+                    ConnectionResponse.Builder connection = ConnectionResponse.newBuilder().setIsCompatible( true )
+                            .setMajorApiVersion( 2 ).setMinorApiVersion( 5 ).setSupportsGeneratedKeys( true );
+                    if ( advertiseQueryTimeout ) {
+                        connection.setUnknownFields( UnknownFieldSet.newBuilder()
+                                .addField( QUERY_TIMEOUT_EXTENSION, UnknownFieldSet.Field.newBuilder().addVarint( 1 ).build() ).build() );
+                    }
+                    response.setConnectionResponse( connection );
                     break;
                 case SET_CLIENT_INFO_PROPERTIES_REQUEST:
                     boundaryEventsRequested = "true".equals( request.getSetClientInfoPropertiesRequest().getPropertiesMap().get( "transactionBoundaryEvents" ) );
