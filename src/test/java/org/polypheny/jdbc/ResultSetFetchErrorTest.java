@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.TimeoutException;
@@ -37,9 +39,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
+import org.polypheny.prism.ExecuteIndexedStatementRequest;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Row;
+import org.polypheny.prism.StatementResult;
 
 class ResultSetFetchErrorTest {
 
@@ -263,6 +269,53 @@ class ResultSetFetchErrorTest {
     }
 
 
+    @Test
+    void zeroStatementFetchSizeUsesTheDefaultOnPreparedExecution() throws SQLException {
+        RpcService rpc = mock( RpcService.class );
+        when( rpc.prepareIndexedStatement( any(), anyInt() ) ).thenReturn( PreparedStatementSignature.newBuilder().setStatementId( 7 ).build() );
+        when( rpc.executeIndexedStatement( any(), any( RequestDeadline.class ) ) ).thenAnswer( invocation -> {
+            ExecuteIndexedStatementRequest request = invocation.getArgument( 0 );
+            assertTrue( request.hasFetchSize() );
+            assertEquals( PropertyUtils.getDEFAULT_FETCH_SIZE(), request.getFetchSize() );
+            return StatementResult.newBuilder().setFrame( frame( true ) ).build();
+        } );
+        try ( PolyConnection connection = newConnection( new PrismInterfaceClient( rpc ) );
+                PreparedStatement query = connection.prepareStatement( "SELECT 1" ) ) {
+            query.setFetchSize( 3 );
+            query.setFetchSize( 0 );
+            try ( ResultSet result = query.executeQuery() ) {
+                assertTrue( result.next() );
+                assertEquals( PropertyUtils.getDEFAULT_FETCH_SIZE(), result.getFetchSize() );
+            }
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
+    void zeroCursorFetchSizeRestoresTheCapturedStatementHint( int resultSetType ) throws SQLException {
+        when( client.fetchResult( 7, 0, 2000 ) ).thenThrow( failure );
+        when( client.fetchResult( 7, 1, 2000 ) ).thenReturn( frame( false ) ).thenThrow( failure );
+        try ( ResultSet result = newResultSet( resultSetType, 1, 2 ) ) {
+            result.setFetchSize( 4 );
+            statement.setFetchSize( 8 );
+            result.setFetchSize( 0 );
+            if ( resultSetType == ResultSet.TYPE_SCROLL_INSENSITIVE ) {
+                result.afterLast();
+                assertTrue( result.previous() );
+            } else {
+                assertTrue( result.next() );
+                assertTrue( result.next() );
+            }
+            assertEquals( 2, result.getRow() );
+            assertFalse( result.next() );
+            assertEquals( 1, result.getFetchSize() );
+            assertEquals( 8, statement.getFetchSize() );
+        }
+        verify( client ).fetchResult( 7, 1, 2000 );
+    }
+
+
     @ParameterizedTest
     @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
     void fetchUsesTheCurrentNetworkTimeoutAndClosesTheConnectionIfTheReplyIsMissing( int resultSetType ) throws SQLException {
@@ -316,14 +369,20 @@ class ResultSetFetchErrorTest {
 
 
     private PolyphenyResultSet newResultSet( int resultSetType, int statementFetchSize, int maxRows, Frame firstFrame ) throws SQLException {
-        PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( new ConnectionString( "jdbc:polypheny://localhost:20590" ), client );
-        PolyConnection connection = new PolyConnection( properties, mock( PolyphenyDatabaseMetadata.class ) );
-        connection.setNetworkTimeout( Runnable::run, 2000 );
+        PolyConnection connection = newConnection( client );
         statement = (PolyphenyStatement) connection.createStatement( resultSetType, ResultSet.CONCUR_READ_ONLY );
         statement.statementId = 7;
         statement.setFetchSize( statementFetchSize );
         statement.setMaxRows( maxRows );
         return (PolyphenyResultSet) statement.publishResult( firstFrame, -1 );
+    }
+
+
+    private static PolyConnection newConnection( PrismInterfaceClient client ) throws SQLException {
+        PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( new ConnectionString( "jdbc:polypheny://localhost:20590" ), client );
+        PolyConnection connection = new PolyConnection( properties, mock( PolyphenyDatabaseMetadata.class ) );
+        connection.setNetworkTimeout( Runnable::run, 2000 );
+        return connection;
     }
 
 

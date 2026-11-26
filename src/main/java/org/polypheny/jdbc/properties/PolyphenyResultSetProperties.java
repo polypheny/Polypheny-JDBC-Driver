@@ -78,7 +78,7 @@ public class PolyphenyResultSetProperties {
 
 
     public void setFetchSize( int fetchSize ) {
-        resultSetFetchSize = fetchSize;
+        resultSetFetchSize = fetchSize == 0 ? statementFetchSize : fetchSize;
     }
 
 
