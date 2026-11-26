@@ -107,19 +107,17 @@ public class PrismInterfaceClient {
 
 
     public boolean checkConnection( int timeout ) {
-        return checkConnection( (long) timeout );
-    }
-
-
-    boolean checkConnection( long timeout ) {
-        ConnectionCheckRequest request = ConnectionCheckRequest.newBuilder().build();
         try {
-            /* ConnectionCheckResponses are empty messages */
-            rpc.checkConnection( request, timeout );
+            verifyConnection( timeout );
             return true;
         } catch ( PrismInterfaceServiceException e ) {
             return false;
         }
+    }
+
+
+    void verifyConnection( long timeout ) throws PrismInterfaceServiceException {
+        rpc.checkConnection( ConnectionCheckRequest.getDefaultInstance(), timeout );
     }
 
 

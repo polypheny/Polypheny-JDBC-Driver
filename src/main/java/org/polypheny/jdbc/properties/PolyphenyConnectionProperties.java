@@ -150,7 +150,6 @@ public class PolyphenyConnectionProperties {
 
 
     public void setNetworkTimeout( int networkTimeout ) throws PrismInterfaceServiceException {
-        prismInterfaceClient.setConnectionProperties( this, networkTimeout );
         this.networkTimeout = networkTimeout;
     }
 

@@ -166,6 +166,83 @@ class GeneratedKeysResultTest {
 
 
     @Test
+    void readsBooleanKeysAsNumbersWithoutChangingTheirObjectType() throws SQLException {
+        Frame frame = frame( column( "flag", "items", "public", ProtoPolyType.BOOLEAN ),
+                TypedValue.fromBoolean( true ), TypedValue.fromBoolean( false ), TypedValue.fromNull() );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            for ( int expected : new int[]{ 1, 0 } ) {
+                assertTrue( keys.next() );
+                assertEquals( expected, keys.getInt( 1 ) );
+                assertEquals( expected, keys.getLong( 1 ) );
+                assertEquals( expected, keys.getDouble( 1 ) );
+                assertEquals( BigDecimal.valueOf( expected ), keys.getBigDecimal( 1 ) );
+                assertEquals( expected == 1, keys.getObject( 1, Boolean.class ) );
+                assertFalse( keys.wasNull() );
+            }
+            assertTrue( keys.next() );
+            assertEquals( 0, keys.getInt( 1 ) );
+            assertTrue( keys.wasNull() );
+            assertNull( keys.getBigDecimal( 1 ) );
+            assertTrue( keys.wasNull() );
+        }
+    }
+
+
+    @Test
+    void parsesNumericCharacterKeysWithExactDecimalPrecision() throws SQLException {
+        Frame frame = frame( column( "number_text", "items", "public", ProtoPolyType.VARCHAR ),
+                TypedValue.fromString( "  -12.750 " ), TypedValue.fromString( "9.007199254740993e15" ),
+                TypedValue.fromString( "128" ), TypedValue.fromString( "1e-2000000000" ),
+                TypedValue.fromString( "1e2000000000" ), TypedValue.fromString( "invalid" ) );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            assertTrue( keys.next() );
+            assertEquals( (byte) -12, keys.getByte( "number_text" ) );
+            assertEquals( (short) -12, keys.getShort( 1 ) );
+            assertEquals( -12.75f, keys.getFloat( 1 ) );
+            assertEquals( new BigDecimal( "-12.750" ), keys.getBigDecimal( 1 ) );
+            assertEquals( "  -12.750 ", keys.getObject( 1, String.class ) );
+            assertTrue( keys.next() );
+            assertEquals( 9_007_199_254_740_993L, keys.getLong( 1 ) );
+            assertTrue( keys.next() );
+            assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getByte( 1 ) ).getSQLState() );
+            assertTrue( keys.next() );
+            assertEquals( 0, keys.getInt( 1 ) );
+            assertTrue( keys.next() );
+            assertEquals( "22003", assertThrows( SQLException.class, () -> keys.getLong( 1 ) ).getSQLState() );
+            assertTrue( keys.next() );
+            assertEquals( "22018", assertThrows( SQLException.class, () -> keys.getInt( 1 ) ).getSQLState() );
+        }
+    }
+
+
+    @Test
+    void exposesReadOnlyMetadataForGeneratedKeys() throws SQLException {
+        Frame frame = frame( column( "id", "items", "public", ProtoPolyType.BIGINT ), TypedValue.fromLong( 1 ) );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            ResultSetMetaData metadata = keys.getMetaData();
+            assertEquals( ResultSet.CONCUR_READ_ONLY, keys.getConcurrency() );
+            assertTrue( metadata.isReadOnly( 1 ) );
+            assertFalse( metadata.isWritable( 1 ) );
+            assertFalse( metadata.isDefinitelyWritable( 1 ) );
+            assertThrows( SQLException.class, () -> metadata.isReadOnly( 2 ) );
+        }
+    }
+
+
+    @Test
+    void rejectsGetRowOnClosedGeneratedKeys() throws SQLException {
+        Frame frame = frame( column( "id", "items", "public", ProtoPolyType.BIGINT ), TypedValue.fromLong( 1 ) );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            assertEquals( 0, keys.getRow() );
+            assertTrue( keys.next() );
+            assertEquals( 1, keys.getRow() );
+            keys.close();
+            assertThrows( SQLException.class, keys::getRow );
+        }
+    }
+
+
+    @Test
     void checksTheRequestedIntegralGetterRange() throws SQLException {
         Frame frame = frame( column( "id", "items", "public", ProtoPolyType.BIGINT ),
                 TypedValue.fromBigDecimal( BigDecimal.valueOf( 128 ) ),

@@ -20,7 +20,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
-import java.sql.ClientInfoStatus;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -320,6 +319,24 @@ public class PolyConnection implements Connection {
     }
 
 
+    public <T> T executeNetworkRequest( NetworkRequest<T> request ) throws SQLException {
+        int timeout = getNetworkTimeout();
+        try {
+            return request.execute( timeout );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
+    }
+
+
+    @FunctionalInterface
+    public interface NetworkRequest<T> {
+
+        T execute( int timeout ) throws PrismInterfaceServiceException;
+
+    }
+
+
     Frame fetchPage( int statementId, int fetchSize ) throws PrismInterfaceServiceException {
         if ( isClosed() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, "Illegal operation on closed connection." );
@@ -607,7 +624,18 @@ public class PolyConnection implements Connection {
         if ( isClosed() ) {
             return false;
         }
-        return getPrismInterfaceClient().checkConnection( timeout * 1000L );
+        long validationTimeout = timeout * 1000L;
+        int networkTimeout = getTimeout();
+        boolean networkDeadline = networkTimeout > 0 && (validationTimeout == 0 || networkTimeout <= validationTimeout);
+        try {
+            getPrismInterfaceClient().verifyConnection( networkDeadline ? networkTimeout : validationTimeout );
+            return true;
+        } catch ( PrismInterfaceServiceException failure ) {
+            if ( networkDeadline || !(failure.getCause() instanceof TimeoutException) ) {
+                handleIncompleteRequest( failure, networkDeadline );
+            }
+            return false;
+        }
     }
 
 
@@ -615,20 +643,18 @@ public class PolyConnection implements Connection {
     public void setClientInfo( String name, String value ) throws SQLClientInfoException {
         Properties clientInfoProperties = getClientInfo();
         clientInfoProperties.setProperty( name, value );
-        try {
-            getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
-        } catch ( PrismInterfaceServiceException e ) {
-            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
-        }
+        setClientInfo( clientInfoProperties );
     }
 
 
     @Override
     public void setClientInfo( Properties clientInfoProperties ) throws SQLClientInfoException {
         try {
-            getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, properties.getNetworkTimeout() );
-        } catch ( PrismInterfaceServiceException e ) {
-            HashMap<String, ClientInfoStatus> failedOptions = new HashMap<>();
+            executeNetworkRequest( timeout -> {
+                getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, timeout );
+                return null;
+            } );
+        } catch ( SQLException e ) {
             throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
         }
     }
@@ -644,7 +670,7 @@ public class PolyConnection implements Connection {
     public Properties getClientInfo() throws SQLClientInfoException {
         try {
             Properties properties = new Properties();
-            properties.putAll( getPrismInterfaceClient().getClientInfoProperties( getNetworkTimeout() ) );
+            properties.putAll( executeNetworkRequest( getPrismInterfaceClient()::getClientInfoProperties ) );
             return properties;
         } catch ( SQLException e ) {
             throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), null, e );
@@ -696,11 +722,7 @@ public class PolyConnection implements Connection {
         if ( milliseconds < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
         }
-        try {
-            properties.setNetworkTimeout( milliseconds );
-        } catch ( PrismInterfaceServiceException failure ) {
-            throw handleIncompleteRequest( failure, true );
-        }
+        properties.setNetworkTimeout( milliseconds );
     }
 
 

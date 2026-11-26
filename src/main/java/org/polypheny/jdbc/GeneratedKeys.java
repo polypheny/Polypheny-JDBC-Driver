@@ -156,7 +156,7 @@ final class GeneratedKeys {
 
 
     static TypedValue valueForNumericGetter( TypedValue value, int columnType, int getterType ) throws SQLException {
-        TypedValue normalized = normalizeNumericValue( value, columnType );
+        TypedValue normalized = numericGetterSource( value, columnType );
         switch ( getterType ) {
             case Types.TINYINT:
             case Types.SMALLINT:
@@ -171,13 +171,45 @@ final class GeneratedKeys {
     }
 
 
+    private static TypedValue numericGetterSource( TypedValue value, int columnType ) throws SQLException {
+        if ( value.getValueCase() == ValueCase.BOOLEAN ) {
+            return TypedValue.fromInteger( value.asBoolean() ? 1 : 0 );
+        }
+        if ( value.getValueCase() == ValueCase.STRING ) {
+            switch ( columnType ) {
+                case Types.CHAR:
+                case Types.VARCHAR:
+                case Types.LONGVARCHAR:
+                case Types.NCHAR:
+                case Types.NVARCHAR:
+                case Types.LONGNVARCHAR:
+                    try {
+                        return TypedValue.fromBigDecimal( new BigDecimal( value.asString().trim() ) );
+                    } catch ( NumberFormatException e ) {
+                        throw new PrismInterfaceServiceException( "Generated key contains invalid numeric text.", "22018", e );
+                    }
+                default:
+                    return value;
+            }
+        }
+        return normalizeNumericValue( value, columnType );
+    }
+
+
     private static TypedValue truncateFraction( TypedValue value, int getterType ) throws SQLException {
         switch ( value.getValueCase() ) {
             case FLOAT:
             case DOUBLE:
             case BIG_DECIMAL:
                 try {
-                    return TypedValue.fromBigDecimal( exactDecimal( value ).setScale( 0, RoundingMode.DOWN ) );
+                    BigDecimal decimal = exactDecimal( value );
+                    if ( decimal.scale() <= 0 ) {
+                        return TypedValue.fromBigDecimal( decimal );
+                    }
+                    if ( decimal.scale() >= decimal.precision() ) {
+                        return TypedValue.fromBigDecimal( BigDecimal.ZERO );
+                    }
+                    return TypedValue.fromBigDecimal( decimal.setScale( 0, RoundingMode.DOWN ) );
                 } catch ( ArithmeticException | NumberFormatException e ) {
                     throw numericRangeFailure( getterType, e );
                 }

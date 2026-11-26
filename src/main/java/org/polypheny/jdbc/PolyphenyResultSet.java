@@ -103,7 +103,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     PolyphenyResultSet( PolyphenyStatement statement, RelationalFrame keys, PolyphenyResultSetProperties properties ) {
         this.statement = statement;
-        this.metadata = new PolyphenyResultSetMetadata( MetaUtils.buildColumnMetas( keys.getColumnMetaList() ) );
+        this.metadata = new PolyphenyResultSetMetadata( MetaUtils.buildColumnMetas( keys.getColumnMetaList() ), true );
         this.resultScroller = new MetaScroller<>( TypedValueUtils.buildRows( keys.getRowsList() ) );
         this.properties = properties;
         this.properties.setResultSetType( ResultSet.TYPE_FORWARD_ONLY );
@@ -624,6 +624,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public int getRow() throws SQLException {
+        throwIfClosed();
         return resultScroller.getRow();
     }
 

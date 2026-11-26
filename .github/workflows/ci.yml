@@ -14,7 +14,7 @@ jobs:
                     -   name: prism24
                         ref: 01a2e438d761190e889f1a9f91426d3264b3e6d8
                     -   name: prism25
-                        ref: a1f511356c3f9fd243b10024197fb312c4cfd00f
+                        ref: c0353bd14b3382490bb0a8cc6968899373fed9bd
         timeout-minutes: 15
         runs-on: ubuntu-latest
         steps:

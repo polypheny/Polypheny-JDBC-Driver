@@ -68,7 +68,7 @@ import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.ClientInfoPropertiesResponse;
 import org.polypheny.prism.CloseResultResponse;
 import org.polypheny.prism.CloseStatementResponse;
-import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
+import org.polypheny.prism.ConnectionCheckResponse;
 import org.polypheny.prism.ConnectionResponse;
 import org.polypheny.prism.ErrorDetails;
 import org.polypheny.prism.ErrorResponse;
@@ -76,6 +76,8 @@ import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.Namespace;
+import org.polypheny.prism.NamespacesResponse;
 import org.polypheny.prism.ParameterMeta;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.RelationalFrame;
@@ -141,6 +143,62 @@ class RpcServiceErrorTest {
     @AfterEach
     void tearDown() {
         rpc.close();
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, 1 })
+    void connectionCheckUsesTheNetworkDeadlineAndClosesOutstandingObjects( int validationSeconds ) throws SQLException {
+        Connection connection = createConnection();
+        connection.setNetworkTimeout( Runnable::run, 100 );
+        Statement open = connection.createStatement();
+        replyTo( TypeCase.CONNECTION_CHECK_REQUEST );
+
+        assertFalse( connection.isValid( validationSeconds ) );
+        assertTrue( connection.isClosed() );
+        assertTrue( open.isClosed() );
+        assertEquals( 1, transportCloses );
+    }
+
+
+    @Test
+    void shorterValidationDeadlineLeavesTheConnectionAvailable() throws SQLException {
+        Connection connection = createConnection();
+        connection.setNetworkTimeout( Runnable::run, 3000 );
+        replyTo( TypeCase.CONNECTION_CHECK_REQUEST );
+
+        assertFalse( connection.isValid( 1 ) );
+        assertFalse( connection.isClosed() );
+        replyTo( TypeCase.CONNECTION_CHECK_REQUEST,
+                Response.newBuilder().setLast( true ).setConnectionCheckResponse( ConnectionCheckResponse.getDefaultInstance() ) );
+        assertTrue( connection.isValid( 1 ) );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void metadataNetworkDeadlineClosesTheConnectionAndPreservesSQLException( boolean nestedRequest ) throws SQLException {
+        Connection connection = createConnection();
+        connection.setNetworkTimeout( Runnable::run, 100 );
+        Statement open = connection.createStatement();
+        requestHandler = request -> {
+            if ( nestedRequest && request.hasNamespacesRequest() ) {
+                incoming.add( Response.newBuilder().setId( request.getId() ).setLast( true )
+                        .setNamespacesResponse( NamespacesResponse.newBuilder().addNamespaces( Namespace.newBuilder().setNamespaceName( "public" ) ) )
+                        .build().toByteArray() );
+            } else {
+                assertEquals( nestedRequest ? TypeCase.ENTITIES_REQUEST : TypeCase.DEFAULT_NAMESPACE_REQUEST, request.getTypeCase() );
+            }
+        };
+
+        SQLException failure = nestedRequest
+                ? assertThrows( SQLException.class, () -> connection.getMetaData().getTables( null, "public", "%", null ) )
+                : assertThrows( SQLException.class, () -> connection.getMetaData().getCatalogs() );
+
+        assertEquals( "08003", failure.getSQLState() );
+        assertInstanceOf( TimeoutException.class, failure.getCause() );
+        assertTrue( connection.isClosed() );
+        assertTrue( open.isClosed() );
     }
 
 
@@ -283,8 +341,6 @@ class RpcServiceErrorTest {
     @CsvSource({ "false, false", "true, false", "false, true" })
     void batchDeadlineClosesTheConnectionAndItsStatements( boolean prepared, boolean queryDeadline ) throws Exception {
         try ( Connection connection = createConnection(); Statement previousStatement = connection.createStatement() ) {
-            replyTo( TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST, Response.newBuilder().setLast( true )
-                    .setConnectionPropertiesUpdateResponse( ConnectionPropertiesUpdateResponse.getDefaultInstance() ) );
             connection.setNetworkTimeout( Runnable::run, queryDeadline ? 3000 : 50 );
             Frame frame = Frame.newBuilder().setIsLast( true ).setRelationalFrame( RelationalFrame.getDefaultInstance() ).build();
             replyTo( TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST, Response.newBuilder().setLast( true )
@@ -594,8 +650,6 @@ class RpcServiceErrorTest {
     @ValueSource(booleans = { false, true })
     void generatedKeyPrepareDistinguishesNetworkTimeoutFromServerSqlstate( boolean serverError ) throws Exception {
         Connection connection = createConnection( true );
-        replyTo( TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST, Response.newBuilder().setLast( true )
-                .setConnectionPropertiesUpdateResponse( ConnectionPropertiesUpdateResponse.getDefaultInstance() ) );
         connection.setNetworkTimeout( Runnable::run, 200 );
         try ( Statement previouslyOpen = connection.createStatement() ) {
             requestHandler = request -> {

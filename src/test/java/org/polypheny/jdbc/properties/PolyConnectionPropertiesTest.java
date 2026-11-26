@@ -223,13 +223,13 @@ public class PolyConnectionPropertiesTest {
 
 
     @Test
-    public void setNetworkTimeout_Valid_Sync() throws SQLException {
+    public void setNetworkTimeout_Valid_NoSync() throws SQLException {
         PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, PRISM_INTERFACE_CLIENT );
         int networkTimeout = 5000;
 
         connectionProperties.setNetworkTimeout( networkTimeout );
 
-        verify( PRISM_INTERFACE_CLIENT, times( 1 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );
+        verify( PRISM_INTERFACE_CLIENT, times( 0 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );
         assertEquals( connectionProperties.getNetworkTimeout(), networkTimeout );
     }
 

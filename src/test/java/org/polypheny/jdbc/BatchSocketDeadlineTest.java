@@ -89,7 +89,7 @@ class BatchSocketDeadlineTest {
             server.setSoTimeout( 3000 );
             Future<?> peer = executor.submit( () -> {
                 try ( Socket socket = server.accept() ) {
-                    acknowledgeConnectionSettings( socket, generatedKeyPrepare );
+                    acknowledgeHandshake( socket, generatedKeyPrepare );
                     // Leave the TCP receive buffer full until the client hits its deadline.
                     releasePeer.await();
                 }
@@ -175,12 +175,9 @@ class BatchSocketDeadlineTest {
             server.setSoTimeout( 3000 );
             Future<?> peer = executor.submit( () -> {
                 try ( Socket socket = server.accept() ) {
-                    acknowledgeConnectionSettings( socket, false );
+                    acknowledgeHandshake( socket, false );
                     DataInputStream input = new DataInputStream( socket.getInputStream() );
                     DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
-                    Request settings = readRequest( input, TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST );
-                    assertEquals( "public", settings.getConnectionPropertiesUpdateRequest().getConnectionProperties().getNamespaceName() );
-                    writeResponse( output, settings, connectionSettingsResponse() );
                     Request schema = readRequest( input, TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST );
                     assertEquals( "accepted_schema", schema.getConnectionPropertiesUpdateRequest().getConnectionProperties().getNamespaceName() );
                     writeResponse( output, schema, connectionSettingsResponse() );
@@ -199,12 +196,12 @@ class BatchSocketDeadlineTest {
                 ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort() + "/public", new Properties() );
                 Connection connection = new PolyConnection( new PolyphenyConnectionProperties( target, client ),
                         new PolyphenyDatabaseMetadata( client, target ) );
-                connection.setNetworkTimeout( Runnable::run, 300 );
                 Future<Boolean> reservation = executor.submit( () -> rpc.withWriteReservation( 3000, () -> {
                     reserved.countDown();
                     assertTrue( release.await( 5, TimeUnit.SECONDS ) );
                 } ) );
                 assertTrue( reserved.await( 2, TimeUnit.SECONDS ) );
+                connection.setNetworkTimeout( Runnable::run, 300 );
                 Future<Boolean> validity = executor.submit( () -> connection.isValid( 1 ) );
                 connection.setAutoCommit( true );
                 SQLTimeoutException failure = assertThrows( SQLTimeoutException.class, () -> connection.prepareStatement( "SELECT 1" ) );
@@ -246,7 +243,7 @@ class BatchSocketDeadlineTest {
             server.setSoTimeout( 3000 );
             Future<?> peer = executor.submit( () -> {
                 try ( Socket socket = server.accept() ) {
-                    acknowledgeConnectionSettings( socket, false );
+                    acknowledgeHandshake( socket, false );
                     DataInputStream input = new DataInputStream( socket.getInputStream() );
                     DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
                     Request commit = readRequest( input, TypeCase.COMMIT_REQUEST );
@@ -314,7 +311,7 @@ class BatchSocketDeadlineTest {
             server.setSoTimeout( 3000 );
             Future<?> peer = executor.submit( () -> {
                 try ( Socket socket = server.accept() ) {
-                    acknowledgeConnectionSettings( socket, false );
+                    acknowledgeHandshake( socket, false );
                     DataInputStream input = new DataInputStream( socket.getInputStream() );
                     DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
                     Request batch = readRequest( input, Request.TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST );
@@ -418,7 +415,7 @@ class BatchSocketDeadlineTest {
             server.setSoTimeout( 3000 );
             Future<?> peer = executor.submit( () -> {
                 try ( Socket socket = server.accept() ) {
-                    acknowledgeConnectionSettings( socket, false );
+                    acknowledgeHandshake( socket, false );
                     DataInputStream input = new DataInputStream( socket.getInputStream() );
                     DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
                     int firstRequestLength = (int) Long.reverseBytes( input.readLong() );
@@ -520,7 +517,7 @@ class BatchSocketDeadlineTest {
             server.setSoTimeout( 3000 );
             Future<?> peer = executor.submit( () -> {
                 try ( Socket socket = server.accept() ) {
-                    acknowledgeConnectionSettings( socket, false );
+                    acknowledgeHandshake( socket, false );
                     DataInputStream input = new DataInputStream( socket.getInputStream() );
                     DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
                     Request autoCommit = readRequest( input, TypeCase.COMMIT_REQUEST );
@@ -662,7 +659,7 @@ class BatchSocketDeadlineTest {
     }
 
 
-    private static void acknowledgeConnectionSettings( Socket socket, boolean generatedKeyPrepare ) throws IOException {
+    private static void acknowledgeHandshake( Socket socket, boolean generatedKeyPrepare ) throws IOException {
         socket.setSoTimeout( 3000 );
         socket.setReceiveBufferSize( 4096 );
         DataInputStream input = new DataInputStream( socket.getInputStream() );
@@ -681,8 +678,6 @@ class BatchSocketDeadlineTest {
             Request clientInfo = readRequest( input, Request.TypeCase.SET_CLIENT_INFO_PROPERTIES_REQUEST );
             writeResponse( output, clientInfo, Response.newBuilder().setSetClientInfoPropertiesResponse( ClientInfoPropertiesResponse.getDefaultInstance() ) );
         }
-        Request settings = readRequest( input, Request.TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST );
-        writeResponse( output, settings, connectionSettingsResponse() );
     }
 
 

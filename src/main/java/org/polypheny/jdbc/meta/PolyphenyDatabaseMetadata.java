@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -95,7 +96,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     private void fetchDbmsVersionInfo() throws SQLException {
-        DbmsVersionResponse response = prismInterfaceClient.getDbmsVersion( getConnection().getNetworkTimeout() );
+        DbmsVersionResponse response = polyConnection.executeNetworkRequest( prismInterfaceClient::getDbmsVersion );
         productName = response.getDbmsName();
         productVersion = response.getVersionName();
         databaseMinorVersion = response.getMinorVersion();
@@ -273,31 +274,31 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        return prismInterfaceClient.getSqlKeywords( getConnection().getNetworkTimeout() );
+        return polyConnection.executeNetworkRequest( prismInterfaceClient::getSqlKeywords );
     }
 
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        return prismInterfaceClient.getSqlNumericFunctions( getConnection().getNetworkTimeout() );
+        return polyConnection.executeNetworkRequest( prismInterfaceClient::getSqlNumericFunctions );
     }
 
 
     @Override
     public String getStringFunctions() throws SQLException {
-        return prismInterfaceClient.getSqlStringFunctions( getConnection().getNetworkTimeout() );
+        return polyConnection.executeNetworkRequest( prismInterfaceClient::getSqlStringFunctions );
     }
 
 
     @Override
     public String getSystemFunctions() throws SQLException {
-        return prismInterfaceClient.getSqlSystemFunctions( getConnection().getNetworkTimeout() );
+        return polyConnection.executeNetworkRequest( prismInterfaceClient::getSqlSystemFunctions );
     }
 
 
     @Override
     public String getTimeDateFunctions() throws SQLException {
-        return prismInterfaceClient.getSqlTimeDateFunctions( getConnection().getNetworkTimeout() );
+        return polyConnection.executeNetworkRequest( prismInterfaceClient::getSqlTimeDateFunctions );
     }
 
 
@@ -833,7 +834,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getProcedures( String catalog, String schemaPattern, String procedureNamePattern ) throws SQLException {
         throwNotSupportedIfStrict();
-        List<Procedure> procedures = prismInterfaceClient.searchProcedures( "sql", procedureNamePattern, getConnection().getNetworkTimeout() );
+        List<Procedure> procedures = polyConnection.executeNetworkRequest( timeout -> prismInterfaceClient.searchProcedures( "sql", procedureNamePattern, timeout ) );
         return MetaResultSetBuilder.buildFromProcedures( procedures );
     }
 
@@ -871,37 +872,36 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getCatalogs() throws SQLException {
-        String defaultNamespace = prismInterfaceClient.getDefaultNamespace( getConnection().getNetworkTimeout() );
+        String defaultNamespace = polyConnection.executeNetworkRequest( prismInterfaceClient::getDefaultNamespace );
         return MetaResultSetBuilder.buildFromDatabases( defaultNamespace );
     }
 
 
     @Override
     public ResultSet getTableTypes() throws SQLException {
-        List<TableType> tableTypes = prismInterfaceClient.getTablesTypes( getConnection().getNetworkTimeout() );
+        List<TableType> tableTypes = polyConnection.executeNetworkRequest( prismInterfaceClient::getTablesTypes );
         return MetaResultSetBuilder.buildFromTableTypes( tableTypes );
     }
 
 
     @Override
     public ResultSet getColumns( String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern ) throws SQLException {
-        List<Column> columns = prismInterfaceClient.searchNamespaces( schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout() )
-                .stream()
-                .map( n -> {
-                    try {
-                        return getMatchingColumns( n, tableNamePattern, columnNamePattern );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } )
-                .flatMap( List::stream )
-                .collect( Collectors.toList() );
+        List<Column> columns = getMatchingColumns( schemaPattern, tableNamePattern, columnNamePattern );
         return MetaResultSetBuilder.buildFromColumns( columns );
     }
 
 
+    private List<Column> getMatchingColumns( String schemaPattern, String tableNamePattern, String columnNamePattern ) throws SQLException {
+        List<Column> columns = new ArrayList<>();
+        for ( Namespace namespace : searchRelationalNamespaces( schemaPattern ) ) {
+            columns.addAll( getMatchingColumns( namespace, tableNamePattern, columnNamePattern ) );
+        }
+        return columns;
+    }
+
+
     private List<Column> getMatchingColumns( Namespace namespace, String tableNamePattern, String columnNamePattern ) throws SQLException {
-        Stream<Column> columnStream = prismInterfaceClient.searchEntities( namespace.getNamespaceName(), tableNamePattern, getConnection().getNetworkTimeout() ).stream()
+        Stream<Column> columnStream = polyConnection.executeNetworkRequest( timeout -> prismInterfaceClient.searchEntities( namespace.getNamespaceName(), tableNamePattern, timeout ) ).stream()
                 .filter( Entity::hasTable )
                 .map( Entity::getTable )
                 .map( Table::getColumnsList )
@@ -933,17 +933,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
          * For proper implementation a dedicated api call should be used the result of witch should be passed to the MetaResultSet builder.
          */
         throwNotSupportedIfStrict();
-        List<Column> columns = prismInterfaceClient.searchNamespaces( schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout() )
-                .stream()
-                .map( n -> {
-                    try {
-                        return getMatchingColumns( n, tableNamePattern, columnNamePattern );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } )
-                .flatMap( List::stream )
-                .collect( Collectors.toList() );
+        List<Column> columns = getMatchingColumns( schemaPattern, tableNamePattern, columnNamePattern );
         return MetaResultSetBuilder.buildFromColumnPrivileges( columns, getUserName() );
     }
 
@@ -1015,19 +1005,20 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
 
     private Stream<Table> getTableStream( String namespace, String table ) throws SQLException {
-        return prismInterfaceClient.searchNamespaces( namespace, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout() )
-                .stream()
-                .map( Namespace::getNamespaceName )
-                .map( name -> {
-                    try {
-                        return prismInterfaceClient.searchEntities( name, table, getConnection().getNetworkTimeout() );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } )
-                .flatMap( List::stream )
-                .filter( Entity::hasTable )
-                .map( Entity::getTable );
+        List<Table> tables = new ArrayList<>();
+        for ( Namespace match : searchRelationalNamespaces( namespace ) ) {
+            polyConnection.executeNetworkRequest( timeout -> prismInterfaceClient.searchEntities( match.getNamespaceName(), table, timeout ) ).stream()
+                    .filter( Entity::hasTable )
+                    .map( Entity::getTable )
+                    .forEach( tables::add );
+        }
+        return tables.stream();
+    }
+
+
+    private List<Namespace> searchRelationalNamespaces( String pattern ) throws SQLException {
+        return polyConnection.executeNetworkRequest( timeout ->
+                prismInterfaceClient.searchNamespaces( pattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), timeout ) );
     }
 
 
@@ -1062,7 +1053,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
-        List<Type> types = prismInterfaceClient.getTypes( getConnection().getNetworkTimeout() );
+        List<Type> types = polyConnection.executeNetworkRequest( prismInterfaceClient::getTypes );
         return MetaResultSetBuilder.buildFromTypes( types );
     }
 
@@ -1281,7 +1272,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getSchemas( String catalog, String schemaPattern ) throws SQLException {
         // TODO: Always search all namespace types?
-        List<Namespace> namespaces = prismInterfaceClient.searchNamespaces( schemaPattern, null, getConnection().getNetworkTimeout() );
+        List<Namespace> namespaces = polyConnection.executeNetworkRequest( timeout -> prismInterfaceClient.searchNamespaces( schemaPattern, null, timeout ) );
         return MetaResultSetBuilder.buildFromNamespaces( namespaces );
     }
 
@@ -1308,7 +1299,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getFunctions( String catalog, String schemaPattern, String functionNamePattern ) throws SQLException {
-        List<Function> functions = prismInterfaceClient.searchFunctions( "sql", "SYSTEM", getConnection().getNetworkTimeout() )
+        List<Function> functions = polyConnection.executeNetworkRequest( timeout -> prismInterfaceClient.searchFunctions( "sql", "SYSTEM", timeout ) )
                 .stream()
                 .filter( f -> f.getName().matches( MetaUtils.convertToRegex( functionNamePattern ) ) )
                 .collect( Collectors.toList() );
@@ -1325,16 +1316,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     @Override
     public ResultSet getPseudoColumns( String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern ) throws SQLException {
-        List<Column> columns = prismInterfaceClient.searchNamespaces( schemaPattern, MetaUtils.NamespaceTypes.RELATIONAL.name(), getConnection().getNetworkTimeout() )
-                .stream()
-                .map( n -> {
-                    try {
-                        return getMatchingColumns( n, tableNamePattern, columnNamePattern );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } )
-                .flatMap( List::stream )
+        List<Column> columns = getMatchingColumns( schemaPattern, tableNamePattern, columnNamePattern ).stream()
                 .filter( Column::getIsHidden )
                 .collect( Collectors.toList() );
         return MetaResultSetBuilder.buildFromPseudoColumns( columns );

@@ -33,6 +33,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
+import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.utils.VersionUtil;
 import org.polypheny.prism.Column;
 import org.polypheny.prism.Document;
@@ -168,10 +169,10 @@ class DocumentMetadataTest {
                 return Collections.singletonList( Namespace.newBuilder().setNamespaceName( "patients" ).setNamespaceType( "RELATIONAL" ).build() );
             }
         };
-        PolyphenyDatabaseMetadata metadata = new PolyphenyDatabaseMetadata( client, new ConnectionString( "jdbc:polypheny://localhost:20590" ) );
-        PolyConnection connection = mock( PolyConnection.class );
-        when( connection.getNetworkTimeout() ).thenReturn( TIMEOUT );
-        metadata.setConnection( connection );
+        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost:20590" );
+        PolyphenyDatabaseMetadata metadata = new PolyphenyDatabaseMetadata( client, target );
+        PolyConnection connection = new PolyConnection( new PolyphenyConnectionProperties( target, client ), metadata );
+        connection.setNetworkTimeout( Runnable::run, TIMEOUT );
 
         try ( ResultSet tables = metadata.getTables( null, "patients", "%", null ) ) {
             assertTrue( tables.next() );
