@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.UnknownFieldSet;
 import java.io.IOException;
 import java.net.ProtocolException;
@@ -101,6 +102,8 @@ import org.polypheny.prism.TypesResponse;
 public class RpcService {
 
     private static final Pattern SQLSTATE = Pattern.compile( "[0-9A-Z]{5}" );
+    // A nested Prism value spans multiple message levels per map or list level.
+    private static final int RESPONSE_RECURSION_LIMIT = 256;
     private static final ScheduledThreadPoolExecutor WRITE_DEADLINES = createWriteDeadlineExecutor();
 
     private final AtomicLong idCounter = new AtomicLong( 1 );
@@ -315,7 +318,9 @@ public class RpcService {
 
 
     private Response receiveMessage() throws IOException {
-        return Response.parseFrom( con.receiveMessage() );
+        CodedInputStream input = CodedInputStream.newInstance( con.receiveMessage() );
+        input.setRecursionLimit( RESPONSE_RECURSION_LIMIT );
+        return Response.parseFrom( input );
     }
 
 
