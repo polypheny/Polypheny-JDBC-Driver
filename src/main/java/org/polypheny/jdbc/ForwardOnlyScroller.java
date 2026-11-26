@@ -149,34 +149,31 @@ public class ForwardOnlyScroller implements Scrollable<List<TypedValue>> {
 
     @Override
     public boolean isBeforeFirst() {
-        return baseIndex == INDEX_BEFORE_FIRST;
+        return baseIndex == INDEX_BEFORE_FIRST && (!values.isEmpty() || fetcherThread != null || !resultFetcher.isLast());
     }
 
 
     @Override
     public boolean isAfterLast() {
-        return values.isEmpty() && currentRow == null;
+        return baseIndex != INDEX_BEFORE_FIRST && !hasCurrent();
     }
 
 
     @Override
     public boolean isFirst() {
-        return baseIndex == 0;
+        return hasCurrent() && baseIndex == 0;
     }
 
 
     @Override
     public boolean isLast() {
-        return values.isEmpty() && currentRow != null;
+        return hasCurrent() && values.isEmpty() && fetcherThread == null && resultFetcher.isLast();
     }
 
 
     @Override
     public int getRow() {
-        if ( isBeforeFirst() || isAfterLast() ) {
-            return 0;
-        }
-        return baseIndex + 1;
+        return hasCurrent() ? baseIndex + 1 : 0;
     }
 
 

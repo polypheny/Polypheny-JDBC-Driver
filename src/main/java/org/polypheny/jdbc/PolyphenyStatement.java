@@ -154,7 +154,7 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    final void closeResultsFromEarlierTransactions( long generation ) throws SQLException {
+    final void closeResultsFromEarlierTransactions( long generation, boolean deferStatementClose ) throws SQLException {
         boolean closeStatement;
         synchronized ( resultsLock ) {
             if ( isLocallyClosed() ) {
@@ -166,7 +166,7 @@ public class PolyphenyStatement implements Statement {
             }
         }
         if ( closeStatement ) {
-            closeAfterTransaction();
+            closeAfterTransaction( deferStatementClose );
         }
     }
 
@@ -200,7 +200,16 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    private void closeAfterTransaction() {
+    private void closeAfterTransaction( boolean deferStatementClose ) {
+        if ( deferStatementClose ) {
+            polyConnection.closeCompletedStatementLater( this );
+        } else {
+            closeAfterTransaction();
+        }
+    }
+
+
+    final void closeAfterTransaction() {
         try {
             close();
         } catch ( SQLException e ) {
@@ -312,7 +321,7 @@ public class PolyphenyStatement implements Statement {
             }
         }
         if ( closeStatement ) {
-            closeAfterTransaction();
+            polyConnection.closeCompletedStatementLater( this );
         }
     }
 
@@ -431,7 +440,8 @@ public class PolyphenyStatement implements Statement {
         }
         checkPublishedResult( result, closeStatement );
         if ( closeStatement ) {
-            closeAfterTransaction();
+            // Another caller has already ended the transaction. The handle can be released separately.
+            polyConnection.closeCompletedStatementLater( this );
         }
         return result;
     }
@@ -805,7 +815,9 @@ public class PolyphenyStatement implements Statement {
         } finally {
             cleanupDeadline = null;
         }
-        RequestDeadline executionDeadline = deadline.serverQueryTimeout ? deadline.requestDeadline.withServerQueryTimeout( networkTimeout ) : deadline.requestDeadline;
+        RequestDeadline executionDeadline = deadline.serverQueryTimeout
+                ? deadline.requestDeadline.withServerQueryTimeout( networkTimeout, deadline.queryTimeout )
+                : deadline.requestDeadline;
         try {
             throwIfClosed();
             executionDeadline.remainingMillis();
@@ -818,7 +830,12 @@ public class PolyphenyStatement implements Statement {
             boolean querySendTimedOut = failure.getCause() instanceof RequestDeadline.QuerySendTimeout;
             throw polyConnection.handleIncompleteRequest( failure, !querySendTimedOut && (deadline.networkDeadline || deadline.serverQueryTimeout) );
         } finally {
-            polyConnection.refreshTransactionResults();
+            if ( deadline.requestDeadline.timeoutMillis > 0 ) {
+                // Invalidate old results now. Closing an unrelated server handle can wait behind another request.
+                polyConnection.refreshTransactionResults( true );
+            } else {
+                polyConnection.refreshTransactionResults();
+            }
         }
     }
 
@@ -862,13 +879,14 @@ public class PolyphenyStatement implements Statement {
 
         private final boolean networkDeadline;
         private final boolean serverQueryTimeout;
+        private final long queryTimeout;
         private final RequestDeadline requestDeadline;
 
 
         private ExecutionDeadline( int networkTimeout, int queryTimeoutSeconds, boolean supportsServerQueryTimeout ) {
-            long queryTimeout = TimeUnit.SECONDS.toMillis( queryTimeoutSeconds );
+            queryTimeout = TimeUnit.SECONDS.toMillis( queryTimeoutSeconds );
             networkDeadline = networkTimeout > 0 && (queryTimeout == 0 || networkTimeout <= queryTimeout);
-            serverQueryTimeout = supportsServerQueryTimeout && !networkDeadline && queryTimeout > 0;
+            serverQueryTimeout = supportsServerQueryTimeout && queryTimeout > 0;
             requestDeadline = new RequestDeadline( networkDeadline ? networkTimeout : queryTimeout );
         }
 

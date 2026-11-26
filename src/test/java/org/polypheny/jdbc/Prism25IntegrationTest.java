@@ -186,6 +186,46 @@ class Prism25IntegrationTest {
     }
 
 
+    @Test
+    void expiredNetworkDeadlineDoesNotDiscardTheServerQueryTimeout() throws Exception {
+        String table = "jdbc_dual_timeout_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection admin = DriverManager.getConnection( DB_URL, "pa", "" );
+                Connection blocker = DriverManager.getConnection( DB_URL, "pa", "" );
+                Connection waiting = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement fixture = admin.createStatement();
+                Statement read = blocker.createStatement();
+                Statement change = waiting.createStatement() ) {
+            fixture.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, payload INTEGER)" );
+            try {
+                fixture.executeUpdate( "INSERT INTO " + table + " VALUES (1, 0)" );
+                blocker.setAutoCommit( false );
+                try ( ResultSet rows = read.executeQuery( "SELECT payload FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                }
+                try {
+                    waiting.setNetworkTimeout( Runnable::run, 250 );
+                    change.setQueryTimeout( 1 );
+                    long releaseAt = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos( 1400 );
+                    SQLException closed = assertThrows( SQLException.class, () -> change.executeUpdate( "UPDATE " + table + " SET payload = payload + 1" ) );
+                    assertEquals( "08003", closed.getSQLState() );
+                    assertTrue( waiting.isClosed() );
+                    // Let the server-side query deadline pass with the target still locked.
+                    TimeUnit.NANOSECONDS.sleep( Math.max( 0, releaseAt - System.nanoTime() ) );
+                } finally {
+                    blocker.commit();
+                }
+                TimeUnit.MILLISECONDS.sleep( 500 );
+                try ( ResultSet rows = fixture.executeQuery( "SELECT payload FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 0, rows.getInt( 1 ) );
+                }
+            } finally {
+                fixture.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
     private static void executeTimedUpdate( Statement change, String update, boolean batch ) throws SQLException {
         if ( batch ) {
             change.addBatch( update );
@@ -199,8 +239,8 @@ class Prism25IntegrationTest {
 
 
     @ParameterizedTest
-    @ValueSource(booleans = { false, true })
-    void queuedQueryTimeoutDoesNotWaitForTheEarlierRequestOrDispatch( boolean reuse ) throws Exception {
+    @CsvSource({ "false, 0", "true, 0", "false, 500", "true, 500" })
+    void queuedQueryTimeoutDoesNotWaitForTheEarlierRequestOrDispatch( boolean reuse, int networkTimeout ) throws Exception {
         String table = "jdbc_queued_" + UUID.randomUUID().toString().replace( "-", "" );
         ExecutorService workers = Executors.newFixedThreadPool( 2 );
         try ( Connection blocker = DriverManager.getConnection( DB_URL, "pa", "" );
@@ -222,16 +262,19 @@ class Prism25IntegrationTest {
                     }
                     preceding = workers.submit( () -> first.executeUpdate( "UPDATE " + table + " SET payload = payload + 1" ) );
                     assertThrows( TimeoutException.class, () -> preceding.get( 250, TimeUnit.MILLISECONDS ) );
+                    waiting.setNetworkTimeout( Runnable::run, networkTimeout );
                     second.setQueryTimeout( 1 );
                     Future<Integer> queued = workers.submit( () -> second.executeUpdate( "UPDATE " + table + " SET payload = payload + 10" ) );
                     ExecutionException failure = assertThrows( ExecutionException.class, () -> queued.get( 3, TimeUnit.SECONDS ) );
-                    assertInstanceOf( SQLTimeoutException.class, failure.getCause() );
+                    SQLTimeoutException unsent = assertInstanceOf( SQLTimeoutException.class, failure.getCause() );
+                    assertInstanceOf( RequestDeadline.BeforeSendTimeout.class, unsent.getCause() );
                     assertFalse( waiting.isClosed() );
                     assertFalse( preceding.isDone() );
                 } finally {
                     blocker.commit();
                     blocker.setAutoCommit( true );
                 }
+                waiting.setNetworkTimeout( Runnable::run, 0 );
                 assertEquals( 1, preceding.get( 5, TimeUnit.SECONDS ) );
                 try ( ResultSet rows = control.executeQuery( "SELECT payload FROM " + table ) ) {
                     assertTrue( rows.next() );

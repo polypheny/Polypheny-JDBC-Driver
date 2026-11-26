@@ -84,7 +84,8 @@ class BatchSocketDeadlineTest {
     @EnumSource(BlockedRequest.class)
     void deadlineClosesConnectionWhenThePeerStopsReading( BlockedRequest request ) throws Exception {
         boolean generatedKeyPrepare = request == BlockedRequest.PREPARE_WITH_KEYS;
-        boolean serverQueryTimeout = request == BlockedRequest.TIMED_STATEMENT || request == BlockedRequest.TIMED_BATCH;
+        boolean queryDeadlineFirst = request == BlockedRequest.TIMED_STATEMENT || request == BlockedRequest.TIMED_BATCH;
+        boolean serverQueryTimeout = queryDeadlineFirst || request == BlockedRequest.NETWORK_FIRST_TIMED_STATEMENT;
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
         CountDownLatch releasePeer = new CountDownLatch( 1 );
         try ( ServerSocket server = new ServerSocket() ) {
@@ -128,7 +129,7 @@ class BatchSocketDeadlineTest {
                     client.register( properties, 3000 );
                 }
                 PolyConnection connection = new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
-                connection.setNetworkTimeout( Runnable::run, serverQueryTimeout ? 0 : 500 );
+                connection.setNetworkTimeout( Runnable::run, queryDeadlineFirst ? 0 : 500 );
                 Statement statement = connection.createStatement();
                 if ( serverQueryTimeout ) {
                     statement.setQueryTimeout( 1 );
@@ -142,7 +143,7 @@ class BatchSocketDeadlineTest {
                             () -> connection.prepareStatement( sql, Statement.RETURN_GENERATED_KEYS ) ) );
                 } else if ( request == BlockedRequest.PREPARE ) {
                     result = executor.submit( () -> assertThrows( SQLException.class, () -> connection.prepareStatement( sql ) ) );
-                } else if ( request == BlockedRequest.TIMED_STATEMENT ) {
+                } else if ( request == BlockedRequest.TIMED_STATEMENT || request == BlockedRequest.NETWORK_FIRST_TIMED_STATEMENT ) {
                     result = executor.submit( () -> assertThrows( SQLException.class, () -> statement.executeUpdate( sql ) ) );
                 } else {
                     statement.addBatch( sql );
@@ -150,7 +151,7 @@ class BatchSocketDeadlineTest {
                 }
                 assertTrue( writingRequest.await( 3, TimeUnit.SECONDS ) );
                 SQLException failure = result.get( 3, TimeUnit.SECONDS );
-                if ( serverQueryTimeout ) {
+                if ( queryDeadlineFirst ) {
                     assertInstanceOf( SQLTimeoutException.class, failure );
                     assertInstanceOf( RequestDeadline.QuerySendTimeout.class, failure.getCause() );
                 } else {
@@ -177,7 +178,51 @@ class BatchSocketDeadlineTest {
         PREPARE,
         PREPARE_WITH_KEYS,
         TIMED_STATEMENT,
-        TIMED_BATCH
+        TIMED_BATCH,
+        NETWORK_FIRST_TIMED_STATEMENT
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { 500, 2000 })
+    void sendsIndependentQueryBudgetWhileNetworkDeadlineBoundsReply( int networkTimeout ) throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try ( ServerSocket server = new ServerSocket( 0 ) ) {
+            server.setSoTimeout( 3000 );
+            Future<?> peer = executor.submit( () -> {
+                try ( Socket socket = server.accept() ) {
+                    acknowledgeHandshake( socket, false, true );
+                    DataInputStream input = new DataInputStream( socket.getInputStream() );
+                    Request update = readRequest( input, TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST );
+                    long budget = update.getUnknownFields().getField( 50001 ).getVarintList().get( 0 );
+                    assertTrue( budget > 500 && budget <= 2000 );
+                    assertEquals( -1, input.read() );
+                }
+                return null;
+            } );
+            RpcService rpc = new RpcService( new PlainTransport( "127.0.0.1", server.getLocalPort() ) );
+            try {
+                PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+                ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort(), new Properties() );
+                PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
+                client.register( properties, 3000 );
+                Connection connection = new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
+                connection.setNetworkTimeout( Runnable::run, networkTimeout );
+                Statement statement = connection.createStatement();
+                statement.setQueryTimeout( 2 );
+
+                SQLException failure = assertThrows( SQLException.class, () -> statement.executeUpdate( "UPDATE probe SET visits = visits + 1" ) );
+                assertEquals( "08003", failure.getSQLState() );
+                assertInstanceOf( TimeoutException.class, failure.getCause() );
+                assertFalse( failure.getCause() instanceof RequestDeadline.QuerySendTimeout );
+                assertTrue( connection.isClosed() );
+                peer.get( 3, TimeUnit.SECONDS );
+            } finally {
+                rpc.close();
+            }
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
 

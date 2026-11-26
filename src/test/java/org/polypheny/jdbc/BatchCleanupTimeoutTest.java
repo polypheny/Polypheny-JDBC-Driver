@@ -840,6 +840,114 @@ class BatchCleanupTimeoutTest {
     }
 
 
+    @Test
+    void queryTimeoutReturnsBeforeUnrelatedPostBoundaryCleanup() throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
+        transport.advertiseQueryTimeout = true;
+        transport.holdUpdatesAndTheirFollowingClose = true;
+        RpcService rpc = new RpcService( transport );
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
+        PolyphenyConnectionProperties settings = new PolyphenyConnectionProperties( target, client );
+        CountDownLatch boundaryObserved = new CountDownLatch( 1 );
+        CountDownLatch resumeSweep = new CountDownLatch( 1 );
+        ExecutorService executor = Executors.newFixedThreadPool( 3 );
+        AtomicReference<Thread> ddlThread = new AtomicReference<>();
+        client.register( settings, 1000 );
+        try ( Connection connection = new PolyConnection( settings, new PolyphenyDatabaseMetadata( client, target ) ) {
+            @Override
+            public void refreshTransactionResults() {
+                if ( Thread.currentThread() == ddlThread.get() ) {
+                    waitToContinue( boundaryObserved, resumeSweep );
+                }
+                super.refreshTransactionResults();
+            }
+        }; Statement dependent = connection.createStatement(); Statement ddl = connection.createStatement();
+                Statement blocker = connection.createStatement(); Statement timed = connection.createStatement() ) {
+            connection.setAutoCommit( false );
+            dependent.closeOnCompletion();
+            try ( ResultSet result = dependent.executeQuery( SELECT ) ) {
+                assertFalse( result.isClosed() );
+                transport.sendImplicitBoundary = true;
+                Future<Integer> ddlResult = executor.submit( () -> {
+                    ddlThread.set( Thread.currentThread() );
+                    return ddl.executeUpdate( "CREATE TABLE probe (x INTEGER PRIMARY KEY)" );
+                } );
+                assertTrue( boundaryObserved.await( 2, TimeUnit.SECONDS ) );
+                assertTrue( result.isClosed() );
+                Future<Integer> preceding = executor.submit( () -> blocker.executeUpdate( "UPDATE items SET x = 1" ) );
+                assertTrue( transport.blockedUpdateSent.await( 1, TimeUnit.SECONDS ) );
+                timed.setQueryTimeout( 1 );
+                Future<Integer> expired = executor.submit( () -> timed.executeUpdate( "UPDATE items SET x = 2" ) );
+                try {
+                    ExecutionException failure = assertThrows( ExecutionException.class, () -> expired.get( 2, TimeUnit.SECONDS ) );
+                    assertInstanceOf( SQLTimeoutException.class, failure.getCause() );
+                    assertTrue( transport.queuedCloseSent.await( 1, TimeUnit.SECONDS ) );
+                    assertFalse( preceding.isDone() );
+                    assertTrue( dependent.isClosed() );
+                    assertFalse( connection.isClosed() );
+                } finally {
+                    transport.releaseBlockedUpdateAndClose();
+                    resumeSweep.countDown();
+                }
+                assertEquals( 1, preceding.get( 1, TimeUnit.SECONDS ) );
+                assertEquals( 1, ddlResult.get( 1, TimeUnit.SECONDS ) );
+            }
+        } finally {
+            transport.releaseBlockedUpdateAndClose();
+            resumeSweep.countDown();
+            executor.shutdownNow();
+            rpc.close();
+        }
+    }
+
+
+    @Test
+    void completedExecutionReturnsWhileLateResultHandleIsClosing() throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
+        transport.holdUpdatesAndTheirFollowingClose = true;
+        RpcService rpc = new RpcService( transport );
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+        ExecutorService executor = Executors.newFixedThreadPool( 2 );
+        CountDownLatch buildingResult = new CountDownLatch( 1 );
+        CountDownLatch resumeResult = new CountDownLatch( 1 );
+        AtomicReference<Thread> queryThread = new AtomicReference<>();
+        try ( Connection connection = connection( client );
+                Statement query = pauseResultConstruction( connection, false, queryThread, buildingResult, resumeResult );
+                Statement blocker = connection.createStatement() ) {
+            connection.setAutoCommit( false );
+            connection.setNetworkTimeout( Runnable::run, 1000 );
+            query.closeOnCompletion();
+            Future<ResultSet> pending = executor.submit( () -> {
+                queryThread.set( Thread.currentThread() );
+                return query.executeQuery( SELECT );
+            } );
+            assertTrue( buildingResult.await( 2, TimeUnit.SECONDS ) );
+            connection.commit();
+            connection.setNetworkTimeout( Runnable::run, 0 );
+            Future<Integer> preceding = executor.submit( () -> blocker.executeUpdate( "UPDATE items SET x = 1" ) );
+            assertTrue( transport.blockedUpdateSent.await( 1, TimeUnit.SECONDS ) );
+            resumeResult.countDown();
+            try {
+                assertTrue( transport.queuedCloseSent.await( 2, TimeUnit.SECONDS ) );
+                assertTrue( query.isClosed() );
+                try ( ResultSet result = pending.get( 1, TimeUnit.SECONDS ) ) {
+                    assertTrue( result.isClosed() );
+                }
+                assertFalse( preceding.isDone() );
+            } finally {
+                transport.releaseBlockedUpdateAndClose();
+            }
+            assertEquals( 1, preceding.get( 1, TimeUnit.SECONDS ) );
+        } finally {
+            transport.releaseBlockedUpdateAndClose();
+            resumeResult.countDown();
+            executor.shutdownNow();
+            rpc.close();
+        }
+    }
+
+
     private static Statement pauseResultConstruction( Connection connection, boolean prepared, AtomicReference<Thread> queryThread,
             CountDownLatch buildingResult, CountDownLatch resumeResult ) throws SQLException {
         PolyphenyStatement original = (PolyphenyStatement) (prepared ? connection.prepareStatement( SELECT ) : connection.createStatement());
@@ -913,6 +1021,29 @@ class BatchCleanupTimeoutTest {
         private boolean advertiseQueryTimeout;
 
 
+        private boolean holdUpdatesAndTheirFollowingClose;
+        private final CountDownLatch blockedUpdateSent = new CountDownLatch( 1 );
+        private final CountDownLatch queuedCloseSent = new CountDownLatch( 1 );
+        private volatile long blockedUpdateId;
+        private volatile long queuedCloseId;
+
+        private void releaseBlockedUpdateAndClose() {
+            long updateId = blockedUpdateId;
+            long closeId = queuedCloseId;
+            blockedUpdateId = 0;
+            queuedCloseId = 0;
+            if ( updateId != 0 ) {
+                responses.add( Response.newBuilder().setId( updateId ).setLast( true )
+                        .setStatementResponse( StatementResponse.newBuilder().setStatementId( 43 )
+                                .setResult( StatementResult.newBuilder().setScalar( 1 ) ) ).build().toByteArray() );
+            }
+            if ( closeId != 0 ) {
+                responses.add( Response.newBuilder().setId( closeId ).setLast( true )
+                        .setCloseStatementResponse( CloseStatementResponse.getDefaultInstance() ).build().toByteArray() );
+            }
+        }
+
+
         private CleanupTransport( TypeCase cleanupType, Intercept intercept ) {
             this( cleanupType, intercept, false );
         }
@@ -939,6 +1070,18 @@ class BatchCleanupTimeoutTest {
             Request request = Request.parseFrom( message );
             TypeCase type = request.getTypeCase();
             requests.add( type );
+            if ( holdUpdatesAndTheirFollowingClose && type == TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST
+                    && request.getExecuteUnparameterizedStatementRequest().getStatement().equals( "UPDATE items SET x = 1" ) ) {
+                blockedUpdateId = request.getId();
+                blockedUpdateSent.countDown();
+                return;
+            }
+            if ( holdUpdatesAndTheirFollowingClose && type == TypeCase.CLOSE_STATEMENT_REQUEST && blockedUpdateId != 0 ) {
+                queuedCloseId = request.getId();
+                queuedCloseSent.countDown();
+                return;
+            }
+
             Response.Builder response = Response.newBuilder().setId( request.getId() ).setLast( true );
             if ( type == cleanupType && !interceptedCleanup ) {
                 interceptedCleanup = true;

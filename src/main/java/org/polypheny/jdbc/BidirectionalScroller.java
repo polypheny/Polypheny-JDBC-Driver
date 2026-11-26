@@ -107,23 +107,20 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
     @Override
     public boolean absolute( int rowIndex ) throws PrismInterfaceServiceException {
         try {
-            if ( rowToIndex( rowIndex ) == currentIndex ) {
-                return true;
+            if ( rowIndex == 0 ) {
+                currentIndex = INDEX_BEFORE_FIRST;
+                currentRow = null;
+                return false;
             }
             if ( rowIndex < 0 ) {
                 fetchAll();
                 currentIndex = values.size() + rowIndex;
-                if ( currentIndex < 1 ) {
+                if ( currentIndex < 0 ) {
                     currentIndex = INDEX_BEFORE_FIRST;
                     currentRow = null;
                     return false;
                 }
                 currentRow = values.get( currentIndex );
-                return true;
-            }
-            if ( rowIndex == 0 ) {
-                currentIndex = INDEX_BEFORE_FIRST;
-                currentRow = null;
                 return true;
             }
             if ( rowIndex <= values.size() ) {
@@ -283,31 +280,31 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
 
     @Override
     public boolean isBeforeFirst() {
-        return currentIndex == INDEX_BEFORE_FIRST;
+        return currentIndex == INDEX_BEFORE_FIRST && (!values.isEmpty() || fetcherThread != null || !resultFetcher.isLast());
     }
 
 
     @Override
     public boolean isAfterLast() {
-        return values.isEmpty() || currentIndex == values.size();
+        return !values.isEmpty() && currentIndex == values.size();
     }
 
 
     @Override
     public boolean isFirst() {
-        return currentIndex == 0;
+        return hasCurrent() && currentIndex == 0;
     }
 
 
     @Override
     public boolean isLast() {
-        return currentIndex == values.size() - 1;
+        return hasCurrent() && currentIndex == values.size() - 1 && fetcherThread == null && resultFetcher.isLast();
     }
 
 
     @Override
     public int getRow() {
-        return indexToRow( currentIndex );
+        return hasCurrent() ? indexToRow( currentIndex ) : 0;
     }
 
 

@@ -271,7 +271,7 @@ public class RpcService {
                 sendMessageBeforeDeadline( request.build(), callback );
                 return;
             }
-            // Use the query deadline until the frame is written. The server handles execution time after dispatch.
+            // Bound dispatch locally and let the server enforce the separate query budget after dispatch.
             withExecutionSlot( deadline, () -> sendTimedExecution( request, callback, deadline ) );
         } catch ( IOException e ) {
             throw connectionFailure( e );
@@ -282,12 +282,12 @@ public class RpcService {
 
 
     private void sendTimedExecution( Request.Builder request, CallbackQueue<?> callback, RequestDeadline deadline ) throws PrismInterfaceServiceException {
-        long remaining = deadline.remainingMillis();
+        long remaining = deadline.remainingServerQueryMillis();
         request.mergeUnknownFields( UnknownFieldSet.newBuilder()
                 .addField( QUERY_TIMEOUT_EXTENSION, UnknownFieldSet.Field.newBuilder().addVarint( remaining ).build() )
                 .build() );
         try {
-            sendMessageBeforeDeadline( request.build(), callback, deadline.timeoutMillis, deadline.getQueryDeadlineNanos(), true );
+            sendMessageBeforeDeadline( request.build(), callback, deadline.timeoutMillis, deadline.getDeadlineNanos(), deadline.queryExpiresBeforeNetwork() );
         } catch ( IOException e ) {
             throw connectionFailure( e );
         } catch ( TimeoutException e ) {

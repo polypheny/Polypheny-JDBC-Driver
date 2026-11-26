@@ -51,7 +51,7 @@ A failed batch entry raises `BatchUpdateException`. When the server reports the 
 
 A query timeout before the driver sends a request raises `SQLTimeoutException` and leaves the connection open. The query deadline also bounds cleanup of a previous execution. If the driver sends a cleanup request and its reply misses that deadline, the connection closes and the new execution times out before sending its SQL.
 
-Servers that support query cancellation start the transmitted budget when they first read bytes of the request frame. Delays before those bytes reach the server can extend the total wait. A confirmed batch query timeout leaves the connection open and carries a `BatchUpdateException` as its cause with the progress reported by the server. A timeout while sending a partial request, an expired network deadline, or an interrupt after dispatch can close the connection. An unconfirmed batch may have partially committed.
+Servers that support query cancellation start the transmitted budget when they first read bytes of the request frame. Delays before those bytes reach the server can extend the total wait. A shorter network timeout can close the JDBC connection while the server still enforces the query deadline of the dispatched request. A confirmed batch query timeout leaves the connection open and carries a `BatchUpdateException` as its cause with the progress reported by the server. A timeout while sending a partial request, an expired network deadline, or an interrupt after dispatch can close the connection. An unconfirmed batch may have partially committed.
 
 ## Roadmap
 See the [open issues](https://github.com/polypheny/Polypheny-DB/labels/A-jdbc) for a list of proposed features (and known issues).

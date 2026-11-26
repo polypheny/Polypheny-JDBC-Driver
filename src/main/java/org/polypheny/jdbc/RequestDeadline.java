@@ -28,24 +28,26 @@ final class RequestDeadline {
     private final long startedAtNanos;
     private final long deadlineNanos;
     private final long serverQueryNetworkTimeoutMillis;
+    private final long serverQueryTimeoutMillis;
     private long transactionGeneration = -1;
 
 
     RequestDeadline( long timeoutMillis ) {
-        this( timeoutMillis, System.nanoTime(), -1 );
+        this( timeoutMillis, System.nanoTime(), -1, 0 );
     }
 
 
-    private RequestDeadline( long timeoutMillis, long startedAtNanos, long serverQueryNetworkTimeoutMillis ) {
+    private RequestDeadline( long timeoutMillis, long startedAtNanos, long serverQueryNetworkTimeoutMillis, long serverQueryTimeoutMillis ) {
         this.timeoutMillis = timeoutMillis;
         this.startedAtNanos = startedAtNanos;
         this.deadlineNanos = startedAtNanos + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
         this.serverQueryNetworkTimeoutMillis = serverQueryNetworkTimeoutMillis;
+        this.serverQueryTimeoutMillis = serverQueryTimeoutMillis;
     }
 
 
-    RequestDeadline withServerQueryTimeout( int networkTimeout ) {
-        return new RequestDeadline( timeoutMillis, startedAtNanos, networkTimeout );
+    RequestDeadline withServerQueryTimeout( int networkTimeout, long queryTimeout ) {
+        return new RequestDeadline( timeoutMillis, startedAtNanos, networkTimeout, queryTimeout );
     }
 
 
@@ -54,12 +56,27 @@ final class RequestDeadline {
     }
 
 
-    long getQueryDeadlineNanos() {
+    long getDeadlineNanos() {
         return deadlineNanos;
     }
 
 
     long remainingMillis() throws PrismInterfaceServiceException {
+        return remainingMillis( deadlineNanos, timeoutMillis );
+    }
+
+
+    long remainingServerQueryMillis() throws PrismInterfaceServiceException {
+        return remainingMillis( startedAtNanos + TimeUnit.MILLISECONDS.toNanos( serverQueryTimeoutMillis ), serverQueryTimeoutMillis );
+    }
+
+
+    boolean queryExpiresBeforeNetwork() {
+        return serverQueryNetworkTimeoutMillis == 0 || serverQueryTimeoutMillis < serverQueryNetworkTimeoutMillis;
+    }
+
+
+    private static long remainingMillis( long deadlineNanos, long timeoutMillis ) throws PrismInterfaceServiceException {
         if ( timeoutMillis == 0 ) {
             return 0;
         }

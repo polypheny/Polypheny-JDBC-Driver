@@ -34,7 +34,6 @@ public class ResultFetcher implements Runnable {
     private PolyphenyResultSetProperties properties;
     private long totalFetched;
     @Setter
-    @Getter
     private boolean isLast;
     @Getter
     private List<List<TypedValue>> fetchedValues;
@@ -50,6 +49,12 @@ public class ResultFetcher implements Runnable {
         this.properties = properties;
         this.totalFetched = totalFetched;
         this.isLast = false;
+    }
+
+
+    public boolean isLast() {
+        long maxRows = properties.getLargeMaxRows();
+        return isLast || (maxRows > 0 && totalFetched >= maxRows);
     }
 
 

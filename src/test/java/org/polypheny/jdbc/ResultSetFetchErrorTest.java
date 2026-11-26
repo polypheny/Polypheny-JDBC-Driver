@@ -22,7 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -94,16 +96,112 @@ class ResultSetFetchErrorTest {
     @ParameterizedTest
     @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
     void aLargerCursorFetchSizeStillRespectsMaxRows( int resultSetType ) throws SQLException {
-        when( client.fetchResult( 7, 4, 2000 ) ).thenReturn( frame( true, 4 ) );
+        when( client.fetchResult( 7, 4, 2000 ) ).thenReturn( frame( false, 4 ) ).thenThrow( failure );
         try ( ResultSet result = newResultSet( resultSetType, 1, 3 ) ) {
             result.setFetchSize( 4 );
             assertTrue( result.next() );
+            assertTrue( result.isFirst() );
+            assertFalse( result.isLast() );
             assertTrue( result.next() );
             assertTrue( result.next() );
+            assertTrue( result.isLast() );
             assertFalse( result.next() );
+            assertTrue( result.isAfterLast() );
+            assertFalse( result.isFirst() );
+            assertEquals( 0, result.getRow() );
             assertEquals( 1, statement.getFetchSize() );
         }
         verify( client ).fetchResult( 7, 4, 2000 );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
+    void reachingMaxRowsInTheFirstFrameDoesNotFetch( int resultSetType ) throws SQLException {
+        try ( PolyphenyResultSet result = newResultSet( resultSetType, 1, 1, frame( false, 2 ) ) ) {
+            assertTrue( result.isBeforeFirst() );
+            assertFalse( result.isAfterLast() );
+            assertEquals( 0, result.getRow() );
+            result.fetchAll();
+            assertTrue( result.next() );
+            assertTrue( result.isFirst() );
+            assertTrue( result.isLast() );
+            assertEquals( 1, result.getRow() );
+            assertFalse( result.next() );
+            assertTrue( result.isAfterLast() );
+            assertFalse( result.isFirst() );
+            assertFalse( result.isLast() );
+            assertEquals( 0, result.getRow() );
+        }
+        verify( client, never() ).fetchResult( anyInt(), anyInt(), anyInt() );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
+    void emptyOrdinaryResultsHaveNoCursorPosition( int resultSetType ) throws SQLException {
+        try ( ResultSet result = newResultSet( resultSetType, 1, 0, frame( true, 0 ) ) ) {
+            assertNoPosition( result );
+            assertFalse( result.next() );
+            assertNoPosition( result );
+            if ( resultSetType == ResultSet.TYPE_SCROLL_INSENSITIVE ) {
+                result.beforeFirst();
+                assertNoPosition( result );
+                assertFalse( result.first() );
+                assertFalse( result.last() );
+                assertFalse( result.absolute( 0 ) );
+                result.afterLast();
+                assertNoPosition( result );
+            }
+        }
+        verify( client, never() ).fetchResult( anyInt(), anyInt(), anyInt() );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
+    void anEmptyNonterminalFrameStillAllowsFetching( int resultSetType ) throws SQLException {
+        when( client.fetchResult( 7, 1, 2000 ) ).thenReturn( frame( true ) );
+        try ( ResultSet result = newResultSet( resultSetType, 1, 0, frame( false, 0 ) ) ) {
+            assertTrue( result.isBeforeFirst() );
+            assertFalse( result.isAfterLast() );
+            assertTrue( result.next() );
+            assertTrue( result.isFirst() );
+            assertTrue( result.isLast() );
+            assertEquals( 1, result.getRow() );
+            assertFalse( result.next() );
+            assertTrue( result.isAfterLast() );
+            assertEquals( 0, result.getRow() );
+        }
+        verify( client ).fetchResult( 7, 1, 2000 );
+    }
+
+
+    @Test
+    void scrollsBackToTheFirstRowOfACappedResult() throws SQLException {
+        try ( ResultSet result = newResultSet( ResultSet.TYPE_SCROLL_INSENSITIVE, 1, 1, frame( false, 2 ) ) ) {
+            assertTrue( result.absolute( -1 ) );
+            assertEquals( 1, result.getRow() );
+            assertTrue( result.isLast() );
+            assertFalse( result.absolute( 0 ) );
+            assertTrue( result.isBeforeFirst() );
+            assertEquals( 0, result.getRow() );
+            result.afterLast();
+            assertTrue( result.isAfterLast() );
+            assertEquals( 0, result.getRow() );
+            assertTrue( result.previous() );
+            assertEquals( 1, result.getRow() );
+        }
+        verify( client, never() ).fetchResult( anyInt(), anyInt(), anyInt() );
+    }
+
+
+    private static void assertNoPosition( ResultSet result ) throws SQLException {
+        assertFalse( result.isBeforeFirst() );
+        assertFalse( result.isAfterLast() );
+        assertFalse( result.isFirst() );
+        assertFalse( result.isLast() );
+        assertEquals( 0, result.getRow() );
     }
 
 
@@ -170,6 +268,11 @@ class ResultSetFetchErrorTest {
 
 
     private PolyphenyResultSet newResultSet( int resultSetType, int statementFetchSize, int maxRows ) throws SQLException {
+        return newResultSet( resultSetType, statementFetchSize, maxRows, frame( false ) );
+    }
+
+
+    private PolyphenyResultSet newResultSet( int resultSetType, int statementFetchSize, int maxRows, Frame firstFrame ) throws SQLException {
         PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( new ConnectionString( "jdbc:polypheny://localhost:20590" ), client );
         PolyConnection connection = new PolyConnection( properties, mock( PolyphenyDatabaseMetadata.class ) );
         connection.setNetworkTimeout( Runnable::run, 2000 );
@@ -177,7 +280,7 @@ class ResultSetFetchErrorTest {
         statement.statementId = 7;
         statement.setFetchSize( statementFetchSize );
         statement.setMaxRows( maxRows );
-        return (PolyphenyResultSet) statement.publishResult( frame( false ), -1 );
+        return (PolyphenyResultSet) statement.publishResult( firstFrame, -1 );
     }
 
 

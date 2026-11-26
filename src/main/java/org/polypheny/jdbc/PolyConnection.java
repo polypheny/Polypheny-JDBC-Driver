@@ -42,6 +42,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +72,11 @@ public class PolyConnection implements Connection {
 
     private final Set<Statement> openStatements;
     private final AtomicLong appliedTransactionGeneration = new AtomicLong();
+    private final ExecutorService completedStatementCloser = new ThreadPoolExecutor( 0, 1, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), task -> {
+        Thread thread = new Thread( task, "PrismCompletedStatementCloser" );
+        thread.setDaemon( true );
+        return thread;
+    } );
 
     private Map<String, Class<?>> typeMap;
 
@@ -232,6 +241,11 @@ public class PolyConnection implements Connection {
 
 
     public void refreshTransactionResults() {
+        refreshTransactionResults( false );
+    }
+
+
+    void refreshTransactionResults( boolean deferStatementClose ) {
         long generation = getPrismInterfaceClient().getTransactionGeneration();
         if ( generation <= appliedTransactionGeneration.get() ) {
             return;
@@ -239,13 +253,22 @@ public class PolyConnection implements Connection {
         for ( Statement statement : snapshotOpenStatements() ) {
             if ( statement instanceof PolyphenyStatement ) {
                 try {
-                    ((PolyphenyStatement) statement).closeResultsFromEarlierTransactions( generation );
+                    ((PolyphenyStatement) statement).closeResultsFromEarlierTransactions( generation, deferStatementClose );
                 } catch ( SQLException e ) {
                     log.warn( "Could not close a completed statement after the transaction finished", e );
                 }
             }
         }
         appliedTransactionGeneration.accumulateAndGet( generation, Math::max );
+    }
+
+
+    void closeCompletedStatementLater( PolyphenyStatement statement ) {
+        synchronized ( openStatements ) {
+            if ( !isClosed ) {
+                completedStatementCloser.execute( statement::closeAfterTransaction );
+            }
+        }
     }
 
 
@@ -368,6 +391,7 @@ public class PolyConnection implements Connection {
                 return;
             }
             isClosed = true;
+            completedStatementCloser.shutdownNow();
             statements = new HashSet<>( openStatements );
             openStatements.clear();
         }
