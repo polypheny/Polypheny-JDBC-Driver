@@ -16,6 +16,7 @@
 
 package org.polypheny.jdbc;
 
+import com.google.protobuf.UnknownFieldSet;
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.Map;
@@ -102,6 +103,9 @@ public class RpcService {
     private final AtomicLong idCounter = new AtomicLong( 1 );
     private final AtomicLong transactionGeneration = new AtomicLong();
     private final Map<Long, Response.TypeCase> pendingTransactions = new ConcurrentHashMap<>();
+    // Polypheny Prism 2.5 extension. The handshake carries a version and execute requests carry milliseconds.
+    private static final int QUERY_TIMEOUT_EXTENSION = 50001;
+    private volatile boolean serverQueryTimeout;
     private volatile boolean transactionBoundaryEvents;
     private final AtomicBoolean transportClosed = new AtomicBoolean();
     private final Transport con;
@@ -238,6 +242,43 @@ public class RpcService {
     }
 
 
+    private void sendBeforeDeadline( Request.Builder request, CallbackQueue<?> callback, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        try {
+            if ( !deadline.usesServerQueryTimeout() ) {
+                sendMessageBeforeDeadline( request.build(), callback );
+                return;
+            }
+            // Wait for the writer within the query budget, then pass the remaining time to the server.
+            // Once the send starts, only the network timeout can close the transport.
+            int waitMillis = (int) Math.min( deadline.remainingMillis(), Integer.MAX_VALUE );
+            if ( !con.withWriteReservation( waitMillis, () -> sendTimedExecution( request, callback, deadline ) ) ) {
+                throw new RequestDeadline.BeforeSendTimeout( deadline.timeoutMillis );
+            }
+        } catch ( InterruptedException e ) {
+            throw PrismInterfaceClient.interruptedBeforeWrite( e );
+        } catch ( IOException e ) {
+            throw connectionFailure( e );
+        } catch ( TimeoutException e ) {
+            throw new PrismInterfaceServiceException( e );
+        }
+    }
+
+
+    private void sendTimedExecution( Request.Builder request, CallbackQueue<?> callback, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        long remaining = deadline.remainingMillis();
+        request.mergeUnknownFields( UnknownFieldSet.newBuilder()
+                .addField( QUERY_TIMEOUT_EXTENSION, UnknownFieldSet.Field.newBuilder().addVarint( remaining ).build() )
+                .build() );
+        try {
+            sendMessageBeforeDeadline( request.build(), callback );
+        } catch ( IOException e ) {
+            throw connectionFailure( e );
+        } catch ( TimeoutException e ) {
+            throw new PrismInterfaceServiceException( e );
+        }
+    }
+
+
     private enum WriteState {
         READY, WRITING, FINISHED, EXPIRED
     }
@@ -360,14 +401,10 @@ public class RpcService {
         CallbackQueue<Response> callback = deadline.callback( response -> response );
         try {
             callbackQueues.put( req.getId(), callback );
-            sendMessageBeforeDeadline( req.build(), callback );
+            sendBeforeDeadline( req, callback, deadline );
             Response response = callback.takeNext();
             deadline.recordTransactionGeneration( callback );
             return response;
-        } catch ( IOException e ) {
-            throw connectionFailure( e );
-        } catch ( TimeoutException e ) {
-            throw new PrismInterfaceServiceException( e );
         } finally {
             callbackQueues.remove( req.getId() );
         }
@@ -392,7 +429,14 @@ public class RpcService {
     ConnectionResponse connect( ConnectionRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setConnectionRequest( msg );
-        return completeSynchronously( req, timeout ).getConnectionResponse();
+        ConnectionResponse response = completeSynchronously( req, timeout ).getConnectionResponse();
+        serverQueryTimeout = response.getUnknownFields().getField( QUERY_TIMEOUT_EXTENSION ).getVarintList().contains( 1L );
+        return response;
+    }
+
+
+    boolean supportsServerQueryTimeout() {
+        return serverQueryTimeout;
     }
 
 
@@ -480,10 +524,24 @@ public class RpcService {
     }
 
 
+    ClientInfoPropertiesResponse setClientInfoProperties( ClientInfoProperties msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setSetClientInfoPropertiesRequest( msg );
+        return completeBeforeDeadline( req, deadline ).getSetClientInfoPropertiesResponse();
+    }
+
+
     ClientInfoProperties getClientInfoProperties( ClientInfoPropertiesRequest msg, int timeout ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setClientInfoPropertiesRequest( msg );
         return completeSynchronously( req, timeout ).getClientInfoPropertiesResponse();
+    }
+
+
+    ClientInfoProperties getClientInfoProperties( ClientInfoPropertiesRequest msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setClientInfoPropertiesRequest( msg );
+        return completeBeforeDeadline( req, deadline ).getClientInfoPropertiesResponse();
     }
 
 
@@ -599,6 +657,19 @@ public class RpcService {
     }
 
 
+    void executeTimedUnparameterizedStatement( ExecuteUnparameterizedStatementRequest msg, CallbackQueue<StatementResponse> callback, RequestDeadline deadline )
+            throws PrismInterfaceServiceException {
+        Request.Builder request = newMessage().setExecuteUnparameterizedStatementRequest( msg );
+        callbackQueues.put( request.getId(), callback );
+        try {
+            sendBeforeDeadline( request, callback, deadline );
+        } catch ( PrismInterfaceServiceException failure ) {
+            callbackQueues.remove( request.getId() );
+            throw failure;
+        }
+    }
+
+
     void executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest msg, CallbackQueue<StatementBatchResponse> callback ) throws PrismInterfaceServiceException {
         Request.Builder req = newMessage();
         req.setExecuteUnparameterizedStatementBatchRequest( msg );
@@ -686,7 +757,7 @@ public class RpcService {
         int batchId = rawBatch ? 0 : req.getExecuteIndexedStatementBatchRequest().getStatementId();
         try {
             callbackQueues.put( req.getId(), callback );
-            sendMessageBeforeDeadline( req.build(), callback );
+            sendBeforeDeadline( req, callback, deadline );
             while ( true ) {
                 Response response = callback.takeNext();
                 if ( !response.hasStatementBatchResponse() ) {
@@ -712,10 +783,6 @@ public class RpcService {
                 }
                 firstFrame = false;
             }
-        } catch ( IOException e ) {
-            throw connectionFailure( e );
-        } catch ( TimeoutException e ) {
-            throw new PrismInterfaceServiceException( e );
         } catch ( PrismInterfaceServiceException.ServerError error ) {
             throw completed == null ? error : error.withCompletedBatch( completed );
         } finally {

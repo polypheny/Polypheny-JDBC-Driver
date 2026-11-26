@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.types.PolyBlob;
 
@@ -62,6 +63,31 @@ class Prism25IntegrationTest {
             assertNull( connection.getClientInfo( "ApplicationName" ) );
             assertEquals( "Operator", connection.getClientInfo( "ClientUser" ) );
             assertFalse( connection.getClientInfo().containsKey( "PolyphenyRemoveClientInfoProperty" ) );
+        }
+    }
+
+
+    @Test
+    void parameterlessPreparedBatchExecutesEveryUpdate() throws SQLException {
+        String table = "jdbc_zero_params_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement sql = connection.createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, n INTEGER NOT NULL)" );
+            try {
+                sql.executeUpdate( "INSERT INTO " + table + " VALUES (1, 0)" );
+                try ( PreparedStatement batch = connection.prepareStatement( "UPDATE " + table + " SET n = n + 1" ) ) {
+                    batch.addBatch();
+                    batch.addBatch();
+                    assertArrayEquals( new int[]{ 1, 1 }, batch.executeBatch() );
+                }
+                try ( ResultSet rows = sql.executeQuery( "SELECT n FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 2, rows.getInt( 1 ) );
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE " + table );
+            }
         }
     }
 
@@ -103,6 +129,66 @@ class Prism25IntegrationTest {
             } finally {
                 ddl.executeUpdate( "DROP TABLE " + table );
             }
+        }
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({ "false, false", "true, false", "false, true" })
+    void queryTimeoutCancelsABlockedStatementAndKeepsItReusable( boolean prepared, boolean batch ) throws SQLException {
+        String table = "jdbc_cancel_" + UUID.randomUUID().toString().replace( "-", "" );
+        String update = "UPDATE " + table + " SET payload = payload + " + (prepared ? "?" : "1");
+        try ( Connection admin = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement ddl = admin.createStatement() ) {
+            ddl.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, payload INTEGER)" );
+            try ( Connection blocker = DriverManager.getConnection( DB_URL, "pa", "" );
+                    Connection waiting = DriverManager.getConnection( DB_URL, "pa", "" );
+                    Statement read = blocker.createStatement();
+                    Statement change = prepared ? waiting.prepareStatement( update ) : waiting.createStatement() ) {
+                ddl.executeUpdate( "INSERT INTO " + table + " VALUES (1, 0)" );
+                if ( prepared ) {
+                    ((PreparedStatement) change).setInt( 1, 1 );
+                }
+                blocker.setAutoCommit( false );
+                try ( ResultSet rows = read.executeQuery( "SELECT payload FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 0, rows.getInt( 1 ) );
+                }
+                waiting.setNetworkTimeout( Runnable::run, 8000 );
+                change.setQueryTimeout( 1 );
+                SQLTimeoutException timeout = assertThrows( SQLTimeoutException.class, () -> executeTimedUpdate( change, update, batch ) );
+                assertEquals( "57014", timeout.getSQLState() );
+                if ( batch ) {
+                    BatchUpdateException progress = assertInstanceOf( BatchUpdateException.class, timeout.getCause() );
+                    assertArrayEquals( new long[0], progress.getLargeUpdateCounts() );
+                }
+                assertFalse( waiting.isClosed() );
+                assertFalse( change.isClosed() );
+                assertTrue( waiting.isValid( 2 ) );
+
+                blocker.commit();
+                change.setQueryTimeout( 0 );
+                executeTimedUpdate( change, update, batch );
+                try ( ResultSet rows = ddl.executeQuery( "SELECT payload FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 1, rows.getInt( 1 ) );
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    private static void executeTimedUpdate( Statement change, String update, boolean batch ) throws SQLException {
+        if ( batch ) {
+            change.addBatch( update );
+            assertArrayEquals( new int[]{ 1 }, change.executeBatch() );
+        } else if ( change instanceof PreparedStatement ) {
+            assertEquals( 1, ((PreparedStatement) change).executeUpdate() );
+        } else {
+            assertEquals( 1, change.executeUpdate( update ) );
         }
     }
 

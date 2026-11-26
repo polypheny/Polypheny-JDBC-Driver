@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.UnknownFieldSet;
 import java.io.EOFException;
 import java.io.IOException;
 import java.sql.Connection;
@@ -32,12 +33,14 @@ import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.Transport;
@@ -52,12 +55,14 @@ import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Response;
 import org.polypheny.prism.StatementResponse;
+import org.polypheny.prism.StatementResult;
 
 
 @Timeout(5)
 class StatementDeadlineTest {
 
     private static final String INSERT = "INSERT INTO items DEFAULT VALUES";
+    private static final int QUERY_TIMEOUT_EXTENSION = 50001;
 
 
     @ParameterizedTest
@@ -114,6 +119,34 @@ class StatementDeadlineTest {
     }
 
 
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void waitsForTheServerTimeoutResultWithinTheNetworkDeadline( boolean prepared ) throws Exception {
+        InsertTransport transport = new InsertTransport( false, true );
+        RpcService rpc = new RpcService( transport );
+        try ( Connection connection = connection( rpc );
+                Statement statement = prepared ? connection.prepareStatement( INSERT, Statement.RETURN_GENERATED_KEYS ) : connection.createStatement() ) {
+            connection.setNetworkTimeout( Runnable::run, 3000 );
+            statement.setQueryTimeout( 1 );
+
+            SQLTimeoutException failure = prepared
+                    ? assertThrows( SQLTimeoutException.class, ((PreparedStatement) statement)::executeUpdate )
+                    : assertThrows( SQLTimeoutException.class, () -> statement.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+            assertEquals( "57014", failure.getSQLState() );
+            assertFalse( connection.isClosed() );
+            assertFalse( statement.isClosed() );
+            assertEquals( 0, transport.closes.get() );
+
+            statement.setQueryTimeout( 0 );
+            assertEquals( 1, prepared ? ((PreparedStatement) statement).executeUpdate()
+                    : statement.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+            assertEquals( 2, transport.inserts.get() );
+        } finally {
+            rpc.close();
+        }
+    }
+
+
     private static Connection connection( RpcService rpc ) throws SQLException {
         PrismInterfaceClient client = new PrismInterfaceClient( rpc );
         ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
@@ -130,10 +163,18 @@ class StatementDeadlineTest {
         private final AtomicInteger inserts = new AtomicInteger();
         private final AtomicInteger closes = new AtomicInteger();
         private final boolean serverError;
+        private final boolean serverQueryTimeout;
+        private byte[] delayedTimeoutResponse;
 
 
         private InsertTransport( boolean serverError ) {
+            this( serverError, false );
+        }
+
+
+        private InsertTransport( boolean serverError, boolean serverQueryTimeout ) {
             this.serverError = serverError;
+            this.serverQueryTimeout = serverQueryTimeout;
         }
 
 
@@ -143,7 +184,12 @@ class StatementDeadlineTest {
             Response.Builder response = Response.newBuilder().setId( request.getId() ).setLast( true );
             switch ( request.getTypeCase() ) {
                 case CONNECTION_REQUEST:
-                    response.setConnectionResponse( ConnectionResponse.newBuilder().setIsCompatible( true ).setSupportsGeneratedKeys( true ) );
+                    ConnectionResponse.Builder connection = ConnectionResponse.newBuilder().setIsCompatible( true ).setSupportsGeneratedKeys( true );
+                    if ( serverQueryTimeout ) {
+                        connection.setUnknownFields( UnknownFieldSet.newBuilder()
+                                .addField( QUERY_TIMEOUT_EXTENSION, UnknownFieldSet.Field.newBuilder().addVarint( 1 ).build() ).build() );
+                    }
+                    response.setConnectionResponse( connection );
                     break;
                 case SET_CLIENT_INFO_PROPERTIES_REQUEST:
                     response.setSetClientInfoPropertiesResponse( ClientInfoPropertiesResponse.getDefaultInstance() );
@@ -158,6 +204,10 @@ class StatementDeadlineTest {
                 case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST:
                     assertTrue( request.getExecuteUnparameterizedStatementRequest().hasGeneratedKeys() );
                     inserts.incrementAndGet();
+                    if ( serverQueryTimeout ) {
+                        replyToExecution( request, response );
+                        return;
+                    }
                     if ( serverError ) {
                         response.setErrorResponse( ErrorResponse.newBuilder()
                                 .setMessage( "Remote adapter connection failed" )
@@ -168,6 +218,9 @@ class StatementDeadlineTest {
                     break;
                 case EXECUTE_INDEXED_STATEMENT_REQUEST:
                     inserts.incrementAndGet();
+                    if ( serverQueryTimeout ) {
+                        replyToExecution( request, response );
+                    }
                     return;
                 case CLOSE_STATEMENT_REQUEST:
                     response.setCloseStatementResponse( CloseStatementResponse.getDefaultInstance() );
@@ -182,12 +235,35 @@ class StatementDeadlineTest {
         }
 
 
+        private void replyToExecution( Request request, Response.Builder response ) {
+            if ( inserts.get() == 1 ) {
+                long timeout = request.getUnknownFields().getField( QUERY_TIMEOUT_EXTENSION ).getVarintList().get( 0 );
+                assertTrue( timeout > 0 && timeout <= 1000 );
+                delayedTimeoutResponse = response.setErrorResponse( ErrorResponse.newBuilder().setMessage( "Query timed out" )
+                        .setDetails( ErrorDetails.newBuilder().setState( "57014" ) ) ).build().toByteArray();
+                responses.add( delayedTimeoutResponse );
+                return;
+            }
+            assertFalse( request.getUnknownFields().hasField( QUERY_TIMEOUT_EXTENSION ) );
+            StatementResult result = StatementResult.newBuilder().setScalar( 1 ).build();
+            if ( request.hasExecuteIndexedStatementRequest() ) {
+                response.setStatementResult( result );
+            } else {
+                response.setStatementResponse( StatementResponse.newBuilder().setStatementId( 42 ).setResult( result ) );
+            }
+            responses.add( response.build().toByteArray() );
+        }
+
+
         @Override
         public byte[] receiveMessage() throws IOException {
             try {
                 byte[] response = responses.take();
                 if ( response == endOfStream ) {
                     throw new EOFException();
+                }
+                if ( response == delayedTimeoutResponse ) {
+                    TimeUnit.MILLISECONDS.sleep( 1100 );
                 }
                 return response;
             } catch ( InterruptedException e ) {

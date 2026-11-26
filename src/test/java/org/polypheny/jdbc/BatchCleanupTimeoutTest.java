@@ -756,6 +756,69 @@ class BatchCleanupTimeoutTest {
     }
 
 
+    @ParameterizedTest
+    @EnumSource( GeneratedKeysAccess.class )
+    void commitOnlyCompletesGeneratedKeyResultsStillOpen( GeneratedKeysAccess access ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
+        RpcService rpc = new RpcService( transport );
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
+        PolyphenyConnectionProperties settings = new PolyphenyConnectionProperties( target, client );
+        CountDownLatch boundaryObserved = new CountDownLatch( 1 );
+        CountDownLatch resumeSweep = new CountDownLatch( 1 );
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        AtomicReference<Thread> commitThread = new AtomicReference<>();
+        client.register( settings, 1000 );
+        try ( Connection connection = new PolyConnection( settings, new PolyphenyDatabaseMetadata( client, target ) ) {
+            @Override
+            public void refreshTransactionResults() {
+                if ( Thread.currentThread() == commitThread.get() ) {
+                    waitToContinue( boundaryObserved, resumeSweep );
+                }
+                super.refreshTransactionResults();
+            }
+        }; Statement insert = connection.createStatement() ) {
+            connection.setAutoCommit( false );
+            assertEquals( 1, insert.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+            boolean alreadyClosed = access == GeneratedKeysAccess.ALREADY_CLOSED;
+            try ( ResultSet keys = access == GeneratedKeysAccess.UNRETRIEVED ? null : insert.getGeneratedKeys() ) {
+                if ( alreadyClosed ) {
+                    keys.close();
+                }
+                insert.closeOnCompletion();
+                assertFalse( insert.isClosed() );
+                Future<?> committed = executor.submit( () -> {
+                    commitThread.set( Thread.currentThread() );
+                    connection.commit();
+                    return null;
+                } );
+                try {
+                    assertTrue( boundaryObserved.await( 2, TimeUnit.SECONDS ) );
+                    if ( keys != null ) {
+                        assertTrue( keys.isClosed() );
+                    }
+                    assertEquals( !alreadyClosed, insert.isClosed() );
+                } finally {
+                    resumeSweep.countDown();
+                }
+                committed.get( 2, TimeUnit.SECONDS );
+                assertEquals( !alreadyClosed, insert.isClosed() );
+                if ( alreadyClosed ) {
+                    assertEquals( 1, insert.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+                    try ( ResultSet followingKeys = insert.getGeneratedKeys() ) {
+                        assertTrue( followingKeys.next() );
+                    }
+                    assertTrue( insert.isClosed() );
+                }
+            }
+        } finally {
+            resumeSweep.countDown();
+            executor.shutdownNow();
+            rpc.close();
+        }
+    }
+
+
     private static Statement pauseResultConstruction( Connection connection, boolean prepared, AtomicReference<Thread> queryThread,
             CountDownLatch buildingResult, CountDownLatch resumeResult ) throws SQLException {
         PolyphenyStatement original = (PolyphenyStatement) (prepared ? connection.prepareStatement( SELECT ) : connection.createStatement());
@@ -782,6 +845,11 @@ class BatchCleanupTimeoutTest {
 
     private enum Intercept {
         TIMEOUT, SERVER_ERROR, WRITE_FAILURE
+    }
+
+
+    private enum GeneratedKeysAccess {
+        UNRETRIEVED, OPEN, ALREADY_CLOSED
     }
 
 

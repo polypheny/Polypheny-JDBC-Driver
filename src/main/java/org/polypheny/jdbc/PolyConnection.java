@@ -20,6 +20,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
+import java.sql.ClientInfoStatus;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -34,6 +35,7 @@ import java.sql.SQLXML;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -291,6 +293,12 @@ public class PolyConnection implements Connection {
             abortAfterIncompleteRequest();
         }
         return isClosed;
+    }
+
+
+    boolean isTransportClosed() {
+        // ResultSet may check this while its statement's result lock is held.
+        return isClosed || getPrismInterfaceClient().isClosed();
     }
 
 
@@ -641,6 +649,7 @@ public class PolyConnection implements Connection {
 
     @Override
     public void setClientInfo( String name, String value ) throws SQLClientInfoException {
+        validateClientInfoNames( Collections.singleton( name ) );
         try {
             executeNetworkRequest( timeout -> {
                 getPrismInterfaceClient().setClientInfoProperty( name, value, timeout );
@@ -654,6 +663,7 @@ public class PolyConnection implements Connection {
 
     @Override
     public void setClientInfo( Properties clientInfoProperties ) throws SQLClientInfoException {
+        validateClientInfoNames( clientInfoProperties.stringPropertyNames() );
         try {
             executeNetworkRequest( timeout -> {
                 getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, timeout );
@@ -662,6 +672,20 @@ public class PolyConnection implements Connection {
         } catch ( SQLException e ) {
             throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
         }
+    }
+
+
+    private static void validateClientInfoNames( Set<String> names ) throws SQLClientInfoException {
+        if ( names.stream().allMatch( PrismInterfaceClient::isValidClientInfoPropertyName ) ) {
+            return;
+        }
+        Map<String, ClientInfoStatus> failed = new HashMap<>();
+        for ( String name : names ) {
+            failed.put( name, PrismInterfaceClient.isValidClientInfoPropertyName( name )
+                    ? ClientInfoStatus.REASON_UNKNOWN : ClientInfoStatus.REASON_UNKNOWN_PROPERTY );
+        }
+        throw new SQLClientInfoException( "Invalid ClientInfo property name.", PrismInterfaceErrors.VALUE_ILLEGAL.state,
+                PrismInterfaceErrors.VALUE_ILLEGAL.errorCode, failed );
     }
 
 

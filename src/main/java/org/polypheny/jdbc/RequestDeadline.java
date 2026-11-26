@@ -25,13 +25,32 @@ import org.polypheny.prism.Response;
 final class RequestDeadline {
 
     final long timeoutMillis;
+    private final long startedAtNanos;
     private final long deadlineNanos;
+    private final long serverQueryNetworkTimeoutMillis;
     private long transactionGeneration = -1;
 
 
     RequestDeadline( long timeoutMillis ) {
+        this( timeoutMillis, System.nanoTime(), -1 );
+    }
+
+
+    private RequestDeadline( long timeoutMillis, long startedAtNanos, long serverQueryNetworkTimeoutMillis ) {
         this.timeoutMillis = timeoutMillis;
-        this.deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
+        this.startedAtNanos = startedAtNanos;
+        this.deadlineNanos = startedAtNanos + TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
+        this.serverQueryNetworkTimeoutMillis = serverQueryNetworkTimeoutMillis;
+    }
+
+
+    RequestDeadline withServerQueryTimeout( int networkTimeout ) {
+        return new RequestDeadline( timeoutMillis, startedAtNanos, networkTimeout );
+    }
+
+
+    boolean usesServerQueryTimeout() {
+        return serverQueryNetworkTimeoutMillis >= 0;
     }
 
 
@@ -48,7 +67,9 @@ final class RequestDeadline {
 
 
     <T> CallbackQueue<T> callback( Function<Response, T> extractResponse ) {
-        return new CallbackQueue<>( extractResponse, timeoutMillis, deadlineNanos );
+        long responseTimeoutMillis = usesServerQueryTimeout() ? serverQueryNetworkTimeoutMillis : timeoutMillis;
+        long responseDeadline = startedAtNanos + TimeUnit.MILLISECONDS.toNanos( responseTimeoutMillis );
+        return new CallbackQueue<>( extractResponse, responseTimeoutMillis, responseDeadline );
     }
 
 

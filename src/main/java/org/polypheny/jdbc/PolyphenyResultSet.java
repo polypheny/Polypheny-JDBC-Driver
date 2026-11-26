@@ -63,7 +63,7 @@ public class PolyphenyResultSet implements ResultSet {
     private boolean emptyGeneratedKeys;
 
     private final PolyphenyStatement statement;
-    private PolyConnection metadataConnection;
+    private PolyConnection connection;
 
     private PolyphenyResultSetMetadata metadata;
     private Scrollable<List<TypedValue>> resultScroller;
@@ -87,7 +87,7 @@ public class PolyphenyResultSet implements ResultSet {
         }
         this.statement = statement;
         this.metadata = new PolyphenyResultSetMetadata( MetaUtils.buildColumnMetas( frame.getRelationalFrame().getColumnMetaList() ) );
-        PolyConnection connection = statement.getPolyConnection();
+        this.connection = statement.getPolyConnection();
         int statementId = statement.getStatementId();
         PageRequest pageRequest = fetchSize -> connection.fetchPage( statementId, fetchSize );
         if ( properties.getResultSetType() == ResultSet.TYPE_FORWARD_ONLY ) {
@@ -105,6 +105,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     PolyphenyResultSet( PolyphenyStatement statement, RelationalFrame keys, PolyphenyResultSetProperties properties ) {
         this.statement = statement;
+        this.connection = statement.getPolyConnection();
         this.metadata = new PolyphenyResultSetMetadata( MetaUtils.buildColumnMetas( keys.getColumnMetaList() ), true );
         this.resultScroller = new MetaScroller<>( TypedValueUtils.buildRows( keys.getRowsList() ) );
         this.properties = properties;
@@ -128,10 +129,10 @@ public class PolyphenyResultSet implements ResultSet {
 
 
     public void bindMetadataConnection( PolyConnection connection ) {
-        if ( !isMeta || metadataConnection != null ) {
+        if ( !isMeta || this.connection != null ) {
             throw new IllegalStateException( "Only an unbound metadata result can be bound to a connection." );
         }
-        metadataConnection = Objects.requireNonNull( connection );
+        this.connection = Objects.requireNonNull( connection );
     }
 
 
@@ -273,6 +274,11 @@ public class PolyphenyResultSet implements ResultSet {
 
     void markClosed() {
         isClosed = true;
+    }
+
+
+    boolean isMarkedClosed() {
+        return isClosed;
     }
 
 
@@ -1292,7 +1298,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public boolean isClosed() throws SQLException {
         return isClosed
-                || (metadataConnection != null && metadataConnection.isClosed())
+                || (connection != null && (isMeta ? connection.isClosed() : connection.isTransportClosed()))
                 || (transactionGeneration >= 0 && closedByTransaction( statement.getClient().getTransactionGeneration() ));
     }
 
