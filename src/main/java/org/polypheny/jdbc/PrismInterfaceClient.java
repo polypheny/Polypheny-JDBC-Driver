@@ -139,8 +139,19 @@ public class PrismInterfaceClient {
                         + " not compatible with server version " + getServerApiVersionString( response ) + "." );
             }
             supportsGeneratedKeys = response.getSupportsGeneratedKeys();
+            boolean boundaryEvents = response.getMajorApiVersion() == VersionUtil.MAJOR_API_VERSION && response.getMinorApiVersion() >= 5;
+            ClientInfoProperties.Builder clientInfo = ClientInfoProperties.newBuilder();
             if ( supportsGeneratedKeys ) {
-                rpc.setClientInfoProperties( ClientInfoProperties.newBuilder().putProperties( PARTIAL_BATCH_RESULTS, "true" ).build(), timeout );
+                clientInfo.putProperties( PARTIAL_BATCH_RESULTS, "true" );
+            }
+            if ( boundaryEvents ) {
+                clientInfo.putProperties( "transactionBoundaryEvents", "true" );
+            }
+            if ( clientInfo.getPropertiesCount() != 0 ) {
+                rpc.setClientInfoProperties( clientInfo.build(), timeout );
+            }
+            if ( boundaryEvents ) {
+                rpc.enableTransactionBoundaryEvents();
             }
             return response;
         } catch ( PrismInterfaceServiceException e ) {
@@ -364,8 +375,8 @@ public class PrismInterfaceClient {
     }
 
 
-    long getCommitGeneration() {
-        return rpc.getCommitGeneration();
+    long getTransactionGeneration() {
+        return rpc.getTransactionGeneration();
     }
 
 
@@ -376,10 +387,20 @@ public class PrismInterfaceClient {
     }
 
 
+    void commitTransaction( RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        rpc.commit( CommitRequest.getDefaultInstance(), deadline );
+    }
+
+
     public void rollbackTransaction( int timeout ) throws PrismInterfaceServiceException {
         RollbackRequest rollbackRequest = RollbackRequest.newBuilder().build();
 
         rpc.rollback( rollbackRequest, timeout );
+    }
+
+
+    void rollbackTransaction( RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        rpc.rollback( RollbackRequest.getDefaultInstance(), deadline );
     }
 
 
@@ -505,9 +526,28 @@ public class PrismInterfaceClient {
 
 
     public void setConnectionProperties( PolyphenyConnectionProperties connectionProperties, int timeout ) throws PrismInterfaceServiceException {
+        RequestDeadline deadline = new RequestDeadline( timeout );
+        reserveConnectionPropertiesUpdate( deadline, () ->
+                rpc.updateConnectionProperties( connectionPropertiesUpdate( buildConnectionProperties( connectionProperties ) ), deadline ) );
+    }
+
+
+    public void setNamespaceName( String namespace, int timeout, Runnable publishNamespace ) throws PrismInterfaceServiceException {
+        ConnectionProperties.Builder changes = ConnectionProperties.newBuilder();
+        Optional.ofNullable( namespace ).ifPresent( changes::setNamespaceName );
+        RequestDeadline deadline = new RequestDeadline( timeout );
+        reserveConnectionPropertiesUpdate( deadline, () -> {
+            rpc.updateConnectionProperties( connectionPropertiesUpdate( changes.build() ), deadline );
+            publishNamespace.run();
+        } );
+    }
+
+
+    private void reserveConnectionPropertiesUpdate( RequestDeadline deadline, Transport.WriteOperation<PrismInterfaceServiceException> operation )
+            throws PrismInterfaceServiceException {
         try {
-            if ( !withWriteReservation( timeout, () -> updateConnectionProperties( buildConnectionProperties( connectionProperties ), timeout ) ) ) {
-                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( timeout ) );
+            if ( !withWriteReservation( (int) deadline.remainingMillis(), operation ) ) {
+                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( deadline.timeoutMillis ) );
             }
         } catch ( InterruptedException e ) {
             throw interruptedBeforeWrite( e );
@@ -522,15 +562,14 @@ public class PrismInterfaceClient {
 
 
     public void setAutoCommit( boolean autoCommit, int timeout ) throws PrismInterfaceServiceException {
-        updateConnectionProperties( ConnectionProperties.newBuilder().setIsAutoCommit( autoCommit ).build(), timeout );
+        rpc.updateConnectionProperties( connectionPropertiesUpdate( ConnectionProperties.newBuilder().setIsAutoCommit( autoCommit ).build() ), timeout );
     }
 
 
-    private void updateConnectionProperties( ConnectionProperties changes, int timeout ) throws PrismInterfaceServiceException {
-        ConnectionPropertiesUpdateRequest request = ConnectionPropertiesUpdateRequest.newBuilder()
+    private static ConnectionPropertiesUpdateRequest connectionPropertiesUpdate( ConnectionProperties changes ) {
+        return ConnectionPropertiesUpdateRequest.newBuilder()
                 .setConnectionProperties( changes )
                 .build();
-        rpc.updateConnectionProperties( request, timeout );
     }
 
 

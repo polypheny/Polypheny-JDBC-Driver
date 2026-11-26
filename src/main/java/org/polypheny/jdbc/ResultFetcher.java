@@ -28,12 +28,10 @@ import org.polypheny.prism.Row;
 
 public class ResultFetcher implements Runnable {
 
-    private PrismInterfaceClient client;
-    private int statementId;
+    private final PageRequest pageRequest;
     @Setter
     @Getter
     private PolyphenyResultSetProperties properties;
-    private int fetchTimeout;
     private long totalFetched;
     @Setter
     @Getter
@@ -43,9 +41,12 @@ public class ResultFetcher implements Runnable {
 
 
     public ResultFetcher( PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, long totalFetched, int fetchTimeout ) {
-        this.fetchTimeout = fetchTimeout;
-        this.client = client;
-        this.statementId = statementId;
+        this( fetchSize -> client.fetchResult( statementId, fetchSize, fetchTimeout ), properties, totalFetched );
+    }
+
+
+    ResultFetcher( PageRequest pageRequest, PolyphenyResultSetProperties properties, long totalFetched ) {
+        this.pageRequest = pageRequest;
         this.properties = properties;
         this.totalFetched = totalFetched;
         this.isLast = false;
@@ -71,7 +72,7 @@ public class ResultFetcher implements Runnable {
 
     private void fetch() throws PrismInterfaceServiceException {
         long fetchEnd = totalFetched + properties.getStatementFetchSize();
-        Frame nextFrame = client.fetchResult( statementId, properties.getFetchSize(), fetchTimeout );
+        Frame nextFrame = pageRequest.fetch( properties.getFetchSize() );
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
             throw new PrismInterfaceServiceException( "Illegal result type." );
         }
@@ -86,6 +87,14 @@ public class ResultFetcher implements Runnable {
         fetchedValues = TypedValueUtils.buildRows( rows );
         totalFetched = totalFetched + rows.size();
         isLast = nextFrame.getIsLast();
+    }
+
+
+    @FunctionalInterface
+    interface PageRequest {
+
+        Frame fetch( int fetchSize ) throws PrismInterfaceServiceException;
+
     }
 
 

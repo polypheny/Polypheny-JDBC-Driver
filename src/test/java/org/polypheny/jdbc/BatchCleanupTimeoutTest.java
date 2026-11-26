@@ -67,11 +67,13 @@ import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.CallbackQueue;
 import org.polypheny.prism.BatchGeneratedKeys;
+import org.polypheny.prism.ClientInfoPropertiesResponse;
 import org.polypheny.prism.CloseResultResponse;
 import org.polypheny.prism.CloseStatementResponse;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.CommitResponse;
 import org.polypheny.prism.ConnectionPropertiesUpdateResponse;
+import org.polypheny.prism.ConnectionResponse;
 import org.polypheny.prism.DisconnectResponse;
 import org.polypheny.prism.ErrorDetails;
 import org.polypheny.prism.ErrorResponse;
@@ -85,6 +87,7 @@ import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Request.TypeCase;
 import org.polypheny.prism.Response;
+import org.polypheny.prism.RollbackResponse;
 import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResponse;
@@ -340,22 +343,9 @@ class BatchCleanupTimeoutTest {
         CountDownLatch buildingResult = new CountDownLatch( 1 );
         CountDownLatch resumeResult = new CountDownLatch( 1 );
         AtomicReference<Thread> queryThread = new AtomicReference<>();
-        AtomicInteger timeoutReads = new AtomicInteger();
         PrismInterfaceClient client = new PrismInterfaceClient( rpc );
-        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
-        PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
-        try ( Connection connection = new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) ) {
-            @Override
-            public int getNetworkTimeout() throws SQLException {
-                int timeout = super.getNetworkTimeout();
-                if ( Thread.currentThread() == queryThread.get() && timeoutReads.incrementAndGet() == 2 ) {
-                    // The query received its result. Pause after its last check for an open connection.
-                    waitToContinue( buildingResult, resumeResult );
-                }
-                return timeout;
-            }
-        };
-                Statement query = prepared ? connection.prepareStatement( SELECT ) : connection.createStatement();
+        try ( Connection connection = connection( client );
+                Statement query = pauseResultConstruction( connection, prepared, queryThread, buildingResult, resumeResult );
                 Statement timed = connection.createStatement() ) {
             Future<?> result = executor.submit( () -> {
                 queryThread.set( Thread.currentThread() );
@@ -447,27 +437,17 @@ class BatchCleanupTimeoutTest {
     void commitClosesAnEarlierResultEvenWhenItsCallerPublishesLate(
             boolean prepared, int networkTimeout, boolean commitFails, boolean closeOnCompletion ) throws Exception {
         CleanupTransport transport = new CleanupTransport( commitFails ? TypeCase.COMMIT_REQUEST : TypeCase.TYPE_NOT_SET, Intercept.SERVER_ERROR );
+        transport.interceptedCleanup = true;
         RpcService rpc = new RpcService( transport );
         ExecutorService executor = Executors.newSingleThreadExecutor();
         CountDownLatch buildingResult = new CountDownLatch( 1 );
         CountDownLatch resumeResult = new CountDownLatch( 1 );
         AtomicReference<Thread> queryThread = new AtomicReference<>();
-        AtomicInteger timeoutReads = new AtomicInteger();
         PrismInterfaceClient client = new PrismInterfaceClient( rpc );
-        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
-        PolyphenyConnectionProperties settings = new PolyphenyConnectionProperties( target, client );
-        try ( Connection connection = new PolyConnection( settings, new PolyphenyDatabaseMetadata( client, target ) ) {
-            @Override
-            public int getNetworkTimeout() throws SQLException {
-                int timeout = super.getNetworkTimeout();
-                if ( Thread.currentThread() == queryThread.get() && timeoutReads.incrementAndGet() == 2 ) {
-                    waitToContinue( buildingResult, resumeResult );
-                }
-                return timeout;
-            }
-        };
-                Statement query = prepared ? connection.prepareStatement( SELECT ) : connection.createStatement() ) {
+        try ( Connection connection = connection( client );
+                Statement query = pauseResultConstruction( connection, prepared, queryThread, buildingResult, resumeResult ) ) {
             connection.setAutoCommit( false );
+            transport.interceptedCleanup = false;
             connection.setNetworkTimeout( Runnable::run, networkTimeout );
             if ( closeOnCompletion ) {
                 query.closeOnCompletion();
@@ -513,14 +493,16 @@ class BatchCleanupTimeoutTest {
     @Test
     void commitWithoutReplyDoesNotAdvanceTheCommitGeneration() throws Exception {
         CleanupTransport transport = new CleanupTransport( TypeCase.COMMIT_REQUEST, Intercept.TIMEOUT );
+        transport.interceptedCleanup = true;
         RpcService rpc = new RpcService( transport );
         try ( Connection connection = connection( new PrismInterfaceClient( rpc ) ) ) {
             connection.setAutoCommit( false );
+            transport.interceptedCleanup = false;
             connection.setNetworkTimeout( Runnable::run, 100 );
             SQLException failure = assertThrows( SQLException.class, connection::commit );
             assertInstanceOf( TimeoutException.class, failure.getCause() );
             assertTrue( connection.isClosed() );
-            assertEquals( 0, rpc.getCommitGeneration() );
+            assertEquals( 1, rpc.getTransactionGeneration() );
         } finally {
             rpc.close();
         }
@@ -621,6 +603,75 @@ class BatchCleanupTimeoutTest {
     }
 
 
+    @ParameterizedTest
+    @CsvSource({ "false, false", "true, false", "true, true" })
+    void transactionEndClosesPreviouslyPublishedResults( boolean implicit, boolean fails ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
+        RpcService rpc = new RpcService( transport );
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
+        PolyphenyConnectionProperties settings = new PolyphenyConnectionProperties( target, client );
+        client.register( settings, 1000 );
+        try ( Connection connection = new PolyConnection( settings, new PolyphenyDatabaseMetadata( client, target ) );
+                Statement query = connection.createStatement(); Statement insert = connection.createStatement();
+                Statement ddl = connection.createStatement() ) {
+            assertTrue( transport.boundaryEventsRequested );
+            connection.setAutoCommit( false );
+            query.closeOnCompletion();
+            ResultSet rows = query.executeQuery( SELECT );
+            assertEquals( 1, insert.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+            ResultSet keys = insert.getGeneratedKeys();
+
+            if ( implicit ) {
+                transport.sendImplicitBoundary = true;
+                transport.implicitBoundaryFails = fails;
+                if ( fails ) {
+                    SQLException error = assertThrows( SQLException.class, () -> ddl.executeUpdate( "CREATE TABLE probe (x INTEGER)" ) );
+                    assertEquals( "42P16", error.getSQLState() );
+                } else {
+                    assertEquals( 1, ddl.executeUpdate( "CREATE TABLE probe (x INTEGER PRIMARY KEY)" ) );
+                }
+            } else {
+                connection.rollback();
+            }
+
+            assertTrue( rows.isClosed() );
+            assertTrue( query.isClosed() );
+            assertTrue( keys.isClosed() );
+            assertThrows( SQLException.class, rows::next );
+            assertThrows( SQLException.class, keys::next );
+            assertFalse( insert.isClosed() );
+            assertFalse( connection.isClosed() );
+            try ( ResultSet empty = insert.getGeneratedKeys() ) {
+                assertFalse( empty.next() );
+            }
+            assertEquals( 1, insert.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+            try ( ResultSet later = insert.getGeneratedKeys() ) {
+                assertTrue( later.next() );
+            }
+        } finally {
+            rpc.close();
+        }
+    }
+
+
+    private static Statement pauseResultConstruction( Connection connection, boolean prepared, AtomicReference<Thread> queryThread,
+            CountDownLatch buildingResult, CountDownLatch resumeResult ) throws SQLException {
+        PolyphenyStatement original = (PolyphenyStatement) (prepared ? connection.prepareStatement( SELECT ) : connection.createStatement());
+        PolyphenyStatement statement = spy( original );
+        PolyConnection owner = original.getPolyConnection();
+        owner.endTracking( original );
+        owner.startTracking( statement );
+        doAnswer( invocation -> {
+            if ( Thread.currentThread() == queryThread.get() ) {
+                waitToContinue( buildingResult, resumeResult );
+            }
+            return owner;
+        } ).when( statement ).getPolyConnection();
+        return statement;
+    }
+
+
     private static Connection connection( PrismInterfaceClient client ) throws SQLException {
         ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
         PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
@@ -657,6 +708,9 @@ class BatchCleanupTimeoutTest {
         private final boolean failStatementClose;
         private boolean interceptedCleanup;
         private boolean returnGeneratedKeys;
+        private boolean boundaryEventsRequested;
+        private boolean sendImplicitBoundary;
+        private boolean implicitBoundaryFails;
 
 
         private CleanupTransport( TypeCase cleanupType, Intercept intercept ) {
@@ -693,6 +747,14 @@ class BatchCleanupTimeoutTest {
                 return;
             }
             switch ( type ) {
+                case CONNECTION_REQUEST:
+                    response.setConnectionResponse( ConnectionResponse.newBuilder().setIsCompatible( true )
+                            .setMajorApiVersion( 2 ).setMinorApiVersion( 5 ).setSupportsGeneratedKeys( true ) );
+                    break;
+                case SET_CLIENT_INFO_PROPERTIES_REQUEST:
+                    boundaryEventsRequested = "true".equals( request.getSetClientInfoPropertiesRequest().getPropertiesMap().get( "transactionBoundaryEvents" ) );
+                    response.setSetClientInfoPropertiesResponse( ClientInfoPropertiesResponse.getDefaultInstance() );
+                    break;
                 case CONNECTION_PROPERTIES_UPDATE_REQUEST:
                     response.setConnectionPropertiesUpdateResponse( ConnectionPropertiesUpdateResponse.getDefaultInstance() );
                     break;
@@ -705,8 +767,23 @@ class BatchCleanupTimeoutTest {
                     response.setStatementBatchResponse( batch );
                     break;
                 case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST:
-                    StatementResult result = request.getExecuteUnparameterizedStatementRequest().hasGeneratedKeys() ? insertResult() : queryResult();
-                    response.setStatementResponse( StatementResponse.newBuilder().setStatementId( 41 ).setResult( result ) );
+                    if ( sendImplicitBoundary ) {
+                        sendImplicitBoundary = false;
+                        Response.Builder boundary = Response.newBuilder().setId( request.getId() );
+                        if ( implicitBoundaryFails ) {
+                            boundary.setRollbackResponse( RollbackResponse.getDefaultInstance() );
+                            response.setErrorResponse( ErrorResponse.newBuilder().setMessage( "DDL rolled back" )
+                                    .setDetails( ErrorDetails.newBuilder().setState( "42P16" ) ) );
+                        } else {
+                            boundary.setCommitResponse( CommitResponse.getDefaultInstance() );
+                            response.setStatementResponse( StatementResponse.newBuilder().setStatementId( 41 )
+                                    .setResult( StatementResult.newBuilder().setScalar( 1 ) ) );
+                        }
+                        responses.add( boundary.build().toByteArray() );
+                    } else {
+                        StatementResult result = request.getExecuteUnparameterizedStatementRequest().hasGeneratedKeys() ? insertResult() : queryResult();
+                        response.setStatementResponse( StatementResponse.newBuilder().setStatementId( 41 ).setResult( result ) );
+                    }
                     break;
                 case PREPARE_INDEXED_STATEMENT_REQUEST:
                     response.setPreparedStatementSignature( PreparedStatementSignature.newBuilder().setStatementId( 41 ) );
@@ -727,6 +804,9 @@ class BatchCleanupTimeoutTest {
                     break;
                 case COMMIT_REQUEST:
                     response.setCommitResponse( CommitResponse.getDefaultInstance() );
+                    break;
+                case ROLLBACK_REQUEST:
+                    response.setRollbackResponse( RollbackResponse.getDefaultInstance() );
                     break;
                 case DISCONNECT_REQUEST:
                     response.setDisconnectResponse( DisconnectResponse.getDefaultInstance() );

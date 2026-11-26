@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -93,8 +94,8 @@ public class PolyConnectionTest {
         assertDoesNotThrow( () -> connection.setAutoCommit( true ) );
 
         InOrder requests = inOrder( client, properties );
-        requests.verify( client ).commitTransaction( 5000 );
-        requests.verify( properties ).setAutoCommit( true );
+        requests.verify( client ).commitTransaction( any( RequestDeadline.class ) );
+        requests.verify( properties ).setAutoCommit( eq( true ), anyInt() );
     }
 
 
@@ -105,8 +106,9 @@ public class PolyConnectionTest {
 
         assertDoesNotThrow( () -> connection.setAutoCommit( false ) );
 
-        verify( properties, times( 1 ) ).setAutoCommit( false );
-        verify( properties.getPrismInterfaceClient(), never() ).commitTransaction( 5000 );
+        InOrder requests = inOrder( properties.getPrismInterfaceClient(), properties );
+        requests.verify( properties.getPrismInterfaceClient() ).commitTransaction( any( RequestDeadline.class ) );
+        requests.verify( properties ).setAutoCommit( eq( false ), anyInt() );
     }
 
 
@@ -118,8 +120,8 @@ public class PolyConnectionTest {
 
         connection.setAutoCommit( autoCommit );
 
-        verify( properties, never() ).setAutoCommit( autoCommit );
-        verify( properties.getPrismInterfaceClient(), never() ).commitTransaction( 5000 );
+        verify( properties, never() ).setAutoCommit( eq( autoCommit ), anyInt() );
+        verify( properties.getPrismInterfaceClient(), never() ).commitTransaction( any( RequestDeadline.class ) );
     }
 
 
@@ -129,11 +131,11 @@ public class PolyConnectionTest {
         when( properties.getNetworkTimeout() ).thenReturn( 5000 );
         PrismInterfaceClient client = properties.getPrismInterfaceClient();
         PrismInterfaceServiceException failure = new PrismInterfaceServiceException.ServerError( "Commit failed", "40001", 47 );
-        doThrow( failure ).when( client ).commitTransaction( 5000 );
+        doThrow( failure ).when( client ).commitTransaction( any( RequestDeadline.class ) );
 
         assertSame( failure, assertThrows( SQLException.class, () -> connection.setAutoCommit( true ) ) );
 
-        verify( properties, never() ).setAutoCommit( true );
+        verify( properties, never() ).setAutoCommit( eq( true ), anyInt() );
     }
 
 }

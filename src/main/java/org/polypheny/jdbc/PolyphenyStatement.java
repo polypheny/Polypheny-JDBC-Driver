@@ -60,6 +60,7 @@ public class PolyphenyStatement implements Statement {
     private RelationalFrame generatedKeysFrame;
     private PolyphenyResultSetProperties generatedKeysProperties;
     private PolyphenyResultSet generatedKeysResult;
+    private long generatedKeysGeneration = -1;
     protected PolyphenyStatementProperties properties;
 
     // Value used to represent that no value is set for the update count according to JDBC.
@@ -137,26 +138,27 @@ public class PolyphenyStatement implements Statement {
         generatedKeysResult = null;
         generatedKeysFrame = null;
         generatedKeysProperties = null;
+        generatedKeysGeneration = -1;
     }
 
 
-    final void closeResultsAtCommit() throws SQLException {
+    final void closeResultsFromEarlierTransactions( long generation ) throws SQLException {
         boolean closeStatement;
         synchronized ( resultsLock ) {
             boolean closedDependentResult = false;
-            if ( currentResult != null && properties.getResultSetHoldability() == ResultSet.CLOSE_CURSORS_AT_COMMIT ) {
-                // The server commit has already closed this result.
+            if ( currentResult instanceof PolyphenyResultSet && ((PolyphenyResultSet) currentResult).closedByTransaction( generation ) ) {
+                // Prism has already closed the server cursor.
                 clearCurrentResult();
                 closedDependentResult = true;
             }
-            if ( generatedKeysProperties != null && generatedKeysProperties.getResultSetHoldability() == ResultSet.CLOSE_CURSORS_AT_COMMIT ) {
+            if ( generatedKeysProperties != null && closedByTransaction( generatedKeysProperties.getResultSetHoldability(), generatedKeysGeneration, generation ) ) {
                 closedDependentResult |= generatedKeysFrame != null;
                 clearGeneratedKeys();
             }
             closeStatement = closedDependentResult && canCloseAfterDependentResults();
         }
         if ( closeStatement ) {
-            closeAfterCommit();
+            closeAfterTransaction();
         }
     }
 
@@ -166,11 +168,11 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    private void closeAfterCommit() {
+    private void closeAfterTransaction() {
         try {
             close();
         } catch ( SQLException e ) {
-            log.warn( "Could not close completed statement after committing the transaction", e );
+            log.warn( "Could not close a completed statement after the transaction finished", e );
         }
     }
 
@@ -233,21 +235,21 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    protected void captureGeneratedKeys( StatementResult result, long commitGeneration ) throws SQLException {
+    protected void captureGeneratedKeys( StatementResult result, long transactionGeneration ) throws SQLException {
         if ( result.hasGeneratedKeys() ) {
-            storeGeneratedKeys( GeneratedKeys.requireComplete( result.getGeneratedKeys() ), commitGeneration, !result.hasFrame() );
+            storeGeneratedKeys( GeneratedKeys.requireComplete( result.getGeneratedKeys() ), transactionGeneration, !result.hasFrame() );
         }
     }
 
 
-    protected void captureGeneratedKeys( StatementBatchResponse result, long commitGeneration ) throws SQLException {
+    protected void captureGeneratedKeys( StatementBatchResponse result, long transactionGeneration ) throws SQLException {
         if ( result.getGeneratedKeysCount() > 0 ) {
-            storeGeneratedKeys( GeneratedKeys.combine( result.getGeneratedKeysList() ).getRelationalFrame(), commitGeneration, true );
+            storeGeneratedKeys( GeneratedKeys.combine( result.getGeneratedKeysList() ).getRelationalFrame(), transactionGeneration, true );
         }
     }
 
 
-    private void storeGeneratedKeys( RelationalFrame keys, long commitGeneration, boolean keysOnly ) throws SQLException {
+    private void storeGeneratedKeys( RelationalFrame keys, long transactionGeneration, boolean keysOnly ) throws SQLException {
         PolyphenyResultSetProperties keyProperties = properties.toResultSetProperties();
         long maxRows = keyProperties.getLargeMaxRows();
         if ( maxRows > 0 && maxRows < keys.getRowsCount() ) {
@@ -256,27 +258,28 @@ public class PolyphenyStatement implements Statement {
         boolean closeStatement = false;
         synchronized ( resultsLock ) {
             if ( !isClosed ) {
-                if ( closedByCommit( keyProperties.getResultSetHoldability(), commitGeneration ) ) {
+                if ( closedByTransaction( keyProperties.getResultSetHoldability(), transactionGeneration, getClient().getTransactionGeneration() ) ) {
                     closeStatement = keysOnly && canCloseAfterDependentResults();
                 } else {
                     generatedKeysFrame = keys;
                     generatedKeysProperties = keyProperties;
+                    generatedKeysGeneration = transactionGeneration;
                 }
             }
         }
         if ( closeStatement ) {
-            closeAfterCommit();
+            closeAfterTransaction();
         }
     }
 
 
-    final BatchUpdateException batchFailure( PrismInterfaceServiceException.ServerError failure, long commitGeneration ) {
+    final BatchUpdateException batchFailure( PrismInterfaceServiceException.ServerError failure, long transactionGeneration ) {
         StatementBatchResponse completed = failure.completedBatch();
         long[] counts = completed == null ? null : completed.getScalarsList().stream().mapToLong( Long::longValue ).toArray();
         BatchUpdateException batch = new BatchUpdateException( failure.getMessage(), failure.getSQLState(), failure.getErrorCode(), counts, failure );
         if ( completed != null ) {
             try {
-                captureGeneratedKeys( completed, commitGeneration );
+                captureGeneratedKeys( completed, transactionGeneration );
             } catch ( SQLException malformedKeys ) {
                 batch.addSuppressed( malformedKeys );
             }
@@ -350,21 +353,22 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    private boolean closedByCommit( int holdability, long generation ) {
-        return holdability == ResultSet.CLOSE_CURSORS_AT_COMMIT && generation >= 0 && generation != getClient().getCommitGeneration();
+    static boolean closedByTransaction( int holdability, long resultGeneration, long currentGeneration ) {
+        return holdability == ResultSet.CLOSE_CURSORS_AT_COMMIT && resultGeneration >= 0 && resultGeneration < currentGeneration;
     }
 
 
-    protected final ResultSet publishResult( Frame frame, long commitGeneration ) throws SQLException {
+    protected final ResultSet publishResult( Frame frame, long transactionGeneration ) throws SQLException {
         throwIfNotRelational( frame );
         PolyphenyResultSet result = new PolyphenyResultSet( this, frame, properties.toResultSetProperties() );
+        result.setTransactionGeneration( transactionGeneration );
         boolean closeStatement = false;
         synchronized ( resultsLock ) {
             if ( isClosed ) {
                 result.markClosed();
                 throw closedStatement();
             }
-            if ( closedByCommit( properties.getResultSetHoldability(), commitGeneration ) ) {
+            if ( result.closedByTransaction( getClient().getTransactionGeneration() ) ) {
                 result.markClosed();
                 closeStatement = canCloseAfterDependentResults();
             } else {
@@ -373,7 +377,7 @@ public class PolyphenyStatement implements Statement {
         }
         checkPublishedResult( result );
         if ( closeStatement ) {
-            closeAfterCommit();
+            closeAfterTransaction();
         }
         return result;
     }
@@ -404,7 +408,7 @@ public class PolyphenyStatement implements Statement {
         if ( !result.hasFrame() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
         }
-        return publishResult( result.getFrame(), execution.commitGeneration );
+        return publishResult( result.getFrame(), execution.transactionGeneration );
     }
 
 
@@ -426,7 +430,7 @@ public class PolyphenyStatement implements Statement {
         if ( result.hasFrame() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
         }
-        captureGeneratedKeys( result, execution.commitGeneration );
+        captureGeneratedKeys( result, execution.transactionGeneration );
         currentUpdateCount = result.getScalar();
         return currentUpdateCount;
     }
@@ -457,7 +461,7 @@ public class PolyphenyStatement implements Statement {
                     }
                     if ( response.hasResult() ) {
                         awaitCompletion( callback );
-                        deadline.recordCommitGeneration( callback );
+                        deadline.recordTransactionGeneration( callback );
                         return response.getResult();
                     }
                 }
@@ -577,18 +581,19 @@ public class PolyphenyStatement implements Statement {
     private boolean executeWithKeys( String statement, GeneratedKeysRequest keys ) throws SQLException {
         ExecutionResult<StatementResult> execution = executeUnparameterized( statement, keys );
         StatementResult result = execution.value;
-        captureGeneratedKeys( result, execution.commitGeneration );
+        captureGeneratedKeys( result, execution.transactionGeneration );
         if ( !result.hasFrame() ) {
             currentUpdateCount = result.getScalar();
             return false;
         }
-        publishResult( result.getFrame(), execution.commitGeneration );
+        publishResult( result.getFrame(), execution.transactionGeneration );
         return true;
     }
 
 
     @Override
     public ResultSet getResultSet() throws SQLException {
+        polyConnection.refreshTransactionResults();
         throwIfClosed();
         return currentResult;
     }
@@ -708,7 +713,7 @@ public class PolyphenyStatement implements Statement {
                 }
                 return getClient().executeUnparameterizedStatementBatch( buildBatchRequest(), deadline, id -> statementId = id );
             } );
-            captureGeneratedKeys( execution.value, execution.commitGeneration );
+            captureGeneratedKeys( execution.value, execution.transactionGeneration );
             return execution.value.getScalarsList();
         } finally {
             clearBatch();
@@ -721,7 +726,7 @@ public class PolyphenyStatement implements Statement {
             try {
                 return request.execute( deadline );
             } catch ( PrismInterfaceServiceException.ServerError failure ) {
-                throw batchFailure( failure, deadline.getCommitGeneration() );
+                throw batchFailure( failure, deadline.getTransactionGeneration() );
             }
         } );
     }
@@ -738,9 +743,11 @@ public class PolyphenyStatement implements Statement {
         try {
             deadline.requestDeadline.remainingMillis();
             T value = request.execute( deadline.requestDeadline );
-            return new ExecutionResult<>( value, deadline.requestDeadline.getCommitGeneration() );
+            return new ExecutionResult<>( value, deadline.requestDeadline.getTransactionGeneration() );
         } catch ( PrismInterfaceServiceException failure ) {
             throw polyConnection.handleIncompleteRequest( failure, deadline.networkDeadline );
+        } finally {
+            polyConnection.refreshTransactionResults();
         }
     }
 
@@ -764,12 +771,12 @@ public class PolyphenyStatement implements Statement {
     static final class ExecutionResult<T> {
 
         final T value;
-        final long commitGeneration;
+        final long transactionGeneration;
 
 
-        private ExecutionResult( T value, long commitGeneration ) {
+        private ExecutionResult( T value, long transactionGeneration ) {
             this.value = value;
-            this.commitGeneration = commitGeneration;
+            this.transactionGeneration = transactionGeneration;
         }
 
     }
@@ -834,6 +841,7 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public ResultSet getGeneratedKeys() throws SQLException {
+        polyConnection.refreshTransactionResults();
         throwIfClosed();
         GeneratedKeys.requireSupported( getClient() );
         PolyphenyResultSet result;
@@ -845,8 +853,10 @@ public class PolyphenyStatement implements Statement {
                 RelationalFrame keys = generatedKeysFrame == null ? RelationalFrame.getDefaultInstance() : generatedKeysFrame;
                 if ( generatedKeysProperties == null ) {
                     generatedKeysProperties = properties.toResultSetProperties();
+                    generatedKeysGeneration = getClient().getTransactionGeneration();
                 }
                 generatedKeysResult = new PolyphenyResultSet( this, keys, generatedKeysProperties );
+                generatedKeysResult.setTransactionGeneration( generatedKeysGeneration );
             }
             result = generatedKeysResult;
         }

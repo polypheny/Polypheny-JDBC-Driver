@@ -22,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -162,13 +165,19 @@ public class PolyConnectionPropertiesTest {
 
     @Test
     public void setNamespaceName_Valid_Sync() throws SQLException {
-        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, PRISM_INTERFACE_CLIENT );
+        PrismInterfaceClient client = mock( PrismInterfaceClient.class );
+        PolyphenyConnectionProperties connectionProperties = new PolyphenyConnectionProperties( connectionString, client );
         String namespaceName = "testNamespace";
+        doAnswer( invocation -> {
+            Runnable publish = invocation.getArgument( 2 );
+            publish.run();
+            return null;
+        } ).when( client ).setNamespaceName( eq( namespaceName ), eq( connectionProperties.getNetworkTimeout() ), any() );
 
         connectionProperties.setNamespaceName( namespaceName );
 
         assertEquals( namespaceName, connectionProperties.getNamespaceName() );
-        verify( PRISM_INTERFACE_CLIENT, times( 1 ) ).setConnectionProperties( connectionProperties, connectionProperties.getNetworkTimeout() );
+        verify( client ).setNamespaceName( eq( namespaceName ), eq( connectionProperties.getNetworkTimeout() ), any() );
     }
 
 

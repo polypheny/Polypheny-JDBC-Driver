@@ -42,17 +42,18 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.properties.PolyphenyStatementProperties;
 import org.polypheny.jdbc.properties.PropertyUtils;
-import org.polypheny.jdbc.transport.Transport.WriteOperation;
 import org.polypheny.jdbc.types.PolyArray;
 import org.polypheny.jdbc.types.PolyBlob;
 import org.polypheny.jdbc.types.PolyClob;
 import org.polypheny.jdbc.types.PolyStruct;
+import org.polypheny.prism.Frame;
 import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.PreparedStatementSignature;
 
@@ -65,6 +66,7 @@ public class PolyConnection implements Connection {
     private volatile boolean isClosed;
 
     private final Set<Statement> openStatements;
+    private final AtomicLong appliedTransactionGeneration = new AtomicLong();
 
     private Map<String, Class<?>> typeMap;
 
@@ -166,34 +168,44 @@ public class PolyConnection implements Connection {
         if ( properties.isAutoCommit() == autoCommit ) {
             return;
         }
-        withWriteReservation( () -> {
+        withWriteReservation( deadline -> {
             if ( properties.isAutoCommit() == autoCommit ) {
                 return;
             }
-            if ( autoCommit ) {
-                // Prism changes only the mode flag. Keep writes from crossing the commit and the mode change.
-                commit();
+            try {
+                // Prism changes only the mode flag. Finish the prior transaction in either direction.
+                getPrismInterfaceClient().commitTransaction( deadline );
+                properties.setAutoCommit( autoCommit, (int) deadline.remainingMillis() );
+            } finally {
+                refreshTransactionResults();
             }
-            properties.setAutoCommit( autoCommit );
         } );
     }
 
 
-    private void withWriteReservation( WriteOperation<SQLException> operation ) throws SQLException {
+    private void withWriteReservation( DeadlineWriteOperation operation ) throws SQLException {
         throwIfClosed();
-        int timeout = getTimeout();
+        RequestDeadline deadline = new RequestDeadline( getTimeout() );
         try {
-            if ( !getPrismInterfaceClient().withWriteReservation( timeout, () -> {
+            if ( !getPrismInterfaceClient().withWriteReservation( (int) deadline.remainingMillis(), () -> {
                 throwIfClosed();
-                operation.run();
+                operation.run( deadline );
             } ) ) {
-                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( timeout ) );
+                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( deadline.timeoutMillis ) );
             }
         } catch ( InterruptedException e ) {
             throw PrismInterfaceClient.interruptedBeforeWrite( e );
         } catch ( PrismInterfaceServiceException failure ) {
             throw handleIncompleteRequest( failure, true );
         }
+    }
+
+
+    @FunctionalInterface
+    private interface DeadlineWriteOperation {
+
+        void run( RequestDeadline deadline ) throws SQLException;
+
     }
 
 
@@ -207,30 +219,44 @@ public class PolyConnection implements Connection {
 
     @Override
     public void commit() throws SQLException {
-        withWriteReservation( this::commitAndCloseResults );
+        withWriteReservation( deadline -> {
+            throwIfAutoCommit();
+            try {
+                getPrismInterfaceClient().commitTransaction( deadline );
+            } finally {
+                refreshTransactionResults();
+            }
+        } );
     }
 
 
-    private void commitAndCloseResults() throws SQLException {
-        throwIfAutoCommit();
-        getPrismInterfaceClient().commitTransaction( getNetworkTimeout() );
+    void refreshTransactionResults() {
+        long generation = getPrismInterfaceClient().getTransactionGeneration();
+        if ( generation <= appliedTransactionGeneration.get() ) {
+            return;
+        }
         for ( Statement statement : snapshotOpenStatements() ) {
             if ( statement instanceof PolyphenyStatement ) {
                 try {
-                    ((PolyphenyStatement) statement).closeResultsAtCommit();
+                    ((PolyphenyStatement) statement).closeResultsFromEarlierTransactions( generation );
                 } catch ( SQLException e ) {
-                    log.warn( "Could not close completed statement after committing the transaction", e );
+                    log.warn( "Could not close a completed statement after the transaction finished", e );
                 }
             }
         }
+        appliedTransactionGeneration.accumulateAndGet( generation, Math::max );
     }
 
 
     @Override
     public void rollback() throws SQLException {
-        withWriteReservation( () -> {
+        withWriteReservation( deadline -> {
             throwIfAutoCommit();
-            getPrismInterfaceClient().rollbackTransaction( getNetworkTimeout() );
+            try {
+                getPrismInterfaceClient().rollbackTransaction( deadline );
+            } finally {
+                refreshTransactionResults();
+            }
         } );
     }
 
@@ -291,6 +317,19 @@ public class PolyConnection implements Connection {
             return new SQLTimeoutException( failure.getMessage(), cause );
         }
         return failure;
+    }
+
+
+    Frame fetchPage( int statementId, int fetchSize ) throws PrismInterfaceServiceException {
+        if ( isClosed() ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, "Illegal operation on closed connection." );
+        }
+        try {
+            return getPrismInterfaceClient().fetchResult( statementId, fetchSize, getTimeout() );
+        } catch ( PrismInterfaceServiceException failure ) {
+            SQLException handled = handleIncompleteRequest( failure, true );
+            throw handled instanceof PrismInterfaceServiceException ? (PrismInterfaceServiceException) handled : failure;
+        }
     }
 
 
@@ -630,7 +669,11 @@ public class PolyConnection implements Connection {
     @Override
     public void setSchema( String schema ) throws SQLException {
         throwIfClosed();
-        properties.setNamespaceName( schema );
+        try {
+            properties.setNamespaceName( schema );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
     }
 
 
@@ -653,7 +696,11 @@ public class PolyConnection implements Connection {
         if ( milliseconds < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
         }
-        properties.setNetworkTimeout( milliseconds );
+        try {
+            properties.setNetworkTimeout( milliseconds );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw handleIncompleteRequest( failure, true );
+        }
     }
 
 

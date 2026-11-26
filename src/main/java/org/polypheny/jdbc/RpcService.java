@@ -19,7 +19,6 @@ package org.polypheny.jdbc;
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -101,8 +100,9 @@ public class RpcService {
     private static final ScheduledThreadPoolExecutor WRITE_DEADLINES = createWriteDeadlineExecutor();
 
     private final AtomicLong idCounter = new AtomicLong( 1 );
-    private final AtomicLong commitGeneration = new AtomicLong();
-    private final Set<Long> pendingCommits = ConcurrentHashMap.newKeySet();
+    private final AtomicLong transactionGeneration = new AtomicLong();
+    private final Map<Long, Response.TypeCase> pendingTransactions = new ConcurrentHashMap<>();
+    private volatile boolean transactionBoundaryEvents;
     private final AtomicBoolean transportClosed = new AtomicBoolean();
     private final Transport con;
     private final Thread service;
@@ -252,12 +252,21 @@ public class RpcService {
                 if ( resp.getId() == 0 ) {
                     throw new ProtocolException( "Invalid message id" );
                 }
+                long id = resp.getId();
+                CompletableFuture<Response> c = callbacks.get( id );
+                CallbackQueue<?> cq = callbackQueues.get( id );
+                // Prism 2.5+ peers may report an implicit transaction end before the normal reply.
+                if ( transactionBoundaryEvents && !resp.getLast() && (resp.hasCommitResponse() || resp.hasRollbackResponse())
+                        && (c != null || cq != null) ) {
+                    transactionGeneration.incrementAndGet();
+                    continue;
+                }
                 // Stamp replies in wire order, before an application thread can be delayed consuming them.
-                long generation = resp.getLast() && resp.hasCommitResponse() && pendingCommits.remove( resp.getId() )
-                        ? commitGeneration.incrementAndGet() : commitGeneration.get();
-                CompletableFuture<Response> c = callbacks.get( resp.getId() );
+                if ( resp.getLast() && pendingTransactions.remove( id, resp.getTypeCase() ) ) {
+                    transactionGeneration.incrementAndGet();
+                }
+                long generation = transactionGeneration.get();
                 if ( c == null ) {
-                    CallbackQueue<?> cq = callbackQueues.get( resp.getId() );
                     if ( cq != null ) {
                         if ( resp.hasErrorResponse() ) {
                             callbackQueues.remove( resp.getId() );
@@ -350,7 +359,7 @@ public class RpcService {
             callbackQueues.put( req.getId(), callback );
             sendMessageBeforeDeadline( req.build(), callback );
             Response response = callback.takeNext();
-            deadline.recordCommitGeneration( callback );
+            deadline.recordTransactionGeneration( callback );
             return response;
         } catch ( IOException e ) {
             throw connectionFailure( e );
@@ -395,6 +404,13 @@ public class RpcService {
         Request.Builder req = newMessage();
         req.setConnectionPropertiesUpdateRequest( msg );
         return completeSynchronously( req, timeout ).getConnectionPropertiesUpdateResponse();
+    }
+
+
+    ConnectionPropertiesUpdateResponse updateConnectionProperties( ConnectionPropertiesUpdateRequest msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        Request.Builder req = newMessage();
+        req.setConnectionPropertiesUpdateRequest( msg );
+        return completeBeforeDeadline( req, deadline ).getConnectionPropertiesUpdateResponse();
     }
 
 
@@ -519,27 +535,43 @@ public class RpcService {
     }
 
 
-    long getCommitGeneration() {
-        return commitGeneration.get();
+    long getTransactionGeneration() {
+        return transactionGeneration.get();
+    }
+
+
+    void enableTransactionBoundaryEvents() {
+        transactionBoundaryEvents = true;
     }
 
 
     CommitResponse commit( CommitRequest msg, int timeout ) throws PrismInterfaceServiceException {
-        Request.Builder req = newMessage();
-        req.setCommitRequest( msg );
-        pendingCommits.add( req.getId() );
-        try {
-            return completeSynchronously( req, timeout ).getCommitResponse();
-        } finally {
-            pendingCommits.remove( req.getId() );
-        }
+        return commit( msg, new RequestDeadline( timeout ) );
+    }
+
+
+    CommitResponse commit( CommitRequest msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        return completeTransaction( newMessage().setCommitRequest( msg ), deadline, Response.TypeCase.COMMIT_RESPONSE ).getCommitResponse();
     }
 
 
     RollbackResponse rollback( RollbackRequest msg, int timeout ) throws PrismInterfaceServiceException {
-        Request.Builder req = newMessage();
-        req.setRollbackRequest( msg );
-        return completeSynchronously( req, timeout ).getRollbackResponse();
+        return rollback( msg, new RequestDeadline( timeout ) );
+    }
+
+
+    RollbackResponse rollback( RollbackRequest msg, RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        return completeTransaction( newMessage().setRollbackRequest( msg ), deadline, Response.TypeCase.ROLLBACK_RESPONSE ).getRollbackResponse();
+    }
+
+
+    private Response completeTransaction( Request.Builder request, RequestDeadline deadline, Response.TypeCase responseType ) throws PrismInterfaceServiceException {
+        pendingTransactions.put( request.getId(), responseType );
+        try {
+            return deadline.timeoutMillis == 0 ? completeSynchronously( request, 0 ) : completeBeforeDeadline( request, deadline );
+        } finally {
+            pendingTransactions.remove( request.getId() );
+        }
     }
 
 
@@ -684,7 +716,7 @@ public class RpcService {
         } catch ( PrismInterfaceServiceException.ServerError error ) {
             throw completed == null ? error : error.withCompletedBatch( completed );
         } finally {
-            deadline.recordCommitGeneration( callback );
+            deadline.recordTransactionGeneration( callback );
             callbackQueues.remove( req.getId() );
         }
     }

@@ -166,8 +166,8 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             if ( !result.hasFrame() ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must produce a single ResultSet" );
             }
-            captureGeneratedKeys( result, execution.commitGeneration );
-            return publishResult( result.getFrame(), execution.commitGeneration );
+            captureGeneratedKeys( result, execution.transactionGeneration );
+            return publishResult( result.getFrame(), execution.transactionGeneration );
         } finally {
             clearParameterBatch();
         }
@@ -182,7 +182,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
             if ( result.hasFrame() ) {
                 throw new PrismInterfaceServiceException( PrismInterfaceErrors.RESULT_TYPE_INVALID, "Statement must not produce a ResultSet" );
             }
-            captureGeneratedKeys( result, execution.commitGeneration );
+            captureGeneratedKeys( result, execution.transactionGeneration );
             currentUpdateCount = result.getScalar();
             return currentUpdateCount;
         } finally {
@@ -388,12 +388,12 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
         try {
             ExecutionResult<StatementResult> execution = executePreparedStatement();
             StatementResult result = execution.value;
-            captureGeneratedKeys( result, execution.commitGeneration );
+            captureGeneratedKeys( result, execution.transactionGeneration );
             if ( !result.hasFrame() ) {
                 currentUpdateCount = result.getScalar();
                 return false;
             }
-            publishResult( result.getFrame(), execution.commitGeneration );
+            publishResult( result.getFrame(), execution.transactionGeneration );
             return true;
         } finally {
             clearParameterBatch();
@@ -447,7 +447,7 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
                 return getClient().executeIndexedStatementBatch( statementId, parameterBatch, deadline );
             } );
             StatementBatchResponse status = execution.value;
-            captureGeneratedKeys( status, execution.commitGeneration );
+            captureGeneratedKeys( status, execution.transactionGeneration );
             int batchSize = parameterBatch.size();
             if ( batchSize > 1 && status.getScalarsCount() == 1 && status.getGeneratedKeysCount() == 0 ) {
                 // A grouped execution reports the total without the count for each command.

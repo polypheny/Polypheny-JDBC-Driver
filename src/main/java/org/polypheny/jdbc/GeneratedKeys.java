@@ -155,58 +155,61 @@ final class GeneratedKeys {
     }
 
 
-    static TypedValue valueForIntegralGetter( TypedValue value, int columnType, int getterType ) throws SQLException {
-        switch ( columnType ) {
+    static TypedValue valueForNumericGetter( TypedValue value, int columnType, int getterType ) throws SQLException {
+        TypedValue normalized = normalizeNumericValue( value, columnType );
+        switch ( getterType ) {
             case Types.TINYINT:
             case Types.SMALLINT:
             case Types.INTEGER:
             case Types.BIGINT:
-                TypedValue normalized = normalizeNumericValue( value, columnType );
-                return columnType == getterType ? normalized : normalizeNumericValue( normalized, getterType );
-            default:
-                break;
-        }
-
-        switch ( value.getValueCase() ) {
-            case INTEGER:
-            case LONG:
-                return normalizeNumericValue( normalizeFloatingValue( value, columnType ), getterType );
-            case BIG_DECIMAL:
-                if ( getterType == Types.INTEGER || getterType == Types.BIGINT ) {
-                    // These getters already truncate fractional decimal values toward zero.
-                    try {
-                        BigDecimal integral = exactDecimal( normalizeFloatingValue( value, columnType ) ).setScale( 0, RoundingMode.DOWN );
-                        return normalizeNumericValue( TypedValue.fromBigDecimal( integral ), getterType );
-                    } catch ( ArithmeticException | NumberFormatException e ) {
-                        throw numericRangeFailure( getterType, e );
-                    }
-                }
+                normalized = truncateFraction( normalized, getterType );
                 break;
             default:
                 break;
         }
-        return value;
+        return columnType == getterType ? normalized : normalizeNumericValue( normalized, getterType );
     }
 
 
-    static TypedValue normalizeFloatingValue( TypedValue value, int columnType ) throws SQLException {
-        switch ( columnType ) {
-            case Types.REAL:
-            case Types.FLOAT:
-            case Types.DOUBLE:
-                return normalizeNumericValue( value, columnType );
+    private static TypedValue truncateFraction( TypedValue value, int getterType ) throws SQLException {
+        switch ( value.getValueCase() ) {
+            case FLOAT:
+            case DOUBLE:
+            case BIG_DECIMAL:
+                try {
+                    return TypedValue.fromBigDecimal( exactDecimal( value ).setScale( 0, RoundingMode.DOWN ) );
+                } catch ( ArithmeticException | NumberFormatException e ) {
+                    throw numericRangeFailure( getterType, e );
+                }
             default:
                 return value;
         }
     }
 
 
-    static TypedValue valueForDecimalGetter( TypedValue value, int columnType ) throws SQLException {
-        if ( value.getValueCase() == ValueCase.BIG_DECIMAL ) {
-            // Preserve getBigDecimal support when Prism sends a decimal for a floating column.
-            return normalizeNumericValue( normalizeFloatingValue( value, columnType ), Types.DECIMAL );
+    static boolean booleanValue( TypedValue value, int columnType ) throws SQLException {
+        if ( value.isNull() ) {
+            return false;
         }
-        return value;
+        TypedValue normalized = normalizeNumericValue( value, columnType );
+        switch ( normalized.getValueCase() ) {
+            case BIG_DECIMAL:
+                BigDecimal decimal = normalized.asBigDecimal();
+                if ( decimal.signum() == 0 || decimal.compareTo( BigDecimal.ONE ) == 0 ) {
+                    return decimal.signum() != 0;
+                }
+                break;
+            case FLOAT:
+            case DOUBLE:
+                double floating = normalized.asDouble();
+                if ( floating == 0.0 || floating == 1.0 ) {
+                    return floating == 1.0;
+                }
+                break;
+            default:
+                break;
+        }
+        return normalized.asBoolean();
     }
 
 

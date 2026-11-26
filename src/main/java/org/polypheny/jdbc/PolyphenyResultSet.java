@@ -42,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.jdbc.ResultFetcher.FetchFailure;
+import org.polypheny.jdbc.ResultFetcher.PageRequest;
 import org.polypheny.jdbc.meta.MetaScroller;
 import org.polypheny.jdbc.meta.MetaUtils;
 import org.polypheny.jdbc.meta.PolyphenyColumnMeta;
@@ -67,6 +68,7 @@ public class PolyphenyResultSet implements ResultSet {
     private Class<BidirectionalScroller> bidirectionScrollerClass;
     private TypedValue lastRead;
     private volatile boolean isClosed;
+    private long transactionGeneration = -1;
     private Map<Integer, TypedValue> rowUpdates;
     private boolean isInInsertMode;
 
@@ -83,10 +85,13 @@ public class PolyphenyResultSet implements ResultSet {
         }
         this.statement = statement;
         this.metadata = new PolyphenyResultSetMetadata( MetaUtils.buildColumnMetas( frame.getRelationalFrame().getColumnMetaList() ) );
+        PolyConnection connection = statement.getPolyConnection();
+        int statementId = statement.getStatementId();
+        PageRequest pageRequest = fetchSize -> connection.fetchPage( statementId, fetchSize );
         if ( properties.getResultSetType() == ResultSet.TYPE_FORWARD_ONLY ) {
-            this.resultScroller = new ForwardOnlyScroller( frame, getClient(), statement.getStatementId(), properties, statement.getConnection().getNetworkTimeout() );
+            this.resultScroller = new ForwardOnlyScroller( frame, properties, pageRequest );
         } else {
-            this.resultScroller = new BidirectionalScroller( frame, getClient(), statement.getStatementId(), properties, statement.getConnection().getNetworkTimeout() );
+            this.resultScroller = new BidirectionalScroller( frame, properties, pageRequest );
         }
         this.bidirectionScrollerClass = BidirectionalScroller.class;
         this.properties = properties;
@@ -156,26 +161,14 @@ public class PolyphenyResultSet implements ResultSet {
     }
 
 
-    private TypedValue accessIntegralValue( int columnIndex, int getterType ) throws SQLException {
+    private TypedValue accessNumericValue( int columnIndex, int getterType ) throws SQLException {
         TypedValue value = accessValue( columnIndex );
-        return generatedKeys ? GeneratedKeys.valueForIntegralGetter( value, metadata.getColumnType( columnIndex ), getterType ) : value;
-    }
-
-
-    private TypedValue accessFloatingValue( int columnIndex ) throws SQLException {
-        TypedValue value = accessValue( columnIndex );
-        return generatedKeys ? GeneratedKeys.normalizeFloatingValue( value, metadata.getColumnType( columnIndex ) ) : value;
-    }
-
-
-    private TypedValue accessDecimalValue( int columnIndex ) throws SQLException {
-        TypedValue value = accessValue( columnIndex );
-        return generatedKeys ? GeneratedKeys.valueForDecimalGetter( value, metadata.getColumnType( columnIndex ) ) : value;
+        return generatedKeys ? GeneratedKeys.valueForNumericGetter( value, metadata.getColumnType( columnIndex ), getterType ) : value;
     }
 
 
     private void throwIfClosed() throws SQLException {
-        if ( isClosed ) {
+        if ( isClosed() ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "This operation cannot be applied to a closed result set." );
         }
     }
@@ -233,11 +226,6 @@ public class PolyphenyResultSet implements ResultSet {
     }
 
 
-    private PrismInterfaceClient getClient() {
-        return statement.getClient();
-    }
-
-
     private BidirectionalScroller getBidirectionalScrollerOrThrow() throws SQLException {
         if ( resultScroller instanceof BidirectionalScroller ) {
             return bidirectionScrollerClass.cast( resultScroller );
@@ -248,7 +236,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public void close() throws SQLException {
-        if ( isClosed ) {
+        if ( isClosed() ) {
             return;
         }
         if ( generatedKeys ) {
@@ -260,6 +248,16 @@ public class PolyphenyResultSet implements ResultSet {
             statement.notifyResultClosure();
         }
         markClosed();
+    }
+
+
+    void setTransactionGeneration( long generation ) {
+        transactionGeneration = generation;
+    }
+
+
+    boolean closedByTransaction( long generation ) {
+        return PolyphenyStatement.closedByTransaction( properties.getResultSetHoldability(), transactionGeneration, generation );
     }
 
 
@@ -278,56 +276,57 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public String getString( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessFloatingValue( columnIndex ).asString();
+        return (generatedKeys ? accessObjectValue( columnIndex ) : accessValue( columnIndex )).asString();
     }
 
 
     @Override
     public boolean getBoolean( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessValue( columnIndex ).asBoolean();
+        TypedValue value = accessValue( columnIndex );
+        return generatedKeys ? GeneratedKeys.booleanValue( value, metadata.getColumnType( columnIndex ) ) : value.asBoolean();
     }
 
 
     @Override
     public byte getByte( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessIntegralValue( columnIndex, Types.TINYINT ).asByte();
+        return accessNumericValue( columnIndex, Types.TINYINT ).asByte();
     }
 
 
     @Override
     public short getShort( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessIntegralValue( columnIndex, Types.SMALLINT ).asShort();
+        return accessNumericValue( columnIndex, Types.SMALLINT ).asShort();
     }
 
 
     @Override
     public int getInt( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessIntegralValue( columnIndex, Types.INTEGER ).asInt();
+        return accessNumericValue( columnIndex, Types.INTEGER ).asInt();
     }
 
 
     @Override
     public long getLong( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessIntegralValue( columnIndex, Types.BIGINT ).asLong();
+        return accessNumericValue( columnIndex, Types.BIGINT ).asLong();
     }
 
 
     @Override
     public float getFloat( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessFloatingValue( columnIndex ).asFloat();
+        return accessNumericValue( columnIndex, Types.REAL ).asFloat();
     }
 
 
     @Override
     public double getDouble( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessFloatingValue( columnIndex ).asDouble();
+        return accessNumericValue( columnIndex, Types.DOUBLE ).asDouble();
     }
 
 
@@ -335,7 +334,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Deprecated //according to jdbc 4.3
     public BigDecimal getBigDecimal( int columnIndex, int scale ) throws SQLException {
         throwIfClosed();
-        TypedValue value = accessDecimalValue( columnIndex );
+        TypedValue value = accessNumericValue( columnIndex, Types.DECIMAL );
         return value.isNull() ? null : value.asBigDecimal( scale );
     }
 
@@ -551,7 +550,7 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public BigDecimal getBigDecimal( int columnIndex ) throws SQLException {
         throwIfClosed();
-        return accessDecimalValue( columnIndex ).asBigDecimal();
+        return accessNumericValue( columnIndex, Types.DECIMAL ).asBigDecimal();
     }
 
 
@@ -1277,7 +1276,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public boolean isClosed() throws SQLException {
-        return isClosed;
+        return isClosed || (transactionGeneration >= 0 && closedByTransaction( statement.getClient().getTransactionGeneration() ));
     }
 
 

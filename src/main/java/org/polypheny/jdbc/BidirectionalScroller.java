@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.jdbc.ResultFetcher.FetchFailure;
 import org.polypheny.jdbc.ResultFetcher.FetchThread;
+import org.polypheny.jdbc.ResultFetcher.PageRequest;
 import org.polypheny.jdbc.properties.PolyphenyResultSetProperties;
 import org.polypheny.jdbc.types.TypedValue;
 import org.polypheny.jdbc.utils.TypedValueUtils;
@@ -38,11 +39,16 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
 
 
     public BidirectionalScroller( Frame frame, PrismInterfaceClient client, int statementId, PolyphenyResultSetProperties properties, int fetchTimeout ) {
+        this( frame, properties, fetchSize -> client.fetchResult( statementId, fetchSize, fetchTimeout ) );
+    }
+
+
+    BidirectionalScroller( Frame frame, PolyphenyResultSetProperties properties, PageRequest pageRequest ) {
         this.values = new ArrayList<>( TypedValueUtils.buildRows( frame.getRelationalFrame().getRowsList() ) );
         if ( properties.getLargeMaxRows() != 0 && values.size() > properties.getLargeMaxRows() ) {
             values.subList( longToInt( properties.getLargeMaxRows() ), values.size() ).clear();
         }
-        this.resultFetcher = new ResultFetcher( client, statementId, properties, values.size(), fetchTimeout );
+        this.resultFetcher = new ResultFetcher( pageRequest, properties, values.size() );
         this.resultFetcher.setLast( frame.getIsLast() );
         this.currentIndex = INDEX_BEFORE_FIRST;
         this.properties = properties;
@@ -86,7 +92,14 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
         if ( fetcherThread == null ) {
             fetcherThread = resultFetcher.startFetch();
         }
-        values.addAll( fetcherThread.awaitPage() );
+        try {
+            values.addAll( fetcherThread.awaitPage() );
+        } catch ( PrismInterfaceServiceException failure ) {
+            if ( failure.getCause() instanceof RequestDeadline.BeforeSendTimeout ) {
+                fetcherThread = null;
+            }
+            throw failure;
+        }
         fetcherThread = null;
     }
 

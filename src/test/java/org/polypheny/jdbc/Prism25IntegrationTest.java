@@ -35,6 +35,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Tag;
@@ -251,6 +252,73 @@ class Prism25IntegrationTest {
 
 
     @Test
+    void disablingAutoCommitPreservesAnUnfinishedReturningWrite() throws SQLException {
+        String table = "jdbc_mode_returning_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection observer = DriverManager.getConnection( DB_URL, "pa", "" ); Statement ddl = observer.createStatement() ) {
+            ddl.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY, label VARCHAR(20))" );
+            try {
+                try ( Connection writer = DriverManager.getConnection( DB_URL, "pa", "" );
+                        PreparedStatement insert = writer.prepareStatement(
+                                "INSERT INTO " + table + " (label) VALUES ('first'), ('second') RETURNING id" ) ) {
+                    insert.setFetchSize( 1 );
+                    try ( ResultSet ids = insert.executeQuery() ) {
+                        writer.setAutoCommit( false );
+                        assertTrue( ids.isClosed() );
+                        writer.rollback();
+                    }
+                }
+                try ( ResultSet rows = ddl.executeQuery( "SELECT COUNT(*) FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 2, rows.getLong( 1 ) );
+                }
+            } finally {
+                ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void rollbackAndImplicitDdlCommitCloseCursors( boolean implicitCommit ) throws SQLException {
+        String table = "jdbc_transaction_cursors_" + UUID.randomUUID().toString().replace( "-", "" );
+        String createdInTransaction = table + "_ddl";
+        try ( Connection observer = DriverManager.getConnection( DB_URL, "pa", "" ); Statement ddl = observer.createStatement() ) {
+            ddl.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY, label VARCHAR(20))" );
+            ddl.executeUpdate( "INSERT INTO " + table + " (label) VALUES ('first'), ('second')" );
+            try {
+                try ( Connection writer = DriverManager.getConnection( DB_URL, "pa", "" );
+                        Statement insert = writer.createStatement(); Statement writeDdl = writer.createStatement();
+                        PreparedStatement query = writer.prepareStatement( "SELECT id FROM " + table + " ORDER BY id" ) ) {
+                    writer.setAutoCommit( false );
+                    query.setFetchSize( 1 );
+                    assertEquals( 1, insert.executeUpdate( "INSERT INTO " + table + " (label) VALUES ('pending')", Statement.RETURN_GENERATED_KEYS ) );
+                    try ( ResultSet keys = insert.getGeneratedKeys(); ResultSet rows = query.executeQuery() ) {
+                        if ( implicitCommit ) {
+                            writeDdl.executeUpdate( "CREATE TABLE " + createdInTransaction + " (id INTEGER PRIMARY KEY)" );
+                        } else {
+                            writer.rollback();
+                        }
+                        assertTrue( rows.isClosed() );
+                        assertTrue( keys.isClosed() );
+                        assertThrows( SQLException.class, rows::next );
+                        assertThrows( SQLException.class, keys::next );
+                        assertFalse( writer.isClosed() );
+                    }
+                }
+                try ( ResultSet rows = ddl.executeQuery( "SELECT COUNT(*) FROM " + table + " WHERE label = 'pending'" ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( implicitCommit ? 1 : 0, rows.getLong( 1 ) );
+                }
+            } finally {
+                ddl.executeUpdate( "DROP TABLE IF EXISTS " + createdInTransaction );
+                ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @Test
     void rawGeneratedKeySelectorsRespectNumericTypes() throws SQLException {
         String table = "jdbc_raw_numeric_keys_" + UUID.randomUUID().toString().replace( "-", "" );
         try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
@@ -376,6 +444,48 @@ class Prism25IntegrationTest {
                     assertEquals( new BigDecimal( "1.2346" ), stored.getBigDecimal( 1 ) );
                     assertEquals( stored.getBigDecimal( 1 ), keys.getBigDecimal( 1 ) );
                     assertEquals( stored.getBigDecimal( 1 ), keys.getObject( 1, BigDecimal.class ) );
+                    assertFalse( keys.next() );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @Test
+    void readsPreparedIntegralKeysAcrossBindingsAndGetterTypes() throws SQLException {
+        String table = "jdbc_numeric_key_getters_" + UUID.randomUUID().toString().replace( "-", "" );
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement sql = connection.createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY, qty INTEGER)" );
+            try ( PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO " + table + " (qty) VALUES (?)", new String[]{ "qty" } ) ) {
+                insert.setInt( 1, 1 );
+                insert.addBatch();
+                insert.setBigDecimal( 1, BigDecimal.ONE );
+                insert.addBatch();
+                insert.setBigDecimal( 1, new BigDecimal( "1.25" ) );
+                insert.addBatch();
+                insert.setNull( 1, Types.INTEGER );
+                insert.addBatch();
+                assertArrayEquals( new int[]{ 1, 1, 1, 1 }, insert.executeBatch() );
+                try ( ResultSet keys = insert.getGeneratedKeys() ) {
+                    assertEquals( Types.INTEGER, keys.getMetaData().getColumnType( 1 ) );
+                    for ( int i = 0; i < 3; i++ ) {
+                        assertTrue( keys.next() );
+                        assertEquals( 1, keys.getInt( 1 ) );
+                        assertEquals( 1f, keys.getFloat( 1 ) );
+                        assertEquals( 1d, keys.getDouble( 1 ) );
+                        assertEquals( BigDecimal.ONE, keys.getBigDecimal( 1 ) );
+                        assertTrue( keys.getBoolean( 1 ) );
+                        assertFalse( keys.wasNull() );
+                    }
+                    assertTrue( keys.next() );
+                    assertFalse( keys.getBoolean( 1 ) );
+                    assertTrue( keys.wasNull() );
+                    assertNull( keys.getBigDecimal( 1 ) );
+                    assertTrue( keys.wasNull() );
                     assertFalse( keys.next() );
                 }
             } finally {

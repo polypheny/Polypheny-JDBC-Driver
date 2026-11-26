@@ -57,6 +57,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
+import org.polypheny.jdbc.properties.PropertyUtils;
 import org.polypheny.jdbc.transport.PlainTransport;
 import org.polypheny.prism.ClientInfoPropertiesResponse;
 import org.polypheny.prism.CommitResponse;
@@ -177,6 +178,12 @@ class BatchSocketDeadlineTest {
                     acknowledgeConnectionSettings( socket, false );
                     DataInputStream input = new DataInputStream( socket.getInputStream() );
                     DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
+                    Request settings = readRequest( input, TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST );
+                    assertEquals( "public", settings.getConnectionPropertiesUpdateRequest().getConnectionProperties().getNamespaceName() );
+                    writeResponse( output, settings, connectionSettingsResponse() );
+                    Request schema = readRequest( input, TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST );
+                    assertEquals( "accepted_schema", schema.getConnectionPropertiesUpdateRequest().getConnectionProperties().getNamespaceName() );
+                    writeResponse( output, schema, connectionSettingsResponse() );
                     Request check = readRequest( input, TypeCase.CONNECTION_CHECK_REQUEST );
                     writeResponse( output, check, Response.newBuilder().setConnectionCheckResponse( ConnectionCheckResponse.getDefaultInstance() ) );
                     Request prepare = readRequest( input, TypeCase.PREPARE_INDEXED_STATEMENT_REQUEST );
@@ -189,7 +196,7 @@ class BatchSocketDeadlineTest {
             RpcService rpc = new RpcService( new PlainTransport( "127.0.0.1", server.getLocalPort() ) );
             try {
                 PrismInterfaceClient client = new PrismInterfaceClient( rpc );
-                ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort(), new Properties() );
+                ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort() + "/public", new Properties() );
                 Connection connection = new PolyConnection( new PolyphenyConnectionProperties( target, client ),
                         new PolyphenyDatabaseMetadata( client, target ) );
                 connection.setNetworkTimeout( Runnable::run, 300 );
@@ -202,15 +209,90 @@ class BatchSocketDeadlineTest {
                 connection.setAutoCommit( true );
                 SQLTimeoutException failure = assertThrows( SQLTimeoutException.class, () -> connection.prepareStatement( "SELECT 1" ) );
                 assertInstanceOf( RequestDeadline.BeforeSendTimeout.class, failure.getCause() );
+                SQLTimeoutException schemaFailure = assertThrows( SQLTimeoutException.class, () -> connection.setSchema( "blocked_schema" ) );
+                assertInstanceOf( RequestDeadline.BeforeSendTimeout.class, schemaFailure.getCause() );
+                assertEquals( "public", connection.getSchema() );
                 assertFalse( validity.get( 2, TimeUnit.SECONDS ) );
                 assertFalse( connection.isClosed() );
 
                 release.countDown();
                 assertTrue( reservation.get( 2, TimeUnit.SECONDS ) );
+                connection.setNetworkTimeout( Runnable::run, 500 );
+                connection.setSchema( "accepted_schema" );
+                assertEquals( "accepted_schema", connection.getSchema() );
                 assertTrue( connection.isValid( Integer.MAX_VALUE ) );
                 assertFalse( connection.prepareStatement( "SELECT 1" ).isClosed() );
             } finally {
                 release.countDown();
+                rpc.close();
+            }
+            peer.get( 3, TimeUnit.SECONDS );
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+
+    @Test
+    void commitUsesOneDeadlineForWriterReservationAndReply() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool( 3 );
+        CountDownLatch reserved = new CountDownLatch( 1 );
+        CountDownLatch releaseWriter = new CountDownLatch( 1 );
+        CountDownLatch acquiringForCommit = new CountDownLatch( 1 );
+        CountDownLatch suppressReply = new CountDownLatch( 1 );
+        AtomicBoolean observeCommit = new AtomicBoolean();
+        try ( ServerSocket server = new ServerSocket() ) {
+            server.bind( new InetSocketAddress( "127.0.0.1", 0 ) );
+            server.setSoTimeout( 3000 );
+            Future<?> peer = executor.submit( () -> {
+                try ( Socket socket = server.accept() ) {
+                    acknowledgeConnectionSettings( socket, false );
+                    DataInputStream input = new DataInputStream( socket.getInputStream() );
+                    DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
+                    Request commit = readRequest( input, TypeCase.COMMIT_REQUEST );
+                    if ( !suppressReply.await( 500, TimeUnit.MILLISECONDS ) ) {
+                        writeResponse( output, commit, Response.newBuilder().setCommitResponse( CommitResponse.getDefaultInstance() ) );
+                    }
+                }
+                return null;
+            } );
+            PlainTransport transport = new PlainTransport( "127.0.0.1", server.getLocalPort() ) {
+                @Override
+                public <E extends Exception> boolean withWriteReservation( int timeout, WriteOperation<E> operation ) throws E, InterruptedException {
+                    if ( observeCommit.get() ) {
+                        acquiringForCommit.countDown();
+                    }
+                    return super.withWriteReservation( timeout, operation );
+                }
+            };
+            RpcService rpc = new RpcService( transport );
+            try {
+                PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+                Properties parameters = new Properties();
+                parameters.setProperty( PropertyUtils.getAUTOCOMMIT_KEY(), "false" );
+                ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort(), parameters );
+                Connection connection = new PolyConnection( new PolyphenyConnectionProperties( target, client ),
+                        new PolyphenyDatabaseMetadata( client, target ) );
+                connection.setNetworkTimeout( Runnable::run, 850 );
+                Future<Boolean> reservation = executor.submit( () -> rpc.withWriteReservation( 3000, () -> {
+                    reserved.countDown();
+                    assertTrue( releaseWriter.await( 3, TimeUnit.SECONDS ) );
+                } ) );
+                assertTrue( reserved.await( 2, TimeUnit.SECONDS ) );
+                observeCommit.set( true );
+                Future<SQLException> result = executor.submit( () -> assertThrows( SQLException.class, connection::commit ) );
+                assertTrue( acquiringForCommit.await( 2, TimeUnit.SECONDS ) );
+                TimeUnit.MILLISECONDS.sleep( 500 );
+                releaseWriter.countDown();
+                assertTrue( reservation.get( 2, TimeUnit.SECONDS ) );
+                SQLException failure = result.get( 2, TimeUnit.SECONDS );
+                assertEquals( "08003", failure.getSQLState() );
+                assertInstanceOf( TimeoutException.class, failure.getCause() );
+                assertTrue( connection.isClosed() );
+                suppressReply.countDown();
+            } finally {
+                releaseWriter.countDown();
+                suppressReply.countDown();
                 rpc.close();
             }
             peer.get( 3, TimeUnit.SECONDS );
@@ -441,6 +523,8 @@ class BatchSocketDeadlineTest {
                     acknowledgeConnectionSettings( socket, false );
                     DataInputStream input = new DataInputStream( socket.getInputStream() );
                     DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
+                    Request autoCommit = readRequest( input, TypeCase.COMMIT_REQUEST );
+                    writeResponse( output, autoCommit, Response.newBuilder().setCommitResponse( CommitResponse.getDefaultInstance() ) );
                     Request manual = readRequest( input, TypeCase.CONNECTION_PROPERTIES_UPDATE_REQUEST );
                     assertFalse( manual.getConnectionPropertiesUpdateRequest().getConnectionProperties().getIsAutoCommit() );
                     writeResponse( output, manual, connectionSettingsResponse() );
@@ -564,7 +648,7 @@ class BatchSocketDeadlineTest {
             case EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST:
                 return Response.newBuilder().setStatementBatchResponse( StatementBatchResponse.newBuilder().setBatchId( 42 ).addScalars( 1 ) );
             case CONNECTION_PROPERTIES_UPDATE_REQUEST:
-                assertTrue( request.getConnectionPropertiesUpdateRequest().getConnectionProperties().getIsAutoCommit() );
+                assertFalse( request.getConnectionPropertiesUpdateRequest().getConnectionProperties().hasIsAutoCommit() );
                 assertEquals( "public", request.getConnectionPropertiesUpdateRequest().getConnectionProperties().getNamespaceName() );
                 return connectionSettingsResponse();
             default:

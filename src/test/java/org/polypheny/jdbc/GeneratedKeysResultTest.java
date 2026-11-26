@@ -101,7 +101,7 @@ class GeneratedKeysResultTest {
     void readsFloatingKeysAtTheirDeclaredPrecisionAcrossGetters() throws SQLException {
         Frame frame = frame( column( "ratio", "items", "public", ProtoPolyType.REAL ),
                 TypedValue.fromBigDecimal( new BigDecimal( "16777217.25" ) ),
-                TypedValue.fromInteger( Integer.MAX_VALUE ), TypedValue.fromNull() );
+                TypedValue.fromInteger( Integer.MAX_VALUE ), TypedValue.fromFloat( -12.75f ), TypedValue.fromNull() );
         try ( ResultSet keys = resultSet( frame ) ) {
             assertTrue( keys.next() );
             assertEquals( Float.valueOf( 16_777_218f ), keys.getObject( 1, Float.class ) );
@@ -117,9 +117,49 @@ class GeneratedKeysResultTest {
             assertEquals( 2_147_483_648L, keys.getLong( 1 ) );
 
             assertTrue( keys.next() );
+            assertEquals( (byte) -12, keys.getByte( 1 ) );
+            assertEquals( (short) -12, keys.getShort( 1 ) );
+            assertEquals( -12, keys.getInt( 1 ) );
+            assertEquals( -12L, keys.getLong( 1 ) );
+            assertEquals( new BigDecimal( "-12.75" ), keys.getBigDecimal( 1 ) );
+
+            assertTrue( keys.next() );
             assertNull( keys.getString( 1 ) );
             assertTrue( keys.wasNull() );
             assertEquals( 0d, keys.getDouble( 1 ) );
+            assertTrue( keys.wasNull() );
+        }
+    }
+
+
+    @Test
+    void readsBigintKeysIndependentlyOfTheWireValueType() throws SQLException {
+        long exact = 9_007_199_254_740_993L;
+        Frame frame = frame( column( "id", "items", "public", ProtoPolyType.BIGINT ),
+                TypedValue.fromLong( exact ), TypedValue.fromBigDecimal( BigDecimal.valueOf( exact ) ),
+                TypedValue.fromLong( 1 ), TypedValue.fromBigDecimal( BigDecimal.ONE ),
+                TypedValue.fromBigDecimal( BigDecimal.ZERO ), TypedValue.fromNull() );
+        try ( ResultSet keys = resultSet( frame ) ) {
+            for ( int i = 0; i < 2; i++ ) {
+                assertTrue( keys.next() );
+                assertEquals( exact, keys.getLong( "id" ) );
+                assertEquals( (float) exact, keys.getFloat( "id" ) );
+                assertEquals( (double) exact, keys.getDouble( "id" ) );
+                assertEquals( BigDecimal.valueOf( exact ), keys.getBigDecimal( "id" ) );
+                assertEquals( Long.toString( exact ), keys.getString( "id" ) );
+            }
+            for ( int i = 0; i < 2; i++ ) {
+                assertTrue( keys.next() );
+                assertTrue( keys.getBoolean( "id" ) );
+                assertFalse( keys.wasNull() );
+            }
+            assertTrue( keys.next() );
+            assertFalse( keys.getBoolean( "id" ) );
+            assertFalse( keys.wasNull() );
+            assertTrue( keys.next() );
+            assertFalse( keys.getBoolean( "id" ) );
+            assertTrue( keys.wasNull() );
+            assertNull( keys.getBigDecimal( "id" ) );
             assertTrue( keys.wasNull() );
         }
     }

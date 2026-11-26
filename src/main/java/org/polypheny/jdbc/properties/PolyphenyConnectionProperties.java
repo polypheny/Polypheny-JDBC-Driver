@@ -109,14 +109,14 @@ public class PolyphenyConnectionProperties {
     @Getter
     private int resultSetHoldability;
     @Getter
-    private int networkTimeout;
+    private volatile int networkTimeout;
     @Getter
     private int transactionIsolation;
     @Getter
     // not transmitted to server
     private String catalogName;
     @Getter
-    private String namespaceName;
+    private volatile String namespaceName;
     @Getter
     private Calendar calendar;
     @Getter
@@ -124,7 +124,12 @@ public class PolyphenyConnectionProperties {
 
 
     public void setAutoCommit( boolean isAutoCommit ) throws PrismInterfaceServiceException {
-        prismInterfaceClient.setAutoCommit( isAutoCommit, getNetworkTimeout() );
+        setAutoCommit( isAutoCommit, getNetworkTimeout() );
+    }
+
+
+    public void setAutoCommit( boolean isAutoCommit, int timeout ) throws PrismInterfaceServiceException {
+        prismInterfaceClient.setAutoCommit( isAutoCommit, timeout );
         this.isAutoCommit = isAutoCommit;
     }
 
@@ -145,8 +150,8 @@ public class PolyphenyConnectionProperties {
 
 
     public void setNetworkTimeout( int networkTimeout ) throws PrismInterfaceServiceException {
+        prismInterfaceClient.setConnectionProperties( this, networkTimeout );
         this.networkTimeout = networkTimeout;
-        sync();
     }
 
 
@@ -166,8 +171,7 @@ public class PolyphenyConnectionProperties {
 
 
     public void setNamespaceName( String namespaceName ) throws PrismInterfaceServiceException {
-        this.namespaceName = namespaceName;
-        sync();
+        prismInterfaceClient.setNamespaceName( namespaceName, getNetworkTimeout(), () -> this.namespaceName = namespaceName );
     }
 
 
