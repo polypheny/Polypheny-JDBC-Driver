@@ -160,17 +160,7 @@ public class PolyphenyStatement implements Statement {
             if ( isLocallyClosed() ) {
                 return;
             }
-            boolean closedDependentResult = false;
-            if ( currentResultClosedByTransaction( generation ) ) {
-                // Prism has already closed the server cursor.
-                clearCurrentResult();
-                closedDependentResult = true;
-            }
-            if ( generatedKeysClosedByTransaction( generation ) ) {
-                closedDependentResult |= hasUnclosedGeneratedKeys();
-                clearGeneratedKeys();
-            }
-            closeStatement = closedDependentResult && canCloseAfterDependentResults();
+            closeStatement = clearResultsFromEarlierTransactions( generation ) && canCloseAfterDependentResults();
             if ( closeStatement ) {
                 closedAtTransactionEnd = true;
             }
@@ -178,6 +168,20 @@ public class PolyphenyStatement implements Statement {
         if ( closeStatement ) {
             closeAfterTransaction();
         }
+    }
+
+
+    private boolean clearResultsFromEarlierTransactions( long generation ) {
+        boolean closedDependentResult = currentResultClosedByTransaction( generation );
+        if ( closedDependentResult ) {
+            // Prism has already closed the server cursor.
+            clearCurrentResult();
+        }
+        if ( generatedKeysClosedByTransaction( generation ) ) {
+            closedDependentResult |= hasUnclosedGeneratedKeys();
+            clearGeneratedKeys();
+        }
+        return closedDependentResult;
     }
 
 
@@ -242,7 +246,11 @@ public class PolyphenyStatement implements Statement {
         ExecutionDeadline deadline = cleanupDeadline;
         try {
             RequestDeadline requestDeadline = deadline == null ? new RequestDeadline( polyConnection.getNetworkTimeout() ) : deadline.requestDeadline;
-            request.execute( requestDeadline );
+            if ( deadline != null && deadline.admissionDeadline != null ) {
+                getClient().withExecutionSlot( deadline.admissionDeadline, () -> request.execute( requestDeadline ) );
+            } else {
+                request.execute( requestDeadline );
+            }
         } catch ( PrismInterfaceServiceException failure ) {
             throw polyConnection.handleIncompleteRequest( failure, deadline == null || deadline.networkDeadline );
         }
@@ -791,8 +799,8 @@ public class PolyphenyStatement implements Statement {
         int networkTimeout = polyConnection.getNetworkTimeout();
         ExecutionDeadline deadline = new ExecutionDeadline( networkTimeout, properties.getQueryTimeoutSeconds() );
         boolean serverQueryTimeout = !deadline.networkDeadline && deadline.requestDeadline.timeoutMillis != 0 && getClient().supportsServerQueryTimeout();
-        // Closing a previous result can finish its transaction and is governed by the network deadline.
-        cleanupDeadline = serverQueryTimeout ? new ExecutionDeadline( networkTimeout, 0 ) : deadline;
+        // A cleanup that has been sent can finish a previous transaction. Only its admission uses the query budget.
+        cleanupDeadline = serverQueryTimeout ? new ExecutionDeadline( networkTimeout, 0, deadline.requestDeadline ) : deadline;
         try {
             cleanup.execute();
         } finally {
@@ -808,7 +816,8 @@ public class PolyphenyStatement implements Statement {
             if ( serverQueryTimeout && failure instanceof PrismInterfaceServiceException.ServerError && QUERY_CANCELED_STATE.equals( failure.getSQLState() ) ) {
                 throw asQueryTimeout( failure );
             }
-            throw polyConnection.handleIncompleteRequest( failure, deadline.networkDeadline || serverQueryTimeout );
+            boolean querySendTimedOut = failure.getCause() instanceof RequestDeadline.QuerySendTimeout;
+            throw polyConnection.handleIncompleteRequest( failure, !querySendTimedOut && (deadline.networkDeadline || serverQueryTimeout) );
         } finally {
             polyConnection.refreshTransactionResults();
         }
@@ -854,12 +863,19 @@ public class PolyphenyStatement implements Statement {
 
         private final boolean networkDeadline;
         private final RequestDeadline requestDeadline;
+        private final RequestDeadline admissionDeadline;
 
 
         private ExecutionDeadline( int networkTimeout, int queryTimeoutSeconds ) {
+            this( networkTimeout, queryTimeoutSeconds, null );
+        }
+
+
+        private ExecutionDeadline( int networkTimeout, int queryTimeoutSeconds, RequestDeadline admissionDeadline ) {
             long queryTimeout = TimeUnit.SECONDS.toMillis( queryTimeoutSeconds );
             networkDeadline = networkTimeout > 0 && (queryTimeout == 0 || networkTimeout <= queryTimeout);
             requestDeadline = new RequestDeadline( networkDeadline ? networkTimeout : queryTimeout );
+            this.admissionDeadline = admissionDeadline;
         }
 
     }
@@ -1040,7 +1056,16 @@ public class PolyphenyStatement implements Statement {
     @Override
     public void closeOnCompletion() throws SQLException {
         throwIfClosed();
-        properties.setCloseOnCompletion( true );
+        synchronized ( resultsLock ) {
+            if ( isLocallyClosed() || closedOnCompletionByTransaction() ) {
+                throw closedStatement();
+            }
+            if ( !properties.isCloseOnCompletion() ) {
+                // Opt-in applies to results that are still open and to future executions.
+                clearResultsFromEarlierTransactions( getClient().getTransactionGeneration() );
+                properties.setCloseOnCompletion( true );
+            }
+        }
     }
 
 

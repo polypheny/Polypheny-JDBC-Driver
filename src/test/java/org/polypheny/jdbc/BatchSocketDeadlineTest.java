@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.UnknownFieldSet;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -81,8 +82,9 @@ class BatchSocketDeadlineTest {
 
     @ParameterizedTest
     @EnumSource(BlockedRequest.class)
-    void networkDeadlineClosesConnectionWhenPeerStopsReading( BlockedRequest request ) throws Exception {
+    void deadlineClosesConnectionWhenThePeerStopsReading( BlockedRequest request ) throws Exception {
         boolean generatedKeyPrepare = request == BlockedRequest.PREPARE_WITH_KEYS;
+        boolean serverQueryTimeout = request == BlockedRequest.TIMED_STATEMENT || request == BlockedRequest.TIMED_BATCH;
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
         CountDownLatch releasePeer = new CountDownLatch( 1 );
         try ( ServerSocket server = new ServerSocket() ) {
@@ -91,7 +93,7 @@ class BatchSocketDeadlineTest {
             server.setSoTimeout( 3000 );
             Future<?> peer = executor.submit( () -> {
                 try ( Socket socket = server.accept() ) {
-                    acknowledgeHandshake( socket, generatedKeyPrepare );
+                    acknowledgeHandshake( socket, generatedKeyPrepare, serverQueryTimeout );
                     // Leave the TCP receive buffer full until the client hits its deadline.
                     releasePeer.await();
                 }
@@ -122,12 +124,15 @@ class BatchSocketDeadlineTest {
                 PrismInterfaceClient client = new PrismInterfaceClient( rpc );
                 ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort(), new Properties() );
                 PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
-                if ( generatedKeyPrepare ) {
+                if ( generatedKeyPrepare || serverQueryTimeout ) {
                     client.register( properties, 3000 );
                 }
                 PolyConnection connection = new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
-                connection.setNetworkTimeout( Runnable::run, 500 );
+                connection.setNetworkTimeout( Runnable::run, serverQueryTimeout ? 0 : 500 );
                 Statement statement = connection.createStatement();
+                if ( serverQueryTimeout ) {
+                    statement.setQueryTimeout( 1 );
+                }
                 char[] payload = new char[8 * 1024 * 1024];
                 Arrays.fill( payload, 'x' );
                 String sql = "INSERT INTO probe VALUES ('" + new String( payload ) + "')";
@@ -137,14 +142,21 @@ class BatchSocketDeadlineTest {
                             () -> connection.prepareStatement( sql, Statement.RETURN_GENERATED_KEYS ) ) );
                 } else if ( request == BlockedRequest.PREPARE ) {
                     result = executor.submit( () -> assertThrows( SQLException.class, () -> connection.prepareStatement( sql ) ) );
+                } else if ( request == BlockedRequest.TIMED_STATEMENT ) {
+                    result = executor.submit( () -> assertThrows( SQLException.class, () -> statement.executeUpdate( sql ) ) );
                 } else {
                     statement.addBatch( sql );
                     result = executor.submit( () -> assertThrows( SQLException.class, statement::executeBatch ) );
                 }
                 assertTrue( writingRequest.await( 3, TimeUnit.SECONDS ) );
                 SQLException failure = result.get( 3, TimeUnit.SECONDS );
-                assertEquals( "08003", failure.getSQLState() );
-                assertInstanceOf( TimeoutException.class, failure.getCause() );
+                if ( serverQueryTimeout ) {
+                    assertInstanceOf( SQLTimeoutException.class, failure );
+                    assertInstanceOf( RequestDeadline.QuerySendTimeout.class, failure.getCause() );
+                } else {
+                    assertEquals( "08003", failure.getSQLState() );
+                    assertInstanceOf( TimeoutException.class, failure.getCause() );
+                }
                 assertTrue( connection.isClosed() );
                 assertTrue( statement.isClosed() );
                 assertEquals( 1, transportCloses.get() );
@@ -163,7 +175,67 @@ class BatchSocketDeadlineTest {
     private enum BlockedRequest {
         BATCH,
         PREPARE,
-        PREPARE_WITH_KEYS
+        PREPARE_WITH_KEYS,
+        TIMED_STATEMENT,
+        TIMED_BATCH
+    }
+
+
+    @Test
+    void completedTimedFrameLeavesItsOutcomeToTheServer() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try ( ServerSocket server = new ServerSocket() ) {
+            server.bind( new InetSocketAddress( "127.0.0.1", 0 ) );
+            server.setSoTimeout( 3000 );
+            Future<?> peer = executor.submit( () -> {
+                try ( Socket socket = server.accept() ) {
+                    acknowledgeHandshake( socket, false, true );
+                    DataInputStream input = new DataInputStream( socket.getInputStream() );
+                    DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
+                    Request insert = readRequest( input, TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST );
+                    long timeout = insert.getUnknownFields().getField( 50001 ).getVarintList().get( 0 );
+                    assertTrue( timeout > 0 && timeout <= 1000 );
+                    // The server can acknowledge a successful commit after the query deadline.
+                    TimeUnit.MILLISECONDS.sleep( 1100 );
+                    writeResponse( output, insert, responseForConcurrentOperation( insert ) );
+                    assertEquals( -1, input.read() );
+                }
+                return null;
+            } );
+            PlainTransport transport = new PlainTransport( "127.0.0.1", server.getLocalPort() ) {
+                @Override
+                public boolean trySendMessage( byte[] request, long deadline, BooleanSupplier beginWrite, Runnable finishWrite ) throws IOException {
+                    boolean sent = super.trySendMessage( request, deadline, beginWrite, finishWrite );
+                    if ( sent ) {
+                        try {
+                            TimeUnit.MILLISECONDS.sleep( 1250 );
+                        } catch ( InterruptedException e ) {
+                            Thread.currentThread().interrupt();
+                            throw new IOException( e );
+                        }
+                    }
+                    return sent;
+                }
+            };
+            RpcService rpc = new RpcService( transport );
+            try {
+                PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+                ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort(), new Properties() );
+                PolyphenyConnectionProperties properties = new PolyphenyConnectionProperties( target, client );
+                client.register( properties, 3000 );
+                Connection connection = new PolyConnection( properties, new PolyphenyDatabaseMetadata( client, target ) );
+                connection.setNetworkTimeout( Runnable::run, 3000 );
+                Statement statement = connection.createStatement();
+                statement.setQueryTimeout( 1 );
+                assertEquals( 1, statement.executeUpdate( "INSERT INTO probe VALUES (1)" ) );
+                assertFalse( connection.isClosed() );
+            } finally {
+                rpc.close();
+            }
+            peer.get( 3, TimeUnit.SECONDS );
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
 
@@ -192,9 +264,9 @@ class BatchSocketDeadlineTest {
             } );
             PlainTransport transport = new PlainTransport( "127.0.0.1", server.getLocalPort() ) {
                 @Override
-                public void sendMessage( byte[] request ) throws IOException {
+                public void sendMessage( byte[] request, Runnable beginWrite ) throws IOException {
                     observeMetadata( request );
-                    super.sendMessage( request );
+                    super.sendMessage( request, beginWrite );
                 }
 
                 @Override
@@ -752,6 +824,11 @@ class BatchSocketDeadlineTest {
 
 
     private static void acknowledgeHandshake( Socket socket, boolean generatedKeyPrepare ) throws IOException {
+        acknowledgeHandshake( socket, generatedKeyPrepare, false );
+    }
+
+
+    private static void acknowledgeHandshake( Socket socket, boolean generatedKeyPrepare, boolean serverQueryTimeout ) throws IOException {
         socket.setSoTimeout( 3000 );
         socket.setReceiveBufferSize( 4096 );
         DataInputStream input = new DataInputStream( socket.getInputStream() );
@@ -763,10 +840,14 @@ class BatchSocketDeadlineTest {
 
         int size = input.readUnsignedByte();
         input.readFully( new byte[size] );
-        if ( generatedKeyPrepare ) {
+        if ( generatedKeyPrepare || serverQueryTimeout ) {
             Request connect = readRequest( input, Request.TypeCase.CONNECTION_REQUEST );
-            writeResponse( output, connect, Response.newBuilder().setConnectionResponse(
-                    ConnectionResponse.newBuilder().setIsCompatible( true ).setSupportsGeneratedKeys( true ) ) );
+            ConnectionResponse.Builder handshake = ConnectionResponse.newBuilder().setIsCompatible( true ).setSupportsGeneratedKeys( generatedKeyPrepare );
+            if ( serverQueryTimeout ) {
+                handshake.setMajorApiVersion( 2 ).setMinorApiVersion( 5 ).setUnknownFields( UnknownFieldSet.newBuilder()
+                        .addField( 50001, UnknownFieldSet.Field.newBuilder().addVarint( 1 ).build() ).build() );
+            }
+            writeResponse( output, connect, Response.newBuilder().setConnectionResponse( handshake ) );
             Request clientInfo = readRequest( input, Request.TypeCase.SET_CLIENT_INFO_PROPERTIES_REQUEST );
             writeResponse( output, clientInfo, Response.newBuilder().setSetClientInfoPropertiesResponse( ClientInfoPropertiesResponse.getDefaultInstance() ) );
         }

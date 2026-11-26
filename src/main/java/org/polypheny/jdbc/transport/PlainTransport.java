@@ -91,6 +91,12 @@ public class PlainTransport implements Transport {
 
     @Override
     public void sendMessage( byte[] message ) throws IOException {
+        sendMessage( message, () -> {} );
+    }
+
+
+    @Override
+    public void sendMessage( byte[] message, Runnable beginWrite ) throws IOException {
         ByteBuffer frame = frameMessage( message );
         try {
             writeLock.lockInterruptibly();
@@ -99,6 +105,7 @@ public class PlainTransport implements Transport {
             throw new WriteInterruptedException( e );
         }
         try {
+            beginWrite.run();
             writeEntireBuffer( frame );
         } finally {
             writeLock.unlock();
@@ -108,6 +115,12 @@ public class PlainTransport implements Transport {
 
     @Override
     public boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite ) throws IOException {
+        return trySendMessage( message, deadlineNanos, beginWrite, () -> {} );
+    }
+
+
+    @Override
+    public boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite, Runnable finishWrite ) throws IOException {
         ByteBuffer frame = frameMessage( message );
         long remaining = deadlineNanos - System.nanoTime();
         if ( remaining <= 0 ) {
@@ -126,6 +139,7 @@ public class PlainTransport implements Transport {
                 return false;
             }
             writeEntireBuffer( frame );
+            finishWrite.run();
             return true;
         } finally {
             writeLock.unlock();

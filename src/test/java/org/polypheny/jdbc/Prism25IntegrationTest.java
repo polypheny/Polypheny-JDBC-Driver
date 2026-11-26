@@ -37,7 +37,12 @@ import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -189,6 +194,55 @@ class Prism25IntegrationTest {
             assertEquals( 1, ((PreparedStatement) change).executeUpdate() );
         } else {
             assertEquals( 1, change.executeUpdate( update ) );
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void queuedQueryTimeoutDoesNotWaitForTheEarlierRequestOrDispatch( boolean reuse ) throws Exception {
+        String table = "jdbc_queued_" + UUID.randomUUID().toString().replace( "-", "" );
+        ExecutorService workers = Executors.newFixedThreadPool( 2 );
+        try ( Connection blocker = DriverManager.getConnection( DB_URL, "pa", "" );
+                Connection waiting = DriverManager.getConnection( DB_URL, "pa", "" );
+                Statement control = blocker.createStatement();
+                Statement first = waiting.createStatement();
+                Statement second = waiting.createStatement() ) {
+            control.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, payload INTEGER)" );
+            try {
+                control.executeUpdate( "INSERT INTO " + table + " VALUES (1, 0)" );
+                if ( reuse ) {
+                    second.executeUpdate( "UPDATE " + table + " SET payload = payload" );
+                }
+                blocker.setAutoCommit( false );
+                Future<Integer> preceding;
+                try {
+                    try ( ResultSet rows = control.executeQuery( "SELECT payload FROM " + table ) ) {
+                        assertTrue( rows.next() );
+                    }
+                    preceding = workers.submit( () -> first.executeUpdate( "UPDATE " + table + " SET payload = payload + 1" ) );
+                    assertThrows( TimeoutException.class, () -> preceding.get( 250, TimeUnit.MILLISECONDS ) );
+                    second.setQueryTimeout( 1 );
+                    Future<Integer> queued = workers.submit( () -> second.executeUpdate( "UPDATE " + table + " SET payload = payload + 10" ) );
+                    ExecutionException failure = assertThrows( ExecutionException.class, () -> queued.get( 3, TimeUnit.SECONDS ) );
+                    assertInstanceOf( SQLTimeoutException.class, failure.getCause() );
+                    assertFalse( waiting.isClosed() );
+                    assertFalse( preceding.isDone() );
+                } finally {
+                    blocker.commit();
+                    blocker.setAutoCommit( true );
+                }
+                assertEquals( 1, preceding.get( 5, TimeUnit.SECONDS ) );
+                try ( ResultSet rows = control.executeQuery( "SELECT payload FROM " + table ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 1, rows.getInt( 1 ) );
+                }
+                assertEquals( 1, second.executeUpdate( "UPDATE " + table + " SET payload = payload + 10" ) );
+            } finally {
+                control.executeUpdate( "DROP TABLE " + table );
+            }
+        } finally {
+            workers.shutdownNow();
         }
     }
 

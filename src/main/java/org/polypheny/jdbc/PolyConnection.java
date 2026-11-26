@@ -656,21 +656,26 @@ public class PolyConnection implements Connection {
                 return null;
             } );
         } catch ( SQLException e ) {
-            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
+            ClientInfoStatus status = value != null && "22023".equals( e.getSQLState() )
+                    ? ClientInfoStatus.REASON_VALUE_INVALID : ClientInfoStatus.REASON_UNKNOWN;
+            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), Collections.singletonMap( name, status ), e );
         }
     }
 
 
     @Override
     public void setClientInfo( Properties clientInfoProperties ) throws SQLClientInfoException {
-        validateClientInfoNames( clientInfoProperties.stringPropertyNames() );
+        Set<String> pending = new HashSet<>( clientInfoProperties.stringPropertyNames() );
+        validateClientInfoNames( pending );
         try {
             executeNetworkRequest( timeout -> {
-                getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, timeout );
+                getPrismInterfaceClient().setClientInfoProperties( clientInfoProperties, timeout, pending );
                 return null;
             } );
         } catch ( SQLException e ) {
-            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
+            Map<String, ClientInfoStatus> failed = new HashMap<>();
+            pending.forEach( name -> failed.put( name, ClientInfoStatus.REASON_UNKNOWN ) );
+            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), failed, e );
         }
     }
 

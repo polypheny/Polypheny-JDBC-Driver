@@ -23,6 +23,12 @@ public interface Transport {
 
     void sendMessage( byte[] message ) throws IOException;
 
+    /** Calls beginWrite after acquiring any write lock, immediately before the first write. */
+    default void sendMessage( byte[] message, Runnable beginWrite ) throws IOException {
+        beginWrite.run();
+        sendMessage( message );
+    }
+
     /**
      * Attempts a timed send. Call beginWrite after preparing the message and acquiring any write lock.
      * A false return indicates that no bytes were sent.
@@ -32,6 +38,15 @@ public interface Transport {
             return false;
         }
         sendMessage( message );
+        return true;
+    }
+
+    /** Calls finishWrite when the entire frame has been written. */
+    default boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite, Runnable finishWrite ) throws IOException {
+        if ( !trySendMessage( message, deadlineNanos, beginWrite ) ) {
+            return false;
+        }
+        finishWrite.run();
         return true;
     }
 

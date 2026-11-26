@@ -60,7 +60,7 @@ public class PolyphenyResultSet implements ResultSet {
 
     private boolean isMeta = false;
     private boolean generatedKeys;
-    private boolean emptyGeneratedKeys;
+    private boolean emptyMaterializedResult;
 
     private final PolyphenyStatement statement;
     private PolyConnection connection;
@@ -112,12 +112,13 @@ public class PolyphenyResultSet implements ResultSet {
         this.properties.setResultSetType( ResultSet.TYPE_FORWARD_ONLY );
         this.properties.setResultSetConcurrency( ResultSet.CONCUR_READ_ONLY );
         this.generatedKeys = true;
-        this.emptyGeneratedKeys = keys.getRowsCount() == 0;
+        this.emptyMaterializedResult = keys.getRowsCount() == 0;
     }
 
 
     public PolyphenyResultSet( List<PolyphenyColumnMeta> columnMetas, List<List<TypedValue>> rows ) {
         this.resultScroller = new MetaScroller<>( rows );
+        this.emptyMaterializedResult = rows.isEmpty();
         this.metadata = new PolyphenyResultSetMetadata( columnMetas );
         this.statement = null;
         this.properties = PolyphenyResultSetProperties.forMetaResultSet();
@@ -579,28 +580,28 @@ public class PolyphenyResultSet implements ResultSet {
     @Override
     public boolean isBeforeFirst() throws SQLException {
         throwIfClosed();
-        return !emptyGeneratedKeys && resultScroller.isBeforeFirst();
+        return !emptyMaterializedResult && resultScroller.isBeforeFirst();
     }
 
 
     @Override
     public boolean isAfterLast() throws SQLException {
         throwIfClosed();
-        return !emptyGeneratedKeys && resultScroller.isAfterLast();
+        return !emptyMaterializedResult && resultScroller.isAfterLast();
     }
 
 
     @Override
     public boolean isFirst() throws SQLException {
         throwIfClosed();
-        return !emptyGeneratedKeys && resultScroller.isFirst();
+        return !emptyMaterializedResult && resultScroller.isFirst();
     }
 
 
     @Override
     public boolean isLast() throws SQLException {
         throwIfClosed();
-        return !emptyGeneratedKeys && resultScroller.isLast();
+        return !emptyMaterializedResult && resultScroller.isLast();
     }
 
 

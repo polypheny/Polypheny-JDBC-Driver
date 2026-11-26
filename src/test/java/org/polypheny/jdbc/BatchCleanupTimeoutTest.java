@@ -658,8 +658,8 @@ class BatchCleanupTimeoutTest {
 
 
     @ParameterizedTest
-    @CsvSource({ "false, false", "false, true", "true, false", "true, true" })
-    void checksCompletionWhenAnotherJdbcCallerHasNotSweptTheTransaction( boolean generatedKeys, boolean closeOnCompletion ) throws Exception {
+    @CsvSource({ "false, false, false", "false, true, false", "true, false, false", "true, true, false", "false, true, true", "true, true, true" })
+    void checksCompletionWhenAnotherJdbcCallerHasNotSweptTheTransaction( boolean generatedKeys, boolean closeOnCompletion, boolean lateOptIn ) throws Exception {
         CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
         RpcService rpc = new RpcService( transport );
         PrismInterfaceClient client = new PrismInterfaceClient( rpc );
@@ -680,7 +680,7 @@ class BatchCleanupTimeoutTest {
             }
         }; Statement dependent = connection.createStatement(); Statement ddl = connection.createStatement() ) {
             connection.setAutoCommit( false );
-            if ( closeOnCompletion ) {
+            if ( closeOnCompletion && !lateOptIn ) {
                 dependent.closeOnCompletion();
             }
             ResultSet result;
@@ -698,8 +698,12 @@ class BatchCleanupTimeoutTest {
             try {
                 assertTrue( boundaryObserved.await( 2, TimeUnit.SECONDS ) );
                 assertTrue( result.isClosed() );
+                if ( lateOptIn ) {
+                    assertFalse( dependent.isClosed() );
+                    dependent.closeOnCompletion();
+                }
                 int sent = transport.requests.size();
-                if ( closeOnCompletion ) {
+                if ( closeOnCompletion && !lateOptIn ) {
                     assertTrue( dependent.isClosed() );
                     assertThrows( SQLException.class, () -> dependent.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
                     assertEquals( sent, transport.requests.size() );
@@ -712,7 +716,13 @@ class BatchCleanupTimeoutTest {
                 resumeSweep.countDown();
             }
             assertEquals( 1, boundary.get( 2, TimeUnit.SECONDS ) );
-            assertEquals( closeOnCompletion, dependent.isClosed() );
+            assertEquals( closeOnCompletion && !lateOptIn, dependent.isClosed() );
+            if ( lateOptIn ) {
+                try ( ResultSet followingKeys = dependent.getGeneratedKeys() ) {
+                    assertTrue( followingKeys.next() );
+                }
+                assertTrue( dependent.isClosed() );
+            }
             assertFalse( connection.isClosed() );
         } finally {
             resumeSweep.countDown();

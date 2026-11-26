@@ -19,11 +19,14 @@ package org.polypheny.jdbc;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntConsumer;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.PlainTransport;
@@ -542,6 +545,11 @@ public class PrismInterfaceClient {
     }
 
 
+    void withExecutionSlot( RequestDeadline deadline, Transport.WriteOperation<PrismInterfaceServiceException> operation ) throws PrismInterfaceServiceException {
+        rpc.withExecutionSlot( deadline, operation );
+    }
+
+
     public void setConnectionProperties( PolyphenyConnectionProperties connectionProperties, int timeout ) throws PrismInterfaceServiceException {
         RequestDeadline deadline = new RequestDeadline( timeout );
         reserveConnectionPropertiesUpdate( deadline, () ->
@@ -635,8 +643,13 @@ public class PrismInterfaceClient {
 
 
     public void setClientInfoProperties( Properties properties, int timeout ) throws PrismInterfaceServiceException {
+        setClientInfoProperties( properties, timeout, new HashSet<>( properties.stringPropertyNames() ) );
+    }
+
+
+    void setClientInfoProperties( Properties properties, int timeout, Set<String> pending ) throws PrismInterfaceServiceException {
         ClientInfoProperties.Builder requestBuilder = ClientInfoProperties.newBuilder();
-        for ( String name : properties.stringPropertyNames() ) {
+        for ( String name : pending ) {
             validateClientInfoPropertyName( name );
             requestBuilder.putProperties( name, properties.getProperty( name ) );
         }
@@ -644,14 +657,21 @@ public class PrismInterfaceClient {
         RequestDeadline deadline = new RequestDeadline( timeout );
         reserveConnectionPropertiesUpdate( deadline, () -> {
             Map<String, String> current = readClientInfoProperties( deadline );
-            rpc.setClientInfoProperties( request, deadline );
+            Set<String> removals = new LinkedHashSet<>();
             // Older servers only support updating existing properties. Keep their merge behavior.
             if ( supportsClientInfoRemoval( current ) ) {
                 for ( String name : current.keySet() ) {
                     if ( !isPrivateClientInfoProperty( name ) && !request.containsProperties( name ) ) {
-                        removeClientInfoProperty( name, deadline );
+                        removals.add( name );
                     }
                 }
+            }
+            pending.addAll( removals );
+            rpc.setClientInfoProperties( request, deadline );
+            pending.removeAll( request.getPropertiesMap().keySet() );
+            for ( String name : removals ) {
+                removeClientInfoProperty( name, deadline );
+                pending.remove( name );
             }
         } );
     }

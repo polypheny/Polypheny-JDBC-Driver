@@ -18,12 +18,14 @@ package org.polypheny.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -34,6 +36,7 @@ import java.sql.Connection;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -135,6 +138,66 @@ class ClientInfoContractTest {
 
 
     @Test
+    void rejectedSingleValueIdentifiesThePropertyAndKeepsTheServerError() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        runUnderReservation( rpc );
+        PrismInterfaceServiceException rejection = new PrismInterfaceServiceException.ServerError( "Invalid client info value", "22023", 71 );
+        when( rpc.setClientInfoProperties( any( ClientInfoProperties.class ), any( RequestDeadline.class ) ) ).thenThrow( rejection );
+        try ( Connection connection = connection( rpc ) ) {
+            SQLClientInfoException failure = assertThrows( SQLClientInfoException.class,
+                    () -> connection.setClientInfo( "CypherResultFormat", "invalid" ) );
+            assertEquals( "22023", failure.getSQLState() );
+            assertEquals( 71, failure.getErrorCode() );
+            assertSame( rejection, failure.getCause() );
+            assertEquals( Collections.singletonMap( "CypherResultFormat", ClientInfoStatus.REASON_VALUE_INVALID ), failure.getFailedProperties() );
+        }
+    }
+
+
+    @Test
+    void rejectedBulkValuesReportAllUnacknowledgedChanges() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        runUnderReservation( rpc );
+        when( rpc.getClientInfoProperties( any( ClientInfoPropertiesRequest.class ), any( RequestDeadline.class ) ) ).thenReturn(
+                ClientInfoProperties.newBuilder().putProperties( REMOVE, "" ).putProperties( "ClientUser", "Existing" ).build() );
+        PrismInterfaceServiceException rejection = new PrismInterfaceServiceException.ServerError( "Invalid client info value", "22023", 71 );
+        when( rpc.setClientInfoProperties( any( ClientInfoProperties.class ), any( RequestDeadline.class ) ) ).thenThrow( rejection );
+        try ( Connection connection = connection( rpc ) ) {
+            Properties properties = new Properties();
+            properties.setProperty( "CypherResultFormat", "invalid" );
+            properties.setProperty( "ApplicationName", "Importer" );
+            SQLClientInfoException failure = assertThrows( SQLClientInfoException.class, () -> connection.setClientInfo( properties ) );
+            assertEquals( "22023", failure.getSQLState() );
+            assertSame( rejection, failure.getCause() );
+            assertEquals( new HashSet<>( Arrays.asList( "CypherResultFormat", "ApplicationName", "ClientUser" ) ),
+                    failure.getFailedProperties().keySet() );
+            assertFalse( failure.getFailedProperties().containsKey( REMOVE ) );
+        }
+    }
+
+
+    @Test
+    void failedBulkRemovalDoesNotReportAcknowledgedChanges() throws Exception {
+        RpcService rpc = mock( RpcService.class );
+        runUnderReservation( rpc );
+        when( rpc.getClientInfoProperties( any( ClientInfoPropertiesRequest.class ), any( RequestDeadline.class ) ) ).thenReturn(
+                ClientInfoProperties.newBuilder().putProperties( REMOVE, "" ).putProperties( "ClientHostname", "Host" )
+                        .putProperties( "ClientUser", "Existing" ).putProperties( "ApplicationVersionString", "1" ).build() );
+        PrismInterfaceServiceException rejection = new PrismInterfaceServiceException.ServerError( "Cannot clear client info", "22023", 71 );
+        when( rpc.setClientInfoProperties( eq( removal( "ClientUser" ) ), any( RequestDeadline.class ) ) ).thenThrow( rejection );
+        try ( Connection connection = connection( rpc ) ) {
+            Properties properties = new Properties();
+            properties.setProperty( "ApplicationName", "Importer" );
+            SQLClientInfoException failure = assertThrows( SQLClientInfoException.class, () -> connection.setClientInfo( properties ) );
+            assertSame( rejection, failure.getCause() );
+            assertEquals( new HashSet<>( Arrays.asList( "ClientUser", "ApplicationVersionString" ) ), failure.getFailedProperties().keySet() );
+            verify( rpc ).setClientInfoProperties( eq( removal( "ClientHostname" ) ), any( RequestDeadline.class ) );
+            verify( rpc, never() ).setClientInfoProperties( eq( removal( "ApplicationVersionString" ) ), any( RequestDeadline.class ) );
+        }
+    }
+
+
+    @Test
     void negotiationStillEnablesPrivateControls() throws SQLException {
         RpcService rpc = mock( RpcService.class );
         when( rpc.connect( any(), eq( 1000 ) ) ).thenReturn( ConnectionResponse.newBuilder().setIsCompatible( true )
@@ -147,6 +210,11 @@ class ClientInfoContractTest {
         verify( rpc ).setClientInfoProperties( ClientInfoProperties.newBuilder().putProperties( PARTIAL_BATCH, "true" )
                 .putProperties( BOUNDARIES, "true" ).build(), 1000 );
         verify( rpc ).enableTransactionBoundaryEvents();
+    }
+
+
+    private static ClientInfoProperties removal( String name ) {
+        return ClientInfoProperties.newBuilder().putProperties( REMOVE, name ).build();
     }
 
 

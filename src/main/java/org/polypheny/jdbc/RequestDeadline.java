@@ -54,6 +54,11 @@ final class RequestDeadline {
     }
 
 
+    long getQueryDeadlineNanos() {
+        return deadlineNanos;
+    }
+
+
     long remainingMillis() throws PrismInterfaceServiceException {
         if ( timeoutMillis == 0 ) {
             return 0;
@@ -87,6 +92,15 @@ final class RequestDeadline {
 
         BeforeSendTimeout( long timeoutMillis ) {
             super( "Prism request was not sent within " + timeoutMillis + " ms." );
+        }
+
+    }
+
+
+    static final class QuerySendTimeout extends TimeoutException {
+
+        QuerySendTimeout( long timeoutMillis ) {
+            super( "Prism request send did not complete within " + timeoutMillis + " ms." );
         }
 
     }

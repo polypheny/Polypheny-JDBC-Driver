@@ -47,7 +47,9 @@ class MetadataResultSetTest {
                 assertTrue( remote.next() );
                 assertEquals( "public", remote.getString( "TABLE_SCHEM" ) );
                 assertFalse( local.isClosed() );
+                assertNoPosition( local );
                 assertFalse( local.next() );
+                assertNoPosition( local );
 
                 if ( abort ) {
                     connection.abortAfterIncompleteRequest();
@@ -63,6 +65,15 @@ class MetadataResultSetTest {
                         () -> metadata.getProcedureColumns( null, null, null, null ) ).getSQLState() );
             }
         }
+    }
+
+
+    private static void assertNoPosition( ResultSet empty ) throws SQLException {
+        assertFalse( empty.isBeforeFirst() );
+        assertFalse( empty.isAfterLast() );
+        assertFalse( empty.isFirst() );
+        assertFalse( empty.isLast() );
+        assertEquals( 0, empty.getRow() );
     }
 
 }

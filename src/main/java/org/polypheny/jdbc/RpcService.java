@@ -19,7 +19,9 @@ package org.polypheny.jdbc;
 import com.google.protobuf.UnknownFieldSet;
 import java.io.IOException;
 import java.net.ProtocolException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
@@ -113,6 +116,7 @@ public class RpcService {
     private volatile boolean closed = false;
     private final Map<Long, CompletableFuture<Response>> callbacks = new ConcurrentHashMap<>();
     private final Map<Long, CallbackQueue<?>> callbackQueues = new ConcurrentHashMap<>();
+    private final Set<Long> startedRequests = new HashSet<>();
 
 
     private static ScheduledThreadPoolExecutor createWriteDeadlineExecutor() {
@@ -147,6 +151,10 @@ public class RpcService {
 
     void abort() {
         closed = true;
+        synchronized ( startedRequests ) {
+            startedRequests.clear();
+            startedRequests.notifyAll();
+        }
         if ( transportClosed.compareAndSet( false, true ) ) {
             con.close();
         }
@@ -177,17 +185,21 @@ public class RpcService {
         if ( this.closed ) {
             throw new IOException( "Connection is closed" );
         }
-        con.sendMessage( req.toByteArray() );
+        con.sendMessage( req.toByteArray(), () -> markRequestStarted( req.getId() ) );
     }
 
 
     private void sendMessageBeforeDeadline( Request request, CallbackQueue<?> callback ) throws IOException, TimeoutException {
-        long timeoutMillis = callback.getTimeoutMillis();
+        sendMessageBeforeDeadline( request, callback, callback.getTimeoutMillis(), callback.getDeadlineNanos(), false );
+    }
+
+
+    private void sendMessageBeforeDeadline( Request request, CallbackQueue<?> callback, long timeoutMillis, long deadline, boolean writeOnly )
+            throws IOException, TimeoutException {
         if ( timeoutMillis <= 0 ) {
             sendMessage( request );
             return;
         }
-        long deadline = callback.getDeadlineNanos();
         if ( deadline - System.nanoTime() <= 0 ) {
             throw new RequestDeadline.BeforeSendTimeout( timeoutMillis );
         }
@@ -207,13 +219,21 @@ public class RpcService {
                 abort();
             }
         }, remaining, TimeUnit.NANOSECONDS );
+        BooleanSupplier beginWrite = () -> {
+            if ( deadline - System.nanoTime() <= 0 || !state.compareAndSet( WriteState.READY, WriteState.WRITING ) ) {
+                return false;
+            }
+            markRequestStarted( request.getId() );
+            return true;
+        };
         IOException failure = null;
         try {
             if ( closed ) {
                 throw new IOException( "Connection is closed" );
             }
-            boolean sent = con.trySendMessage( payload, deadline,
-                    () -> deadline - System.nanoTime() > 0 && state.compareAndSet( WriteState.READY, WriteState.WRITING ) );
+            boolean sent = writeOnly
+                    ? con.trySendMessage( payload, deadline, beginWrite, () -> state.compareAndSet( WriteState.WRITING, WriteState.FINISHED ) )
+                    : con.trySendMessage( payload, deadline, beginWrite );
             if ( !sent ) {
                 throw new RequestDeadline.BeforeSendTimeout( timeoutMillis );
             }
@@ -224,8 +244,8 @@ public class RpcService {
             watchdog.cancel( false );
         }
 
-        if ( state.get() == WriteState.EXPIRED || (failure == null && deadline - System.nanoTime() <= 0 && !callback.hasTerminalResponse()) ) {
-            TimeoutException timeout = writeTimeout( timeoutMillis );
+        if ( state.get() == WriteState.EXPIRED || (!writeOnly && failure == null && deadline - System.nanoTime() <= 0 && !callback.hasTerminalResponse()) ) {
+            TimeoutException timeout = writeOnly ? new RequestDeadline.QuerySendTimeout( timeoutMillis ) : writeTimeout( timeoutMillis );
             if ( failure != null ) {
                 timeout.addSuppressed( failure );
             }
@@ -248,14 +268,8 @@ public class RpcService {
                 sendMessageBeforeDeadline( request.build(), callback );
                 return;
             }
-            // Wait for the writer within the query budget, then pass the remaining time to the server.
-            // Once the send starts, only the network timeout can close the transport.
-            int waitMillis = (int) Math.min( deadline.remainingMillis(), Integer.MAX_VALUE );
-            if ( !con.withWriteReservation( waitMillis, () -> sendTimedExecution( request, callback, deadline ) ) ) {
-                throw new RequestDeadline.BeforeSendTimeout( deadline.timeoutMillis );
-            }
-        } catch ( InterruptedException e ) {
-            throw PrismInterfaceClient.interruptedBeforeWrite( e );
+            // Use the query deadline until the frame is written. The server handles execution time after dispatch.
+            withExecutionSlot( deadline, () -> sendTimedExecution( request, callback, deadline ) );
         } catch ( IOException e ) {
             throw connectionFailure( e );
         } catch ( TimeoutException e ) {
@@ -270,11 +284,27 @@ public class RpcService {
                 .addField( QUERY_TIMEOUT_EXTENSION, UnknownFieldSet.Field.newBuilder().addVarint( remaining ).build() )
                 .build() );
         try {
-            sendMessageBeforeDeadline( request.build(), callback );
+            sendMessageBeforeDeadline( request.build(), callback, deadline.timeoutMillis, deadline.getQueryDeadlineNanos(), true );
         } catch ( IOException e ) {
             throw connectionFailure( e );
         } catch ( TimeoutException e ) {
             throw new PrismInterfaceServiceException( e );
+        }
+    }
+
+
+    void withExecutionSlot( RequestDeadline deadline, Transport.WriteOperation<PrismInterfaceServiceException> operation ) throws PrismInterfaceServiceException {
+        try {
+            int waitMillis = (int) Math.min( deadline.remainingMillis(), Integer.MAX_VALUE );
+            if ( !con.withWriteReservation( waitMillis, () -> {
+                awaitEarlierRequests( deadline );
+                deadline.remainingMillis();
+                operation.run();
+            } ) ) {
+                throw new PrismInterfaceServiceException( new RequestDeadline.BeforeSendTimeout( deadline.timeoutMillis ) );
+            }
+        } catch ( InterruptedException e ) {
+            throw PrismInterfaceClient.interruptedBeforeWrite( e );
         }
     }
 
@@ -286,6 +316,44 @@ public class RpcService {
 
     private Response receiveMessage() throws IOException {
         return Response.parseFrom( con.receiveMessage() );
+    }
+
+
+    private void markRequestStarted( long id ) {
+        if ( serverQueryTimeout ) {
+            synchronized ( startedRequests ) {
+                if ( !closed ) {
+                    startedRequests.add( id );
+                }
+            }
+        }
+    }
+
+
+    private void markRequestFinished( long id ) {
+        synchronized ( startedRequests ) {
+            if ( startedRequests.remove( id ) && startedRequests.isEmpty() ) {
+                startedRequests.notifyAll();
+            }
+        }
+    }
+
+
+    private void awaitEarlierRequests( RequestDeadline deadline ) throws PrismInterfaceServiceException {
+        // Called with the transport write reservation held. Prism executes requests in order, so
+        // wait locally before sending a timed execution that would otherwise queue on the server.
+        synchronized ( startedRequests ) {
+            while ( !startedRequests.isEmpty() && !closed ) {
+                try {
+                    startedRequests.wait( deadline.remainingMillis() );
+                } catch ( InterruptedException e ) {
+                    throw PrismInterfaceClient.interruptedBeforeWrite( e );
+                }
+            }
+            if ( closed ) {
+                throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_FAILURE, "Prism connection failed." );
+            }
+        }
     }
 
 
@@ -306,8 +374,11 @@ public class RpcService {
                     continue;
                 }
                 // Stamp replies in wire order, before an application thread can be delayed consuming them.
-                if ( resp.getLast() && pendingTransactions.remove( id, resp.getTypeCase() ) ) {
-                    transactionGeneration.incrementAndGet();
+                if ( resp.getLast() ) {
+                    if ( pendingTransactions.remove( id, resp.getTypeCase() ) ) {
+                        transactionGeneration.incrementAndGet();
+                    }
+                    markRequestFinished( id );
                 }
                 long generation = transactionGeneration.get();
                 if ( c == null ) {
