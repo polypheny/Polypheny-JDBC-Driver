@@ -230,7 +230,7 @@ class GeneratedKeysResultTest {
 
 
     @Test
-    void rejectsGetRowOnClosedGeneratedKeys() throws SQLException {
+    void rejectsCursorPositionMethodsOnClosedGeneratedKeys() throws SQLException {
         Frame frame = frame( column( "id", "items", "public", ProtoPolyType.BIGINT ), TypedValue.fromLong( 1 ) );
         try ( ResultSet keys = resultSet( frame ) ) {
             assertEquals( 0, keys.getRow() );
@@ -238,6 +238,10 @@ class GeneratedKeysResultTest {
             assertEquals( 1, keys.getRow() );
             keys.close();
             assertThrows( SQLException.class, keys::getRow );
+            assertThrows( SQLException.class, keys::isBeforeFirst );
+            assertThrows( SQLException.class, keys::isAfterLast );
+            assertThrows( SQLException.class, keys::isFirst );
+            assertThrows( SQLException.class, keys::isLast );
         }
     }
 

@@ -95,7 +95,7 @@ public class BidirectionalScroller implements BidirectionalScrollable<List<Typed
         try {
             values.addAll( fetcherThread.awaitPage() );
         } catch ( PrismInterfaceServiceException failure ) {
-            if ( failure.getCause() instanceof RequestDeadline.BeforeSendTimeout ) {
+            if ( failure.getCause() instanceof RequestDeadline.BeforeSendTimeout || failure instanceof PrismInterfaceServiceException.InterruptedBeforeSend ) {
                 fetcherThread = null;
             }
             throw failure;

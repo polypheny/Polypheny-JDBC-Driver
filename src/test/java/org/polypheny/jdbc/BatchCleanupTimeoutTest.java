@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -62,6 +63,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
+import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.types.TypedValue;
@@ -655,6 +657,105 @@ class BatchCleanupTimeoutTest {
     }
 
 
+    @ParameterizedTest
+    @CsvSource({ "false, false", "false, true", "true, false", "true, true" })
+    void checksCompletionWhenAnotherJdbcCallerHasNotSweptTheTransaction( boolean generatedKeys, boolean closeOnCompletion ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
+        RpcService rpc = new RpcService( transport );
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
+        PolyphenyConnectionProperties settings = new PolyphenyConnectionProperties( target, client );
+        CountDownLatch boundaryObserved = new CountDownLatch( 1 );
+        CountDownLatch resumeSweep = new CountDownLatch( 1 );
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        AtomicReference<Thread> ddlThread = new AtomicReference<>();
+        client.register( settings, 1000 );
+        try ( Connection connection = new PolyConnection( settings, new PolyphenyDatabaseMetadata( client, target ) ) {
+            @Override
+            public void refreshTransactionResults() {
+                if ( Thread.currentThread() == ddlThread.get() ) {
+                    waitToContinue( boundaryObserved, resumeSweep );
+                }
+                super.refreshTransactionResults();
+            }
+        }; Statement dependent = connection.createStatement(); Statement ddl = connection.createStatement() ) {
+            connection.setAutoCommit( false );
+            if ( closeOnCompletion ) {
+                dependent.closeOnCompletion();
+            }
+            ResultSet result;
+            if ( generatedKeys ) {
+                assertEquals( 1, dependent.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+                result = dependent.getGeneratedKeys();
+            } else {
+                result = dependent.executeQuery( SELECT );
+            }
+            transport.sendImplicitBoundary = true;
+            Future<Integer> boundary = executor.submit( () -> {
+                ddlThread.set( Thread.currentThread() );
+                return ddl.executeUpdate( "CREATE TABLE probe (x INTEGER PRIMARY KEY)" );
+            } );
+            try {
+                assertTrue( boundaryObserved.await( 2, TimeUnit.SECONDS ) );
+                assertTrue( result.isClosed() );
+                int sent = transport.requests.size();
+                if ( closeOnCompletion ) {
+                    assertTrue( dependent.isClosed() );
+                    assertThrows( SQLException.class, () -> dependent.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+                    assertEquals( sent, transport.requests.size() );
+                } else {
+                    assertFalse( dependent.isClosed() );
+                    assertEquals( 1, dependent.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+                    assertTrue( transport.requests.size() > sent );
+                }
+            } finally {
+                resumeSweep.countDown();
+            }
+            assertEquals( 1, boundary.get( 2, TimeUnit.SECONDS ) );
+            assertEquals( closeOnCompletion, dependent.isClosed() );
+            assertFalse( connection.isClosed() );
+        } finally {
+            resumeSweep.countDown();
+            executor.shutdownNow();
+            rpc.close();
+        }
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({ "false", "true" })
+    void multimodelBoundaryReleasesCompletedJdbcStatement( boolean cleanupMustRetry ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
+        RpcService rpc = new RpcService( transport );
+        PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+        ConnectionString target = new ConnectionString( "jdbc:polypheny://localhost/public" );
+        PolyphenyConnectionProperties settings = new PolyphenyConnectionProperties( target, client );
+        client.register( settings, 1000 );
+        try ( PolyConnection connection = new PolyConnection( settings, new PolyphenyDatabaseMetadata( client, target ) );
+                Statement query = connection.createStatement(); PolyStatement ddl = connection.createPolyStatement() ) {
+            connection.setAutoCommit( false );
+            connection.setNetworkTimeout( Runnable::run, 1000 );
+            query.closeOnCompletion();
+            try ( ResultSet result = query.executeQuery( SELECT ) ) {
+                transport.sendImplicitBoundary = true;
+                transport.rejectStatementCloseBeforeSend = cleanupMustRetry;
+                ddl.execute( "public", "sql", "CREATE TABLE probe (x INTEGER PRIMARY KEY)" );
+                assertEquals( cleanupMustRetry ? 0 : 1, transport.requests.stream().filter( TypeCase.CLOSE_STATEMENT_REQUEST::equals ).count() );
+                assertTrue( result.isClosed() );
+                assertTrue( query.isClosed() );
+                assertThrows( SQLException.class, () -> query.executeUpdate( INSERT, Statement.RETURN_GENERATED_KEYS ) );
+                assertFalse( connection.isClosed() );
+
+                transport.rejectStatementCloseBeforeSend = false;
+                query.close();
+                assertEquals( 1, transport.requests.stream().filter( TypeCase.CLOSE_STATEMENT_REQUEST::equals ).count() );
+            }
+        } finally {
+            rpc.close();
+        }
+    }
+
+
     private static Statement pauseResultConstruction( Connection connection, boolean prepared, AtomicReference<Thread> queryThread,
             CountDownLatch buildingResult, CountDownLatch resumeResult ) throws SQLException {
         PolyphenyStatement original = (PolyphenyStatement) (prepared ? connection.prepareStatement( SELECT ) : connection.createStatement());
@@ -711,6 +812,7 @@ class BatchCleanupTimeoutTest {
         private boolean boundaryEventsRequested;
         private boolean sendImplicitBoundary;
         private boolean implicitBoundaryFails;
+        private boolean rejectStatementCloseBeforeSend;
 
 
         private CleanupTransport( TypeCase cleanupType, Intercept intercept ) {
@@ -722,6 +824,15 @@ class BatchCleanupTimeoutTest {
             this.cleanupType = cleanupType;
             this.intercept = intercept;
             this.failStatementClose = failStatementClose;
+        }
+
+
+        @Override
+        public boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite ) throws IOException {
+            if ( rejectStatementCloseBeforeSend && Request.parseFrom( message ).getTypeCase() == TypeCase.CLOSE_STATEMENT_REQUEST ) {
+                return false;
+            }
+            return Transport.super.trySendMessage( message, deadlineNanos, beginWrite );
         }
 
 

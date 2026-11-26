@@ -155,6 +155,9 @@ public class RpcService {
 
 
     private PrismInterfaceServiceException connectionFailure( IOException cause ) {
+        if ( cause instanceof Transport.WriteInterruptedException ) {
+            return PrismInterfaceClient.interruptedBeforeWrite( ((Transport.WriteInterruptedException) cause).getCause() );
+        }
         abort();
         return new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_FAILURE, "Prism connection failed.", cause );
     }

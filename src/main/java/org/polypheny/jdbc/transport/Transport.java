@@ -44,6 +44,21 @@ public interface Transport {
         return true;
     }
 
+
+    final class WriteInterruptedException extends IOException {
+
+        WriteInterruptedException( InterruptedException cause ) {
+            super( cause );
+        }
+
+        @Override
+        public synchronized InterruptedException getCause() {
+            return (InterruptedException) super.getCause();
+        }
+
+    }
+
+
     @FunctionalInterface
     interface WriteOperation<E extends Exception> {
 

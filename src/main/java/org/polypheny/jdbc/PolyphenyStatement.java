@@ -55,6 +55,7 @@ public class PolyphenyStatement implements Statement {
 
     private final Object resultsLock = new Object();
     private volatile boolean isClosed;
+    private volatile boolean closedAtTransactionEnd;
     private volatile boolean clearingResults;
     private ExecutionDeadline cleanupDeadline;
     private RelationalFrame generatedKeysFrame;
@@ -114,10 +115,18 @@ public class PolyphenyStatement implements Statement {
 
 
     protected final void clearExecutionResults() throws SQLException {
+        clearExecutionResults( false );
+    }
+
+
+    private void clearExecutionResults( boolean closing ) throws SQLException {
         clearingResults = true;
         try {
             ResultSet previousResult;
             synchronized ( resultsLock ) {
+                if ( !closing && (isLocallyClosed() || closedOnCompletionByTransaction()) ) {
+                    throw closedStatement();
+                }
                 clearGeneratedKeys();
                 previousResult = currentResult;
             }
@@ -145,21 +154,37 @@ public class PolyphenyStatement implements Statement {
     final void closeResultsFromEarlierTransactions( long generation ) throws SQLException {
         boolean closeStatement;
         synchronized ( resultsLock ) {
+            if ( isLocallyClosed() ) {
+                return;
+            }
             boolean closedDependentResult = false;
-            if ( currentResult instanceof PolyphenyResultSet && ((PolyphenyResultSet) currentResult).closedByTransaction( generation ) ) {
+            if ( currentResultClosedByTransaction( generation ) ) {
                 // Prism has already closed the server cursor.
                 clearCurrentResult();
                 closedDependentResult = true;
             }
-            if ( generatedKeysProperties != null && closedByTransaction( generatedKeysProperties.getResultSetHoldability(), generatedKeysGeneration, generation ) ) {
+            if ( generatedKeysClosedByTransaction( generation ) ) {
                 closedDependentResult |= generatedKeysFrame != null;
                 clearGeneratedKeys();
             }
             closeStatement = closedDependentResult && canCloseAfterDependentResults();
+            if ( closeStatement ) {
+                closedAtTransactionEnd = true;
+            }
         }
         if ( closeStatement ) {
             closeAfterTransaction();
         }
+    }
+
+
+    private boolean currentResultClosedByTransaction( long generation ) {
+        return currentResult instanceof PolyphenyResultSet && ((PolyphenyResultSet) currentResult).closedByTransaction( generation );
+    }
+
+
+    private boolean generatedKeysClosedByTransaction( long generation ) {
+        return generatedKeysProperties != null && closedByTransaction( generatedKeysProperties.getResultSetHoldability(), generatedKeysGeneration, generation );
     }
 
 
@@ -257,9 +282,12 @@ public class PolyphenyStatement implements Statement {
         }
         boolean closeStatement = false;
         synchronized ( resultsLock ) {
-            if ( !isClosed ) {
+            if ( !isLocallyClosed() ) {
                 if ( closedByTransaction( keyProperties.getResultSetHoldability(), transactionGeneration, getClient().getTransactionGeneration() ) ) {
                     closeStatement = keysOnly && canCloseAfterDependentResults();
+                    if ( closeStatement ) {
+                        closedAtTransactionEnd = true;
+                    }
                 } else {
                     generatedKeysFrame = keys;
                     generatedKeysProperties = keyProperties;
@@ -290,22 +318,25 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void close() throws SQLException {
-        if ( isClosed ) {
-            return;
+        synchronized ( resultsLock ) {
+            if ( isClosed ) {
+                return;
+            }
+            isClosed = true;
         }
-        isClosed = true;
         boolean retryable = false;
         try {
             SQLException resultFailure = null;
             try {
-                clearExecutionResults();
+                clearExecutionResults( true );
             } catch ( SQLException failure ) {
                 resultFailure = failure;
             }
             try {
                 releaseStatementHandle();
             } catch ( SQLException failure ) {
-                retryable = failure.getCause() instanceof RequestDeadline.BeforeSendTimeout;
+                retryable = failure.getCause() instanceof RequestDeadline.BeforeSendTimeout
+                        || failure instanceof PrismInterfaceServiceException.InterruptedBeforeSend;
                 if ( resultFailure == null ) {
                     throw failure;
                 }
@@ -316,7 +347,11 @@ public class PolyphenyStatement implements Statement {
             }
         } finally {
             if ( retryable && !polyConnection.isClosed() ) {
-                isClosed = false;
+                synchronized ( resultsLock ) {
+                    if ( statementId != NO_STATEMENT_ID ) {
+                        isClosed = false;
+                    }
+                }
             } else {
                 dispose();
             }
@@ -364,18 +399,21 @@ public class PolyphenyStatement implements Statement {
         result.setTransactionGeneration( transactionGeneration );
         boolean closeStatement = false;
         synchronized ( resultsLock ) {
-            if ( isClosed ) {
+            if ( isLocallyClosed() ) {
                 result.markClosed();
                 throw closedStatement();
             }
             if ( result.closedByTransaction( getClient().getTransactionGeneration() ) ) {
                 result.markClosed();
                 closeStatement = canCloseAfterDependentResults();
+                if ( closeStatement ) {
+                    closedAtTransactionEnd = true;
+                }
             } else {
                 currentResult = result;
             }
         }
-        checkPublishedResult( result );
+        checkPublishedResult( result, closeStatement );
         if ( closeStatement ) {
             closeAfterTransaction();
         }
@@ -383,9 +421,9 @@ public class PolyphenyStatement implements Statement {
     }
 
 
-    private ResultSet checkPublishedResult( PolyphenyResultSet result ) throws SQLException {
+    private ResultSet checkPublishedResult( PolyphenyResultSet result, boolean closingAfterTransaction ) throws SQLException {
         // The connection can be marked closed before its abort has disposed of every statement.
-        if ( isClosed() ) {
+        if ( isClosed || (closedAtTransactionEnd && !closingAfterTransaction) || polyConnection.isClosed() ) {
             result.markClosed();
             throw closedStatement();
         }
@@ -741,6 +779,7 @@ public class PolyphenyStatement implements Statement {
             cleanupDeadline = null;
         }
         try {
+            throwIfClosed();
             deadline.requestDeadline.remainingMillis();
             T value = request.execute( deadline.requestDeadline );
             return new ExecutionResult<>( value, deadline.requestDeadline.getTransactionGeneration() );
@@ -846,7 +885,7 @@ public class PolyphenyStatement implements Statement {
         GeneratedKeys.requireSupported( getClient() );
         PolyphenyResultSet result;
         synchronized ( resultsLock ) {
-            if ( isClosed ) {
+            if ( isLocallyClosed() ) {
                 throw closedStatement();
             }
             if ( generatedKeysResult == null ) {
@@ -860,7 +899,7 @@ public class PolyphenyStatement implements Statement {
             }
             result = generatedKeysResult;
         }
-        return checkPublishedResult( result );
+        return checkPublishedResult( result, false );
     }
 
 
@@ -927,7 +966,31 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public boolean isClosed() throws SQLException {
-        return isClosed || polyConnection.isClosed();
+        if ( isLocallyClosed() || polyConnection.isClosed() ) {
+            return true;
+        }
+        synchronized ( resultsLock ) {
+            return isLocallyClosed() || closedOnCompletionByTransaction();
+        }
+    }
+
+
+    private boolean closedOnCompletionByTransaction() throws SQLException {
+        if ( !properties.isCloseOnCompletion() || (currentResult == null && generatedKeysFrame == null) ) {
+            return false;
+        }
+        // A response can report closure before the requesting thread sweeps the connection's statements.
+        long generation = getClient().getTransactionGeneration();
+        boolean resultClosed = currentResultClosedByTransaction( generation );
+        boolean keysClosed = generatedKeysClosedByTransaction( generation );
+        return (resultClosed || (keysClosed && generatedKeysFrame != null))
+                && (currentResult == null || resultClosed)
+                && (keysClosed || !hasOpenGeneratedKeys());
+    }
+
+
+    private boolean isLocallyClosed() {
+        return isClosed || closedAtTransactionEnd;
     }
 
 

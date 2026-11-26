@@ -65,6 +65,7 @@ import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
 import org.polypheny.jdbc.transport.Transport;
 import org.polypheny.jdbc.types.PolyBlob;
 import org.polypheny.prism.BatchGeneratedKeys;
+import org.polypheny.prism.ClientInfoProperties;
 import org.polypheny.prism.ClientInfoPropertiesResponse;
 import org.polypheny.prism.CloseResultResponse;
 import org.polypheny.prism.CloseStatementResponse;
@@ -143,6 +144,32 @@ class RpcServiceErrorTest {
     @AfterEach
     void tearDown() {
         rpc.close();
+    }
+
+
+    @Test
+    void networkTimeoutRequiresAnExecutorAndPreservesTheConfiguredValue() throws SQLException {
+        Connection connection = createConnection();
+        connection.setNetworkTimeout( Runnable::run, 100 );
+
+        assertThrows( SQLException.class, () -> connection.setNetworkTimeout( null, 150 ) );
+
+        assertEquals( 100, connection.getNetworkTimeout() );
+        assertFalse( connection.isClosed() );
+    }
+
+
+    @Test
+    void olderServerDoesNotReceiveAnUnsupportedClientInfoRemoval() throws SQLException {
+        Connection connection = createConnection();
+        replyTo( TypeCase.CLIENT_INFO_PROPERTIES_REQUEST, Response.newBuilder().setLast( true )
+                .setClientInfoPropertiesResponse( ClientInfoProperties.newBuilder().putProperties( "ApplicationName", "Importer" ) ) );
+
+        SQLClientInfoException failure = assertThrows( SQLClientInfoException.class, () -> connection.setClientInfo( "ApplicationName", null ) );
+
+        assertEquals( "0A000", failure.getSQLState() );
+        assertEquals( "Importer", connection.getClientInfo( "ApplicationName" ) );
+        assertFalse( connection.isClosed() );
     }
 
 

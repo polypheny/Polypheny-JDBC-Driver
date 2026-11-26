@@ -22,6 +22,15 @@ import org.polypheny.prism.StatementBatchResponse;
 
 public class PrismInterfaceServiceException extends SQLException {
 
+    public static final class InterruptedBeforeSend extends PrismInterfaceServiceException {
+
+        InterruptedBeforeSend( InterruptedException cause ) {
+            super( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Interrupted before sending a Prism request.", cause );
+        }
+
+    }
+
+
     static final class ServerError extends PrismInterfaceServiceException {
 
         private final StatementBatchResponse completedBatch;

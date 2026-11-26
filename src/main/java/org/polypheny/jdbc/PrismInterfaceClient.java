@@ -17,6 +17,8 @@
 package org.polypheny.jdbc;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,6 +83,7 @@ import org.polypheny.prism.TypesRequest;
 public class PrismInterfaceClient {
 
     private static final String PARTIAL_BATCH_RESULTS = "PolyphenyPartialBatchResults";
+    private static final String REMOVE_CLIENT_INFO_PROPERTY = "PolyphenyRemoveClientInfoProperty";
     private final RpcService rpc;
     private boolean supportsGeneratedKeys;
 
@@ -555,7 +558,7 @@ public class PrismInterfaceClient {
 
     static PrismInterfaceServiceException interruptedBeforeWrite( InterruptedException cause ) {
         Thread.currentThread().interrupt();
-        return new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Interrupted before sending a Prism request.", cause );
+        return new PrismInterfaceServiceException.InterruptedBeforeSend( cause );
     }
 
 
@@ -580,7 +583,18 @@ public class PrismInterfaceClient {
 
 
     public Map<String, String> getClientInfoProperties( int timeout ) throws PrismInterfaceServiceException {
-        return rpc.getClientInfoProperties( ClientInfoPropertiesRequest.newBuilder().build(), timeout ).getPropertiesMap();
+        Map<String, String> properties = readClientInfoProperties( timeout );
+        if ( !"".equals( properties.get( REMOVE_CLIENT_INFO_PROPERTY ) ) ) {
+            return properties;
+        }
+        Map<String, String> result = new HashMap<>( properties );
+        result.remove( REMOVE_CLIENT_INFO_PROPERTY );
+        return Collections.unmodifiableMap( result );
+    }
+
+
+    private Map<String, String> readClientInfoProperties( int timeout ) throws PrismInterfaceServiceException {
+        return rpc.getClientInfoProperties( ClientInfoPropertiesRequest.getDefaultInstance(), timeout ).getPropertiesMap();
     }
 
 
@@ -611,6 +625,27 @@ public class PrismInterfaceClient {
         ClientInfoProperties.Builder requestBuilder = ClientInfoProperties.newBuilder();
         properties.stringPropertyNames().forEach( s -> requestBuilder.putProperties( s, properties.getProperty( s ) ) );
         rpc.setClientInfoProperties( requestBuilder.build(), timeout );
+    }
+
+
+    void setClientInfoProperty( String name, String value, int timeout ) throws PrismInterfaceServiceException {
+        if ( name == null || name.isEmpty() || REMOVE_CLIENT_INFO_PROPERTY.equals( name ) ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Invalid ClientInfo property name." );
+        }
+        ClientInfoProperties.Builder request = ClientInfoProperties.newBuilder();
+        if ( value == null ) {
+            Map<String, String> properties = readClientInfoProperties( timeout );
+            if ( !properties.containsKey( name ) ) {
+                return;
+            }
+            if ( !"".equals( properties.get( REMOVE_CLIENT_INFO_PROPERTY ) ) ) {
+                throw new PrismInterfaceServiceException( "The Prism server does not support removing ClientInfo properties.", "0A000" );
+            }
+            request.putProperties( REMOVE_CLIENT_INFO_PROPERTY, name );
+        } else {
+            request.putProperties( name, value );
+        }
+        rpc.setClientInfoProperties( request.build(), timeout );
     }
 
 

@@ -51,6 +51,22 @@ class Prism25IntegrationTest {
 
 
     @Test
+    void nullClientInfoValueClearsOnlyThatProperty() throws SQLException {
+        try ( Connection connection = DriverManager.getConnection( DB_URL, "pa", "" ) ) {
+            connection.setClientInfo( "ApplicationName", "Importer" );
+            connection.setClientInfo( "ClientUser", "Operator" );
+            assertEquals( "Importer", connection.getClientInfo( "ApplicationName" ) );
+
+            connection.setClientInfo( "ApplicationName", null );
+
+            assertNull( connection.getClientInfo( "ApplicationName" ) );
+            assertEquals( "Operator", connection.getClientInfo( "ClientUser" ) );
+            assertFalse( connection.getClientInfo().containsKey( "PolyphenyRemoveClientInfoProperty" ) );
+        }
+    }
+
+
+    @Test
     void preSendQueryTimeoutPreservesEarlierWrites() throws SQLException {
         String table = "jdbc_deadline_" + UUID.randomUUID().toString().replace( "-", "" );
         try ( Connection observer = DriverManager.getConnection( DB_URL, "pa", "" );

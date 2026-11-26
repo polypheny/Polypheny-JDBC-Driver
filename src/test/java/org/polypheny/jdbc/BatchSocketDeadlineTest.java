@@ -45,11 +45,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -162,6 +164,96 @@ class BatchSocketDeadlineTest {
         BATCH,
         PREPARE,
         PREPARE_WITH_KEYS
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, 2000 })
+    void interruptingAnUnsentMetadataRequestDoesNotAbortPriorWork( int networkTimeout ) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool( 2 );
+        CountDownLatch reserved = new CountDownLatch( 1 );
+        CountDownLatch release = new CountDownLatch( 1 );
+        CountDownLatch attemptingSend = new CountDownLatch( 1 );
+        try ( ServerSocket server = new ServerSocket() ) {
+            server.bind( new InetSocketAddress( "127.0.0.1", 0 ) );
+            server.setSoTimeout( 3000 );
+            Future<?> peer = executor.submit( () -> {
+                try ( Socket socket = server.accept() ) {
+                    acknowledgeHandshake( socket, false );
+                    DataInputStream input = new DataInputStream( socket.getInputStream() );
+                    DataOutputStream output = new DataOutputStream( socket.getOutputStream() );
+                    Request insert = readRequest( input, TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST );
+                    writeResponse( output, insert, responseForConcurrentOperation( insert ) );
+                    Request commit = readRequest( input, TypeCase.COMMIT_REQUEST );
+                    writeResponse( output, commit, Response.newBuilder().setCommitResponse( CommitResponse.getDefaultInstance() ) );
+                    assertEquals( -1, input.read() );
+                }
+                return null;
+            } );
+            PlainTransport transport = new PlainTransport( "127.0.0.1", server.getLocalPort() ) {
+                @Override
+                public void sendMessage( byte[] request ) throws IOException {
+                    observeMetadata( request );
+                    super.sendMessage( request );
+                }
+
+                @Override
+                public boolean trySendMessage( byte[] request, long deadline, BooleanSupplier beginWrite ) throws IOException {
+                    observeMetadata( request );
+                    return super.trySendMessage( request, deadline, beginWrite );
+                }
+
+                private void observeMetadata( byte[] request ) throws IOException {
+                    if ( Request.parseFrom( request ).hasDefaultNamespaceRequest() ) {
+                        attemptingSend.countDown();
+                    }
+                }
+            };
+            RpcService rpc = new RpcService( transport );
+            Thread caller = null;
+            try {
+                PrismInterfaceClient client = new PrismInterfaceClient( rpc );
+                Properties parameters = new Properties();
+                parameters.setProperty( PropertyUtils.getAUTOCOMMIT_KEY(), "false" );
+                ConnectionString target = new ConnectionString( "jdbc:polypheny://127.0.0.1:" + server.getLocalPort(), parameters );
+                Connection connection = new PolyConnection( new PolyphenyConnectionProperties( target, client ),
+                        new PolyphenyDatabaseMetadata( client, target ) );
+                connection.setNetworkTimeout( Runnable::run, networkTimeout );
+                Statement statement = connection.createStatement();
+                assertEquals( 1, statement.executeUpdate( "INSERT INTO probe VALUES (1)" ) );
+                Future<Boolean> reservation = executor.submit( () -> rpc.withWriteReservation( 3000, () -> {
+                    reserved.countDown();
+                    assertTrue( release.await( 5, TimeUnit.SECONDS ) );
+                } ) );
+                assertTrue( reserved.await( 2, TimeUnit.SECONDS ) );
+
+                FutureTask<SQLException> pending = new FutureTask<>( () -> {
+                    SQLException failure = assertThrows( SQLException.class, () -> connection.getMetaData().getCatalogs() );
+                    assertTrue( Thread.currentThread().isInterrupted() );
+                    return failure;
+                } );
+                caller = new Thread( pending );
+                caller.start();
+                assertTrue( attemptingSend.await( 2, TimeUnit.SECONDS ) );
+                caller.interrupt();
+                assertInstanceOf( PrismInterfaceServiceException.InterruptedBeforeSend.class, pending.get( 2, TimeUnit.SECONDS ) );
+                assertFalse( connection.isClosed() );
+                assertFalse( statement.isClosed() );
+
+                release.countDown();
+                assertTrue( reservation.get( 2, TimeUnit.SECONDS ) );
+                connection.commit();
+            } finally {
+                release.countDown();
+                if ( caller != null ) {
+                    caller.interrupt();
+                }
+                rpc.close();
+            }
+            peer.get( 3, TimeUnit.SECONDS );
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
 

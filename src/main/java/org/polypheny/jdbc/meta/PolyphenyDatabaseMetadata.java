@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.polypheny.jdbc.ConnectionString;
 import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.PolyphenyResultSet;
 import org.polypheny.jdbc.PrismInterfaceClient;
 import org.polypheny.jdbc.PrismInterfaceErrors;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
@@ -92,6 +93,15 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
     public void setConnection( PolyConnection connection ) {
         this.polyConnection = connection;
+    }
+
+
+    private ResultSet bindMetadataResult( ResultSet result ) throws SQLException {
+        ((PolyphenyResultSet) result).bindMetadataConnection( polyConnection );
+        if ( result.isClosed() ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.CONNECTION_LOST, "Illegal operation on closed connection." );
+        }
+        return result;
     }
 
 
@@ -835,7 +845,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     public ResultSet getProcedures( String catalog, String schemaPattern, String procedureNamePattern ) throws SQLException {
         throwNotSupportedIfStrict();
         List<Procedure> procedures = polyConnection.executeNetworkRequest( timeout -> prismInterfaceClient.searchProcedures( "sql", procedureNamePattern, timeout ) );
-        return MetaResultSetBuilder.buildFromProcedures( procedures );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromProcedures( procedures ) );
     }
 
 
@@ -845,7 +855,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         // For the production version the getProcedures api call should be used to retrieve the procedures meta
         // which will contain all info required to build this result set.
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromProcedureColumns();
+        return bindMetadataResult( MetaResultSetBuilder.buildFromProcedureColumns() );
     }
 
 
@@ -855,11 +865,11 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
 
         List<Table> tables = getTableStream( schemaPattern, tableNamePattern ).collect( Collectors.toList() );
         if ( types == null ) {
-            return MetaResultSetBuilder.buildFromTables( tables );
+            return bindMetadataResult( MetaResultSetBuilder.buildFromTables( tables ) );
         }
         HashSet<String> tableTypes = new HashSet<>( Arrays.asList( types ) );
         tables = tables.stream().filter( t -> tableTypes.contains( t.getTableType() ) ).collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromTables( tables );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromTables( tables ) );
 
     }
 
@@ -873,21 +883,21 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getCatalogs() throws SQLException {
         String defaultNamespace = polyConnection.executeNetworkRequest( prismInterfaceClient::getDefaultNamespace );
-        return MetaResultSetBuilder.buildFromDatabases( defaultNamespace );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromDatabases( defaultNamespace ) );
     }
 
 
     @Override
     public ResultSet getTableTypes() throws SQLException {
         List<TableType> tableTypes = polyConnection.executeNetworkRequest( prismInterfaceClient::getTablesTypes );
-        return MetaResultSetBuilder.buildFromTableTypes( tableTypes );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromTableTypes( tableTypes ) );
     }
 
 
     @Override
     public ResultSet getColumns( String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern ) throws SQLException {
         List<Column> columns = getMatchingColumns( schemaPattern, tableNamePattern, columnNamePattern );
-        return MetaResultSetBuilder.buildFromColumns( columns );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromColumns( columns ) );
     }
 
 
@@ -934,7 +944,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
          */
         throwNotSupportedIfStrict();
         List<Column> columns = getMatchingColumns( schemaPattern, tableNamePattern, columnNamePattern );
-        return MetaResultSetBuilder.buildFromColumnPrivileges( columns, getUserName() );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromColumnPrivileges( columns, getUserName() ) );
     }
 
 
@@ -946,7 +956,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
          */
         throwNotSupportedIfStrict();
         List<Table> tables = getTableStream( schemaPattern, tableNamePattern ).collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromTablePrivileges( tables, getUserName() );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromTablePrivileges( tables, getUserName() ) );
     }
 
 
@@ -959,7 +969,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
                 .flatMap( List::stream )
                 .filter( c -> !c.getIsNullable() || nullable )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.fromBestRowIdentifiers( columns );
+        return bindMetadataResult( MetaResultSetBuilder.fromBestRowIdentifiers( columns ) );
     }
 
 
@@ -970,7 +980,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
                 .flatMap( List::stream )
                 .filter( c -> c.getColumnType() == Column.ColumnType.VERSION )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromVersionColumns( columns );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromVersionColumns( columns ) );
     }
 
 
@@ -980,7 +990,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
                 .filter( Table::hasPrimaryKey )
                 .map( Table::getPrimaryKey )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromPrimaryKeys( primaryKeys );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromPrimaryKeys( primaryKeys ) );
     }
 
 
@@ -990,7 +1000,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
                 .map( Table::getForeignKeysList )
                 .flatMap( List::stream )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromImportedKeys( foreignKeys );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromImportedKeys( foreignKeys ) );
     }
 
 
@@ -1000,7 +1010,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
                 .map( Table::getExportedKeysList )
                 .flatMap( List::stream )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromExportedKeys( exportedKeys );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromExportedKeys( exportedKeys ) );
     }
 
 
@@ -1033,7 +1043,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
                 .flatMap( List::stream )
                 .filter( f -> referencesTable( f, parentTables.get( f.getReferencedTableName() ) ) )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromCrossReference( foreignKeys );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromCrossReference( foreignKeys ) );
     }
 
 
@@ -1054,7 +1064,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getTypeInfo() throws SQLException {
         List<Type> types = polyConnection.executeNetworkRequest( prismInterfaceClient::getTypes );
-        return MetaResultSetBuilder.buildFromTypes( types );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromTypes( types ) );
     }
 
 
@@ -1065,7 +1075,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
                 .flatMap( List::stream )
                 .filter( i -> i.getUnique() || !unique )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromIndexes( indexes );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromIndexes( indexes ) );
     }
 
 
@@ -1183,14 +1193,14 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     @Override
     public ResultSet getSuperTypes( String catalog, String schemaPattern, String typeNamePattern ) throws SQLException {
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromSuperTypes();
+        return bindMetadataResult( MetaResultSetBuilder.buildFromSuperTypes() );
     }
 
 
     @Override
     public ResultSet getSuperTables( String catalog, String schemaPattern, String tableNamePattern ) throws SQLException {
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromSuperTables();
+        return bindMetadataResult( MetaResultSetBuilder.buildFromSuperTables() );
     }
 
 
@@ -1199,7 +1209,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         throwNotSupportedIfStrict();
         // Now creates an empty result set. In the future the getUserDefinedTypes api call should be used to retrieve
         // the UDT meta which will contain all data necessary to build this result set.
-        return MetaResultSetBuilder.buildFromAttributes();
+        return bindMetadataResult( MetaResultSetBuilder.buildFromAttributes() );
     }
 
 
@@ -1273,7 +1283,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
     public ResultSet getSchemas( String catalog, String schemaPattern ) throws SQLException {
         // TODO: Always search all namespace types?
         List<Namespace> namespaces = polyConnection.executeNetworkRequest( timeout -> prismInterfaceClient.searchNamespaces( schemaPattern, null, timeout ) );
-        return MetaResultSetBuilder.buildFromNamespaces( namespaces );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromNamespaces( namespaces ) );
     }
 
 
@@ -1303,14 +1313,14 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
                 .stream()
                 .filter( f -> f.getName().matches( MetaUtils.convertToRegex( functionNamePattern ) ) )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.fromFunctions( functions );
+        return bindMetadataResult( MetaResultSetBuilder.fromFunctions( functions ) );
     }
 
 
     @Override
     public ResultSet getFunctionColumns( String s, String s1, String s2, String s3 ) throws SQLException {
         throwNotSupportedIfStrict();
-        return MetaResultSetBuilder.buildFromFunctionColumns();
+        return bindMetadataResult( MetaResultSetBuilder.buildFromFunctionColumns() );
     }
 
 
@@ -1319,7 +1329,7 @@ public class PolyphenyDatabaseMetadata implements DatabaseMetaData {
         List<Column> columns = getMatchingColumns( schemaPattern, tableNamePattern, columnNamePattern ).stream()
                 .filter( Column::getIsHidden )
                 .collect( Collectors.toList() );
-        return MetaResultSetBuilder.buildFromPseudoColumns( columns );
+        return bindMetadataResult( MetaResultSetBuilder.buildFromPseudoColumns( columns ) );
     }
 
 

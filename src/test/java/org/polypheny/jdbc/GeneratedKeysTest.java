@@ -217,6 +217,7 @@ class GeneratedKeysTest {
             assertTrue( previous.next() );
             assertEquals( 10, previous.getLong( 1 ) );
 
+            assertThrows( SQLException.class, () -> statement.addBatch( INSERT ) );
             statement.addBatch();
             statement.addBatch();
             assertArrayEquals( new int[]{ 1, 1 }, statement.executeBatch() );

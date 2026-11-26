@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -92,7 +91,18 @@ public class PlainTransport implements Transport {
 
     @Override
     public void sendMessage( byte[] message ) throws IOException {
-        writeEntireBuffer( frameMessage( message ) );
+        ByteBuffer frame = frameMessage( message );
+        try {
+            writeLock.lockInterruptibly();
+        } catch ( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw new WriteInterruptedException( e );
+        }
+        try {
+            writeEntireBuffer( frame );
+        } finally {
+            writeLock.unlock();
+        }
     }
 
 
@@ -109,9 +119,7 @@ public class PlainTransport implements Transport {
             }
         } catch ( InterruptedException e ) {
             Thread.currentThread().interrupt();
-            ClosedByInterruptException interrupted = new ClosedByInterruptException();
-            interrupted.initCause( e );
-            throw interrupted;
+            throw new WriteInterruptedException( e );
         }
         try {
             if ( !beginWrite.getAsBoolean() ) {

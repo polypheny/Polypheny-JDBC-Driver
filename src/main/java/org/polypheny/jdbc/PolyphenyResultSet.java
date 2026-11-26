@@ -41,6 +41,7 @@ import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.polypheny.jdbc.ResultFetcher.FetchFailure;
 import org.polypheny.jdbc.ResultFetcher.PageRequest;
 import org.polypheny.jdbc.meta.MetaScroller;
@@ -62,6 +63,7 @@ public class PolyphenyResultSet implements ResultSet {
     private boolean emptyGeneratedKeys;
 
     private final PolyphenyStatement statement;
+    private PolyConnection metadataConnection;
 
     private PolyphenyResultSetMetadata metadata;
     private Scrollable<List<TypedValue>> resultScroller;
@@ -122,6 +124,14 @@ public class PolyphenyResultSet implements ResultSet {
         this.isClosed = false;
         this.isInInsertMode = false;
         this.isMeta = true;
+    }
+
+
+    public void bindMetadataConnection( PolyConnection connection ) {
+        if ( !isMeta || metadataConnection != null ) {
+            throw new IllegalStateException( "Only an unbound metadata result can be bound to a connection." );
+        }
+        metadataConnection = Objects.requireNonNull( connection );
     }
 
 
@@ -562,24 +572,28 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public boolean isBeforeFirst() throws SQLException {
+        throwIfClosed();
         return !emptyGeneratedKeys && resultScroller.isBeforeFirst();
     }
 
 
     @Override
     public boolean isAfterLast() throws SQLException {
+        throwIfClosed();
         return !emptyGeneratedKeys && resultScroller.isAfterLast();
     }
 
 
     @Override
     public boolean isFirst() throws SQLException {
+        throwIfClosed();
         return !emptyGeneratedKeys && resultScroller.isFirst();
     }
 
 
     @Override
     public boolean isLast() throws SQLException {
+        throwIfClosed();
         return !emptyGeneratedKeys && resultScroller.isLast();
     }
 
@@ -1277,7 +1291,9 @@ public class PolyphenyResultSet implements ResultSet {
 
     @Override
     public boolean isClosed() throws SQLException {
-        return isClosed || (transactionGeneration >= 0 && closedByTransaction( statement.getClient().getTransactionGeneration() ));
+        return isClosed
+                || (metadataConnection != null && metadataConnection.isClosed())
+                || (transactionGeneration >= 0 && closedByTransaction( statement.getClient().getTransactionGeneration() ));
     }
 
 

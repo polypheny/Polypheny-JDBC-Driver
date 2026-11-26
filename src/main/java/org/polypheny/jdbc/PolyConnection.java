@@ -229,7 +229,7 @@ public class PolyConnection implements Connection {
     }
 
 
-    void refreshTransactionResults() {
+    public void refreshTransactionResults() {
         long generation = getPrismInterfaceClient().getTransactionGeneration();
         if ( generation <= appliedTransactionGeneration.get() ) {
             return;
@@ -295,7 +295,7 @@ public class PolyConnection implements Connection {
 
 
     SQLException handleIncompleteRequest( PrismInterfaceServiceException failure, boolean networkDeadline ) {
-        if ( failure instanceof PrismInterfaceServiceException.ServerError ) {
+        if ( failure instanceof PrismInterfaceServiceException.ServerError || failure instanceof PrismInterfaceServiceException.InterruptedBeforeSend ) {
             return failure;
         }
         Throwable cause = failure.getCause();
@@ -641,9 +641,14 @@ public class PolyConnection implements Connection {
 
     @Override
     public void setClientInfo( String name, String value ) throws SQLClientInfoException {
-        Properties clientInfoProperties = getClientInfo();
-        clientInfoProperties.setProperty( name, value );
-        setClientInfo( clientInfoProperties );
+        try {
+            executeNetworkRequest( timeout -> {
+                getPrismInterfaceClient().setClientInfoProperty( name, value, timeout );
+                return null;
+            } );
+        } catch ( SQLException e ) {
+            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), new HashMap<>(), e );
+        }
     }
 
 
@@ -719,6 +724,9 @@ public class PolyConnection implements Connection {
     @Override
     public void setNetworkTimeout( Executor executor, int milliseconds ) throws SQLException {
         throwIfClosed();
+        if ( executor == null ) {
+            throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Network timeout executor cannot be null." );
+        }
         if ( milliseconds < 0 ) {
             throw new PrismInterfaceServiceException( PrismInterfaceErrors.VALUE_ILLEGAL, "Illegal argument for timeout" );
         }

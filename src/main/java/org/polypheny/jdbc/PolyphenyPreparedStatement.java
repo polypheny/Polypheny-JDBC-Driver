@@ -402,6 +402,12 @@ public class PolyphenyPreparedStatement extends PolyphenyStatement implements Pr
 
 
     @Override
+    public void addBatch( String sql ) throws SQLException {
+        throw new PrismInterfaceServiceException( PrismInterfaceErrors.OPERATION_ILLEGAL, "Method should not be called on a prepared statement." );
+    }
+
+
+    @Override
     public void addBatch() throws SQLException {
         throwIfClosed();
         parameterBatch.add( new ArrayList<>( boundParameters() ) );
