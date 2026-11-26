@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -63,6 +64,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.jdbc.meta.PolyphenyDatabaseMetadata;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.properties.PolyphenyConnectionProperties;
@@ -744,8 +746,8 @@ class BatchCleanupTimeoutTest {
 
 
     @ParameterizedTest
-    @CsvSource({ "false", "true" })
-    void multimodelBoundaryReleasesCompletedJdbcStatement( boolean cleanupMustRetry ) throws Exception {
+    @CsvSource({ "false, false", "true, false", "true, true" })
+    void multimodelBoundaryReleasesCompletedJdbcStatement( boolean cleanupMustRetry, boolean retryOnBoundary ) throws Exception {
         CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
         RpcService rpc = new RpcService( transport );
         PrismInterfaceClient client = new PrismInterfaceClient( rpc );
@@ -768,10 +770,62 @@ class BatchCleanupTimeoutTest {
                 assertFalse( connection.isClosed() );
 
                 transport.rejectStatementCloseBeforeSend = false;
-                query.close();
+                if ( retryOnBoundary ) {
+                    connection.commit();
+                    assertTrue( transport.statementCloseSent.await( 1, TimeUnit.SECONDS ) );
+                } else {
+                    query.close();
+                }
                 assertEquals( 1, transport.requests.stream().filter( TypeCase.CLOSE_STATEMENT_REQUEST::equals ).count() );
             }
         } finally {
+            rpc.close();
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void explicitCloseJoinsDeferredHandleRelease( boolean refuseFirstSend ) throws Exception {
+        CleanupTransport transport = new CleanupTransport( TypeCase.TYPE_NOT_SET, Intercept.TIMEOUT );
+        transport.advertiseQueryTimeout = true;
+        transport.pauseStatementClose.set( true );
+        transport.rejectPausedStatementClose = refuseFirstSend;
+        transport.resumeStatementClose = new CountDownLatch( 1 );
+        RpcService rpc = new RpcService( transport );
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try ( Connection connection = connection( new PrismInterfaceClient( rpc ), true );
+                Statement dependent = connection.createStatement(); Statement boundary = connection.createStatement() ) {
+            connection.setAutoCommit( false );
+            connection.setNetworkTimeout( Runnable::run, 3000 );
+            dependent.closeOnCompletion();
+            try ( ResultSet result = dependent.executeQuery( SELECT ) ) {
+                transport.sendImplicitBoundary = true;
+                boundary.setQueryTimeout( 1 );
+                assertEquals( 1, boundary.executeUpdate( "CREATE TABLE probe (x INTEGER PRIMARY KEY)" ) );
+                assertTrue( transport.statementClosePaused.await( 1, TimeUnit.SECONDS ) );
+                assertTrue( result.isClosed() );
+                assertTrue( dependent.isClosed() );
+
+                CountDownLatch explicitStarted = new CountDownLatch( 1 );
+                Future<?> explicitClose = executor.submit( () -> {
+                    explicitStarted.countDown();
+                    dependent.close();
+                    return null;
+                } );
+                try {
+                    assertTrue( explicitStarted.await( 1, TimeUnit.SECONDS ) );
+                    assertThrows( TimeoutException.class, () -> explicitClose.get( 150, TimeUnit.MILLISECONDS ) );
+                } finally {
+                    transport.resumeStatementClose.countDown();
+                }
+                explicitClose.get( 1, TimeUnit.SECONDS );
+                assertEquals( 1, transport.requests.stream().filter( TypeCase.CLOSE_STATEMENT_REQUEST::equals ).count() );
+                assertFalse( connection.isClosed() );
+            }
+        } finally {
+            transport.resumeStatementClose.countDown();
+            executor.shutdownNow();
             rpc.close();
         }
     }
@@ -1006,7 +1060,7 @@ class BatchCleanupTimeoutTest {
     private static final class CleanupTransport implements Transport {
 
         private final BlockingQueue<byte[]> responses = new LinkedBlockingQueue<>();
-        private final List<TypeCase> requests = new ArrayList<>();
+        private final List<TypeCase> requests = new CopyOnWriteArrayList<>();
         private final byte[] endOfStream = new byte[0];
         private final AtomicInteger closes = new AtomicInteger();
         private final TypeCase cleanupType;
@@ -1019,6 +1073,11 @@ class BatchCleanupTimeoutTest {
         private boolean implicitBoundaryFails;
         private boolean rejectStatementCloseBeforeSend;
         private boolean advertiseQueryTimeout;
+        private final AtomicBoolean pauseStatementClose = new AtomicBoolean();
+        private final CountDownLatch statementClosePaused = new CountDownLatch( 1 );
+        private final CountDownLatch statementCloseSent = new CountDownLatch( 1 );
+        private boolean rejectPausedStatementClose;
+        private CountDownLatch resumeStatementClose = new CountDownLatch( 0 );
 
 
         private boolean holdUpdatesAndTheirFollowingClose;
@@ -1058,8 +1117,16 @@ class BatchCleanupTimeoutTest {
 
         @Override
         public boolean trySendMessage( byte[] message, long deadlineNanos, BooleanSupplier beginWrite ) throws IOException {
-            if ( rejectStatementCloseBeforeSend && Request.parseFrom( message ).getTypeCase() == TypeCase.CLOSE_STATEMENT_REQUEST ) {
-                return false;
+            if ( Request.parseFrom( message ).getTypeCase() == TypeCase.CLOSE_STATEMENT_REQUEST ) {
+                if ( pauseStatementClose.compareAndSet( true, false ) ) {
+                    waitToContinue( statementClosePaused, resumeStatementClose );
+                    if ( rejectPausedStatementClose ) {
+                        return false;
+                    }
+                }
+                if ( rejectStatementCloseBeforeSend ) {
+                    return false;
+                }
             }
             return Transport.super.trySendMessage( message, deadlineNanos, beginWrite );
         }
@@ -1070,6 +1137,9 @@ class BatchCleanupTimeoutTest {
             Request request = Request.parseFrom( message );
             TypeCase type = request.getTypeCase();
             requests.add( type );
+            if ( type == TypeCase.CLOSE_STATEMENT_REQUEST ) {
+                statementCloseSent.countDown();
+            }
             if ( holdUpdatesAndTheirFollowingClose && type == TypeCase.EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST
                     && request.getExecuteUnparameterizedStatementRequest().getStatement().equals( "UPDATE items SET x = 1" ) ) {
                 blockedUpdateId = request.getId();

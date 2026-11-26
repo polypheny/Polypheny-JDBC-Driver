@@ -94,6 +94,49 @@ class ResultSetFetchErrorTest {
 
 
     @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void afterLastThenPreviousFindsTheLastAvailableRow( boolean capped ) throws SQLException {
+        when( client.fetchResult( 7, 1, 2000 ) ).thenReturn( frame( false ), frame( !capped ) ).thenThrow( failure );
+        try ( ResultSet result = newResultSet( ResultSet.TYPE_SCROLL_INSENSITIVE, 1, capped ? 3 : 0 ) ) {
+            result.afterLast();
+            assertTrue( result.isAfterLast() );
+            assertEquals( 0, result.getRow() );
+            assertTrue( result.previous() );
+            assertEquals( 3, result.getRow() );
+            assertTrue( result.isLast() );
+            assertTrue( result.previous() );
+            assertEquals( 2, result.getRow() );
+            result.afterLast();
+            assertFalse( result.next() );
+        }
+        verify( client, times( 2 ) ).fetchResult( 7, 1, 2000 );
+    }
+
+
+    @Test
+    void afterLastKeepsTheCurrentRowWhenAFetchFails() throws SQLException {
+        when( client.fetchResult( 7, 1, 2000 ) ).thenThrow( failure );
+        try ( ResultSet result = newResultSet( ResultSet.TYPE_SCROLL_INSENSITIVE ) ) {
+            assertTrue( result.next() );
+            assertSame( failure, assertThrows( PrismInterfaceServiceException.class, result::afterLast ) );
+            assertEquals( 1, result.getRow() );
+            assertFalse( result.isAfterLast() );
+        }
+        verify( client ).fetchResult( 7, 1, 2000 );
+    }
+
+
+    @Test
+    void afterLastRejectsForwardOnlyResultsBeforeFetching() throws SQLException {
+        try ( ResultSet result = newResultSet( ResultSet.TYPE_FORWARD_ONLY ) ) {
+            assertThrows( SQLException.class, result::afterLast );
+            assertTrue( result.isBeforeFirst() );
+        }
+        verify( client, never() ).fetchResult( anyInt(), anyInt(), anyInt() );
+    }
+
+
+    @ParameterizedTest
     @ValueSource(ints = { ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE })
     void aLargerCursorFetchSizeStillRespectsMaxRows( int resultSetType ) throws SQLException {
         when( client.fetchResult( 7, 4, 2000 ) ).thenReturn( frame( false, 4 ) ).thenThrow( failure );

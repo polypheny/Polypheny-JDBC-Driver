@@ -617,7 +617,9 @@ public class PolyphenyResultSet implements ResultSet {
     public void afterLast() throws SQLException {
         throwIfClosed();
         discardRowUpdates();
-        getBidirectionalScrollerOrThrow().afterLast();
+        BidirectionalScroller scroller = getBidirectionalScrollerOrThrow();
+        fetchAll();
+        scroller.afterLast();
     }
 
 

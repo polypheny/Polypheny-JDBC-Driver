@@ -59,6 +59,8 @@ public class PolyphenyStatement implements Statement {
     private final Object resultsLock = new Object();
     private volatile boolean isClosed;
     private volatile boolean closedAtTransactionEnd;
+    private boolean closeInProgress;
+    private boolean retryCloseAfterTransaction;
     private volatile boolean clearingResults;
     private ExecutionDeadline cleanupDeadline;
     private RelationalFrame generatedKeysFrame;
@@ -157,12 +159,18 @@ public class PolyphenyStatement implements Statement {
     final void closeResultsFromEarlierTransactions( long generation, boolean deferStatementClose ) throws SQLException {
         boolean closeStatement;
         synchronized ( resultsLock ) {
-            if ( isLocallyClosed() ) {
+            if ( isClosed ) {
                 return;
             }
-            closeStatement = clearResultsFromEarlierTransactions( generation ) && canCloseAfterDependentResults();
-            if ( closeStatement ) {
-                closedAtTransactionEnd = true;
+            if ( closedAtTransactionEnd ) {
+                closeStatement = retryCloseAfterTransaction;
+                retryCloseAfterTransaction = false;
+                deferStatementClose = true;
+            } else {
+                closeStatement = clearResultsFromEarlierTransactions( generation ) && canCloseAfterDependentResults();
+                if ( closeStatement ) {
+                    closedAtTransactionEnd = true;
+                }
             }
         }
         if ( closeStatement ) {
@@ -211,7 +219,7 @@ public class PolyphenyStatement implements Statement {
 
     final void closeAfterTransaction() {
         try {
-            close();
+            close( false );
         } catch ( SQLException e ) {
             log.warn( "Could not close a completed statement after the transaction finished", e );
         }
@@ -343,11 +351,44 @@ public class PolyphenyStatement implements Statement {
 
     @Override
     public void close() throws SQLException {
-        synchronized ( resultsLock ) {
-            if ( isClosed ) {
-                return;
+        close( true );
+    }
+
+
+    private boolean beginClose( boolean waitForClose ) throws SQLException {
+        RequestDeadline deadline = new RequestDeadline( polyConnection.getTimeout() );
+        try {
+            synchronized ( resultsLock ) {
+                // Explicit close joins a concurrent attempt. A transaction sweep can hold the
+                // transport reservation and must leave an in-progress close to its owner.
+                while ( closeInProgress ) {
+                    if ( !waitForClose ) {
+                        return false;
+                    }
+                    resultsLock.wait( deadline.remainingMillis() );
+                }
+                if ( isClosed ) {
+                    return false;
+                }
+                if ( waitForClose ) {
+                    deadline.remainingMillis();
+                }
+                isClosed = true;
+                closeInProgress = true;
+                retryCloseAfterTransaction = false;
+                return true;
             }
-            isClosed = true;
+        } catch ( InterruptedException e ) {
+            throw PrismInterfaceClient.interruptedBeforeWrite( e );
+        } catch ( PrismInterfaceServiceException failure ) {
+            throw polyConnection.handleIncompleteRequest( failure, true );
+        }
+    }
+
+
+    private void close( boolean waitForClose ) throws SQLException {
+        if ( !beginClose( waitForClose ) ) {
+            return;
         }
         boolean retryable = false;
         try {
@@ -375,7 +416,10 @@ public class PolyphenyStatement implements Statement {
                 synchronized ( resultsLock ) {
                     if ( statementId != NO_STATEMENT_ID ) {
                         isClosed = false;
+                        retryCloseAfterTransaction = closedAtTransactionEnd;
                     }
+                    closeInProgress = false;
+                    resultsLock.notifyAll();
                 }
             } else {
                 dispose();
@@ -391,6 +435,9 @@ public class PolyphenyStatement implements Statement {
             clearCurrentResult();
             currentUpdateCount = NO_UPDATE_COUNT;
             statementId = NO_STATEMENT_ID;
+            closeInProgress = false;
+            retryCloseAfterTransaction = false;
+            resultsLock.notifyAll();
         }
         polyConnection.endTracking( this );
     }
