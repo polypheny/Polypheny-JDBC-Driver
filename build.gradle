@@ -13,7 +13,7 @@ group "org.polypheny"
 description = "A standards-compliant JDBC driver for Polypheny."
 
 def versionMajor = 3
-def versionMinor = 2
+def versionMinor = 3
 def versionQualifier = ""
 version = versionMajor + "." + versionMinor + (versionQualifier != '' ? "-" + versionQualifier : '')
 
@@ -51,7 +51,7 @@ java {
 }
 
 def protobufVersion = '4.28.2'
-def prismApi = 'org.polypheny:prism:2.3'
+def prismApi = 'org.polypheny:prism:2.4'
 
 
 dependencies {
@@ -117,6 +117,9 @@ test {
     useJUnitPlatform {
         if (project.hasProperty('skipGraphIntegration')) {
             excludeTags 'graph'
+        }
+        if (!project.hasProperty('prism24Integration')) {
+            excludeTags 'prism24'
         }
     }
     testLogging.showStandardStreams = true

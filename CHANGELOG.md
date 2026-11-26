@@ -1,3 +1,9 @@
+## 3.3
+
+* Use Prism API 2.4.
+* Expose server SQLSTATE and vendor error codes through `SQLException` while preserving the server message and existing exception type.
+
+
 ## 3.2
 
 * Use Prism API 2.3.

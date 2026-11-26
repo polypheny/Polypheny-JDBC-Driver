@@ -54,15 +54,26 @@ public class ResultFetcher implements Runnable {
 
     @Override
     public void run() {
-        long fetchEnd = totalFetched + properties.getStatementFetchSize();
-        Frame nextFrame;
         try {
-            nextFrame = client.fetchResult( statementId, properties.getFetchSize(), fetchTimeout );
+            fetch();
         } catch ( PrismInterfaceServiceException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    FetchThread startFetch() {
+        FetchThread thread = new FetchThread();
+        thread.start();
+        return thread;
+    }
+
+
+    private void fetch() throws PrismInterfaceServiceException {
+        long fetchEnd = totalFetched + properties.getStatementFetchSize();
+        Frame nextFrame = client.fetchResult( statementId, properties.getFetchSize(), fetchTimeout );
         if ( nextFrame.getResultCase() != ResultCase.RELATIONAL_FRAME ) {
-            throw new RuntimeException( new PrismInterfaceServiceException( "Illegal result type." ) );
+            throw new PrismInterfaceServiceException( "Illegal result type." );
         }
         List<Row> rows = nextFrame.getRelationalFrame().getRowsList();
         if ( properties.getLargeMaxRows() != 0 && fetchEnd > properties.getLargeMaxRows() ) {
@@ -75,6 +86,49 @@ public class ResultFetcher implements Runnable {
         fetchedValues = TypedValueUtils.buildRows( rows );
         totalFetched = totalFetched + rows.size();
         isLast = nextFrame.getIsLast();
+    }
+
+
+    final class FetchThread extends Thread {
+
+        private PrismInterfaceServiceException failure;
+
+
+        @Override
+        public void run() {
+            try {
+                fetch();
+            } catch ( PrismInterfaceServiceException e ) {
+                failure = e;
+            } catch ( RuntimeException e ) {
+                failure = new PrismInterfaceServiceException( PrismInterfaceErrors.DRIVER_THREADING_ERROR, "Fetching more rows from server failed.", e );
+            }
+        }
+
+
+        List<List<TypedValue>> awaitPage() throws InterruptedException, PrismInterfaceServiceException {
+            join();
+            if ( failure != null ) {
+                throw failure;
+            }
+            return fetchedValues;
+        }
+
+    }
+
+
+    static final class FetchFailure extends RuntimeException {
+
+        FetchFailure( PrismInterfaceServiceException cause ) {
+            super( cause );
+        }
+
+
+        @Override
+        public synchronized PrismInterfaceServiceException getCause() {
+            return (PrismInterfaceServiceException) super.getCause();
+        }
+
     }
 
 }

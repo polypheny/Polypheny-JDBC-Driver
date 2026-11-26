@@ -507,7 +507,7 @@ public class PolyConnection implements Connection {
             properties.putAll( getPrismInterfaceClient().getClientInfoProperties( getNetworkTimeout() ) );
             return properties;
         } catch ( SQLException e ) {
-            throw new SQLClientInfoException();
+            throw new SQLClientInfoException( e.getMessage(), e.getSQLState(), e.getErrorCode(), null, e );
         }
     }
 
